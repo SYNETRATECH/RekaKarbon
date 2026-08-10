@@ -1,4 +1,6 @@
 packages:
   - 'client'
   - 'server'
+allowBuilds:
+  unrs-resolver: true
 engineStrict: true
