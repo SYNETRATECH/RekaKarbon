@@ -1,0 +1,5 @@
+{
+  "client/**/*.{js,jsx,ts,tsx}": ["pnpm --filter ./client lint --fix", "prettier --write"],
+  "server/**/*.ts": ["pnpm --filter ./server exec eslint --fix", "prettier --write"],
+  "**/*.{json,css,md}": ["prettier --write"]
+}
