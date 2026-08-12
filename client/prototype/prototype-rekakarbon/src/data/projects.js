@@ -1,0 +1,750 @@
+export const PROJECTS_DATA = [
+  {
+    id: "tn-baluran",
+    name: "TN Baluran",
+    region: "Jawa Timur",
+    center: [-7.8385, 114.3725],
+    zoom: 12,
+    area: "25.0K Ha",
+    rawAreaVal: 25000,
+    carbon: "1.24M tCO2e",
+    rawCarbonVal: 1240000,
+    ndvi: 0.78,
+    evi: 0.61,
+    coordinates: [
+      { lat: -7.732, lng: 114.398 },
+      { lat: -7.735, lng: 114.471 },
+      { lat: -7.822, lng: 114.478 },
+      { lat: -7.889, lng: 114.452 },
+      { lat: -7.911, lng: 114.331 },
+      { lat: -7.832, lng: 114.288 },
+      { lat: -7.748, lng: 114.321 }
+    ],
+    trendLabels: ["2021", "2022", "2023", "2024", "2025"],
+    trendData: [1.15, 1.18, 1.20, 1.22, 1.24],
+    
+    // Reforestation Success Monitoring Metrics
+    survivalRate: 0.875,
+    canopyHeight: 1.85,
+    bufferAllocated: 0.08,
+    bufferUsed: 0.0,
+    reforestationStatus: "Sangat Baik",
+    reforestationPartner: "Dinas Kehutanan Jawa Timur & Balai TN Baluran",
+    reforestationSite: "Lahan Uji Coba Cangar, Malang",
+
+    // Financial Profile (IDR)
+    totalBudget: 4850000000,
+    disbursedBudget: 3750000000,
+    remainingBudget: 1100000000,
+
+    // Reforestation Progress Timeline
+    currentYear: 4,
+    stages: [
+      { 
+        year: 1, 
+        title: "Tahun 1: Pembibitan & Persiapan Lahan", 
+        milestone: "Pengadaan 50.000 bibit & pembersihan area kritis", 
+        status: "completed",
+        canopyDensity: 28,
+        gsd: 2.5,
+        kthName: "KTH Bina Wana Baluran",
+        farmerIncentive: 120000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 800,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 2, 
+        title: "Tahun 2: Penanaman Fisik Hutan", 
+        milestone: "Penanaman vegetasi savana & instalasi GPS pemantauan", 
+        status: "completed",
+        canopyDensity: 46,
+        gsd: 2.2,
+        kthName: "KTH Bina Wana Baluran",
+        farmerIncentive: 180000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 1400,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 3, 
+        title: "Tahun 3: Audit Drone dMRV Pertama", 
+        milestone: "Sensor orthophoto & pemetaan CHM (Canopy Height)", 
+        status: "completed",
+        canopyDensity: 65,
+        gsd: 2.0,
+        kthName: "KTH Bina Wana Baluran",
+        farmerIncentive: 220000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 2200,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 4, 
+        title: "Tahun 4: Kelulusan Fase Krisis", 
+        milestone: "Tinggi rata-rata pohon >1.8m, verifikasi kredit karbon", 
+        status: "ongoing",
+        canopyDensity: 74,
+        gsd: 1.8,
+        kthName: "KTH Bina Wana Baluran",
+        farmerIncentive: 280000000,
+        incentiveStatus: "Tercairkan Sebagian (Proses)",
+        speCreditMinted: 3500,
+        speStatus: "Proses Verifikasi AI"
+      }
+    ],
+
+    // Transaction History (Blockchain Ledger)
+    disbursementHistory: [
+      { 
+        id: "tx-baluran-01",
+        date: "14 Jul 2025", 
+        amount: 45000000, 
+        category: "Pemeliharaan", 
+        desc: "Insentif bulanan KTH (Kelompok Tani Hutan) Baluran",
+        txHash: "0x8f3a9b2c1d4e7f0a5b6c7d8e9f0a1b2c",
+        blockNumber: "#184920",
+        vendor: "KTH Bina Wana Baluran",
+        items: [
+          { name: "Insentif Tanam & Pemeliharaan KTH (15 Anggota)", qty: "15 Orang", price: 2000000, total: 30000000 },
+          { name: "Pengadaan Pupuk Kompos Organik Bio-Fertilizer", qty: "30 Karung", price: 300000, total: 9000000 },
+          { name: "Operasional Alat Penyiangan & Pemangkasan", qty: "6 Paket", price: 1000000, total: 6000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-baluran-02",
+        date: "28 Jun 2025", 
+        amount: 85000000, 
+        category: "Monitoring", 
+        desc: "Sewa UAV & pemindaian orthophoto udara dMRV",
+        txHash: "0x3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a",
+        blockNumber: "#183712",
+        vendor: "PT Aero Mapping Indonesia",
+        items: [
+          { name: "Sewa Drone VTOL LiDAR Multiterrain (3 Hari)", qty: "3 Hari", price: 20000000, total: 60000000 },
+          { name: "Jasa Pengolahan Citra dMRV & Model CHM", qty: "1 Paket", price: 15000000, total: 15000000 },
+          { name: "Honor Pilot Drone Sertifikasi FASI & Surveyor", qty: "2 Orang", price: 5000000, total: 10000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-baluran-03",
+        date: "10 Mei 2025", 
+        amount: 150000000, 
+        category: "Restorasi", 
+        desc: "Pengadaan bibit tambahan & alat tanam KTH",
+        txHash: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+        blockNumber: "#181204",
+        vendor: "CV Pembibitan Tropis Nusantara",
+        items: [
+          { name: "Pengadaan Bibit Pohon Kayu Putih & Acacia Nilotica", qty: "15.000 Batang", price: 8000, total: 120000000 },
+          { name: "Polybag Kualitas Super & Media Tanam Humus", qty: "15.000 Set", price: 1000, total: 15000000 },
+          { name: "Biaya Distribusi Logistik Truk ke Savana Baluran", qty: "3 Armada", price: 5000000, total: 15000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop"
+        ]
+      }
+    ]
+  },
+  {
+    id: "tn-gunung-leuser",
+    name: "TN Gunung Leuser",
+    region: "Aceh",
+    center: [3.7915, 97.4326],
+    zoom: 10,
+    area: "792.7K Ha",
+    rawAreaVal: 792700,
+    carbon: "42.50M tCO2e",
+    rawCarbonVal: 42500000,
+    ndvi: 0.84,
+    evi: 0.72,
+    coordinates: [
+      { lat: 3.982, lng: 97.211 },
+      { lat: 3.921, lng: 97.603 },
+      { lat: 3.612, lng: 97.689 },
+      { lat: 3.512, lng: 97.498 },
+      { lat: 3.582, lng: 97.189 },
+      { lat: 3.842, lng: 97.121 }
+    ],
+    trendLabels: ["2021", "2022", "2023", "2024", "2025"],
+    trendData: [40.80, 41.20, 41.70, 42.10, 42.50],
+    
+    // Reforestation Success Monitoring Metrics
+    survivalRate: 0.912,
+    canopyHeight: 2.10,
+    bufferAllocated: 0.08,
+    bufferUsed: 0.02,
+    reforestationStatus: "Optimal",
+    reforestationPartner: "Dinas Kehutanan Aceh & Balai TN Gunung Leuser",
+    reforestationSite: "Kawasan Penyangga Ketambe",
+
+    // Financial Profile (IDR)
+    totalBudget: 15400000000,
+    disbursedBudget: 13900000000,
+    remainingBudget: 1500000000,
+
+    // Reforestation Progress Timeline
+    currentYear: 4,
+    stages: [
+      { 
+        year: 1, 
+        title: "Tahun 1: Perlindungan Lahan & Tanam", 
+        milestone: "Patroli perambahan hutan & penanaman pohon tropis basah", 
+        status: "completed",
+        canopyDensity: 35,
+        gsd: 2.5,
+        kthName: "KTH Alue Leuser Gayo",
+        farmerIncentive: 350000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 2400,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 2, 
+        title: "Tahun 2: Pemeliharaan & Pencegahan Hama", 
+        milestone: "Penyiangan gulma & pemupukan organik terpadu", 
+        status: "completed",
+        canopyDensity: 58,
+        gsd: 2.2,
+        kthName: "KTH Alue Leuser Gayo",
+        farmerIncentive: 450000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 4500,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 3, 
+        title: "Tahun 3: Pemindaian LiDAR Udara", 
+        milestone: "Penyusunan model densitas biomassa berbasis LiDAR", 
+        status: "completed",
+        canopyDensity: 76,
+        gsd: 1.5,
+        kthName: "KTH Alue Leuser Gayo",
+        farmerIncentive: 550000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 7800,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 4, 
+        title: "Tahun 4: Audit Sertifikat Emisi", 
+        milestone: "Validasi dMRV untuk pengajuan token karbon SPE-GRK", 
+        status: "ongoing",
+        canopyDensity: 84,
+        gsd: 1.2,
+        kthName: "KTH Alue Leuser Gayo",
+        farmerIncentive: 750000000,
+        incentiveStatus: "Tercairkan Sebagian (Proses)",
+        speCreditMinted: 12000,
+        speStatus: "Proses Verifikasi AI"
+      }
+    ],
+
+    // Transaction History
+    disbursementHistory: [
+      { 
+        id: "tx-leuser-01",
+        date: "10 Jul 2025", 
+        amount: 120000000, 
+        category: "Monitoring", 
+        desc: "Audit citra LiDAR udara kawasan penyangga Ketambe",
+        txHash: "0x7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d",
+        blockNumber: "#184510",
+        vendor: "PT GeoSurvei Ketambe Aceh",
+        items: [
+          { name: "Pemindaian Sensor Udara LiDAR Ketambe", qty: "1 Kawasan", price: 90000000, total: 90000000 },
+          { name: "Validasi Lapangan Tim dMRV & Polhut", qty: "10 Personil", price: 3000000, total: 30000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-leuser-02",
+        date: "22 Jun 2025", 
+        amount: 65000000, 
+        category: "Pemeliharaan", 
+        desc: "Insentif patroli polisi hutan & KTH Leuser",
+        txHash: "0x4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e",
+        blockNumber: "#183100",
+        vendor: "KTH Alue Leuser Gayo",
+        items: [
+          { name: "Insentif Tim Patroli Restorasi Hutan Hujan", qty: "20 Anggota", price: 2500000, total: 50000000 },
+          { name: "Peralatan Penyiangan & Kompos Hayati", qty: "1 Paket", price: 15000000, total: 15000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-leuser-03",
+        date: "15 Apr 2025", 
+        amount: 350000000, 
+        category: "Restorasi", 
+        desc: "Pengadaan 100.000 bibit tanaman hutan hujan tropis",
+        txHash: "0x2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f",
+        blockNumber: "#179500",
+        vendor: "BPDASHL Krueng Aceh",
+        items: [
+          { name: "Pengadaan Bibit Pohon Damar & Meranti", qty: "100.000 Batang", price: 3000, total: 300000000 },
+          { name: "Biaya Pengangkutan & Logistik Jalur Sungai", qty: "1 Paket", price: 50000000, total: 50000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop"
+        ]
+      }
+    ]
+  },
+  {
+    id: "restorasi-gambut-riau",
+    name: "Restorasi Gambut Riau",
+    region: "Riau",
+    center: [0.7215, 102.6321],
+    zoom: 11,
+    area: "120.4K Ha",
+    rawAreaVal: 120400,
+    carbon: "18.22M tCO2e",
+    rawCarbonVal: 18220000,
+    ndvi: 0.67,
+    evi: 0.52,
+    coordinates: [
+      { lat: 0.912, lng: 102.512 },
+      { lat: 0.852, lng: 102.822 },
+      { lat: 0.552, lng: 102.752 },
+      { lat: 0.582, lng: 102.482 },
+      { lat: 0.752, lng: 102.412 }
+    ],
+    trendLabels: ["2021", "2022", "2023", "2024", "2025"],
+    trendData: [17.30, 17.55, 17.80, 18.00, 18.22],
+    
+    // Reforestation Success Monitoring Metrics
+    survivalRate: 0.764,
+    canopyHeight: 1.40,
+    bufferAllocated: 0.08,
+    bufferUsed: 0.05,
+    reforestationStatus: "Siaga/Transisi",
+    reforestationPartner: "Dinas Lingkungan Hidup Riau & BPHL Riau",
+    reforestationSite: "Kawasan Restorasi Gambut Bengkalis",
+
+    // Financial Profile (IDR)
+    totalBudget: 8500000000,
+    disbursedBudget: 6200000000,
+    remainingBudget: 2300000000,
+
+    // Reforestation Progress Timeline
+    currentYear: 2,
+    stages: [
+      { 
+        year: 1, 
+        title: "Tahun 1: Pembasahan Gambut & Sekat Kanal", 
+        milestone: "Konstruksi 12 sekat kanal & rewetting lahan gambut", 
+        status: "completed",
+        canopyDensity: 15,
+        gsd: 3.0,
+        kthName: "KTH Gambut Lestari Riau",
+        farmerIncentive: 220000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 0,
+        speStatus: "Tahap Persiapan Kredit"
+      },
+      { 
+        year: 2, 
+        title: "Tahun 2: Penanaman Vegetasi Rawa", 
+        milestone: "Penanaman bibit pohon jelutung & meranti rawa", 
+        status: "ongoing",
+        canopyDensity: 32,
+        gsd: 2.5,
+        kthName: "KTH Gambut Lestari Riau",
+        farmerIncentive: 310000000,
+        incentiveStatus: "Tercairkan Sebagian (Proses)",
+        speCreditMinted: 500,
+        speStatus: "Proses Pra-Verifikasi"
+      },
+      { 
+        year: 3, 
+        title: "Tahun 3: Monitoring Emisi GRK", 
+        milestone: "Pengukuran sensor fluks gas metana & pemetaan drone", 
+        status: "upcoming",
+        canopyDensity: 0,
+        gsd: 2.0,
+        kthName: "KTH Gambut Lestari Riau",
+        farmerIncentive: 400000000,
+        incentiveStatus: "Menunggu Jadwal",
+        speCreditMinted: 0,
+        speStatus: "Menunggu Penanaman"
+      },
+      { 
+        year: 4, 
+        title: "Tahun 4: Kelulusan & Pengawasan Karbon", 
+        milestone: "Pohon mapan melewati masa krisis air gambut", 
+        status: "upcoming",
+        canopyDensity: 0,
+        gsd: 1.8,
+        kthName: "KTH Gambut Lestari Riau",
+        farmerIncentive: 500000000,
+        incentiveStatus: "Menunggu Jadwal",
+        speCreditMinted: 0,
+        speStatus: "Menunggu Penanaman"
+      }
+    ],
+
+    // Transaction History
+    disbursementHistory: [
+      { 
+        id: "tx-riau-01",
+        date: "12 Jul 2025", 
+        amount: 95000000, 
+        category: "Restorasi", 
+        desc: "Konstruksi sekat kanal tambahan zona Bengkalis",
+        txHash: "0x5d4c3b2a1e0f9d8c7b6a5f4e3d2c1b0a",
+        blockNumber: "#184820",
+        vendor: "Kontraktor Gambut Bengkalis",
+        items: [
+          { name: "Pembangunan 4 Unit Sekat Kanal Kayu Kompak", qty: "4 Unit", price: 18000000, total: 72000000 },
+          { name: "Bahan Pelapis & Kantong Tanah Pembendung", qty: "1 Paket", price: 23000000, total: 23000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-riau-02",
+        date: "18 Jun 2025", 
+        amount: 40000000, 
+        category: "Pemeliharaan", 
+        desc: "Operasional pemantauan tinggi muka air (TMA) gambut",
+        txHash: "0x9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b",
+        blockNumber: "#182900",
+        vendor: "KTH Gambut Lestari Riau",
+        items: [
+          { name: "Pemeliharaan Piezometer & Pemantauan TMA", qty: "10 Titik", price: 4000000, total: 40000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-riau-03",
+        date: "02 Mei 2025", 
+        amount: 110000000, 
+        category: "NusaCarbon API", 
+        desc: "Langganan platform sensor satelit radar penilai kelembapan",
+        txHash: "0x1f2e3d4c5b6a7f8e9d0c1b2a3f4e5d6c",
+        blockNumber: "#180100",
+        vendor: "NusaCarbon Intelligence Systems",
+        items: [
+          { name: "Integrasi Datastream Satelit Synthetic Aperture Radar (SAR)", qty: "1 Lisensi", price: 110000000, total: 110000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop"
+        ]
+      }
+    ]
+  },
+  {
+    id: "tn-kutai",
+    name: "TN Kutai",
+    region: "Kalimantan Timur",
+    center: [0.4851, 117.2912],
+    zoom: 11,
+    area: "198.6K Ha",
+    rawAreaVal: 198600,
+    carbon: "14.85M tCO2e",
+    rawCarbonVal: 14850000,
+    ndvi: 0.81,
+    evi: 0.66,
+    coordinates: [
+      { lat: 0.682, lng: 117.182 },
+      { lat: 0.612, lng: 117.482 },
+      { lat: 0.312, lng: 117.452 },
+      { lat: 0.282, lng: 117.212 },
+      { lat: 0.352, lng: 117.112 },
+      { lat: 0.552, lng: 117.082 }
+    ],
+    trendLabels: ["2021", "2022", "2023", "2024", "2025"],
+    trendData: [14.10, 14.30, 14.50, 14.70, 14.85],
+    
+    // Reforestation Success Monitoring Metrics
+    survivalRate: 0.848,
+    canopyHeight: 1.75,
+    bufferAllocated: 0.08,
+    bufferUsed: 0.015,
+    reforestationStatus: "Sangat Baik",
+    reforestationPartner: "Dinas Kehutanan Kaltim & Balai TN Kutai",
+    reforestationSite: "Kawasan Sangkima, Kutai Timur",
+
+    // Financial Profile (IDR)
+    totalBudget: 7200000000,
+    disbursedBudget: 5800000000,
+    remainingBudget: 1400000000,
+
+    // Reforestation Progress Timeline
+    currentYear: 3,
+    stages: [
+      { 
+        year: 1, 
+        title: "Tahun 1: Rehabilitasi Bekas Tambang", 
+        milestone: "Reklamasi struktur tanah & pembersihan gulma agresif", 
+        status: "completed",
+        canopyDensity: 22,
+        gsd: 2.5,
+        kthName: "KTH Sangkima Lestari",
+        farmerIncentive: 180000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 500,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 2, 
+        title: "Tahun 2: Penanaman Hutan Hujan", 
+        milestone: "Penanaman bibit ulin & meranti merah di zona kritis", 
+        status: "completed",
+        canopyDensity: 48,
+        gsd: 2.2,
+        kthName: "KTH Sangkima Lestari",
+        farmerIncentive: 240000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 1200,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 3, 
+        title: "Tahun 3: Evaluasi CHM dMRV", 
+        milestone: "Pengukuran tinggi kanopi dMRV drone tahap pertama", 
+        status: "ongoing",
+        canopyDensity: 61,
+        gsd: 1.8,
+        kthName: "KTH Sangkima Lestari",
+        farmerIncentive: 320000000,
+        incentiveStatus: "Tercairkan Sebagian (Proses)",
+        speCreditMinted: 2400,
+        speStatus: "Proses Verifikasi AI"
+      },
+      { 
+        year: 4, 
+        title: "Tahun 4: Kelulusan & Launching Kredit", 
+        milestone: "Verifikasi masa kritis & peluncuran kredit karbon", 
+        status: "upcoming",
+        canopyDensity: 0,
+        gsd: 1.5,
+        kthName: "KTH Sangkima Lestari",
+        farmerIncentive: 400000000,
+        incentiveStatus: "Menunggu Jadwal",
+        speCreditMinted: 0,
+        speStatus: "Menunggu Pertumbuhan"
+      }
+    ],
+
+    // Transaction History
+    disbursementHistory: [
+      { 
+        id: "tx-kutai-01",
+        date: "05 Jul 2025", 
+        amount: 70000000, 
+        category: "Monitoring", 
+        desc: "Sewa UAV ortofoto Sangkima Kutai Timur",
+        txHash: "0x3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e",
+        blockNumber: "#184200",
+        vendor: "Kutai Airborne Remote Sensing",
+        items: [
+          { name: "Survei Pemetaan Udara dMRV Zona Sangkima", qty: "1 Paket", price: 70000000, total: 70000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-kutai-02",
+        date: "15 Jun 2025", 
+        amount: 35000000, 
+        category: "Pemeliharaan", 
+        desc: "Pemeliharaan rutin bibit pohon Ulin & pencegahan hama",
+        txHash: "0x7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c",
+        blockNumber: "#182500",
+        vendor: "KTH Sangkima Lestari",
+        items: [
+          { name: "Upah Penyiangan Gulma & Pemupukan Ulin", qty: "10 Orang", price: 3500000, total: 35000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-kutai-03",
+        date: "08 Apr 2025", 
+        amount: 220000000, 
+        category: "Restorasi", 
+        desc: "Pengadaan tanah humus & media tanam rehabilitasi tambang",
+        txHash: "0x1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e",
+        blockNumber: "#178900",
+        vendor: "CV Agro Reklamasi Kaltim",
+        items: [
+          { name: "Pengadaan Tanah Subur Humus Rawa", qty: "100 Truk", price: 1800000, total: 180000000 },
+          { name: "Pengadaan 5.000 Bibit Pohon Meranti Merah", qty: "5.000 Pohon", price: 8000, total: 40000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop"
+        ]
+      }
+    ]
+  },
+  {
+    id: "sabuk-hijau-sulsel",
+    name: "Sabuk Hijau Sulawesi Utara",
+    region: "Sulawesi Utara",
+    center: [1.3912, 124.8912],
+    zoom: 11,
+    area: "45.2K Ha",
+    rawAreaVal: 45200,
+    carbon: "3.12M tCO2e",
+    rawCarbonVal: 3120000,
+    ndvi: 0.72,
+    evi: 0.58,
+    coordinates: [
+      { lat: 1.522, lng: 124.782 },
+      { lat: 1.482, lng: 124.992 },
+      { lat: 1.252, lng: 124.952 },
+      { lat: 1.282, lng: 124.792 },
+      { lat: 1.412, lng: 124.722 }
+    ],
+    trendLabels: ["2021", "2022", "2023", "2024", "2025"],
+    trendData: [2.85, 2.92, 2.99, 3.06, 3.12],
+    
+    // Reforestation Success Monitoring Metrics
+    survivalRate: 0.821,
+    canopyHeight: 1.60,
+    bufferAllocated: 0.08,
+    bufferUsed: 0.0,
+    reforestationStatus: "Baik",
+    reforestationPartner: "Dinas Kehutanan Sulut & BKSDA Sulut",
+    reforestationSite: "Kaki Gunung Dua Saudara, Bitung",
+
+    // Financial Profile (IDR)
+    totalBudget: 2200000000,
+    disbursedBudget: 1800000000,
+    remainingBudget: 400000000,
+
+    // Reforestation Progress Timeline
+    currentYear: 3,
+    stages: [
+      { 
+        year: 1, 
+        title: "Tahun 1: Persiapan Bibit Agroforestri", 
+        milestone: "Pengadaan bibit tanaman pelindung & pemberdayaan warga", 
+        status: "completed",
+        canopyDensity: 25,
+        gsd: 2.5,
+        kthName: "KTH Lestari Dua Saudara Bitung",
+        farmerIncentive: 80000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 300,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 2, 
+        title: "Tahun 2: Penanaman Kaki Gunung", 
+        milestone: "Penanaman di kaki Gunung Dua Saudara Bitung", 
+        status: "completed",
+        canopyDensity: 42,
+        gsd: 2.2,
+        kthName: "KTH Lestari Dua Saudara Bitung",
+        farmerIncentive: 110000000,
+        incentiveStatus: "Telah Disalurkan (Verified)",
+        speCreditMinted: 700,
+        speStatus: "Terbit (Minted)"
+      },
+      { 
+        year: 3, 
+        title: "Tahun 3: Pemetaan Sensor Udara", 
+        milestone: "dMRV sensor & survey udara radar sensor", 
+        status: "ongoing",
+        canopyDensity: 58,
+        gsd: 1.8,
+        kthName: "KTH Lestari Dua Saudara Bitung",
+        farmerIncentive: 150000000,
+        incentiveStatus: "Tercairkan Sebagian (Proses)",
+        speCreditMinted: 1500,
+        speStatus: "Proses Verifikasi AI"
+      },
+      { 
+        year: 4, 
+        title: "Tahun 4: Sertifikasi Karbon Lestari", 
+        milestone: "Kelulusan masa kritis tanaman & pencatatan bursa", 
+        status: "upcoming",
+        canopyDensity: 0,
+        gsd: 1.5,
+        kthName: "KTH Lestari Dua Saudara Bitung",
+        farmerIncentive: 200000000,
+        incentiveStatus: "Menunggu Jadwal",
+        speCreditMinted: 0,
+        speStatus: "Menunggu Pertumbuhan"
+      }
+    ],
+
+    // Transaction History
+    disbursementHistory: [
+      { 
+        id: "tx-sulut-01",
+        date: "08 Jul 2025", 
+        amount: 30000000, 
+        category: "Monitoring", 
+        desc: "Survey lapangan & pemetaan sensor GPS Bitung",
+        txHash: "0x8e7f6d5c4b3a2f1e0d9c8b7a6f5e4d3c",
+        blockNumber: "#184400",
+        vendor: "Bitung GIS Survey",
+        items: [
+          { name: "Survei Pemetaan GPS & Ortofoto Lapangan", qty: "1 Paket", price: 30000000, total: 30000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-sulut-02",
+        date: "20 Jun 2025", 
+        amount: 18000000, 
+        category: "Pemeliharaan", 
+        desc: "Pengadaan pupuk kompos Kelompok Tani Dua Saudara",
+        txHash: "0x6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a",
+        blockNumber: "#183000",
+        vendor: "KTH Lestari Dua Saudara Bitung",
+        items: [
+          { name: "Pupuk Kompos Organik Bitung", qty: "60 Karung", price: 300000, total: 18000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop"
+        ]
+      },
+      { 
+        id: "tx-sulut-03",
+        date: "12 Mei 2025", 
+        amount: 90000000, 
+        category: "Restorasi", 
+        desc: "Pembelian bibit pohon pelindung kemiri & kopi hutan",
+        txHash: "0x4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e",
+        blockNumber: "#180500",
+        vendor: "BPDASHL Tondano",
+        items: [
+          { name: "Bibit Tanaman Agroforestri Kemiri Hutan", qty: "10.000 Pohon", price: 9000, total: 90000000 }
+        ],
+        proofImages: [
+          "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop"
+        ]
+      }
+    ]
+  }
+];
