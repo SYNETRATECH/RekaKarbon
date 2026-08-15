@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f0fdf4;
+  --color-brand-100: #dcfce7;
+  --color-brand-200: #bbf7d0;
+  --color-brand-300: #86efac;
+  --color-brand-400: #4ade80;
+  --color-brand-500: #22c55e;
+  --color-brand-600: #16a34a;
+  --color-brand-700: #15803d;
+  --color-brand-800: #166534;
+  --color-brand-900: #14532d;
+  --color-brand-950: #052e16;
+  
+  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+
+  /* Primary Green Gradient — 12 steps left-to-right */
+  --gradient-primary: linear-gradient(
+    to right,
+    #022C22, #022F24, #023126, #023428,
+    #02372A, #02392C, #033C2E, #033F30,
+    #034232, #034434, #034736, #034A38
+  );
+
+  /* Midpoint for solid fallback and hover states */
+  --color-primary: #033C2E;
+  --color-primary-dark: #022C22;
+  --color-primary-light: #034A38;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Custom Leaflet pulse marker animation */
+.pulse-marker {
+  background: #10b981;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Drawer sliding animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Simple fade animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+/* ─── Primary Gradient Utilities ─────────────────────────────────────────── */
+
+/* Solid background using gradient */
+.bg-primary-gradient {
+  background: var(--gradient-primary);
+}
+
+/* Hover darkens slightly — shift gradient to darker left stop */
+.hover\:bg-primary-gradient-dark:hover {
+  background: linear-gradient(
+    to right,
+    #011A15, #011E17, #02211A, #02251C,
+    #02281E, #022B20, #022D22, #023024,
+    #023226, #023528, #02382A, #033B2C
+  );
+}
+
+/* Text gradient clip (for brand name headings) */
+.text-primary-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Subtle backdrop tint (for overlays, status badges) */
+.bg-primary-tint {
+  background: rgba(3, 60, 46, 0.08);
+}
+
+/* Border using left-most stop of gradient */
+.border-primary-gradient {
+  border-color: var(--color-primary);
+}
+
+/* ─── Print Stylesheet for A4 PDF Certificate Export ──────────────────────── */
+@media print {
+  /* Hide all dashboard UI, maps, layout columns, header, and other modals */
+  body > * {
+    visibility: hidden !important;
+  }
+
+  /* Show only the active printable report modal wrapper and its children */
+  #report-modal-wrapper,
+  #report-modal-wrapper * {
+    visibility: visible !important;
+  }
+
+  /* Reset layout position for the report wrapper to fill the print viewport */
+  #report-modal-wrapper {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Expand modal content dialog to full size of printed paper */
+  #report-modal-content {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Hide print header/buttons and footer close actions */
+  #report-modal-header {
+    display: none !important;
+  }
+
+  /* Format document content for standard high contrast printing */
+  #report-document-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Force background colors and gradients to print correctly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page margins and layout styling */
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+}
+
