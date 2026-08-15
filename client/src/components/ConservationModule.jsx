@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useCarbonStore } from '../store/useCarbonStore';
 import NDVIGauge from './NDVIGauge';
 import { calculateGeodetics } from '../utils/geodetics';
@@ -5,10 +6,28 @@ import {
   FileText, 
   Activity, 
   CheckCircle2, 
-  Eye
+  Eye,
+  Download,
+  ShieldCheck,
+  Users,
+  Wallet,
+  ExternalLink,
+  Search
 } from 'lucide-react';
 
 export default function ConservationModule() {
+  const [blockchainSubTab, setBlockchainSubTab] = useState('buyers'); // 'buyers' | 'vendors'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search effect (250ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const {
     projects,
     activeIndex,
@@ -19,8 +38,12 @@ export default function ConservationModule() {
     setActiveTab,
     setTileType,
     setIsReportModalOpen,
+    setSelectedReportStage,
     setSelectedStage,
-    setSelectedTx
+    setSelectedTx,
+    setIsPublicReportOpen,
+    setPublicReportType,
+    searchVerichainHash
   } = useCarbonStore();
 
   const activeProj = projects[activeIndex];
@@ -31,7 +54,7 @@ export default function ConservationModule() {
   if (!activeProj) return null;
 
   return (
-    <div className="w-full md:w-96 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col overflow-hidden shrink-0 h-full">
+    <div className="w-full md:w-96 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col overflow-hidden shrink-0 h-auto md:h-full">
       
       {/* Tabs Switch Header */}
       <div className="flex border-b border-slate-200 shrink-0 text-xs font-extrabold">
@@ -58,7 +81,7 @@ export default function ConservationModule() {
       </div>
 
       {/* EDITOR TAB CONTENT */}
-      <div className={`flex-1 flex flex-col overflow-y-auto p-5 ${activeTab === 'editor' ? '' : 'hidden'}`}>
+      <div className={`flex-1 flex flex-col md:overflow-y-auto p-5 ${activeTab === 'editor' ? '' : 'hidden'}`}>
         <div className="space-y-4">
           {/* Selected Proyek Details Header */}
           <div className="flex items-start justify-between gap-2">
@@ -71,21 +94,16 @@ export default function ConservationModule() {
 
           {/* Action Button Row */}
           <div className="flex gap-2 w-full shrink-0 font-sans">
-            <button 
-              onClick={() => setIsReportModalOpen(true)}
-              className="flex-1 bg-primary-gradient hover:opacity-95 text-white text-[10px] font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+            <button
+              onClick={() => {
+                setPublicReportType('conservation');
+                setIsPublicReportOpen(true);
+              }}
+              className="w-full bg-primary-gradient hover:opacity-95 text-white text-[10px] font-extrabold py-2.5 px-3 rounded-xl border border-emerald-700 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center leading-none"
             >
-              <FileText className="w-3.5 h-3.5 text-[#00C48C]" />
-              <span>Sertifikat SPE-GRK</span>
+              <Download className="w-3.5 h-3.5 text-[#00C48C]" />
+              Unduh Laporan Audit Publik (PDF/CSV)
             </button>
-            <a 
-              href="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold py-2.5 px-3 rounded-xl border border-slate-800 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center leading-none flex items-center justify-center"
-            >
-              Laporan Biaya PDF ↗
-            </a>
           </div>
           
           {/* Selected Project Quick Metrics */}
@@ -249,15 +267,21 @@ export default function ConservationModule() {
             </div>
           </div>
 
-          {/* 6. Blockchain Financial Transparency */}
+          {/* 6. Blockchain Financial & Token Buyers Transparency */}
           <div className="border-t border-slate-200/50 pt-3 space-y-3 text-left">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">TRANSPARANSI KEUANGAN BLOCKCHAIN</span>
-            
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">TRANSPARANSI BLOCKCHAIN ON-CHAIN</span>
+              <span className="text-[8px] font-extrabold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-[#00C48C]" />
+                dMRV Ledger
+              </span>
+            </div>
+
             {/* Overview Budget Card */}
-            <div className="bg-slate-900 text-white p-3.5 rounded-xl space-y-2.5 font-sans shadow-sm">
+            <div className="bg-slate-900 text-white p-3.5 rounded-xl space-y-2.5 font-sans shadow-xs">
               <div className="flex justify-between items-baseline">
-                <span className="text-[8px] font-bold text-slate-400 uppercase">Total Anggaran Proyek</span>
-                <span className="font-mono text-xs font-bold text-emerald-450">
+                <span className="text-[8px] font-bold text-slate-400 uppercase">Total Anggaran Restorasi</span>
+                <span className="font-mono text-xs font-bold text-emerald-400">
                   Rp {activeProj.totalBudget.toLocaleString('id-ID')}
                 </span>
               </div>
@@ -278,30 +302,195 @@ export default function ConservationModule() {
               </div>
             </div>
 
-            {/* Recent Transactions List */}
-            <div className="space-y-2 border-t border-slate-100 pt-3">
-              <span className="text-[9px] font-bold text-slate-450 uppercase tracking-wider block">RIWAYAT PENCAIRAN BLOCKCHAIN</span>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                {activeProj.disbursementHistory.map((tx, idx) => (
-                  <div 
-                    key={tx.id || idx} 
-                    onClick={() => setSelectedTx({ project: activeProj, tx, index: idx })}
-                    className="bg-white hover:bg-emerald-50/40 p-2.5 rounded-xl border border-slate-200/60 hover:border-emerald-300 space-y-1.5 text-left cursor-pointer transition-all shadow-xs group"
-                  >
-                    <div className="flex items-center justify-between leading-none">
-                      <span className="text-[9px] font-bold text-slate-700">{tx.date}</span>
-                      <span className="font-mono text-[9px] font-black text-emerald-800">Rp {tx.amount.toLocaleString('id-ID')}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-600 font-medium leading-tight">{tx.desc}</p>
-                    <div className="flex items-center justify-between text-[8px] text-slate-400 pt-0.5">
-                      <span className="bg-slate-100 group-hover:bg-emerald-100 group-hover:text-emerald-950 px-1.5 py-0.2 rounded font-semibold transition-colors">{tx.category}</span>
-                      <span className="text-emerald-700 font-bold group-hover:underline flex items-center gap-0.5">
-                        Bukti & Nota ↗
-                      </span>
-                    </div>
-                  </div>
-                ))}
+            {/* Sub-Tab Navigation: Token Buyers vs Vendor Disbursement */}
+            <div className="space-y-2.5 border-t border-slate-100 pt-3">
+              
+              <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+                <button
+                  onClick={() => setBlockchainSubTab('buyers')}
+                  className={`flex-1 py-1.5 px-2 text-[9px] font-extrabold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                    blockchainSubTab === 'buyers'
+                      ? 'bg-white text-[var(--color-primary)] shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Users className="w-3 h-3 text-[#00C48C]" />
+                  Pembeli Token ({activeProj.tokenBuyers ? activeProj.tokenBuyers.length : 0})
+                </button>
+                <button
+                  onClick={() => setBlockchainSubTab('vendors')}
+                  className={`flex-1 py-1.5 px-2 text-[9px] font-extrabold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                    blockchainSubTab === 'vendors'
+                      ? 'bg-white text-[var(--color-primary)] shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Wallet className="w-3 h-3 text-emerald-600" />
+                  Vendor ({activeProj.disbursementHistory ? activeProj.disbursementHistory.length : 0})
+                </button>
               </div>
+
+              {/* TAB 1: TOKEN BUYERS / OFFSETTERS LEDGER */}
+              {blockchainSubTab === 'buyers' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                      DAFTAR PENEBUS & PEMBELI KREDIT KARBON
+                    </span>
+                    {debouncedSearch && (
+                      <span className="text-[8px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
+                        Hasil Filter: {activeProj.tokenBuyers ? activeProj.tokenBuyers.filter(tb => tb.companyName.toLowerCase().includes(debouncedSearch.toLowerCase()) || tb.sector.toLowerCase().includes(debouncedSearch.toLowerCase()) || tb.txHash.toLowerCase().includes(debouncedSearch.toLowerCase()) || tb.speCertificateId.toLowerCase().includes(debouncedSearch.toLowerCase())).length : 0}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Search Bar directly below the subtitle */}
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (searchTerm) searchVerichainHash(searchTerm);
+                    }}
+                    className="relative w-full my-1.5"
+                  >
+                    <span className="absolute inset-y-0 left-2.5 flex items-center text-slate-400">
+                      <Search className="w-3.5 h-3.5 text-[#00C48C]" />
+                    </span>
+                    <input 
+                      type="text" 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Cari pembeli, sektor, atau Tx Hash..." 
+                      className="w-full pl-8 pr-14 py-1.5 text-[10px] font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-[var(--color-primary)] transition-all"
+                    />
+                    <button 
+                      type="submit" 
+                      className="absolute inset-y-1 right-1 px-2 bg-[#00C48C] hover:bg-emerald-600 text-white rounded-lg text-[8px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                    >
+                      Cari
+                    </button>
+                  </form>
+                  
+                  {activeProj.tokenBuyers && activeProj.tokenBuyers.length > 0 ? (
+                    <div className="space-y-2 max-h-[380px] min-h-[260px] overflow-y-auto pr-1">
+                      {activeProj.tokenBuyers
+                        .filter(tb => {
+                          if (!debouncedSearch) return true;
+                          const q = debouncedSearch.toLowerCase();
+                          return tb.companyName.toLowerCase().includes(q) ||
+                                 tb.sector.toLowerCase().includes(q) ||
+                                 tb.txHash.toLowerCase().includes(q) ||
+                                 tb.speCertificateId.toLowerCase().includes(q);
+                        })
+                        .map((tb) => (
+                          <div 
+                            key={tb.id}
+                            onClick={() => searchVerichainHash(tb.txHash)}
+                            className="bg-white hover:bg-emerald-50/50 p-2.5 rounded-xl border border-slate-200 hover:border-emerald-300 space-y-1.5 text-left cursor-pointer transition-all shadow-2xs group"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h5 className="font-extrabold text-xs text-slate-900 group-hover:text-[var(--color-primary)] transition-colors leading-tight">
+                                  {tb.companyName}
+                                </h5>
+                                <span className="text-[8px] text-slate-400 font-semibold">{tb.sector}</span>
+                              </div>
+                              <span className="bg-emerald-100 text-emerald-900 text-[8px] font-black px-2 py-0.5 rounded-full shrink-0">
+                                {tb.tCO2e.toLocaleString('id-ID')} tCO2e
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1.5 rounded-lg text-[8.5px]">
+                              <div>
+                                <span className="text-[7.5px] text-slate-400 font-bold block">NILAI PENEBUSAN</span>
+                                <span className="font-mono font-black text-slate-800">Rp {tb.amountIDR.toLocaleString('id-ID')}</span>
+                              </div>
+                              <div>
+                                <span className="text-[7.5px] text-slate-400 font-bold block">SERTIFIKAT SPE-GRK</span>
+                                <span className="font-mono font-bold text-emerald-700">{tb.speCertificateId}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[8px] pt-0.5 border-t border-slate-100">
+                              <span className="text-slate-400 font-mono">Tgl: {tb.purchaseDate}</span>
+                              <span className="text-emerald-700 font-extrabold group-hover:underline flex items-center gap-0.5">
+                                Verifikasi On-Chain <ExternalLink className="w-2.5 h-2.5" />
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 p-4 rounded-xl text-center text-xs text-slate-400">
+                      Belum ada entitas pembeli token terverifikasi untuk kawasan ini.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: VENDOR DISBURSEMENT HISTORY */}
+              {blockchainSubTab === 'vendors' && (
+                <div className="space-y-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                    RIWAYAT ALOKASI & VENDOR LOKAL
+                  </span>
+                  
+                  {/* Search Bar directly below the vendor subtitle */}
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (searchTerm) searchVerichainHash(searchTerm);
+                    }}
+                    className="relative w-full my-1.5"
+                  >
+                    <span className="absolute inset-y-0 left-2.5 flex items-center text-slate-400">
+                      <Search className="w-3.5 h-3.5 text-[#00C48C]" />
+                    </span>
+                    <input 
+                      type="text" 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Cari vendor, kategori, atau Tx Hash..." 
+                      className="w-full pl-8 pr-14 py-1.5 text-[10px] font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-[var(--color-primary)] transition-all"
+                    />
+                    <button 
+                      type="submit" 
+                      className="absolute inset-y-1 right-1 px-2 bg-[#00C48C] hover:bg-emerald-600 text-white rounded-lg text-[8px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                    >
+                      Cari
+                    </button>
+                  </form>
+                  <div className="space-y-1.5 max-h-[380px] min-h-[260px] overflow-y-auto pr-1">
+                    {activeProj.disbursementHistory
+                      .filter(tx => {
+                        if (!debouncedSearch) return true;
+                        const q = debouncedSearch.toLowerCase();
+                        return tx.desc.toLowerCase().includes(q) ||
+                               tx.category.toLowerCase().includes(q) ||
+                               tx.txHash.toLowerCase().includes(q) ||
+                               (tx.vendor && tx.vendor.toLowerCase().includes(q));
+                      })
+                      .map((tx, idx) => (
+                        <div 
+                          key={tx.id || idx} 
+                          onClick={() => setSelectedTx({ project: activeProj, tx, index: idx })}
+                          className="bg-white hover:bg-emerald-50/40 p-2.5 rounded-xl border border-slate-200/60 hover:border-emerald-300 space-y-1.5 text-left cursor-pointer transition-all shadow-2xs group"
+                        >
+                          <div className="flex items-center justify-between leading-none">
+                            <span className="text-[9px] font-bold text-slate-700">{tx.date}</span>
+                            <span className="font-mono text-[9px] font-black text-emerald-800">Rp {tx.amount.toLocaleString('id-ID')}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-600 font-medium leading-tight">{tx.desc}</p>
+                          <div className="flex items-center justify-between text-[8px] text-slate-400 pt-0.5">
+                            <span className="bg-slate-100 group-hover:bg-emerald-100 group-hover:text-emerald-950 px-1.5 py-0.2 rounded font-semibold transition-colors">{tx.category}</span>
+                            <span className="text-emerald-700 font-bold group-hover:underline flex items-center gap-0.5">
+                              Bukti & Nota ↗
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>
@@ -309,7 +498,7 @@ export default function ConservationModule() {
       </div>
 
       {/* LIST TAB CONTENT */}
-      <div className={`flex-1 overflow-y-auto p-5 flex flex-col justify-between ${activeTab === 'stats' ? '' : 'hidden'}`}>
+      <div className={`flex-1 md:overflow-y-auto p-5 flex flex-col justify-between ${activeTab === 'stats' ? '' : 'hidden'}`}>
         <div className="space-y-4">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-left">SEMUA PROYEK</span>
           <div className="space-y-2">

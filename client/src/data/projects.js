@@ -170,6 +170,40 @@ export const PROJECTS_DATA = [
           "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop"
         ]
       }
+    ],
+
+    // Verified Public Token Buyers & Offset Ledger
+    tokenBuyers: [
+      {
+        id: "tb-baluran-01",
+        companyId: "semen-tuban",
+        companyName: "PT Semen Nusantara Tuban",
+        sector: "Industri Semen & Manufaktur",
+        tCO2e: 50000,
+        amountIDR: 13000000000,
+        pricePerTon: 260000,
+        purchaseDate: "10 Jul 2025",
+        speCertificateId: "SPE-BALURAN-2025-001",
+        txHash: "0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d",
+        blockNumber: "#184410",
+        verificationStatus: "Terverifikasi (KLHK On-Chain)",
+        auditor: "Rian Hermawan, M.T (Sucofindo)"
+      },
+      {
+        id: "tb-baluran-02",
+        companyId: "tekstil-maju-bandung",
+        companyName: "PT Tekstil Maju Bandung",
+        sector: "Manufaktur Tekstil",
+        tCO2e: 20000,
+        amountIDR: 5200000000,
+        pricePerTon: 260000,
+        purchaseDate: "05 Jul 2025",
+        speCertificateId: "SPE-BALURAN-2025-002",
+        txHash: "0x4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a",
+        blockNumber: "#184102",
+        verificationStatus: "Terverifikasi (KLHK On-Chain)",
+        auditor: "Hendry Setiawan, B.Eng (BSI Group)"
+      }
     ]
   },
   {
@@ -337,6 +371,40 @@ export const PROJECTS_DATA = [
           "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop"
         ]
       }
+    ],
+
+    // Verified Public Token Buyers & Offset Ledger
+    tokenBuyers: [
+      {
+        id: "tb-leuser-01",
+        companyId: "bio-kertas-karawang",
+        companyName: "PT Bio Kertas Karawang",
+        sector: "Pulp & Paper",
+        tCO2e: 50000,
+        amountIDR: 15500000000,
+        pricePerTon: 310000,
+        purchaseDate: "15 Jul 2025",
+        speCertificateId: "SPE-LEUSER-2025-001",
+        txHash: "0x1f2e3d4c5b6a7f8e9d0c1b2a3f4e5d6c",
+        blockNumber: "#184950",
+        verificationStatus: "Terverifikasi (KLHK On-Chain)",
+        auditor: "Dewi Lestari, M.Si (SPE-GRK KLHK)"
+      },
+      {
+        id: "tb-leuser-02",
+        companyId: "pltu-suralaya",
+        companyName: "PLTU Suralaya (Unit 1-8)",
+        sector: "Pembangkit Listrik (PLTU Batubara)",
+        tCO2e: 30000,
+        amountIDR: 9300000000,
+        pricePerTon: 310000,
+        purchaseDate: "12 Jul 2025",
+        speCertificateId: "SPE-LEUSER-2025-002",
+        txHash: "0x8e7f6d5c4b3a2f1e0d9c8b7a6f5e4d3c",
+        blockNumber: "#184710",
+        verificationStatus: "Terverifikasi Parsial (Proses Offset)",
+        auditor: "Dr. Ir. Ahmad Fauzi (KLHK)"
+      }
     ]
   },
   {
@@ -483,6 +551,25 @@ export const PROJECTS_DATA = [
         proofImages: [
           "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop"
         ]
+      }
+    ],
+
+    // Verified Public Token Buyers & Offset Ledger
+    tokenBuyers: [
+      {
+        id: "tb-riau-01",
+        companyId: "pupuk-palembang",
+        companyName: "PT Pupuk Sriwidjaja Palembang",
+        sector: "Petrokimia & Pupuk",
+        tCO2e: 15000,
+        amountIDR: 4500000000,
+        pricePerTon: 300000,
+        purchaseDate: "28 Jun 2025",
+        speCertificateId: "SPE-RIAU-2025-001",
+        txHash: "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d",
+        blockNumber: "#183600",
+        verificationStatus: "Terverifikasi (KLHK On-Chain)",
+        auditor: "Drs. Bambang Wijaya (KLHK)"
       }
     ]
   },
@@ -648,6 +735,25 @@ export const PROJECTS_DATA = [
           "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop"
         ]
       }
+    ],
+
+    // Verified Public Token Buyers & Offset Ledger
+    tokenBuyers: [
+      {
+        id: "tb-kutai-01",
+        companyId: "smelter-bontang",
+        companyName: "PT Smelter Alumunium Bontang",
+        sector: "Metalurgi & Pengolahan Logam",
+        tCO2e: 25000,
+        amountIDR: 7000000000,
+        pricePerTon: 280000,
+        purchaseDate: "20 Jun 2025",
+        speCertificateId: "SPE-KUTAI-2025-001",
+        txHash: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+        blockNumber: "#182800",
+        verificationStatus: "Terverifikasi (KLHK On-Chain)",
+        auditor: "Eko Prasetyo, M.T (SGS Indonesia)"
+      }
     ]
   },
   {
@@ -792,6 +898,25 @@ export const PROJECTS_DATA = [
         proofImages: [
           "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop"
         ]
+      }
+    ],
+
+    // Verified Public Token Buyers & Offset Ledger
+    tokenBuyers: [
+      {
+        id: "tb-sulut-01",
+        companyId: "smelter-morowali",
+        companyName: "PT Nickel Smelter Morowali",
+        sector: "Pengolahan Mineral & Smelter",
+        tCO2e: 10000,
+        amountIDR: 3100000000,
+        pricePerTon: 310000,
+        purchaseDate: "05 Jul 2025",
+        speCertificateId: "SPE-SULUT-2025-001",
+        txHash: "0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+        blockNumber: "#184150",
+        verificationStatus: "Terverifikasi (KLHK On-Chain)",
+        auditor: "Sophia Latjuba, M.Env.Sc (Mutu Agung)"
       }
     ]
   }

@@ -1,22 +1,88 @@
 import { useCarbonStore } from '../store/useCarbonStore';
-import { Globe, FileText, Printer, CheckCircle2, FileSpreadsheet, Eye, ShieldAlert } from 'lucide-react';
+import { 
+  Globe, 
+  FileText, 
+  Printer, 
+  CheckCircle2, 
+  FileSpreadsheet, 
+  Eye, 
+  ShieldAlert,
+  ShieldCheck,
+  Search,
+  Download,
+  ExternalLink,
+  QrCode,
+  Lock,
+  X,
+  Building2,
+  Users,
+  Wallet
+} from 'lucide-react';
 import droneFootageVideo from '../assets/drone_footage.mp4';
 
 export default function Modals() {
   const {
     projects,
+    companies,
     activeIndex,
     selectedStage,
     isReportModalOpen,
+    selectedReportStage,
     selectedTx,
     lightboxImage,
+    isVerichainExplorerOpen,
+    searchedTxData,
+    isPublicReportOpen,
+    publicReportType,
     setSelectedStage,
     setIsReportModalOpen,
+    setSelectedReportStage,
     setSelectedTx,
-    setLightboxImage
+    setLightboxImage,
+    setIsVerichainExplorerOpen,
+    setIsPublicReportOpen
   } = useCarbonStore();
 
   const activeProj = projects[activeIndex];
+
+  const handleDownloadCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Kategori,Nama Entitas/Proyek,Wilayah/Sektor,Volume/Kapasitas,Stok/Defisit,Status,Detail Penebus/Partner,TxHash/Sertifikat\n";
+
+    projects.forEach(p => {
+      const buyers = p.tokenBuyers ? p.tokenBuyers.map(b => `${b.companyName} (${b.tCO2e} tCO2e)`).join("; ") : "Belum ada";
+      csvContent += `Proyek Kehutanan,"${p.name}","${p.region}","${p.area}","${p.carbon}","${p.reforestationStatus}","${buyers}","${p.tokenBuyers?.[0]?.speCertificateId || '-'}"\n`;
+    });
+
+    companies.forEach(c => {
+      csvContent += `Industri Emisi,"${c.name}","${c.sector}","Emisi ${c.actualEmission} tCO2e","Defisit ${c.carbonDeficit} tCO2e","${c.complianceRating}","Partner: ${c.recommendedPartner}","Deadline: ${c.paymentDeadline}"\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `RekaKarbon_Public_Audit_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownloadJSON = () => {
+    const reportPayload = {
+      title: "RekaKarbon National Carbon Transparency Report",
+      generatedAt: new Date().toISOString(),
+      verifiedBy: "Verichain On-Chain dMRV & KLHK",
+      projects: projects,
+      companies: companies
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(reportPayload, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `RekaKarbon_Public_Audit_Report_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
 
   return (
     <>
@@ -162,6 +228,20 @@ export default function Modals() {
                     </div>
                   </div>
 
+                  {/* Button to open report for specific stage and trigger print directly */}
+                  <button
+                    onClick={() => {
+                      setSelectedReportStage(selectedStage.stage);
+                      setTimeout(() => {
+                        window.print();
+                      }, 150);
+                    }}
+                    className="w-full bg-primary-gradient hover:opacity-95 text-white text-[10px] font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 mt-4"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-[#00C48C]" />
+                    <span>Lihat Rapor Audit Sertifikasi</span>
+                  </button>
+
                 </div>
 
                 <div className="text-[9px] text-slate-400 leading-normal border-t border-slate-200 pt-3 text-left">
@@ -173,19 +253,23 @@ export default function Modals() {
 
           </div>
         </div>
-      )}
-
-      {/* 2. OFFICIAL AUDIT REPORT DOCUMENT MODAL */}
-      {isReportModalOpen && activeProj && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-2xl max-h-[90vh] flex flex-col relative animate-fade-in text-left">
+      )}      {/* 2. OFFICIAL AUDIT REPORT DOCUMENT MODAL */}
+      {activeProj && (
+        <div 
+          id="report-modal-wrapper" 
+          className={isReportModalOpen 
+            ? "fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[9999] flex items-center justify-center p-4 animate-fade-in"
+            : "absolute -left-[9999px] -top-[9999px] w-1 h-1 overflow-hidden pointer-events-none opacity-0"
+          }
+        >
+          <div id="report-modal-content" className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-2xl max-h-[90vh] flex flex-col relative animate-fade-in text-left">
             
             {/* Modal Header */}
-            <div className="h-14 bg-slate-900 text-white px-6 flex items-center justify-between shrink-0">
+            <div id="report-modal-header" className="h-14 bg-slate-900 text-white px-6 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-[#00C48C]" />
                 <span className="text-xs font-black tracking-wide uppercase">
-                  RAPOR DOKUMEN AUDIT SERTIFIKASI — {activeProj.name}
+                  RAPOR DOKUMEN AUDIT SERTIFIKASI — {activeProj.name} {selectedReportStage ? `(${selectedReportStage.title})` : ''}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -205,7 +289,7 @@ export default function Modals() {
             </div>
 
             {/* Document Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 text-slate-800 text-xs font-sans">
+            <div id="report-document-body" className="flex-1 overflow-y-auto p-6 space-y-6 text-slate-800 text-xs font-sans">
               
               {/* Document Letterhead */}
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
@@ -214,8 +298,10 @@ export default function Modals() {
                   <p className="text-[9px] text-slate-400 font-semibold mt-1">Platform E-Government Transparansi Karbon Indonesia</p>
                 </div>
                 <div className="text-right font-mono text-[9px] text-slate-500">
-                  <p className="font-bold text-slate-800">REF: RKR-AUDIT-2025-07</p>
-                  <p>Tanggal: 14 Juli 2025</p>
+                  <p className="font-bold text-slate-800">
+                    REF: {selectedReportStage ? `RKR-AUDIT-2025-07-T${selectedReportStage.year}` : 'RKR-AUDIT-2025-07'}
+                  </p>
+                  <p>Tanggal: {selectedReportStage ? `14 Juli ${2021 + selectedReportStage.year}` : '14 Juli 2025'}</p>
                 </div>
               </div>
 
@@ -231,14 +317,33 @@ export default function Modals() {
                     <span className="text-slate-400 text-[9px] block font-normal">Provinsi / Wilayah</span>
                     <span className="text-xs font-black text-slate-900">{activeProj.region}</span>
                   </div>
-                  <div>
-                    <span className="text-slate-400 text-[9px] block font-normal">Luas Terverifikasi GIS</span>
-                    <span className="text-xs font-black text-slate-900">{activeProj.area}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 text-[9px] block font-normal">Total Cadangan CO2</span>
-                    <span className="text-xs font-black text-slate-900">{activeProj.carbon}</span>
-                  </div>
+                  {selectedReportStage ? (
+                    <>
+                      <div>
+                        <span className="text-slate-400 text-[9px] block font-normal">Tahap Progress</span>
+                        <span className="text-xs font-black text-slate-900">{selectedReportStage.title}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 text-[9px] block font-normal">Kelompok Tani Pelaksana</span>
+                        <span className="text-xs font-black text-slate-900">{selectedReportStage.kthName}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-slate-400 text-[9px] block font-normal">Target Tahap Ini</span>
+                        <span className="text-xs font-black text-slate-900">{selectedReportStage.milestone}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <span className="text-slate-400 text-[9px] block font-normal">Luas Terverifikasi GIS</span>
+                        <span className="text-xs font-black text-slate-900">{activeProj.area}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 text-[9px] block font-normal">Total Cadangan CO2</span>
+                        <span className="text-xs font-black text-slate-900">{activeProj.carbon}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -255,26 +360,73 @@ export default function Modals() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-[10px] font-medium">
-                      <tr>
-                        <td className="p-2.5">Vegetation Health (NDVI)</td>
-                        <td className="p-2.5 font-mono font-bold text-emerald-700">{activeProj.ndvi.toFixed(2)}</td>
-                        <td className="p-2.5"><span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">Sangat Sehat</span></td>
-                      </tr>
-                      <tr>
-                        <td className="p-2.5">Enhanced Vegetation Index (EVI)</td>
-                        <td className="p-2.5 font-mono font-bold text-emerald-700">{activeProj.evi.toFixed(2)}</td>
-                        <td className="p-2.5"><span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">Optimal</span></td>
-                      </tr>
-                      <tr>
-                        <td className="p-2.5">Tingkat Kelangsungan Hidup Pohon</td>
-                        <td className="p-2.5 font-mono font-bold text-emerald-700">{(activeProj.survivalRate * 100).toFixed(1)}%</td>
-                        <td className="p-2.5"><span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">{activeProj.reforestationStatus}</span></td>
-                      </tr>
-                      <tr>
-                        <td className="p-2.5">Tinggi Kanopi Model (CHM)</td>
-                        <td className="p-2.5 font-mono font-bold text-slate-800">{activeProj.canopyHeight.toFixed(2)} m</td>
-                        <td className="p-2.5"><span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">Memenuhi (≥1.5m)</span></td>
-                      </tr>
+                      {selectedReportStage ? (
+                        <>
+                          <tr>
+                            <td className="p-2.5">Kerapatan Kanopi Vegetasi</td>
+                            <td className="p-2.5 font-mono font-bold text-emerald-700">{selectedReportStage.canopyDensity}%</td>
+                            <td className="p-2.5">
+                              <span className={`font-bold px-1.5 py-0.5 rounded text-[8px] ${
+                                selectedReportStage.canopyDensity >= 70 ? 'bg-emerald-50 text-emerald-700' : 'bg-yellow-50 text-yellow-755'
+                              }`}>
+                                {selectedReportStage.canopyDensity >= 70 ? 'Sangat Rapat' : selectedReportStage.canopyDensity >= 40 ? 'Rapat' : 'Fase Tumbuh'}
+                              </span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="p-2.5">Tinggi Kanopi Model (CHM)</td>
+                            <td className="p-2.5 font-mono font-bold text-slate-800">
+                              {selectedReportStage.year <= activeProj.currentYear ? `${activeProj.canopyHeight.toFixed(2)} m` : 'Dalam Pemantauan'}
+                            </td>
+                            <td className="p-2.5">
+                              <span className={`font-bold px-1.5 py-0.5 rounded text-[8px] ${
+                                selectedReportStage.year <= activeProj.currentYear ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                              }`}>
+                                {selectedReportStage.year <= activeProj.currentYear ? 'Memenuhi (≥1.5m)' : 'N/A'}
+                              </span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="p-2.5">Ground Sampling Distance (GSD) Drone</td>
+                            <td className="p-2.5 font-mono font-bold text-slate-800">{selectedReportStage.gsd} cm/px</td>
+                            <td className="p-2.5"><span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">Resolusi Tinggi</span></td>
+                          </tr>
+                          <tr>
+                            <td className="p-2.5">Sertifikasi SPE-GRK Terbit</td>
+                            <td className="p-2.5 font-mono font-bold text-emerald-700">+{selectedReportStage.speCreditMinted.toLocaleString('id-ID')} tCO2e</td>
+                            <td className="p-2.5">
+                              <span className={`font-bold px-1.5 py-0.5 rounded text-[8px] ${
+                                selectedReportStage.speStatus.includes('Terbit') ? 'bg-emerald-50 text-emerald-700' : 'bg-yellow-50 text-yellow-755'
+                              }`}>
+                                {selectedReportStage.speStatus}
+                              </span>
+                            </td>
+                          </tr>
+                        </>
+                      ) : (
+                        <>
+                          <tr>
+                            <td className="p-2.5">Vegetation Health (NDVI)</td>
+                            <td className="p-2.5 font-mono font-bold text-emerald-700">{activeProj.ndvi.toFixed(2)}</td>
+                            <td className="p-2.5"><span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">Sangat Sehat</span></td>
+                          </tr>
+                          <tr>
+                            <td className="p-2.5">Enhanced Vegetation Index (EVI)</td>
+                            <td className="p-2.5 font-mono font-bold text-emerald-700">{activeProj.evi.toFixed(2)}</td>
+                            <td className="p-2.5"><span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">Optimal</span></td>
+                          </tr>
+                          <tr>
+                            <td className="p-2.5">Tingkat Kelangsungan Hidup Pohon</td>
+                            <td className="p-2.5 font-mono font-bold text-emerald-700">{(activeProj.survivalRate * 100).toFixed(1)}%</td>
+                            <td className="p-2.5"><span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">{activeProj.reforestationStatus}</span></td>
+                          </tr>
+                          <tr>
+                            <td className="p-2.5">Tinggi Kanopi Model (CHM)</td>
+                            <td className="p-2.5 font-mono font-bold text-slate-800">{activeProj.canopyHeight.toFixed(2)} m</td>
+                            <td className="p-2.5"><span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">Memenuhi (≥1.5m)</span></td>
+                          </tr>
+                        </>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -282,39 +434,128 @@ export default function Modals() {
 
               {/* Section 3: Smart Contract & Finance Audit */}
               <div className="space-y-2">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">TRANSPARANSI DANA BLOCKCHAIN (SMART CONTRACT)</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">
+                  {selectedReportStage ? 'AUDIT BLOCKCHAIN & INSENTIF WARGA TAHAP INI' : 'TRANSPARANSI DANA BLOCKCHAIN (SMART CONTRACT)'}
+                </span>
                 <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl space-y-2 font-mono text-[10px]">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Total Anggaran Proyek:</span>
-                    <span className="font-bold text-slate-900">Rp {activeProj.totalBudget.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Dana Terpakai untuk Restorasi (62%):</span>
-                    <span className="font-bold text-emerald-700">Rp {(activeProj.totalBudget * 0.62).toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Buffer Pool Darurat (8%):</span>
-                    <span className="font-bold text-slate-700">Rp {(activeProj.totalBudget * 0.08).toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-slate-200 pt-1.5 text-slate-850">
-                    <span className="text-slate-600 font-sans font-bold">Mitra Pelaksana Lapangan:</span>
-                    <span className="font-bold font-sans text-xs">{activeProj.reforestationPartner}</span>
-                  </div>
+                  {selectedReportStage ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-sans">Insentif Kelompok Tani Terbayar:</span>
+                        <span className="font-bold text-emerald-700 font-mono">Rp {selectedReportStage.farmerIncentive.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-sans">Status Penyaluran Insentif:</span>
+                        <span className="font-bold text-slate-900 font-sans">{selectedReportStage.incentiveStatus}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                        <span className="text-slate-500 font-sans font-bold">Target Penanaman Pohon:</span>
+                        <span className="font-bold text-slate-700">{selectedReportStage.targetTrees ? selectedReportStage.targetTrees.toLocaleString('id-ID') : '50.000'} Batang</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-sans">Realisasi Penanaman:</span>
+                        <span className="font-bold text-emerald-700">{selectedReportStage.plantedTrees ? selectedReportStage.plantedTrees.toLocaleString('id-ID') : '—'} Batang</span>
+                      </div>
+                      {selectedReportStage.remainingTrees > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 font-sans">Sisa Penanaman:</span>
+                          <span className="font-bold text-rose-600">{selectedReportStage.remainingTrees.toLocaleString('id-ID')} Batang</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-sans">Total Anggaran Proyek:</span>
+                        <span className="font-bold text-slate-900">Rp {activeProj.totalBudget.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-sans">Dana Terpakai untuk Restorasi (62%):</span>
+                        <span className="font-bold text-emerald-700">Rp {(activeProj.totalBudget * 0.62).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-sans">Buffer Pool Darurat (8%):</span>
+                        <span className="font-bold text-slate-700">Rp {(activeProj.totalBudget * 0.08).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-slate-200 pt-1.5 text-slate-850">
+                        <span className="text-slate-600 font-sans font-bold">Mitra Pelaksana Lapangan:</span>
+                        <span className="font-bold font-sans text-xs">{activeProj.reforestationPartner}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Verification Stamp Footer */}
-              <div className="border-t border-slate-200 pt-4 flex items-center justify-between text-[9px] text-slate-500">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  <div>
-                    <p className="font-bold text-slate-800">STATUS VERIFIKASI SAKSI DIGITAL</p>
-                    <p>Verified on Hyperledger Besu Ledger ID: 0x9f8...3b2a</p>
+              {/* Signatures, Stamps, and QR Code Section */}
+              <div className="border-t border-slate-200 pt-6 grid grid-cols-3 gap-4 items-center mt-6">
+                {/* Left: QR Code & Block Verification */}
+                <div className="space-y-2 flex flex-col items-center md:items-start text-center md:text-left">
+                  <div className="p-1 bg-white border border-slate-200 rounded-lg inline-block">
+                    <svg className="w-16 h-16 text-slate-800" viewBox="0 0 100 100" fill="currentColor">
+                      <path d="M0,0 h30 v10 h-20 v20 h-10 z" />
+                      <path d="M70,0 h30 v30 h-10 v-20 h-20 z" />
+                      <path d="M0,70 h10 v20 h20 v10 h-30 z" />
+                      <path d="M70,90 v-20 h30 v30 h-30 z" />
+                      <rect x="5" y="5" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="4" />
+                      <rect x="75" y="5" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="4" />
+                      <rect x="5" y="75" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="4" />
+                      <rect x="12" y="12" width="6" height="6" />
+                      <rect x="82" y="12" width="6" height="6" />
+                      <rect x="12" y="82" width="6" height="6" />
+                      <rect x="35" y="15" width="8" height="8" />
+                      <rect x="45" y="25" width="6" height="6" />
+                      <rect x="55" y="10" width="10" height="4" />
+                      <rect x="15" y="45" width="12" height="6" />
+                      <rect x="40" y="40" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="3" />
+                      <rect x="46" y="46" width="4" height="4" />
+                      <rect x="70" y="45" width="8" height="8" />
+                      <rect x="80" y="55" width="10" height="10" />
+                      <rect x="35" y="70" width="8" height="12" />
+                      <rect x="50" y="80" width="15" height="6" />
+                      <rect x="75" y="80" width="8" height="8" />
+                    </svg>
+                  </div>
+                  <div className="text-[8px] font-mono text-slate-500 leading-tight">
+                    <p className="font-bold text-slate-700">VERIFIKASI ON-CHAIN</p>
+                    <p className="truncate w-36">Block: {selectedReportStage ? `#184${selectedReportStage.year}00` : '#184920'}</p>
+                    <p className="truncate w-36">Hash: 0x9f8a3b...2a{selectedReportStage ? selectedReportStage.year : 'c'}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-slate-700">Audit Kementerian LHK & Dinas Kehutanan</p>
-                  <p className="text-[9px] text-emerald-700 font-bold">Sertifikat SPE-GRK Terbit & Sah</p>
+
+                {/* Middle: Verifications Stamps */}
+                <div className="flex justify-center gap-2 relative">
+                  {/* Stempel 1: KLHK RI */}
+                  <div className="relative w-18 h-18 rounded-full border-2 border-dashed border-[#033C2E]/40 flex items-center justify-center text-center p-1 select-none transform -rotate-12 bg-white/20 backdrop-blur-xs">
+                    <div className="absolute inset-0.5 rounded-full border border-[#033C2E]/20"></div>
+                    <span className="text-[6px] font-black text-[#033C2E]/80 leading-tight uppercase tracking-wider text-center flex items-center justify-center h-full">
+                      KEMENTERIAN LHK<br/>VERIFIED<br/>AUDIT RI
+                    </span>
+                  </div>
+
+                  {/* Stempel 2: Dinas Kehutanan / Balai Taman Nasional */}
+                  <div className="relative w-18 h-18 rounded-full border-2 border-double border-emerald-600/40 flex items-center justify-center text-center p-1 select-none transform rotate-12 -ml-4 bg-white/20 backdrop-blur-xs">
+                    <div className="absolute inset-0.5 rounded-full border border-emerald-600/10"></div>
+                    <span className="text-[6px] font-black text-emerald-700/80 leading-tight uppercase tracking-wider text-center flex items-center justify-center h-full">
+                      BALAI TN<br/>{activeProj.name.replace('TN ', '')}<br/>SEKRETARIAT
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: Signature Placeholder */}
+                <div className="text-center space-y-1 relative">
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">DISETUJUI OLEH</span>
+                  
+                  {/* SVG Blue Ink Cursive Signature */}
+                  <div className="h-10 flex items-center justify-center relative">
+                    <svg className="w-24 h-10 text-blue-600 opacity-80" viewBox="0 0 100 50" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15,35 Q30,12 45,22 T75,12 T95,25 Q65,42 35,32 M20,22 Q50,18 80,28" />
+                    </svg>
+                  </div>
+
+                  <div className="text-[9px] leading-tight font-semibold">
+                    <p className="font-bold text-slate-800">Sutrisno, S.Hut., M.Si.</p>
+                    <p className="text-slate-400 text-[8px] font-medium">Kepala Balai Taman Nasional</p>
+                  </div>
                 </div>
               </div>
 
@@ -480,6 +721,327 @@ export default function Modals() {
           </div>
         </div>
       )}
+
+      {/* 5. VERICHAIN EXPLORER SEARCH MODAL (Item #3) */}
+      {isVerichainExplorerOpen && searchedTxData && (
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-2xl max-h-[90vh] flex flex-col animate-fade-in text-left">
+            
+            {/* Modal Header */}
+            <div className="h-16 bg-slate-900 text-white px-6 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary-gradient flex items-center justify-center shadow-xs">
+                  <ShieldCheck className="w-5 h-5 text-[#00C48C]" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white leading-none">Verichain On-Chain Explorer</h3>
+                  <span className="text-[9px] text-emerald-400 font-mono block mt-1">Status: Terverifikasi di Blockchain Ledger</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsVerichainExplorerOpen(false)}
+                className="text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded-xl transition-all cursor-pointer font-bold text-xs"
+              >
+                ✕ Tutup
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-5 text-xs">
+              
+              {/* On-Chain Hash Badge */}
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">TRANSACTION HASH (TX)</span>
+                  <span className="bg-emerald-100 text-emerald-900 text-[8px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5 text-emerald-700" />
+                    Immutable Proof
+                  </span>
+                </div>
+                <p className="font-mono text-xs font-bold text-slate-800 break-all bg-white p-2.5 rounded-xl border border-slate-200">
+                  {searchedTxData.item.txHash || '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d'}
+                </p>
+                <div className="flex justify-between text-[9px] text-slate-500 font-mono pt-1">
+                  <span>Block Height: {searchedTxData.item.blockNumber || '#184410'}</span>
+                  <span>Tanggal: {searchedTxData.item.purchaseDate || searchedTxData.item.date || '14 Jul 2025'}</span>
+                </div>
+              </div>
+
+              {/* Transaction / Buyer Details */}
+              <div className="space-y-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">DETAIL ENTITAS & AKSI OFFSETER</span>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white border border-slate-200 p-3.5 rounded-xl space-y-1">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">Nama Entitas Penebus</span>
+                    <h4 className="font-extrabold text-slate-900 text-xs">
+                      {searchedTxData.item.companyName || searchedTxData.item.vendor || 'PT Penebus Karbon Terverifikasi'}
+                    </h4>
+                    <span className="text-[9px] text-slate-500 block">{searchedTxData.item.sector || searchedTxData.item.category}</span>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 p-3.5 rounded-xl space-y-1">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">Volume & Nilai Transaksi</span>
+                    <p className="font-mono font-black text-emerald-700 text-xs">
+                      {searchedTxData.item.tCO2e ? `${searchedTxData.item.tCO2e.toLocaleString('id-ID')} tCO2e` : '12.500 tCO2e'}
+                    </p>
+                    <span className="font-mono text-[10px] text-slate-600 font-bold block">
+                      Rp {(searchedTxData.item.amountIDR || searchedTxData.item.amount || 3250000000).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl space-y-2">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-semibold text-slate-500">Proyek Kehutanan Penerima Alokasi:</span>
+                    <span className="font-extrabold text-slate-800">{searchedTxData.project ? searchedTxData.project.name : 'TN Baluran (Jawa Timur)'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-semibold text-slate-500">ID Sertifikat SPE-GRK:</span>
+                    <span className="font-mono font-bold text-emerald-700">{searchedTxData.item.speCertificateId || 'SPE-BALURAN-2025-001'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-semibold text-slate-500">Auditor Lembaga Independen:</span>
+                    <span className="font-bold text-slate-800">{searchedTxData.item.auditor || 'Sucofindo / KLHK Verichain System'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cryptographic QR Code Verification Badge */}
+              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl flex items-center justify-between gap-4">
+                <div className="space-y-1 text-left">
+                  <div className="flex items-center gap-1.5 text-emerald-900 font-extrabold text-xs">
+                    <ShieldCheck className="w-4 h-4 text-[#00C48C]" />
+                    Sertifikat Digital Terautentikasi
+                  </div>
+                  <p className="text-[9px] text-emerald-800 font-medium leading-relaxed">
+                    Data transaksi ini terdaftar permanen dalam Verichain Ledger RekaKarbon dan tidak dapat diubah oleh pihak manapun.
+                  </p>
+                </div>
+                <div className="w-14 h-14 bg-white p-1 rounded-xl border border-emerald-300 flex items-center justify-center shrink-0 shadow-2xs">
+                  <QrCode className="w-12 h-12 text-slate-800" />
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button 
+                onClick={() => setIsVerichainExplorerOpen(false)}
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 px-6 rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                Tutup Explorer
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 6. PUBLIC TRANSPARENCY REPORT PRINT & DOWNLOAD MODAL (Item #5) */}
+      {isPublicReportOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-4xl max-h-[92vh] flex flex-col animate-fade-in text-left">
+            
+            {/* Action Bar Header (Hidden when printing) */}
+            <div className="h-16 bg-slate-900 text-white px-6 flex items-center justify-between shrink-0 print:hidden">
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-[#00C48C]" />
+                <div>
+                  <h3 className="font-extrabold text-sm text-white leading-none">Pratinjau Laporan Transparansi Publik</h3>
+                  <span className="text-[9px] text-slate-400 block mt-1">Dokumen Cetak & Audit Karbon Resmi (UU No. 7/2021 HPP)</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => window.print()}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Cetak / PDF
+                </button>
+
+                <button 
+                  onClick={handleDownloadCSV}
+                  className="bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border border-slate-700"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  CSV Data
+                </button>
+
+                <button 
+                  onClick={handleDownloadJSON}
+                  className="bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border border-slate-700"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  JSON
+                </button>
+
+                <button 
+                  onClick={() => setIsPublicReportOpen(false)}
+                  className="text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded-xl transition-all cursor-pointer font-bold text-xs"
+                >
+                  ✕ Tutup
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Report Document Canvas */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 text-slate-900 bg-white font-sans text-xs print:p-0 print:overflow-visible">
+              
+              {/* Document Official Header */}
+              <div className="border-b-2 border-slate-900 pb-6 flex items-start justify-between">
+                <div className="space-y-1 text-left">
+                  <span className="text-[10px] font-black tracking-widest text-[#00C48C] uppercase block">REKAKARBON VERICHAIN PLATFORM</span>
+                  <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase">Laporan Transparansi Karbon & Kepatuhan Industri Nasional</h1>
+                  <p className="text-xs text-slate-500 font-medium">Diuji berdasarkan Regulasi Pajak Karbon UU No. 7 Tahun 2021 HPP & Sistem dMRV NusaCarbon</p>
+                </div>
+                <div className="text-right shrink-0 font-mono text-[10px] space-y-1">
+                  <span className="bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded font-bold block">VERIFIED PUBLIC AUDIT</span>
+                  <p className="text-slate-400">Tanggal: {new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                  <p className="text-slate-400">Status: Mainnet Live</p>
+                </div>
+              </div>
+
+              {/* Section 1: Executive Overview */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">1. Ringkasan Eksekutif Serapan & Emisi Karbon</h3>
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase block">Total Proyek Kehutanan</span>
+                    <span className="text-sm font-black text-emerald-800">{projects.length} Kawasan</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase block">Cadangan Karbon Hutan</span>
+                    <span className="text-sm font-black text-emerald-800">79.71M tCO2e</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase block">Industri Terpantau CEMS</span>
+                    <span className="text-sm font-black text-slate-800">{companies.length} Pabrik</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase block">Total Defisit Emisi</span>
+                    <span className="text-sm font-black text-rose-600">6.47M tCO2e</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Proyek Kehutanan & Detail Pembeli Token */}
+              <div className="space-y-3">
+                <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">2. Transparansi Proyek Kehutanan & Pembeli Token Karbon</h3>
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left border-collapse text-[10px]">
+                    <thead className="bg-slate-100 font-bold uppercase text-slate-600 border-b border-slate-200">
+                      <tr>
+                        <th className="p-3">Nama Kawasan Hutan</th>
+                        <th className="p-3">Wilayah</th>
+                        <th className="p-3">Luas Area</th>
+                        <th className="p-3">Stok Karbon</th>
+                        <th className="p-3">Kelangsungan Hidup</th>
+                        <th className="p-3">Daftar Penebus / Pembeli Token</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 font-medium">
+                      {projects.map((p) => (
+                        <tr key={p.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-extrabold text-slate-900">{p.name}</td>
+                          <td className="p-3 text-slate-500">{p.region}</td>
+                          <td className="p-3 font-mono">{p.area}</td>
+                          <td className="p-3 font-mono font-bold text-emerald-800">{p.carbon}</td>
+                          <td className="p-3">
+                            <span className="bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded font-bold text-[9px]">
+                              {(p.survivalRate * 100).toFixed(1)}% ({p.reforestationStatus})
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            {p.tokenBuyers && p.tokenBuyers.length > 0 ? (
+                              <div className="space-y-1">
+                                {p.tokenBuyers.map((tb) => (
+                                  <div key={tb.id} className="font-mono text-[9px] text-slate-800">
+                                    <span className="font-bold text-slate-900">{tb.companyName}</span> ({tb.tCO2e.toLocaleString('id-ID')} tCO2e)
+                                    <span className="text-slate-400 block text-[8px]">SPE: {tb.speCertificateId}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic">Belum ada transaksi</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Section 3: Monitoring Emisi Industri */}
+              <div className="space-y-3">
+                <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">3. Status Kepatuhan Industri & Defisit Karbon Korporat</h3>
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left border-collapse text-[10px]">
+                    <thead className="bg-slate-100 font-bold uppercase text-slate-600 border-b border-slate-200">
+                      <tr>
+                        <th className="p-3">Nama Perusahaan / Industri</th>
+                        <th className="p-3">Sektor</th>
+                        <th className="p-3">Emisi Aktual</th>
+                        <th className="p-3">Batas Kuota</th>
+                        <th className="p-3">Defisit Karbon</th>
+                        <th className="p-3">Estimasi Denda UU HPP</th>
+                        <th className="p-3">Status Kepatuhan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 font-medium">
+                      {companies.map((c) => (
+                        <tr key={c.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-extrabold text-slate-900">{c.name}</td>
+                          <td className="p-3 text-slate-500">{c.sector}</td>
+                          <td className="p-3 font-mono text-slate-800">{c.actualEmission.toLocaleString('id-ID')} t</td>
+                          <td className="p-3 font-mono text-slate-500">{c.emissionCap.toLocaleString('id-ID')} t</td>
+                          <td className="p-3 font-mono font-bold text-rose-600">{c.carbonDeficit.toLocaleString('id-ID')} t</td>
+                          <td className="p-3 font-mono font-black text-rose-700">Rp {(c.offsetCostIDR).toLocaleString('id-ID')}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-0.5 rounded font-extrabold text-[8px] ${
+                              c.paymentStatus === 'paid' 
+                                ? 'bg-emerald-100 text-emerald-900' 
+                                : 'bg-rose-100 text-rose-900'
+                            }`}>
+                              {c.complianceRating}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Document Official Footer & Digital Signature */}
+              <div className="border-t border-slate-200 pt-6 flex items-center justify-between text-[9px] text-slate-500">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-slate-100 p-1 rounded-lg border border-slate-300 flex items-center justify-center shrink-0">
+                    <QrCode className="w-10 h-10 text-slate-800" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-slate-800">Autentikasi Digital On-Chain RekaKarbon</p>
+                    <p className="text-slate-400">Verichain Protocol ID: VCH-2025-NAT-09128</p>
+                  </div>
+                </div>
+
+                <div className="text-right space-y-1">
+                  <p className="font-bold text-slate-800">Direktorat Pengendalian Kerusakan Lingkungan</p>
+                  <p className="text-slate-400">Kementerian Lingkungan Hidup dan Kehutanan (KLHK)</p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
     </>
   );
 }
+

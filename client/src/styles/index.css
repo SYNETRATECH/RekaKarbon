@@ -132,3 +132,74 @@
 .border-primary-gradient {
   border-color: var(--color-primary);
 }
+
+/* ─── Print Stylesheet for A4 PDF Certificate Export ──────────────────────── */
+@media print {
+  /* Hide all dashboard UI, maps, layout columns, header, and other modals */
+  body > * {
+    visibility: hidden !important;
+  }
+
+  /* Show only the active printable report modal wrapper and its children */
+  #report-modal-wrapper,
+  #report-modal-wrapper * {
+    visibility: visible !important;
+  }
+
+  /* Reset layout position for the report wrapper to fill the print viewport */
+  #report-modal-wrapper {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Expand modal content dialog to full size of printed paper */
+  #report-modal-content {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Hide print header/buttons and footer close actions */
+  #report-modal-header {
+    display: none !important;
+  }
+
+  /* Format document content for standard high contrast printing */
+  #report-document-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Force background colors and gradients to print correctly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page margins and layout styling */
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+}
+

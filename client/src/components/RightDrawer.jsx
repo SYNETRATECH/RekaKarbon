@@ -1,13 +1,14 @@
 import { useCarbonStore } from '../store/useCarbonStore';
-import { Map as MapIcon, Building2, Globe, X } from 'lucide-react';
-import brandIcon from '../assets/icon.svg';
+import { Map as MapIcon, Building2, Globe, X, LogIn } from 'lucide-react';
+import brandIcon from '../assets/icon.png';
 
 export default function RightDrawer() {
   const {
     activeModule,
     setActiveModule,
     isDrawerOpen,
-    setIsDrawerOpen
+    setIsDrawerOpen,
+    setIsLoginModalOpen
   } = useCarbonStore();
 
   if (!isDrawerOpen) return null;
@@ -27,9 +28,9 @@ export default function RightDrawer() {
           <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <img src={brandIcon} alt="RekaKarbon Logo" className="w-8 h-8 rounded-xl shadow-xs object-contain" />
-              <div>
+              <div className="flex flex-col space-y-0.5 text-left">
                 <h1 className="font-extrabold text-slate-900 tracking-tight text-sm leading-none">REKAKARBON</h1>
-                <span className="text-[8px] text-slate-400 font-bold tracking-wider uppercase">Menu Kontrol</span>
+                <span className="text-[8px] text-slate-400 font-bold tracking-wider uppercase leading-none">Menu Kontrol</span>
               </div>
             </div>
             <button 
@@ -82,10 +83,35 @@ export default function RightDrawer() {
                 </div>
               </button>
             </nav>
+
+            <div className="h-px bg-slate-100 my-4"></div>
+
+            {/* Login & Portal Authentication */}
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest block px-3">
+              PORTAL OTENTIKASI ADMIN
+            </span>
+            <div className="pt-1">
+              <button 
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                  setIsLoginModalOpen(true);
+                }}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all font-bold text-xs shadow-md cursor-pointer group active:scale-95 border border-slate-800"
+              >
+                <div className="flex items-center gap-3 text-left">
+                  <LogIn className="w-4 h-4 text-[#00C48C] group-hover:scale-110 transition-transform" />
+                  <div>
+                    <p className="leading-none">Masuk Portal Admin</p>
+                    <span className="text-[8px] text-emerald-400 font-semibold block mt-1">Dinas / Perusahaan / Auditor</span>
+                  </div>
+                </div>
+                <span className="text-[10px] text-emerald-400 font-extrabold group-hover:translate-x-0.5 transition-transform">↗</span>
+              </button>
+            </div>
           </div>
           
           {/* Public Access Banner */}
-          <div className="px-4">
+          <div className="px-4 mb-4">
             <div className="bg-primary-tint border border-emerald-100 p-4 rounded-2xl space-y-2 text-left">
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />

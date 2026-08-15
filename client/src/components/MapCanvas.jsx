@@ -24,7 +24,8 @@ export default function MapCanvas() {
     activeIndex,
     selectedCompanyIndex,
     tileType,
-    setSelectedCompanyIndex
+    setSelectedCompanyIndex,
+    setActiveIndex
   } = useCarbonStore();
 
   const activeProj = projects[activeIndex];
@@ -113,36 +114,82 @@ export default function MapCanvas() {
     markersRef.current = [];
 
     if (activeModule === 'conservation') {
-      if (!activeCoords || activeCoords.length === 0) return;
+      // 3. Draw Polygons for all projects
+      const polygonGroup = L.layerGroup().addTo(map);
+      polygonLayerRef.current = polygonGroup;
 
-      // 3. Draw Conservation Polygon
-      const latLngs = activeCoords.map((c) => [c.lat, c.lng]);
-      const polygon = L.polygon(latLngs, {
-        color: '#059669', // Emerald 600
-        fillColor: '#10b981', // Emerald 500
-        fillOpacity: 0.25,
-        weight: 3
-      }).addTo(map);
+      projects.forEach((proj, idx) => {
+        const isActive = idx === activeIndex;
+        const coords = proj.coordinates;
+        if (!coords || coords.length === 0) return;
 
-      polygonLayerRef.current = polygon;
+        const latLngs = coords.map((c) => [c.lat, c.lng]);
+        const polygon = L.polygon(latLngs, {
+          color: isActive ? '#059669' : '#94a3b8', // Emerald 600 vs Slate 400
+          fillColor: isActive ? '#10b981' : '#cbd5e1', // Emerald 500 vs Slate 300
+          fillOpacity: isActive ? 0.25 : 0.15,
+          weight: isActive ? 3 : 2
+        }).addTo(polygonGroup);
 
-      // 4. Draw marker vertices
-      activeCoords.forEach((coord, idx) => {
-        const markerIcon = L.divIcon({
-          className: 'pulse-marker',
-          html: `<div class="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-md animate-pulse"></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8]
+        // Click handler to select this project on map
+        polygon.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          setActiveIndex(idx);
         });
 
-        const marker = L.marker([coord.lat, coord.lng], { icon: markerIcon }).addTo(map);
-        marker.bindPopup(`
-          <div style="font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-size: 11px; padding: 4px;">
-            <p style="font-weight: bold; color: #022c22; margin: 0 0 4px 0;">Titik Geometri #${idx + 1}</p>
-            <p style="font-family: monospace; color: #475569; margin: 0;">Lat: ${coord.lat.toFixed(5)}, Lng: ${coord.lng.toFixed(5)}</p>
+        // Tooltip: show project name on hover
+        polygon.bindTooltip(`
+          <div style="font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-size: 11px; padding: 2px 4px;">
+            <span style="font-weight: 800; color: ${isActive ? '#022c22' : '#334155'};">${proj.name}</span>
+            ${!isActive ? '<br/><span style="font-size: 9px; color: #64748b;">Klik untuk memilih proyek ini</span>' : ''}
           </div>
-        `);
-        markersRef.current.push(marker);
+        `, {
+          sticky: true,
+          direction: 'top',
+          offset: [0, -6]
+        });
+
+        // Hover effects for non-active polygons
+        polygon.on('mouseover', () => {
+          if (!isActive) {
+            polygon.setStyle({
+              color: '#64748b',
+              fillOpacity: 0.3,
+              weight: 2.5
+            });
+            if (polygon._path) polygon._path.style.cursor = 'pointer';
+          }
+        });
+        polygon.on('mouseout', () => {
+          if (!isActive) {
+            polygon.setStyle({
+              color: '#94a3b8',
+              fillOpacity: 0.15,
+              weight: 2
+            });
+          }
+        });
+
+        // 4. Draw marker vertices only for the active project
+        if (isActive) {
+          coords.forEach((coord, markerIdx) => {
+            const markerIcon = L.divIcon({
+              className: 'pulse-marker',
+              html: `<div class="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-md animate-pulse"></div>`,
+              iconSize: [16, 16],
+              iconAnchor: [8, 8]
+            });
+
+            const marker = L.marker([coord.lat, coord.lng], { icon: markerIcon }).addTo(map);
+            marker.bindPopup(`
+              <div style="font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-size: 11px; padding: 4px;">
+                <p style="font-weight: bold; color: #022c22; margin: 0 0 4px 0;">Titik Geometri #${markerIdx + 1}</p>
+                <p style="font-family: monospace; color: #475569; margin: 0;">Lat: ${coord.lat.toFixed(5)}, Lng: ${coord.lng.toFixed(5)}</p>
+              </div>
+            `);
+            markersRef.current.push(marker);
+          });
+        }
       });
     } else if (activeModule === 'corporate') {
       // Draw Corporate Companies Markers
@@ -236,13 +283,14 @@ export default function MapCanvas() {
         }
       }
     }
-  }, [activeCoords, activeModule, companies, selectedCompanyIndex]);
+  }, [activeCoords, activeModule, companies, selectedCompanyIndex, projects, activeIndex, setActiveIndex]);
 
   // Center camera bounds or focus area
   const handleFocusBounds = () => {
     if (!mapInstanceRef.current) return;
-    if (activeModule === 'conservation' && polygonLayerRef.current) {
-      mapInstanceRef.current.fitBounds(polygonLayerRef.current.getBounds(), { padding: [40, 40] });
+    if (activeModule === 'conservation' && activeCoords && activeCoords.length > 0) {
+      const latLngs = activeCoords.map((c) => [c.lat, c.lng]);
+      mapInstanceRef.current.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40] });
     } else if (activeModule === 'corporate') {
       const selectedComp = companies[selectedCompanyIndex];
       if (selectedComp) {

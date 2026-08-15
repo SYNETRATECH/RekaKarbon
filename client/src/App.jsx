@@ -5,8 +5,10 @@ import RightDrawer from './components/RightDrawer';
 import ConservationModule from './components/ConservationModule';
 import CorporateModule from './components/CorporateModule';
 import Modals from './components/Modals';
-import { Menu, Globe, Building2 } from 'lucide-react';
-import brandIcon from './assets/icon.svg';
+import LoginModal from './components/LoginModal';
+import AdminPortalView from './components/AdminPortalView';
+import { Menu, Globe, Building2, Search, ShieldCheck } from 'lucide-react';
+import brandIcon from './assets/icon.png';
 
 function LandingPage() {
   const {
@@ -18,16 +20,16 @@ function LandingPage() {
   const unpaidCount = companies.filter(c => c.paymentStatus === 'unpaid').length;
 
   return (
-    <div className="bg-slate-100 font-sans text-slate-800 antialiased overflow-hidden h-screen flex flex-col w-full relative">
+    <div className="bg-slate-100 font-sans text-slate-800 antialiased md:overflow-hidden md:h-screen flex flex-col w-full relative min-h-screen overflow-y-auto md:overflow-y-hidden">
       
       {/* HEADER SECTION (Without Left Sidebar, Control Button on the Right) */}
       <header className="h-16 bg-white border-b border-slate-200 px-6 md:px-8 flex items-center justify-between shrink-0 z-30 shadow-xs">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-3">
           <img src={brandIcon} alt="RekaKarbon Logo" className="w-9 h-9 rounded-xl shadow-xs object-contain" />
-          <div>
+          <div className="flex flex-col space-y-0.5 text-left">
             <h1 className="font-extrabold text-primary-gradient tracking-tight text-base leading-none">REKAKARBON</h1>
-            <span className="text-[9px] text-[#00C48C] font-bold tracking-wider uppercase">Transparency Portal</span>
+            <span className="text-[9px] text-[#00C48C] font-bold tracking-wider uppercase leading-none">Transparency Portal</span>
           </div>
         </div>
 
@@ -67,10 +69,8 @@ function LandingPage() {
         {/* LEFT COLUMN: MAP CANVAS */}
         <div className="flex-1 flex flex-col min-h-0 gap-4">
           {/* Main Titles */}
-          <div className="space-y-1 shrink-0 text-left">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
-              {activeModule === 'conservation' ? 'REKAKARBON TRANSPARENCY HUB — MODUL 1' : 'REKAKARBON TRANSPARENCY HUB — MODUL 2'}
-            </span>
+          <div className="space-y-2 shrink-0 text-left">
+
             <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-none flex items-center gap-2">
               {activeModule === 'conservation' ? (
                 <>
@@ -98,7 +98,7 @@ function LandingPage() {
         </div>
 
         {/* RIGHT COLUMN: MODULE METRICS WIDGET */}
-        <div className="h-full flex flex-col shadow-sm rounded-2xl overflow-hidden min-h-0">
+        <div className="h-auto md:h-full flex flex-col shadow-sm rounded-2xl overflow-hidden shrink-0">
           {activeModule === 'conservation' ? <ConservationModule /> : <CorporateModule />}
         </div>
       </main>
@@ -110,11 +110,25 @@ function LandingPage() {
   );
 }
 
+function MainApp() {
+  const { userRole } = useCarbonStore();
+
+  return (
+    <>
+      {userRole ? <AdminPortalView /> : <LandingPage />}
+      <LoginModal />
+    </>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<MainApp />} />
+        <Route path="/portal" element={<MainApp />} />
+        <Route path="/portal/:role" element={<MainApp />} />
+        <Route path="/portal/:role/:tab" element={<MainApp />} />
       </Routes>
     </BrowserRouter>
   );
