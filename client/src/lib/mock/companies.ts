@@ -1,4 +1,6 @@
-export const COMPANIES_DATA = [
+import type { Company } from '../../types';
+
+export const COMPANIES_DATA: Company[] = [
   {
     id: 'pltu-suralaya',
     name: 'PLTU Suralaya (Unit 1-8)',

@@ -1,4 +1,6 @@
-export const PROJECTS_DATA = [
+import type { Project } from '../../types';
+
+export const PROJECTS_DATA: Project[] = [
   {
     id: 'tn-baluran',
     name: 'TN Baluran',
