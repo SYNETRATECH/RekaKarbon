@@ -2,12 +2,18 @@
   "name": "RekaKarbon",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "engines": {
     "node": ">=22.0.0",
     "pnpm": ">=11.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:client": "pnpm --filter @rekakarbon/client dev",
+    "build:client": "pnpm --filter @rekakarbon/client build",
+    "dev:server": "pnpm --filter server start:dev",
+    "build:server": "pnpm --filter server build",
+    "dev": "pnpm dev:server & pnpm dev:client",
+    "build": "pnpm build:client && pnpm build:server",
     "prepare": "husky"
   },
   "keywords": [],

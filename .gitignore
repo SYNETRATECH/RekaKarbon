@@ -19,6 +19,9 @@ out/
 
 # production
 build/
+dist/
+client/dist/
+server/dist/
 
 # misc
 .DS_Store
