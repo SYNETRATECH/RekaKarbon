@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useCarbonStore } from './store/useCarbonStore';
 import MapCanvas from './components/MapCanvas';
@@ -11,25 +12,28 @@ import { Menu, Globe, Building2, Search, ShieldCheck } from 'lucide-react';
 import brandIcon from './assets/icon.png';
 
 function LandingPage() {
-  const {
-    activeModule,
-    companies,
-    setIsDrawerOpen
-  } = useCarbonStore();
+  const { activeModule, companies, setIsDrawerOpen } = useCarbonStore();
 
-  const unpaidCount = companies.filter(c => c.paymentStatus === 'unpaid').length;
+  const unpaidCount = companies.filter((c) => c.paymentStatus === 'unpaid').length;
 
   return (
     <div className="bg-slate-100 font-sans text-slate-800 antialiased md:overflow-hidden md:h-screen flex flex-col w-full relative min-h-screen overflow-y-auto md:overflow-y-hidden">
-      
       {/* HEADER SECTION (Without Left Sidebar, Control Button on the Right) */}
       <header className="h-16 bg-white border-b border-slate-200 px-6 md:px-8 flex items-center justify-between shrink-0 z-30 shadow-xs">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-3">
-          <img src={brandIcon} alt="RekaKarbon Logo" className="w-9 h-9 rounded-xl shadow-xs object-contain" />
+          <img
+            src={brandIcon}
+            alt="RekaKarbon Logo"
+            className="w-9 h-9 rounded-xl shadow-xs object-contain"
+          />
           <div className="flex flex-col space-y-0.5 text-left">
-            <h1 className="font-extrabold text-primary-gradient tracking-tight text-base leading-none">REKAKARBON</h1>
-            <span className="text-[9px] text-[#00C48C] font-bold tracking-wider uppercase leading-none">Transparency Portal</span>
+            <h1 className="font-extrabold text-primary-gradient tracking-tight text-base leading-none">
+              REKAKARBON
+            </h1>
+            <span className="text-[9px] text-[#00C48C] font-bold tracking-wider uppercase leading-none">
+              Transparency Portal
+            </span>
           </div>
         </div>
 
@@ -65,12 +69,10 @@ function LandingPage() {
 
       {/* CORE WORKSPACE SCREEN */}
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden p-6 md:p-8 gap-6">
-        
         {/* LEFT COLUMN: MAP CANVAS */}
         <div className="flex-1 flex flex-col min-h-0 gap-4">
           {/* Main Titles */}
           <div className="space-y-2 shrink-0 text-left">
-
             <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-none flex items-center gap-2">
               {activeModule === 'conservation' ? (
                 <>
@@ -85,7 +87,7 @@ function LandingPage() {
               )}
             </h2>
             <p className="text-xs text-slate-500">
-              {activeModule === 'conservation' 
+              {activeModule === 'conservation'
                 ? 'Visualisasi real-time kondisi kawasan hutan restorasi berbasis GIS dan sensor citra satelit NusaCarbon API.'
                 : 'Pengawasan emisi cerobong industri nasional terintegrasi CEMS dan transparansi status penebusan offset karbon.'}
             </p>
@@ -111,7 +113,19 @@ function LandingPage() {
 }
 
 function MainApp() {
-  const { userRole } = useCarbonStore();
+  const { userRole, initializeData, isDataLoaded } = useCarbonStore();
+
+  useEffect(() => {
+    initializeData();
+  }, [initializeData]);
+
+  if (!isDataLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-100 text-slate-500 font-bold">
+        Memuat Data Sistem RekaKarbon...
+      </div>
+    );
+  }
 
   return (
     <>
