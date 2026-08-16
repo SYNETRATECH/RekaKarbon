@@ -1,0 +1,64 @@
+name: Pull Request Verification
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify Code Quality & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.10.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The codebase is not yet uniformly formatted; this step is informational
+      # for now. Remove `continue-on-error` after running `pnpm format:write`.
+      - name: Check code formatting (Prettier)
+        run: pnpm format:check
+        continue-on-error: true
+
+      - name: Typecheck client & server
+        run: |
+          pnpm client:typecheck
+          pnpm server:typecheck
+
+      - name: Lint server
+        run: pnpm server:lint
+
+      - name: Test server
+        run: pnpm server:test
+
+      - name: Lint client
+        run: pnpm client:lint
+
+      - name: Test client (unit & architecture)
+        run: |
+          pnpm --filter ./client test
+          pnpm --filter ./client test:arch
+
+      - name: Build server
+        run: pnpm server:build
+
+      - name: Build client
+        run: pnpm client:build
