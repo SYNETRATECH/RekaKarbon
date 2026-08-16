@@ -8,7 +8,7 @@ import CorporateModule from './components/CorporateModule';
 import Modals from './components/Modals';
 import LoginModal from './components/LoginModal';
 import AdminPortalView from './components/AdminPortalView';
-import { Menu, Globe, Building2, Search, ShieldCheck } from 'lucide-react';
+import { Menu, Globe, Building2 } from 'lucide-react';
 import brandIcon from './assets/icon.png';
 
 function LandingPage() {
@@ -18,7 +18,7 @@ function LandingPage() {
 
   return (
     <div className="bg-slate-100 font-sans text-slate-800 antialiased md:overflow-hidden md:h-screen flex flex-col w-full relative min-h-screen overflow-y-auto md:overflow-y-hidden">
-      {/* HEADER SECTION (Without Left Sidebar, Control Button on the Right) */}
+      {/* HEADER SECTION */}
       <header className="h-16 bg-white border-b border-slate-200 px-6 md:px-8 flex items-center justify-between shrink-0 z-30 shadow-xs">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-3">

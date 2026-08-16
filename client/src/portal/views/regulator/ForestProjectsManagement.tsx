@@ -1,13 +1,10 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import {
-  FolderPlus,
   TreePine,
   Edit2,
-  Trash2,
   Plus,
   CheckCircle2,
-  AlertTriangle,
   Clock,
   MapPin,
   X,
@@ -17,16 +14,9 @@ import {
   FileText,
   Download,
   Users,
-  Award,
-  ChevronRight,
-  Sparkles,
-  Video,
   Eye,
-  Globe,
   Wallet,
-  ExternalLink,
   Building2,
-  Check,
 } from 'lucide-react';
 import { INITIAL_FOREST_PROJECTS } from '../../../lib/mock/regulator';
 
@@ -34,7 +24,6 @@ export default function ForestProjectsManagement() {
   const {
     forestProjects,
     projects: landingProjects,
-    deleteForestProject,
     setEditingProjectData,
     setAdminActiveTab,
     setSelectedStage,
@@ -43,34 +32,28 @@ export default function ForestProjectsManagement() {
   const projects = forestProjects?.length > 0 ? forestProjects : INITIAL_FOREST_PROJECTS;
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-  const [selectedProgressProject, setSelectedProgressProject] = useState(null);
-  const [blockchainSubTab, setBlockchainSubTab] = useState('buyers'); // 'buyers' | 'vendors'
+  const [selectedProgressProject, setSelectedProgressProject] = useState<any>(null);
+  const [blockchainSubTab, setBlockchainSubTab] = useState<'buyers' | 'vendors'>('buyers');
 
   const openCreatePage = () => {
     setEditingProjectData(null);
     setAdminActiveTab('project-editor');
   };
 
-  const openEditPage = (prj) => {
+  const openEditPage = (prj: any) => {
     setEditingProjectData(prj);
     setAdminActiveTab('project-editor');
   };
 
-  const handleDelete = (id) => {
-    deleteForestProject(id);
-    setDeleteConfirmId(null);
-  };
-
   const filteredProjects = projects.filter(
-    (p) =>
+    (p: any) =>
       !searchTerm ||
       p.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.assignedKTH.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getProjectProgressData = (prj) => {
+  const getProjectProgressData = (prj: any) => {
     const pct = Math.min(
       100,
       Math.round((prj.actualSequestrationTCO2e / prj.targetSequestrationTCO2e) * 100)
@@ -348,9 +331,9 @@ export default function ForestProjectsManagement() {
   };
 
   // Trigger Drone Video Audit Modal (Landing Page)
-  const handleOpenLandingDroneModal = (prj, stageObj = null) => {
+  const handleOpenLandingDroneModal = (prj: any, stageObj: any = null) => {
     const matchedLandingProj = landingProjects?.find(
-      (p) =>
+      (p: any) =>
         p.name.toLowerCase().includes(prj.projectName.toLowerCase()) ||
         prj.projectName.toLowerCase().includes(p.name.toLowerCase())
     ) || {
@@ -445,7 +428,7 @@ export default function ForestProjectsManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredProjects.map((prj) => {
+              {filteredProjects.map((prj: any) => {
                 const progressData = getProjectProgressData(prj);
                 return (
                   <tr key={prj.id} className="hover:bg-slate-50/70 transition-colors">
@@ -646,7 +629,7 @@ export default function ForestProjectsManagement() {
                 );
               })()}
 
-              {/* FILE LAPORAN ANGGARAN ATTACHMENT CARD (DIBAGIAN ATAS PROGRESS REBOISASI) */}
+              {/* FILE LAPORAN ANGGARAN ATTACHMENT CARD */}
               <div className="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-200/80 flex items-center justify-between shadow-2xs">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200">
@@ -689,7 +672,7 @@ export default function ForestProjectsManagement() {
                 </div>
 
                 <div className="relative pl-6 space-y-3 border-l-2 border-slate-200 ml-3">
-                  {getProjectProgressData(selectedProgressProject).stages.map((stage) => {
+                  {getProjectProgressData(selectedProgressProject).stages.map((stage: any) => {
                     const isCompleted = stage.status === 'completed';
                     const isOngoing = stage.status === 'ongoing';
                     return (
@@ -903,7 +886,7 @@ export default function ForestProjectsManagement() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-medium">
-                              {progData.tokenBuyers.map((tb) => (
+                              {progData.tokenBuyers.map((tb: any) => (
                                 <tr key={tb.id} className="hover:bg-slate-50/70">
                                   <td className="py-3 px-3.5">
                                     <div className="flex items-center gap-2">
@@ -947,7 +930,7 @@ export default function ForestProjectsManagement() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-medium">
-                              {progData.disbursementHistory.map((tx) => {
+                              {progData.disbursementHistory.map((tx: any) => {
                                 const displayAmount =
                                   typeof tx.amount === 'number'
                                     ? `Rp ${tx.amount.toLocaleString('id-ID')}`
@@ -1007,14 +990,14 @@ export default function ForestProjectsManagement() {
 
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                             {progData.disbursementHistory
-                              .flatMap((tx) =>
-                                (tx.proofImages || []).map((imgUrl, i) => ({
+                              .flatMap((tx: any) =>
+                                (tx.proofImages || []).map((imgUrl: string, i: number) => ({
                                   imgUrl,
                                   tx,
                                   key: `${tx.id}-${i}`,
                                 }))
                               )
-                              .map((item) => (
+                              .map((item: any) => (
                                 <div
                                   key={item.key}
                                   onClick={() =>

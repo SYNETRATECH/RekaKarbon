@@ -1,15 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
-import {
-  ShieldCheck,
-  Cpu,
-  CheckCircle2,
-  FileCheck2,
-  AlertCircle,
-  ExternalLink,
-  Lock,
-  Layers,
-} from 'lucide-react';
+import { ShieldCheck, Cpu, CheckCircle2 } from 'lucide-react';
 
 export default function AuthorizationGate() {
   const { certificationPreview, conservationAreas, authorizeMintOffsetCredit } = useCarbonStore();
@@ -75,15 +66,15 @@ export default function AuthorizationGate() {
   );
   const [auditDate, setAuditDate] = useState(preview.auditDate);
   const [verifierName, setVerifierName] = useState(preview.verifier);
-  const [confidenceScore, setConfidenceScore] = useState(preview.confidenceScore);
+  const [confidenceScore] = useState(preview.confidenceScore);
   const [auditNotes, setAuditNotes] = useState(
     'Kawasan konservasi telah melalui pemindaian satelit Sentinel-2 dMRV dan ground-truth fotogrametri drone CHM. Seluruh parameter kerapatan biomasa dan kanopi vegetasi lolos ambang batas kelayakan SPE-GRK KLHK.'
   );
 
   const [isMinting, setIsMinting] = useState(false);
-  const [mintResult, setMintResult] = useState(null);
+  const [mintResult, setMintResult] = useState<{ success: boolean; txHash: string } | null>(null);
 
-  const handleProjectChange = (e) => {
+  const handleProjectChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const name = e.target.value;
     setSelectedProjectName(name);
     const found = projectList.find((p) => p.name === name);

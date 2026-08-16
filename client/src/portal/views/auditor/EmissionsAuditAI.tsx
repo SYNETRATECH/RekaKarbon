@@ -9,22 +9,18 @@ import {
   Activity,
   CheckCircle2,
   ShieldCheck,
-  XCircle,
-  ExternalLink,
-  ChevronRight,
 } from 'lucide-react';
 
 export default function EmissionsAuditAI() {
   const {
     aiAnomalyLogs,
     anomalySummary,
-    energyCorrelationData,
     selectedAnomalyId,
     setSelectedAnomalyId,
     verifyAnomalyEmitter,
   } = useCarbonStore();
 
-  const [filterPriority, setFilterPriority] = useState('ALL'); // 'ALL' | 'KRITIS' | 'TINGGI'
+  const [filterPriority, setFilterPriority] = useState<'ALL' | 'KRITIS' | 'TINGGI'>('ALL');
   const [isVerifying, setIsVerifying] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
 
@@ -38,14 +34,14 @@ export default function EmissionsAuditAI() {
     descEFaktur: 'Data utilitas energi divergen',
   };
 
-  const filteredLogs = aiAnomalyLogs.filter((log) => {
+  const filteredLogs = aiAnomalyLogs.filter((log: any) => {
     if (filterPriority === 'ALL') return true;
     return log.priority === filterPriority;
   });
 
-  const selectedLog = aiAnomalyLogs.find((l) => l.id === selectedAnomalyId) || null;
+  const selectedLog = aiAnomalyLogs.find((l: any) => l.id === selectedAnomalyId) || null;
 
-  const handleVerify = async (id) => {
+  const handleVerify = async (id: string) => {
     if (!id) return;
     setIsVerifying(true);
     await verifyAnomalyEmitter(id);
@@ -194,7 +190,7 @@ export default function EmissionsAuditAI() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredLogs.map((log) => {
+                {filteredLogs.map((log: any) => {
                   const isSelected = selectedAnomalyId === log.id;
 
                   // Score Badge Color
@@ -375,7 +371,6 @@ export default function EmissionsAuditAI() {
                 </text>
 
                 {/* Bars per Company */}
-                {/* 1. Semen Nusantara (Reported: 80, Estimated: 420) */}
                 <rect x="52" y="104" width="8" height="16" fill="#00C48C" rx="1.5" />
                 <rect x="62" y="36" width="8" height="84" fill="#B91C1C" rx="1.5" />
                 <text
@@ -389,7 +384,6 @@ export default function EmissionsAuditAI() {
                   Semen Nusantara
                 </text>
 
-                {/* 2. PLTU Kalimantan (Reported: 0, Estimated: 430) */}
                 <rect x="122" y="120" width="8" height="0" fill="#00C48C" rx="1.5" />
                 <rect x="132" y="34" width="8" height="86" fill="#B91C1C" rx="1.5" />
                 <text
@@ -403,7 +397,6 @@ export default function EmissionsAuditAI() {
                   PLTU Kalimantan
                 </text>
 
-                {/* 3. Petrokimia Selatan (Reported: 0, Estimated: 120) */}
                 <rect x="192" y="120" width="8" height="0" fill="#00C48C" rx="1.5" />
                 <rect x="202" y="96" width="8" height="24" fill="#B91C1C" rx="1.5" />
                 <text
@@ -417,7 +410,6 @@ export default function EmissionsAuditAI() {
                   Petrokimia Selatan
                 </text>
 
-                {/* 4. Baja Timur (Reported: 0, Estimated: 240) */}
                 <rect x="262" y="120" width="8" height="0" fill="#00C48C" rx="1.5" />
                 <rect x="272" y="72" width="8" height="48" fill="#B91C1C" rx="1.5" />
                 <text

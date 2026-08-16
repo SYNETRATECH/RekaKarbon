@@ -10,9 +10,13 @@ import {
   bursaRepository,
   regulatorRepository,
   authRepository,
+  AuthCredentials,
 } from '../repositories';
+import { CarbonStoreState, SearchedTxData } from '../types/store';
+import { ForestProjectItem, KTHGroupModel, RegulationUploadModel } from '../types/regulator';
+import { Project } from '../types/project';
 
-export const useCarbonStore = create((set, get) => ({
+export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   // Core Data
   projects: [],
   companies: [],
@@ -31,19 +35,19 @@ export const useCarbonStore = create((set, get) => ({
   setEditingProjectData: (data) => set({ editingProjectData: data }),
 
   // Navigation & Drawer States
-  activeModule: 'conservation', // 'conservation' | 'corporate'
-  activeTab: 'editor', // 'editor' | 'stats'
+  activeModule: 'conservation',
+  activeTab: 'editor',
   isDrawerOpen: false,
 
   // Selection States
   activeIndex: 0,
   selectedCompanyIndex: 0,
-  companyFilter: 'unpaid', // 'all' | 'unpaid' | 'paid'
+  companyFilter: 'unpaid',
 
   // Map States
   activeCoords: [],
   isDragMode: false,
-  tileType: 'satellite', // 'satellite' | 'topo' | 'street'
+  tileType: 'satellite',
 
   // Modals & Popups Visibilities
   isReforestationOpen: false,
@@ -54,9 +58,9 @@ export const useCarbonStore = create((set, get) => ({
   selectedTx: null,
   lightboxImage: null,
 
-  // Authentication & Admin Portal States (4 Main Roles)
-  userRole: null, // null | 'emitter' | 'regulator' | 'auditor' | 'kth'
-  subRole: 'hse_director', // 'hse_director' | 'compliance_manager' | 'op_admin' | 'viewer'
+  // Authentication & Admin Portal States
+  userRole: null,
+  subRole: 'hse_director',
   userProfile: {
     name: 'Ir. Budi Santoso',
     roleTitle: 'HSE Director',
@@ -64,7 +68,7 @@ export const useCarbonStore = create((set, get) => ({
     avatar: 'BS',
   },
   isLoginModalOpen: false,
-  adminActiveTab: 'dashboard', // default sub-page per role
+  adminActiveTab: 'dashboard',
 
   // Feature Specific Mock Data
   multiSigRequests: [],
@@ -86,30 +90,35 @@ export const useCarbonStore = create((set, get) => ({
   isDataLoaded: false,
 
   // CRUD Actions for Forest Projects
-  addForestProject: (newProject) =>
+  addForestProject: (newProject: ForestProjectItem) =>
     set((state) => ({ forestProjects: [newProject, ...state.forestProjects] })),
-  updateForestProject: (id, updated) =>
+  updateForestProject: (id: string, updated: Partial<ForestProjectItem>) =>
     set((state) => ({
       forestProjects: state.forestProjects.map((p) => (p.id === id ? { ...p, ...updated } : p)),
     })),
-  deleteForestProject: (id) =>
+  deleteForestProject: (id: string) =>
     set((state) => ({
       forestProjects: state.forestProjects.filter((p) => p.id !== id),
     })),
 
   // CRUD Actions for KTH Groups
-  addKTHGroup: (newKTH) => set((state) => ({ kthGroups: [newKTH, ...state.kthGroups] })),
-  updateKTHGroup: (id, updated) =>
+  addKTHGroup: (newKTH: KTHGroupModel) =>
+    set((state) => ({ kthGroups: [newKTH, ...state.kthGroups] })),
+  updateKTHGroup: (id: string, updated: Partial<KTHGroupModel>) =>
     set((state) => ({
       kthGroups: state.kthGroups.map((k) => (k.id === id ? { ...k, ...updated } : k)),
     })),
-  deleteKTHGroup: (id) =>
+  deleteKTHGroup: (id: string) =>
     set((state) => ({
       kthGroups: state.kthGroups.filter((k) => k.id !== id),
     })),
 
   // Action for KTH Transactions Status Update
-  updateKTHTransactionStatus: (id, status, issueNote) =>
+  updateKTHTransactionStatus: (
+    id: string,
+    status: 'Verified' | 'Pending' | 'Flagged',
+    issueNote?: string
+  ) =>
     set((state) => ({
       kthTransactions: state.kthTransactions.map((t) =>
         t.id === id ? { ...t, status, ...(issueNote !== undefined ? { issueNote } : {}) } : t
@@ -117,7 +126,7 @@ export const useCarbonStore = create((set, get) => ({
     })),
 
   // Action for Regulation Document Uploads
-  addRegulationUpload: (newDoc) =>
+  addRegulationUpload: (newDoc: RegulationUploadModel) =>
     set((state) => ({ regulationUploads: [newDoc, ...state.regulationUploads] })),
 
   initializeData: async () => {
@@ -213,7 +222,7 @@ export const useCarbonStore = create((set, get) => ({
   isVerichainExplorerOpen: false,
   searchedTxData: null,
   isPublicReportOpen: false,
-  publicReportType: 'conservation', // 'conservation' | 'corporate'
+  publicReportType: 'conservation',
 
   // Setters & Actions
   setActiveModule: (module) => set({ activeModule: module }),
@@ -223,7 +232,7 @@ export const useCarbonStore = create((set, get) => ({
   setAdminActiveTab: (tab) => set({ adminActiveTab: tab }),
   setSubRole: (roleKey) => set({ subRole: roleKey }),
 
-  loginWithCredentials: async (credentials, customTab = null) => {
+  loginWithCredentials: async (credentials: AuthCredentials, customTab = null) => {
     const res = await authRepository.login(credentials);
     let defaultTab = 'compliance';
     if (res.role === 'regulator') defaultTab = 'forest';
@@ -231,7 +240,7 @@ export const useCarbonStore = create((set, get) => ({
     else if (res.role === 'kth') defaultTab = 'polygon';
 
     set({
-      userRole: res.role,
+      userRole: res.role as any,
       userProfile: {
         name: res.user.name,
         roleTitle: res.user.roleTitle,
@@ -292,9 +301,9 @@ export const useCarbonStore = create((set, get) => ({
     const q = query.trim().toLowerCase();
     const state = get();
 
-    let foundItem = null;
-    let foundType = 'vendor'; // 'vendor' | 'tokenBuyer'
-    let foundProject = null;
+    let foundItem: any = null;
+    let foundType: 'vendor' | 'tokenBuyer' = 'vendor';
+    let foundProject: Project | null = null;
 
     for (const project of state.projects) {
       // Check token buyers
@@ -331,7 +340,7 @@ export const useCarbonStore = create((set, get) => ({
       }
     }
 
-    if (foundItem) {
+    if (foundItem && foundProject) {
       set({
         searchedTxData: { item: foundItem, type: foundType, project: foundProject },
         isVerichainExplorerOpen: true,

@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import {
   UploadCloud,
   FileText,
   CheckCircle2,
-  Clock,
   Download,
   Building2,
   Zap,
@@ -18,8 +17,6 @@ import {
   BarChart3,
   Cpu,
   Check,
-  AlertCircle,
-  FileCheck2,
   ChevronRight,
   ChevronDown,
   ArrowLeft,
@@ -37,7 +34,7 @@ export default function EmissionReportsSector() {
   const [cat1StationaryFuel, setCat1StationaryFuel] = useState('4850000');
   const [cat1VehicleFuel, setCat1VehicleFuel] = useState('1240000');
   const [cat1BiomassResidue, setCat1BiomassResidue] = useState('15200');
-  const [cat1File, setCat1File] = useState(null);
+  const [cat1File, setCat1File] = useState<File | null>(null);
 
   // Category 2: Financial Utility & e-Faktur DJP
   const [cat2CostSolar, setCat2CostSolar] = useState('4250000000');
@@ -45,12 +42,12 @@ export default function EmissionReportsSector() {
   const [cat2CostGas, setCat2CostGas] = useState('3100000000');
   const [cat2CostPLN, setCat2CostPLN] = useState('8950000000');
   const [cat2EFakturDJP, setCat2EFakturDJP] = useState('010.000-26.88765432');
-  const [cat2File, setCat2File] = useState(null);
+  const [cat2File, setCat2File] = useState<File | null>(null);
 
   // Category 3: Operational & Historical Parameters
   const [cat3ProductionCapacity, setCat3ProductionCapacity] = useState('450000');
   const [cat3HistoricalEmissions, setCat3HistoricalEmissions] = useState('13500');
-  const [cat3File, setCat3File] = useState(null);
+  const [cat3File, setCat3File] = useState<File | null>(null);
 
   // AI Audit Simulation Modal State
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
@@ -60,7 +57,7 @@ export default function EmissionReportsSector() {
 
   const activeReport = reports.find((r) => r.year === selectedYear) || reports[0];
 
-  const handleStartAIAudit = (e) => {
+  const handleStartAIAudit = (e: FormEvent) => {
     e.preventDefault();
     setIsAuditModalOpen(true);
     setIsAuditing(true);
@@ -80,7 +77,7 @@ export default function EmissionReportsSector() {
     }, 1500);
   };
 
-  const getSectorIcon = (scope) => {
+  const getSectorIcon = (scope: string) => {
     if (scope.includes('Scope 1')) return <Factory className="w-5 h-5 text-rose-500" />;
     if (scope.includes('Scope 2')) return <Zap className="w-5 h-5 text-amber-500" />;
     if (scope.includes('Scope 3')) return <Truck className="w-5 h-5 text-blue-500" />;
@@ -692,7 +689,7 @@ export default function EmissionReportsSector() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {activeReport.sectors.map((sec) => (
+          {activeReport.sectors.map((sec: any) => (
             <div
               key={sec.id}
               className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs space-y-3 flex flex-col justify-between"
@@ -756,7 +753,7 @@ export default function EmissionReportsSector() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {reports.map((rep) => (
+              {reports.map((rep: any) => (
                 <tr key={rep.id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="py-3.5 px-4 font-extrabold text-slate-900 flex items-center gap-2.5">
                     <FileText className="w-4 h-4 text-emerald-600 shrink-0" />

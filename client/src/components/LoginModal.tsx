@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useCarbonStore } from '../store/useCarbonStore';
 import {
   TreePine,
@@ -19,8 +19,10 @@ export default function LoginModal() {
   const { isLoginModalOpen, setIsLoginModalOpen, loginAsRole, loginWithCredentials } =
     useCarbonStore();
 
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
-  const [selectedRole, setSelectedRole] = useState('emitter'); // 'emitter' | 'regulator' | 'auditor' | 'kth'
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [selectedRole, setSelectedRole] = useState<'emitter' | 'regulator' | 'auditor' | 'kth'>(
+    'emitter'
+  );
 
   // Dummy form states
   const [identityInput, setIdentityInput] = useState('admin@semennusantara.co.id');
@@ -29,7 +31,7 @@ export default function LoginModal() {
 
   if (!isLoginModalOpen) return null;
 
-  const handleRoleSelect = (roleKey) => {
+  const handleRoleSelect = (roleKey: 'emitter' | 'regulator' | 'auditor' | 'kth') => {
     setSelectedRole(roleKey);
     if (roleKey === 'emitter') {
       setIdentityInput('admin@semennusantara.co.id');
@@ -46,13 +48,12 @@ export default function LoginModal() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     loginWithCredentials({
-      identity: identityInput,
-      password: passwordInput,
-      verichainKey: verichainKeyInput,
       role: selectedRole,
+      email: identityInput,
+      password: passwordInput,
     });
   };
 
@@ -218,9 +219,9 @@ export default function LoginModal() {
             {/* Email / ID Input */}
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-600 uppercase">
-                {selectedRole === 'dinas'
+                {selectedRole === 'regulator'
                   ? 'NIP / Email Resmi Dinas'
-                  : selectedRole === 'corporate'
+                  : selectedRole === 'emitter'
                     ? 'Email Corporate / NIB Industri'
                     : 'ID Lisensi Auditor / Email'}
               </label>

@@ -5,10 +5,9 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "allowJs": true,
-    "checkJs": false,
-    "strict": false,
-    "noImplicitAny": false,
+    "allowJs": false,
+    "strict": true,
+    "noImplicitAny": true,
     "noEmit": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -16,6 +15,6 @@
     "resolveJsonModule": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "vite.config.js", "vitest.config.js"],
+  "include": ["src", "vite.config.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "dist", "prototype"]
 }
