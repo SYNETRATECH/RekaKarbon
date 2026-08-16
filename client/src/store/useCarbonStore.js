@@ -4,12 +4,30 @@ import {
   companyRepository,
   governanceRepository,
   auditRepository,
+  complianceRepository,
+  reportRepository,
+  certificateRepository,
+  bursaRepository,
+  regulatorRepository,
 } from '../repositories';
 
 export const useCarbonStore = create((set, get) => ({
   // Core Data
   projects: [],
   companies: [],
+  complianceData: null,
+  emissionReports: [],
+  purchasedCertificates: [],
+  bursaItems: [],
+
+  // Regulator State Data
+  nationalForestRegions: [],
+  forestProjects: [],
+  kthGroups: [],
+  kthTransactions: [],
+  regulationUploads: [],
+  editingProjectData: null,
+  setEditingProjectData: (data) => set({ editingProjectData: data }),
 
   // Navigation & Drawer States
   activeModule: 'conservation', // 'conservation' | 'corporate'
@@ -57,19 +75,81 @@ export const useCarbonStore = create((set, get) => ({
   kthLogs: [],
   isDataLoaded: false,
 
+  // CRUD Actions for Forest Projects
+  addForestProject: (newProject) =>
+    set((state) => ({ forestProjects: [newProject, ...state.forestProjects] })),
+  updateForestProject: (id, updated) =>
+    set((state) => ({
+      forestProjects: state.forestProjects.map((p) => (p.id === id ? { ...p, ...updated } : p)),
+    })),
+  deleteForestProject: (id) =>
+    set((state) => ({
+      forestProjects: state.forestProjects.filter((p) => p.id !== id),
+    })),
+
+  // CRUD Actions for KTH Groups
+  addKTHGroup: (newKTH) => set((state) => ({ kthGroups: [newKTH, ...state.kthGroups] })),
+  updateKTHGroup: (id, updated) =>
+    set((state) => ({
+      kthGroups: state.kthGroups.map((k) => (k.id === id ? { ...k, ...updated } : k)),
+    })),
+  deleteKTHGroup: (id) =>
+    set((state) => ({
+      kthGroups: state.kthGroups.filter((k) => k.id !== id),
+    })),
+
+  // Action for KTH Transactions Status Update
+  updateKTHTransactionStatus: (id, status, issueNote) =>
+    set((state) => ({
+      kthTransactions: state.kthTransactions.map((t) =>
+        t.id === id ? { ...t, status, ...(issueNote !== undefined ? { issueNote } : {}) } : t
+      ),
+    })),
+
+  // Action for Regulation Document Uploads
+  addRegulationUpload: (newDoc) =>
+    set((state) => ({ regulationUploads: [newDoc, ...state.regulationUploads] })),
+
   initializeData: async () => {
-    const [projects, companies, multiSig, kyb, djp, anomaly, drone, polygons, logs] =
-      await Promise.all([
-        projectRepository.getProjects(),
-        companyRepository.getCompanies(),
-        governanceRepository.getMultiSigRequests(),
-        governanceRepository.getKybQueue(),
-        governanceRepository.getDjpLogs(),
-        auditRepository.getAiAnomalyLogs(),
-        auditRepository.getDroneScans(),
-        auditRepository.getKthPolygons(),
-        auditRepository.getKthLogs(),
-      ]);
+    const [
+      projects,
+      companies,
+      multiSig,
+      kyb,
+      djp,
+      anomaly,
+      drone,
+      polygons,
+      logs,
+      compliance,
+      reports,
+      certificates,
+      bursa,
+      regions,
+      forestPrjs,
+      kths,
+      txs,
+      uploads,
+    ] = await Promise.all([
+      projectRepository.getProjects(),
+      companyRepository.getCompanies(),
+      governanceRepository.getMultiSigRequests(),
+      governanceRepository.getKybQueue(),
+      governanceRepository.getDjpLogs(),
+      auditRepository.getAiAnomalyLogs(),
+      auditRepository.getDroneScans(),
+      auditRepository.getKthPolygons(),
+      auditRepository.getKthLogs(),
+      complianceRepository.getComplianceData(),
+      reportRepository.getEmissionReports(),
+      certificateRepository.getPurchasedCertificates(),
+      bursaRepository.getBursaItems(),
+      regulatorRepository.getNationalForestRegions(),
+      regulatorRepository.getForestProjects(),
+      regulatorRepository.getKTHGroups(),
+      regulatorRepository.getKTHTransactions(),
+      regulatorRepository.getRegulationUploads(),
+    ]);
 
     set({
       projects,
@@ -81,6 +161,15 @@ export const useCarbonStore = create((set, get) => ({
       droneScans: drone,
       kthPolygons: polygons,
       kthLogs: logs,
+      complianceData: compliance,
+      emissionReports: reports,
+      purchasedCertificates: certificates,
+      bursaItems: bursa,
+      nationalForestRegions: regions,
+      forestProjects: forestPrjs,
+      kthGroups: kths,
+      kthTransactions: txs,
+      regulationUploads: uploads,
       activeCoords: projects[0] ? JSON.parse(JSON.stringify(projects[0].coordinates)) : [],
       isDataLoaded: true,
     });
@@ -101,7 +190,7 @@ export const useCarbonStore = create((set, get) => ({
   setAdminActiveTab: (tab) => set({ adminActiveTab: tab }),
   setSubRole: (roleKey) => set({ subRole: roleKey }),
 
-  loginAsRole: (roleKey, subRoleKey = 'hse_director') => {
+  loginAsRole: (roleKey, subRoleKey = 'hse_director', customTab = null) => {
     let profile = {
       name: 'Ir. Budi Santoso',
       roleTitle: 'HSE Director',
@@ -127,7 +216,7 @@ export const useCarbonStore = create((set, get) => ({
         agency: 'KLHK & Kemenkeu RI',
         avatar: 'AF',
       };
-      defaultTab = 'allocation';
+      defaultTab = 'forest';
     } else if (roleKey === 'auditor') {
       profile = {
         name: 'Rian Hermawan, M.T',
@@ -152,7 +241,7 @@ export const useCarbonStore = create((set, get) => ({
       userProfile: profile,
       isLoginModalOpen: false,
       isDrawerOpen: false,
-      adminActiveTab: defaultTab,
+      adminActiveTab: customTab || defaultTab,
     });
   },
 

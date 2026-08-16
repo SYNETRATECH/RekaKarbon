@@ -113,11 +113,21 @@ function LandingPage() {
 }
 
 function MainApp() {
-  const { userRole, initializeData, isDataLoaded } = useCarbonStore();
+  const { userRole, initializeData, isDataLoaded, loginAsRole } = useCarbonStore();
 
   useEffect(() => {
     initializeData();
   }, [initializeData]);
+
+  // Auto-login to portal role if accessing /portal route directly
+  useEffect(() => {
+    if (!userRole && window.location.pathname.startsWith('/portal')) {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const targetRole = parts[1] || 'emitter';
+      const targetTab = parts[2] || null;
+      loginAsRole(targetRole, 'hse_director', targetTab);
+    }
+  }, [userRole, loginAsRole]);
 
   if (!isDataLoaded) {
     return (
@@ -127,9 +137,11 @@ function MainApp() {
     );
   }
 
+  const isPortalRoute = window.location.pathname.startsWith('/portal');
+
   return (
     <>
-      {userRole ? <AdminPortalView /> : <LandingPage />}
+      {userRole || isPortalRoute ? <AdminPortalView /> : <LandingPage />}
       <LoginModal />
     </>
   );
