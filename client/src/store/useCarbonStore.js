@@ -56,6 +56,12 @@ export const useCarbonStore = create((set, get) => ({
   anomalySummary: null,
   energyCorrelationData: [],
   selectedAnomalyId: null,
+  spatialSummary: null,
+  conservationAreas: [],
+  selectedConservationId: null,
+  droneArchive: null,
+  droneSchedules: null,
+  certificationPreview: null,
   droneScans: [],
   kthPolygons: [],
   kthLogs: [],
@@ -71,6 +77,11 @@ export const useCarbonStore = create((set, get) => ({
       anomaly,
       summary,
       energyCorr,
+      spatialSum,
+      areas,
+      droneArch,
+      droneSched,
+      certPrev,
       drone,
       polygons,
       logs,
@@ -83,6 +94,11 @@ export const useCarbonStore = create((set, get) => ({
       auditRepository.getAiAnomalyLogs(),
       auditRepository.getAnomalySummary(),
       auditRepository.getEnergyCorrelationData(),
+      auditRepository.getSpatialSummary(),
+      auditRepository.getConservationAreas(),
+      auditRepository.getDroneArchive(),
+      auditRepository.getDroneSchedules(),
+      auditRepository.getCertificationPreview(),
       auditRepository.getDroneScans(),
       auditRepository.getKthPolygons(),
       auditRepository.getKthLogs(),
@@ -98,6 +114,12 @@ export const useCarbonStore = create((set, get) => ({
       anomalySummary: summary,
       energyCorrelationData: energyCorr,
       selectedAnomalyId: anomaly[0]?.id || null,
+      spatialSummary: spatialSum,
+      conservationAreas: areas,
+      selectedConservationId: areas[0]?.id || null,
+      droneArchive: droneArch,
+      droneSchedules: droneSched,
+      certificationPreview: certPrev,
       droneScans: drone,
       kthPolygons: polygons,
       kthLogs: logs,
@@ -276,6 +298,7 @@ export const useCarbonStore = create((set, get) => ({
     }),
 
   setSelectedAnomalyId: (id) => set({ selectedAnomalyId: id }),
+  setSelectedConservationId: (id) => set({ selectedConservationId: id }),
 
   verifyAnomalyEmitter: async (id) => {
     await auditRepository.verifyAnomalyRecord(id);
@@ -284,6 +307,11 @@ export const useCarbonStore = create((set, get) => ({
         log.id === id ? { ...log, auditStatus: 'Verified' } : log
       ),
     }));
+  },
+
+  authorizeMintOffsetCredit: async (payload) => {
+    const result = await auditRepository.authorizeMintingCredit(payload);
+    return result;
   },
 
   toggleCompanyPaymentStatus: (index) =>
