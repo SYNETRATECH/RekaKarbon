@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "pnpm dev:server & pnpm dev:client",
-    "build": "pnpm build:client && pnpm build:server",
+    "build": "pnpm client:build && pnpm server:build",
     "format:check": "prettier --check client server",
     "format:write": "prettier --write client server",
     "client:dev": "pnpm --filter ./client dev",
