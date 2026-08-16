@@ -7,3 +7,4 @@ export * from './reports';
 export * from './certificates';
 export * from './bursa';
 export * from './regulator';
+export * from './auth';

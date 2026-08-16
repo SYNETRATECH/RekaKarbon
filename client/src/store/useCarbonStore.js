@@ -9,6 +9,7 @@ import {
   certificateRepository,
   bursaRepository,
   regulatorRepository,
+  authRepository,
 } from '../repositories';
 
 export const useCarbonStore = create((set, get) => ({
@@ -70,6 +71,15 @@ export const useCarbonStore = create((set, get) => ({
   kybQueue: [],
   djpLogs: [],
   aiAnomalyLogs: [],
+  anomalySummary: null,
+  energyCorrelationData: [],
+  selectedAnomalyId: null,
+  spatialSummary: null,
+  conservationAreas: [],
+  selectedConservationId: null,
+  droneArchive: null,
+  droneSchedules: null,
+  certificationPreview: null,
   droneScans: [],
   kthPolygons: [],
   kthLogs: [],
@@ -118,6 +128,13 @@ export const useCarbonStore = create((set, get) => ({
       kyb,
       djp,
       anomaly,
+      summary,
+      energyCorr,
+      spatialSum,
+      areas,
+      droneArch,
+      droneSched,
+      certPrev,
       drone,
       polygons,
       logs,
@@ -137,6 +154,13 @@ export const useCarbonStore = create((set, get) => ({
       governanceRepository.getKybQueue(),
       governanceRepository.getDjpLogs(),
       auditRepository.getAiAnomalyLogs(),
+      auditRepository.getAnomalySummary(),
+      auditRepository.getEnergyCorrelationData(),
+      auditRepository.getSpatialSummary(),
+      auditRepository.getConservationAreas(),
+      auditRepository.getDroneArchive(),
+      auditRepository.getDroneSchedules(),
+      auditRepository.getCertificationPreview(),
       auditRepository.getDroneScans(),
       auditRepository.getKthPolygons(),
       auditRepository.getKthLogs(),
@@ -158,6 +182,15 @@ export const useCarbonStore = create((set, get) => ({
       kybQueue: kyb,
       djpLogs: djp,
       aiAnomalyLogs: anomaly,
+      anomalySummary: summary,
+      energyCorrelationData: energyCorr,
+      selectedAnomalyId: anomaly[0]?.id || null,
+      spatialSummary: spatialSum,
+      conservationAreas: areas,
+      selectedConservationId: areas[0]?.id || null,
+      droneArchive: droneArch,
+      droneSchedules: droneSched,
+      certificationPreview: certPrev,
       droneScans: drone,
       kthPolygons: polygons,
       kthLogs: logs,
@@ -190,66 +223,39 @@ export const useCarbonStore = create((set, get) => ({
   setAdminActiveTab: (tab) => set({ adminActiveTab: tab }),
   setSubRole: (roleKey) => set({ subRole: roleKey }),
 
-  loginAsRole: (roleKey, subRoleKey = 'hse_director', customTab = null) => {
-    let profile = {
-      name: 'Ir. Budi Santoso',
-      roleTitle: 'HSE Director',
-      agency: 'PT Semen Nusantara Tuban',
-      avatar: 'BS',
-    };
+  loginWithCredentials: async (credentials, customTab = null) => {
+    const res = await authRepository.login(credentials);
     let defaultTab = 'compliance';
-
-    if (roleKey === 'emitter' || roleKey === 'corporate') {
-      roleKey = 'emitter';
-      profile = {
-        name: 'Ir. Budi Santoso',
-        roleTitle: 'HSE Director',
-        agency: 'PT Semen Nusantara Tuban',
-        avatar: 'BS',
-      };
-      defaultTab = 'compliance';
-    } else if (roleKey === 'regulator' || roleKey === 'dinas') {
-      roleKey = 'regulator';
-      profile = {
-        name: 'Dr. Ir. Ahmad Fauzi',
-        roleTitle: 'Direktur Pengawasan KLHK & DJP',
-        agency: 'KLHK & Kemenkeu RI',
-        avatar: 'AF',
-      };
-      defaultTab = 'forest';
-    } else if (roleKey === 'auditor') {
-      profile = {
-        name: 'Rian Hermawan, M.T',
-        roleTitle: 'Lead Auditor LVV dMRV',
-        agency: 'Sucofindo / Mutu Agung',
-        avatar: 'RH',
-      };
-      defaultTab = 'audit';
-    } else if (roleKey === 'kth') {
-      profile = {
-        name: 'Sutrisno',
-        roleTitle: 'Ketua Kelompok Tani Hutan',
-        agency: 'KTH Wana Lestari Baluran',
-        avatar: 'ST',
-      };
-      defaultTab = 'polygon';
-    }
+    if (res.role === 'regulator') defaultTab = 'forest';
+    else if (res.role === 'auditor') defaultTab = 'audit';
+    else if (res.role === 'kth') defaultTab = 'polygon';
 
     set({
-      userRole: roleKey,
-      subRole: subRoleKey,
-      userProfile: profile,
+      userRole: res.role,
+      userProfile: {
+        name: res.user.name,
+        roleTitle: res.user.roleTitle,
+        agency: res.user.agency,
+        avatar: res.user.avatar,
+      },
       isLoginModalOpen: false,
       isDrawerOpen: false,
       adminActiveTab: customTab || defaultTab,
     });
+    return res;
   },
 
-  logout: () =>
+  loginAsRole: (roleKey, subRoleKey = 'hse_director', customTab = null) => {
+    return get().loginWithCredentials({ role: roleKey }, customTab);
+  },
+
+  logout: async () => {
+    await authRepository.logout();
     set({
       userRole: null,
       adminActiveTab: 'dashboard',
-    }),
+    });
+  },
   setSearchQuery: (query) => set({ searchQuery: query }),
   setIsVerichainExplorerOpen: (isOpen) => set({ isVerichainExplorerOpen: isOpen }),
   setSearchedTxData: (data) => set({ searchedTxData: data }),
@@ -371,6 +377,23 @@ export const useCarbonStore = create((set, get) => ({
       return { projects: updatedProjects, activeCoords: coordinates };
     }),
 
+  setSelectedAnomalyId: (id) => set({ selectedAnomalyId: id }),
+  setSelectedConservationId: (id) => set({ selectedConservationId: id }),
+
+  verifyAnomalyEmitter: async (id) => {
+    await auditRepository.verifyAnomalyRecord(id);
+    set((state) => ({
+      aiAnomalyLogs: state.aiAnomalyLogs.map((log) =>
+        log.id === id ? { ...log, auditStatus: 'Verified' } : log
+      ),
+    }));
+  },
+
+  authorizeMintOffsetCredit: async (payload) => {
+    const result = await auditRepository.authorizeMintingCredit(payload);
+    return result;
+  },
+
   toggleCompanyPaymentStatus: (index) =>
     set((state) => {
       const updatedCompanies = [...state.companies];
@@ -380,9 +403,12 @@ export const useCarbonStore = create((set, get) => ({
       updatedCompanies[index] = {
         ...company,
         paymentStatus: newStatus,
-        // If paid, clear deficit/cost; if unpaid, restore original deficit/cost
-        carbonDeficit: newStatus === 'paid' ? 0 : COMPANIES_DATA[index].carbonDeficit,
-        offsetCostIDR: newStatus === 'paid' ? 0 : COMPANIES_DATA[index].offsetCostIDR,
+        carbonDeficit:
+          newStatus === 'paid' ? 0 : company.originalCarbonDeficit || company.carbonDeficit || 2500,
+        offsetCostIDR:
+          newStatus === 'paid'
+            ? 0
+            : company.originalOffsetCostIDR || company.offsetCostIDR || 250000000,
       };
 
       return { companies: updatedCompanies };

@@ -11,7 +11,8 @@ export interface Company {
   paymentStatus: 'unpaid' | 'paid' | string;
   offsetCostIDR: number;
   auditDate: string;
-  paymentDeadline: string;
+  paymentDeadline?: string;
+  paymentDate?: string;
   stackSensors: string;
   complianceRating: string;
   recommendedPartner: string;

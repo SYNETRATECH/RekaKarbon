@@ -3,4 +3,4 @@ packages:
   - 'server'
 allowBuilds:
   unrs-resolver: true
-engineStrict: false
+engineStrict: true

@@ -21,6 +21,9 @@ import {
   Globe,
   FolderPlus,
   Coins,
+  Camera,
+  Settings,
+  SlidersHorizontal,
 } from 'lucide-react';
 import brandIcon from '../../assets/icon.png';
 
@@ -45,8 +48,10 @@ export default function PortalSidebar() {
       ];
     } else if (userRole === 'auditor') {
       return [
-        { id: 'audit', label: 'Verifikasi Audit AI (Isolation)', icon: Activity },
-        { id: 'drone', label: 'dMRV Spasial & Drone CHM', icon: MapIcon },
+        { id: 'audit', label: 'Verifikasi Audit AI', icon: Activity },
+        { id: 'spatial', label: 'Evaluasi Spasial dMRV', icon: Globe },
+        { id: 'drone', label: 'Drone Mapping Controller', icon: Camera },
+        { id: 'gate', label: 'Gerbang Otorisasi', icon: ShieldCheck },
       ];
     } else if (userRole === 'kth') {
       return [
@@ -82,24 +87,30 @@ export default function PortalSidebar() {
                 REKAKARBON
               </h1>
               <span className="text-[9px] font-bold text-[#00C48C] tracking-wider uppercase block mt-1 text-left">
-                Verichain Platform
+                {userRole === 'auditor' ? 'AUDITOR PORTAL' : 'Verichain Platform'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Navigation Links (100% Strictly Left-Aligned) */}
+        {/* Navigation Links */}
         <nav className="p-4 space-y-1.5 text-left">
           {navItems.map((item) => {
             const IconComponent = item.icon;
-            const isActive = adminActiveTab === item.id;
+            const isActive =
+              adminActiveTab === item.id ||
+              (userRole === 'auditor' &&
+                (!adminActiveTab || adminActiveTab === 'anomaly') &&
+                item.id === 'audit') ||
+              (userRole === 'regulator' && !adminActiveTab && item.id === 'forest') ||
+              (userRole === 'emitter' && !adminActiveTab && item.id === 'compliance');
             return (
               <button
                 key={item.id}
                 onClick={() => setAdminActiveTab(item.id)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-extrabold text-left transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-primary-gradient text-white shadow-md shadow-emerald-950/10'
+                    ? 'bg-primary-gradient text-white shadow-md shadow-emerald-950/15'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
@@ -110,7 +121,9 @@ export default function PortalSidebar() {
                   <span className="text-left leading-snug truncate">{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className="bg-amber-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold shadow-xs shrink-0 ml-2">
+                  <span
+                    className={`shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full shadow-2xs ${item.badgeBg || 'bg-amber-500 text-white'}`}
+                  >
                     {item.badge}
                   </span>
                 )}
@@ -118,6 +131,26 @@ export default function PortalSidebar() {
             );
           })}
         </nav>
+
+        {/* Sistem / Secondary Nav for Auditor */}
+        {userRole === 'auditor' && (
+          <div className="px-4 pt-4 border-t border-slate-100 text-left">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4 block mb-2">
+              SISTEM
+            </span>
+            <button
+              onClick={() => setAdminActiveTab('settings')}
+              className={`w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                adminActiveTab === 'settings'
+                  ? 'bg-primary-gradient text-white'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <Settings className="w-4 h-4 text-slate-400" />
+              Pengaturan
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Sidebar Footer / Logout */}

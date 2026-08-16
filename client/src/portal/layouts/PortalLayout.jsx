@@ -22,6 +22,8 @@ import ProjectEditorPage from '../views/regulator/ProjectEditorPage';
 // Auditor Views
 import EmissionsAuditAI from '../views/auditor/EmissionsAuditAI';
 import SpatialMRVEvaluation from '../views/auditor/SpatialMRVEvaluation';
+import DroneMappingController from '../views/auditor/DroneMappingController';
+import AuthorizationGate from '../views/auditor/AuthorizationGate';
 
 // KTH Views
 import LandPolygonMapping from '../views/kth/LandPolygonMapping';
@@ -72,8 +74,9 @@ export default function PortalLayout() {
     }
 
     if (userRole === 'auditor') {
-      if (adminActiveTab === 'spatial' || adminActiveTab === 'drone')
-        return <SpatialMRVEvaluation />;
+      if (adminActiveTab === 'spatial') return <SpatialMRVEvaluation />;
+      if (adminActiveTab === 'drone') return <DroneMappingController />;
+      if (adminActiveTab === 'gate') return <AuthorizationGate />;
       return <EmissionsAuditAI />;
     }
 
@@ -93,7 +96,7 @@ export default function PortalLayout() {
       {/* MAIN PORTAL VIEW CONTAINER */}
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-slate-50/50">
         {/* TOPBAR HEADER */}
-        <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0 shadow-2xs z-0">
+        <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0 shadow-2xs z-20">
           {/* Left: Active Page Title */}
           <div className="flex items-center gap-3">
             <h1 className="text-base font-black text-slate-900 tracking-tight capitalize">
@@ -111,8 +114,12 @@ export default function PortalLayout() {
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Cari transaksi, laporan, data..."
-                className="pl-9 pr-4 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 w-64 transition-all"
+                placeholder={
+                  userRole === 'auditor'
+                    ? 'Cari kawasan, pabrik, atau nomor audit...'
+                    : 'Cari transaksi, token, atau aktivitas...'
+                }
+                className="pl-9 pr-4 py-1.5 text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 w-64 transition-all"
               />
             </div>
 
@@ -129,15 +136,15 @@ export default function PortalLayout() {
 
             {/* Profile Dropdown */}
             <div className="flex items-center gap-3 cursor-pointer group">
-              <div className="w-9 h-9 rounded-full bg-emerald-100 text-[#003E29] font-black text-xs flex items-center justify-center shadow-2xs border border-slate-200">
-                {userProfile.avatar || 'BS'}
+              <div className="w-9 h-9 rounded-full bg-[#033C2E] text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                {userProfile?.avatar || 'LV'}
               </div>
               <div className="text-left hidden sm:block">
                 <p className="text-xs font-extrabold text-slate-900 leading-none">
-                  {userProfile.name}
+                  {userProfile?.name}
                 </p>
                 <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                  {userProfile.roleTitle}
+                  {userProfile?.roleTitle}
                 </span>
               </div>
               <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
@@ -145,7 +152,7 @@ export default function PortalLayout() {
           </div>
         </header>
 
-        {/* TAB BODY CONTAINER (Scrollbar positioned at the far right edge, content padded inside) */}
+        {/* TAB BODY CONTAINER */}
         <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">{renderActiveView()}</div>
       </main>
 

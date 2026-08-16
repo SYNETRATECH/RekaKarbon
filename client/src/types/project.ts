@@ -15,9 +15,9 @@ export interface ReforestationStage {
   incentiveStatus: string;
   speCreditMinted: number;
   speStatus: string;
-  targetTrees: number;
-  plantedTrees: number;
-  remainingTrees: number;
+  targetTrees?: number;
+  plantedTrees?: number;
+  remainingTrees?: number;
 }
 
 export interface DisbursementItemDetail {
@@ -79,10 +79,10 @@ export interface Project {
   reforestationStatus: string;
   reforestationPartner: string;
   reforestationSite: string;
-  targetTrees: number;
-  plantedTrees: number;
-  remainingTrees: number;
-  carbonPricePerTon: number;
+  targetTrees?: number;
+  plantedTrees?: number;
+  remainingTrees?: number;
+  carbonPricePerTon?: number;
   totalBudget: number;
   disbursedBudget: number;
   remainingBudget: number;

@@ -21,6 +21,7 @@ export interface ForestProjectItem {
   dMRVStatus: 'verified' | 'pending_inspection' | 'revision';
   budgetReportFileName?: string;
   budgetReportFileSize?: string;
+  polygonCoords?: Array<{ lat: number; lng: number }> | Array<[number, number]>;
 }
 
 export interface KTHGroupItem {
