@@ -18,6 +18,8 @@ import TaxSystemIntegration from '../views/regulator/TaxSystemIntegration';
 // Auditor Views
 import EmissionsAuditAI from '../views/auditor/EmissionsAuditAI';
 import SpatialMRVEvaluation from '../views/auditor/SpatialMRVEvaluation';
+import DroneMappingController from '../views/auditor/DroneMappingController';
+import AuthorizationGate from '../views/auditor/AuthorizationGate';
 
 // KTH Views
 import LandPolygonMapping from '../views/kth/LandPolygonMapping';
@@ -57,8 +59,9 @@ export default function PortalLayout() {
     }
 
     if (userRole === 'auditor') {
-      if (adminActiveTab === 'spatial' || adminActiveTab === 'drone')
-        return <SpatialMRVEvaluation />;
+      if (adminActiveTab === 'spatial') return <SpatialMRVEvaluation />;
+      if (adminActiveTab === 'drone') return <DroneMappingController />;
+      if (adminActiveTab === 'gate') return <AuthorizationGate />;
       return <EmissionsAuditAI />;
     }
 
