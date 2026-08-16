@@ -32,11 +32,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # The codebase is not yet uniformly formatted; this step is informational
-      # for now. Remove `continue-on-error` after running `pnpm format:write`.
       - name: Check code formatting (Prettier)
         run: pnpm format:check
-        continue-on-error: true
 
       - name: Typecheck client & server
         run: |
