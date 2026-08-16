@@ -4,6 +4,11 @@ import {
   companyRepository,
   governanceRepository,
   auditRepository,
+  complianceRepository,
+  reportRepository,
+  certificateRepository,
+  bursaRepository,
+  regulatorRepository,
   authRepository,
 } from '../repositories';
 
@@ -11,6 +16,19 @@ export const useCarbonStore = create((set, get) => ({
   // Core Data
   projects: [],
   companies: [],
+  complianceData: null,
+  emissionReports: [],
+  purchasedCertificates: [],
+  bursaItems: [],
+
+  // Regulator State Data
+  nationalForestRegions: [],
+  forestProjects: [],
+  kthGroups: [],
+  kthTransactions: [],
+  regulationUploads: [],
+  editingProjectData: null,
+  setEditingProjectData: (data) => set({ editingProjectData: data }),
 
   // Navigation & Drawer States
   activeModule: 'conservation', // 'conservation' | 'corporate'
@@ -67,6 +85,41 @@ export const useCarbonStore = create((set, get) => ({
   kthLogs: [],
   isDataLoaded: false,
 
+  // CRUD Actions for Forest Projects
+  addForestProject: (newProject) =>
+    set((state) => ({ forestProjects: [newProject, ...state.forestProjects] })),
+  updateForestProject: (id, updated) =>
+    set((state) => ({
+      forestProjects: state.forestProjects.map((p) => (p.id === id ? { ...p, ...updated } : p)),
+    })),
+  deleteForestProject: (id) =>
+    set((state) => ({
+      forestProjects: state.forestProjects.filter((p) => p.id !== id),
+    })),
+
+  // CRUD Actions for KTH Groups
+  addKTHGroup: (newKTH) => set((state) => ({ kthGroups: [newKTH, ...state.kthGroups] })),
+  updateKTHGroup: (id, updated) =>
+    set((state) => ({
+      kthGroups: state.kthGroups.map((k) => (k.id === id ? { ...k, ...updated } : k)),
+    })),
+  deleteKTHGroup: (id) =>
+    set((state) => ({
+      kthGroups: state.kthGroups.filter((k) => k.id !== id),
+    })),
+
+  // Action for KTH Transactions Status Update
+  updateKTHTransactionStatus: (id, status, issueNote) =>
+    set((state) => ({
+      kthTransactions: state.kthTransactions.map((t) =>
+        t.id === id ? { ...t, status, ...(issueNote !== undefined ? { issueNote } : {}) } : t
+      ),
+    })),
+
+  // Action for Regulation Document Uploads
+  addRegulationUpload: (newDoc) =>
+    set((state) => ({ regulationUploads: [newDoc, ...state.regulationUploads] })),
+
   initializeData: async () => {
     const [
       projects,
@@ -85,6 +138,15 @@ export const useCarbonStore = create((set, get) => ({
       drone,
       polygons,
       logs,
+      compliance,
+      reports,
+      certificates,
+      bursa,
+      regions,
+      forestPrjs,
+      kths,
+      txs,
+      uploads,
     ] = await Promise.all([
       projectRepository.getProjects(),
       companyRepository.getCompanies(),
@@ -102,6 +164,15 @@ export const useCarbonStore = create((set, get) => ({
       auditRepository.getDroneScans(),
       auditRepository.getKthPolygons(),
       auditRepository.getKthLogs(),
+      complianceRepository.getComplianceData(),
+      reportRepository.getEmissionReports(),
+      certificateRepository.getPurchasedCertificates(),
+      bursaRepository.getBursaItems(),
+      regulatorRepository.getNationalForestRegions(),
+      regulatorRepository.getForestProjects(),
+      regulatorRepository.getKTHGroups(),
+      regulatorRepository.getKTHTransactions(),
+      regulatorRepository.getRegulationUploads(),
     ]);
 
     set({
@@ -123,6 +194,15 @@ export const useCarbonStore = create((set, get) => ({
       droneScans: drone,
       kthPolygons: polygons,
       kthLogs: logs,
+      complianceData: compliance,
+      emissionReports: reports,
+      purchasedCertificates: certificates,
+      bursaItems: bursa,
+      nationalForestRegions: regions,
+      forestProjects: forestPrjs,
+      kthGroups: kths,
+      kthTransactions: txs,
+      regulationUploads: uploads,
       activeCoords: projects[0] ? JSON.parse(JSON.stringify(projects[0].coordinates)) : [],
       isDataLoaded: true,
     });
@@ -143,11 +223,11 @@ export const useCarbonStore = create((set, get) => ({
   setAdminActiveTab: (tab) => set({ adminActiveTab: tab }),
   setSubRole: (roleKey) => set({ subRole: roleKey }),
 
-  loginWithCredentials: async (credentials) => {
+  loginWithCredentials: async (credentials, customTab = null) => {
     const res = await authRepository.login(credentials);
     let defaultTab = 'compliance';
-    if (res.role === 'regulator') defaultTab = 'allocation';
-    else if (res.role === 'auditor') defaultTab = 'anomaly';
+    if (res.role === 'regulator') defaultTab = 'forest';
+    else if (res.role === 'auditor') defaultTab = 'audit';
     else if (res.role === 'kth') defaultTab = 'polygon';
 
     set({
@@ -160,13 +240,13 @@ export const useCarbonStore = create((set, get) => ({
       },
       isLoginModalOpen: false,
       isDrawerOpen: false,
-      adminActiveTab: defaultTab,
+      adminActiveTab: customTab || defaultTab,
     });
     return res;
   },
 
-  loginAsRole: (roleKey, subRoleKey = 'hse_director') => {
-    return get().loginWithCredentials({ role: roleKey });
+  loginAsRole: (roleKey, subRoleKey = 'hse_director', customTab = null) => {
+    return get().loginWithCredentials({ role: roleKey }, customTab);
   },
 
   logout: async () => {

@@ -16,7 +16,11 @@ import {
   Flame,
   Building2,
   TreePine,
+  FileUp,
+  Award,
   Globe,
+  FolderPlus,
+  Coins,
   Camera,
   Settings,
   SlidersHorizontal,
@@ -36,27 +40,17 @@ export default function PortalSidebar() {
   const getNavItems = () => {
     if (userRole === 'regulator') {
       return [
-        { id: 'allocation', label: 'Alokasi Kuota & Monitoring', icon: Compass },
-        { id: 'kyb', label: 'Kurasi Emitter & KYB', icon: ShieldCheck },
-        { id: 'tax', label: 'Integrasi Pajak DJP', icon: FileSpreadsheet },
+        { id: 'forest', label: 'Dasbor Hutan & Pendanaan', icon: Globe },
+        { id: 'projects', label: 'Manajemen Proyek Kehutanan', icon: FolderPlus },
+        { id: 'kth', label: 'Manajemen Kelompok Tani (KTH)', icon: Users },
+        { id: 'transactions', label: 'Monitoring Transaksi Tani', icon: Coins },
+        { id: 'upload', label: 'Upload Regulasi & Kuota', icon: FileUp },
       ];
     } else if (userRole === 'auditor') {
       return [
-        {
-          id: 'anomaly',
-          label: 'Penyaringan Anomali Emisi',
-          icon: Activity,
-          badge: '12',
-          badgeBg: 'bg-[#00C48C] text-[#033C2E]',
-        },
+        { id: 'audit', label: 'Verifikasi Audit AI', icon: Activity },
         { id: 'spatial', label: 'Evaluasi Spasial dMRV', icon: Globe },
-        {
-          id: 'drone',
-          label: 'Drone Mapping Controller',
-          icon: Camera,
-          badge: '1',
-          badgeBg: 'bg-rose-500 text-white',
-        },
+        { id: 'drone', label: 'Drone Mapping Controller', icon: Camera },
         { id: 'gate', label: 'Gerbang Otorisasi', icon: ShieldCheck },
       ];
     } else if (userRole === 'kth') {
@@ -69,14 +63,8 @@ export default function PortalSidebar() {
       return [
         { id: 'compliance', label: 'Dasbor Kepatuhan', icon: LayoutDashboard },
         { id: 'bursa', label: 'Bursa Karbon (DEX)', icon: ArrowLeftRight },
-        { id: 'brankas', label: 'Brankas & Burning Chamber', icon: Flame },
-        {
-          id: 'governance',
-          label: 'Governance & Multi-Sig',
-          icon: Users,
-          badge: '2',
-          badgeBg: 'bg-amber-500 text-white',
-        },
+        { id: 'laporan', label: 'Laporan Emisi & Sektor', icon: FileUp },
+        { id: 'sertifikat', label: 'Sertifikat & Proyek Karbon', icon: Award },
       ];
     }
   };
@@ -88,17 +76,17 @@ export default function PortalSidebar() {
       <div>
         {/* Brand Logo & Header */}
         <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 text-left">
             <img
               src={brandIcon}
               alt="RekaKarbon Icon"
               className="w-9 h-9 object-contain shrink-0"
             />
             <div className="text-left">
-              <h1 className="text-base font-black text-slate-900 tracking-tight leading-none uppercase">
+              <h1 className="text-base font-black text-slate-900 tracking-tight leading-none uppercase text-left">
                 REKAKARBON
               </h1>
-              <span className="text-[9px] font-bold text-[#00C48C] tracking-wider uppercase block mt-1">
+              <span className="text-[9px] font-bold text-[#00C48C] tracking-wider uppercase block mt-1 text-left">
                 {userRole === 'auditor' ? 'AUDITOR PORTAL' : 'Verichain Platform'}
               </span>
             </div>
@@ -111,22 +99,26 @@ export default function PortalSidebar() {
             const IconComponent = item.icon;
             const isActive =
               adminActiveTab === item.id ||
-              (userRole === 'auditor' && !adminActiveTab && item.id === 'anomaly');
+              (userRole === 'auditor' &&
+                (!adminActiveTab || adminActiveTab === 'anomaly') &&
+                item.id === 'audit') ||
+              (userRole === 'regulator' && !adminActiveTab && item.id === 'forest') ||
+              (userRole === 'emitter' && !adminActiveTab && item.id === 'compliance');
             return (
               <button
                 key={item.id}
                 onClick={() => setAdminActiveTab(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-extrabold text-left transition-all cursor-pointer ${
                   isActive
                     ? 'bg-primary-gradient text-white shadow-md shadow-emerald-950/15'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
+                <div className="flex items-center gap-3 text-left min-w-0 flex-1">
                   <IconComponent
-                    className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#00C48C]' : 'text-slate-400'}`}
+                    className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#00C48C]' : 'text-slate-400'}`}
                   />
-                  <span className="truncate text-left">{item.label}</span>
+                  <span className="text-left leading-snug truncate">{item.label}</span>
                 </div>
                 {item.badge && (
                   <span

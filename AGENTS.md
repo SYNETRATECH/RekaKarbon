@@ -34,3 +34,12 @@ Setiap Pull Request ke branch `main` diverifikasi otomatis oleh workflow [.githu
 - **Build**: `pnpm client:build` & `pnpm server:build`.
 
 Aturan arsitektur client yang ditegakkan oleh `test:arch`: lapisan View (`components/`, `portal/`) dilarang mengimpor `lib/mock` secara langsung; akses data harus melalui `store` → `repositories` → `lib/mock`/`lib/api`.
+
+---
+
+## 📦 4. Standar Pengelolaan Mock Data & Repository Pattern
+
+1. **Pemisahan Mock Data**: Seluruh data dummy/statis WAJIB disimpan terpisah di dalam folder `client/src/lib/mock/<feature>.ts` dan dilarang keras dituliskan secara hardcode langsung di dalam komponen `.jsx`/`.tsx`.
+2. **Abstraksi Repository**: Setiap fitur data WAJIB dibungkus dengan arsitektur Repository Pattern di `client/src/repositories/<feature>.repository.ts` menggunakan interface spesifik dan dua kelas implementasi (`Mock...Repository` dan `Api...Repository`) yang dikontrol melalui environment variable `VITE_USE_MOCK_DATA`.
+3. **Integrasi Zustand Store**: Komponen UI harus mengonsumsi data dari Zustand Store (`useCarbonStore.js`), yang secara asinkron memanggil kelas repository terdaftar.
+4. **Skill Rujukan**: Rincian langkah pembuatan mock repository pattern dapat dibaca di Skill [.agents/skills/mock-repository-pattern/SKILL.md](file:///home/mashupsoat/Project/rekakarbon/RekaKarbon/.agents/skills/mock-repository-pattern/SKILL.md).

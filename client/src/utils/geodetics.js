@@ -1,7 +1,29 @@
 /**
+ * Sorts polygon coordinates in polar angle order around centroid to form a clean perimeter boundary without self-intersections.
+ */
+export function sortPolygonCoordinates(coords) {
+  if (!coords || coords.length < 3) return coords;
+
+  const cLat = coords.reduce((sum, c) => sum + (c.lat ?? c[0]), 0) / coords.length;
+  const cLng = coords.reduce((sum, c) => sum + (c.lng ?? c[1]), 0) / coords.length;
+
+  return [...coords].sort((a, b) => {
+    const latA = a.lat ?? a[0];
+    const lngA = a.lng ?? a[1];
+    const latB = b.lat ?? b[0];
+    const lngB = b.lng ?? b[1];
+
+    const angleA = Math.atan2(latA - cLat, lngA - cLng);
+    const angleB = Math.atan2(latB - cLat, lngB - cLng);
+
+    return angleA - angleB;
+  });
+}
+
+/**
  * Calculates geodetic measurements (area and perimeter) using coordinates and project center.
  * Uses a local flat-grid approximation suitable for close-range GIS calculations.
- * 
+ *
  * @param {Array} coords - List of {lat, lng} coordinates.
  * @param {Array} center - Project center [lat, lng].
  * @returns {Object} { areaVal, perimeterVal, estimatedCarbon }
@@ -11,18 +33,19 @@ export function calculateGeodetics(coords, center) {
     return {
       areaVal: 'Min. 3 Titik',
       perimeterVal: 'Min. 3 Titik',
-      estimatedCarbon: '0 tCO2e'
+      estimatedCarbon: '0 tCO2e',
     };
   }
 
+  const sortedCoords = sortPolygonCoordinates(coords);
   const latMid = center[0];
   const latRad = (latMid * Math.PI) / 180;
   const latMetersPerDegree = 111132;
   const lngMetersPerDegree = 111132 * Math.cos(latRad);
 
-  const projected = coords.map((c) => ({
-    x: (c.lng - center[1]) * lngMetersPerDegree,
-    y: (c.lat - latMid) * latMetersPerDegree
+  const projected = sortedCoords.map((c) => ({
+    x: ((c.lng ?? c[1]) - center[1]) * lngMetersPerDegree,
+    y: ((c.lat ?? c[0]) - latMid) * latMetersPerDegree,
   }));
 
   let areaSum = 0;
