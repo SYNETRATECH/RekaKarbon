@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useCarbonStore } from './store/useCarbonStore';
 import MapCanvas from './components/MapCanvas';
 import RightDrawer from './components/RightDrawer';
@@ -114,20 +114,24 @@ function LandingPage() {
 
 function MainApp() {
   const { userRole, initializeData, isDataLoaded, loginAsRole } = useCarbonStore();
+  const location = useLocation();
 
   useEffect(() => {
     initializeData();
   }, [initializeData]);
 
-  // Auto-login to portal role if accessing /portal route directly
+  // Auto-login to portal role if accessing /portal route directly.
+  // location.pathname is relative to BrowserRouter's basename, so it will
+  // correctly be '/portal/...' regardless of the deployment sub-path.
   useEffect(() => {
-    if (!userRole && window.location.pathname.startsWith('/portal')) {
-      const parts = window.location.pathname.split('/').filter(Boolean);
+    if (!userRole && location.pathname.startsWith('/portal')) {
+      const parts = location.pathname.split('/').filter(Boolean);
+      // parts[0] === 'portal', parts[1] is the role, parts[2] is the tab
       const targetRole = parts[1] || 'emitter';
       const targetTab = parts[2] || null;
       loginAsRole(targetRole, 'hse_director', targetTab);
     }
-  }, [userRole, loginAsRole]);
+  }, [userRole, loginAsRole, location.pathname]);
 
   if (!isDataLoaded) {
     return (
@@ -137,7 +141,7 @@ function MainApp() {
     );
   }
 
-  const isPortalRoute = window.location.pathname.startsWith('/portal');
+  const isPortalRoute = location.pathname.startsWith('/portal');
 
   return (
     <>
@@ -149,7 +153,7 @@ function MainApp() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<MainApp />} />
         <Route path="/portal" element={<MainApp />} />
