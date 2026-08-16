@@ -44,7 +44,16 @@ export interface KTHTransactionItem {
   projectName: string;
   volumeTCO2e: number;
   amountIDR: string;
-  status: 'completed' | 'processing' | 'awaiting_farmer' | 'awaiting_proof' | 'flagged' | 'failed';
+  status:
+    | 'completed'
+    | 'processing'
+    | 'awaiting_farmer'
+    | 'awaiting_proof'
+    | 'flagged'
+    | 'failed'
+    | 'Verified'
+    | 'Pending'
+    | 'Flagged';
   issueNote?: string;
   items?: {
     name: string;
@@ -68,3 +77,9 @@ export interface RegulationDocumentUploadItem {
   targetEntityName: string; // e.g. "PT Semen Nusantara Tuban" or "Nasional"
   status: 'published' | 'verifying' | 'archived';
 }
+
+export interface KTHGroupModel {
+  id: string;
+}
+
+export interface RegulationUploadModel {}

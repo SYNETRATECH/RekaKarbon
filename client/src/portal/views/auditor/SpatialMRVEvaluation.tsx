@@ -1,17 +1,5 @@
-import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
-import {
-  TreePine,
-  Leaf,
-  Globe,
-  MapPin,
-  CheckCircle2,
-  CloudRain,
-  AlertTriangle,
-  ExternalLink,
-  Layers,
-  ArrowRight,
-} from 'lucide-react';
+import { TreePine, Leaf, Globe, MapPin, CheckCircle2, CloudRain } from 'lucide-react';
 
 export default function SpatialMRVEvaluation() {
   const {
@@ -182,7 +170,7 @@ export default function SpatialMRVEvaluation() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {areas.map((area) => {
+                {areas.map((area: any) => {
                   const isSelected = selectedArea?.id === area.id;
 
                   return (
@@ -353,7 +341,7 @@ export default function SpatialMRVEvaluation() {
                 </div>
               </div>
 
-              {/* Action Button: If cloud > 50%, suggest Drone Fallback */}
+              {/* Action Button */}
               {parseInt(selectedArea.cloudCover) > 50 ? (
                 <button
                   onClick={() => setAdminActiveTab('drone')}

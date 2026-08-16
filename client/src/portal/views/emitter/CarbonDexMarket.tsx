@@ -18,24 +18,24 @@ export default function CarbonDexMarket() {
   const { bursaItems: storeBursaItems } = useCarbonStore();
   const bursaItems = storeBursaItems?.length > 0 ? storeBursaItems : MOCK_BURSA_ITEMS;
 
-  const [bursaFilter, setBursaFilter] = useState('all'); // 'all' | 'hutan' | 'mangrove' | 'gambut'
-  const [sortBy, setSortBy] = useState('pasokan'); // 'pasokan' | 'harga' | 'perubahan'
+  const [bursaFilter, setBursaFilter] = useState<'all' | 'hutan' | 'mangrove' | 'gambut'>('all');
+  const [sortBy, setSortBy] = useState<'pasokan' | 'harga' | 'perubahan'>('pasokan');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBursaToken, setSelectedBursaToken] = useState(null);
+  const [selectedBursaToken, setSelectedBursaToken] = useState<any>(null);
   const [buyQuantity, setBuyQuantity] = useState(2330);
 
   // Sorting and Searching logic
   const sortedItems = [...bursaItems]
-    .filter((item) => bursaFilter === 'all' || item.category === bursaFilter)
+    .filter((item: any) => bursaFilter === 'all' || item.category === bursaFilter)
     .filter(
-      (item) =>
+      (item: any) =>
         !searchTerm ||
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.categoryLabel.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       if (sortBy === 'pasokan') return b.supplyFractions - a.supplyFractions;
       if (sortBy === 'harga') return a.priceFraction - b.priceFraction;
       if (sortBy === 'perubahan') return b.change24h - a.change24h;
@@ -202,7 +202,7 @@ export default function CarbonDexMarket() {
 
           {/* Table Item Cards (Dynamic Height Scrollable List Only) */}
           <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5 scrollbar-thin">
-            {sortedItems.map((item) => (
+            {sortedItems.map((item: any) => (
               <div
                 key={item.id}
                 className="grid grid-cols-12 gap-4 p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 hover:bg-slate-50 hover:border-slate-300 transition-all items-center"

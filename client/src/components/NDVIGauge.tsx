@@ -1,7 +1,13 @@
-export default function NDVIGauge({ value, label, trackColorClass }) {
+interface NDVIGaugeProps {
+  value: number;
+  label: string;
+  trackColorClass: string;
+}
+
+export default function NDVIGauge({ value, label, trackColorClass }: NDVIGaugeProps) {
   const radius = 24;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (value * circumference);
+  const strokeDashoffset = circumference - value * circumference;
 
   return (
     <div className="flex flex-col items-center">

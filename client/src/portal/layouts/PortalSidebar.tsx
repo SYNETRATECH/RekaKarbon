@@ -1,21 +1,14 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   LayoutDashboard,
   ArrowLeftRight,
-  Lock,
   Users,
   LogOut,
   Map as MapIcon,
   ShieldCheck,
-  FileCheck2,
-  FileSpreadsheet,
   Activity,
-  Compass,
   Wallet,
-  Flame,
-  Building2,
-  TreePine,
   FileUp,
   Award,
   Globe,
@@ -23,12 +16,20 @@ import {
   Coins,
   Camera,
   Settings,
-  SlidersHorizontal,
+  LucideIcon,
 } from 'lucide-react';
 import brandIcon from '../../assets/icon.png';
 
+interface NavItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: string;
+  badgeBg?: string;
+}
+
 export default function PortalSidebar() {
-  const { userRole, adminActiveTab, setAdminActiveTab, logout, userProfile } = useCarbonStore();
+  const { userRole, adminActiveTab, setAdminActiveTab, logout } = useCarbonStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -37,7 +38,7 @@ export default function PortalSidebar() {
   };
 
   // Navigation Items per Role
-  const getNavItems = () => {
+  const getNavItems = (): NavItem[] => {
     if (userRole === 'regulator') {
       return [
         { id: 'forest', label: 'Dasbor Hutan & Pendanaan', icon: Globe },

@@ -8,7 +8,6 @@ import {
   FlaskConical,
   Calendar,
   CheckCircle2,
-  CloudRain,
 } from 'lucide-react';
 
 export default function DroneMappingController() {
@@ -75,7 +74,7 @@ export default function DroneMappingController() {
     }, 1500);
   };
 
-  const renderLayerIcon = (type) => {
+  const renderLayerIcon = (type: string) => {
     if (type === 'camera' || type === 'orto') return <Camera className="w-3.5 h-3.5" />;
     if (type === 'layers' || type === 'canopy') return <Layers className="w-3.5 h-3.5" />;
     return <Activity className="w-3.5 h-3.5" />;
@@ -150,7 +149,7 @@ export default function DroneMappingController() {
 
             {/* Layer Cards mapped dynamically from mock */}
             <div className="grid grid-cols-3 gap-2.5 pt-1">
-              {archive.layers.map((layer) => {
+              {archive.layers.map((layer: any) => {
                 const isSelected = activeLayer === layer.id;
                 let bgStyle = 'bg-white/80 border-slate-200 hover:bg-white text-slate-900';
                 let iconBg = 'bg-slate-100 text-slate-700';
@@ -246,7 +245,7 @@ export default function DroneMappingController() {
               </div>
 
               <div className="grid grid-cols-4 gap-2">
-                {schedules.year1.slots.map((slot, i) => (
+                {schedules.year1.slots.map((slot: any, i: number) => (
                   <div
                     key={i}
                     className={`p-2.5 rounded-xl border text-center ${
@@ -293,7 +292,7 @@ export default function DroneMappingController() {
               </div>
 
               <div className="grid grid-cols-3 gap-2">
-                {schedules.year2.slots.map((slot, i) => (
+                {schedules.year2.slots.map((slot: any, i: number) => (
                   <div
                     key={i}
                     className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center"

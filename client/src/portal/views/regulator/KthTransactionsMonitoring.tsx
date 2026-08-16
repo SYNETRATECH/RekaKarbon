@@ -17,11 +17,7 @@ import {
   ChevronDown,
   Check,
   TreePine,
-  TrendingUp,
   AlertTriangle,
-  Sparkles,
-  Calendar,
-  ArrowRight,
   Eye,
   FileSpreadsheet,
   Package,
@@ -36,34 +32,31 @@ export default function KthTransactionsMonitoring() {
 
   const [selectedProject, setSelectedProject] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedTxReceipt, setSelectedTxReceipt] = useState(null);
+  const [selectedTxReceipt, setSelectedTxReceipt] = useState<any>(null);
 
   // Review Modal state for 'processing' transactions (Stage 1)
-  const [reviewingTx, setReviewingTx] = useState(null);
-  const [holdNotice, setHoldNotice] = useState(false);
+  const [reviewingTx, setReviewingTx] = useState<any>(null);
+  const [, setHoldNotice] = useState(false);
 
   // Verification Modal state for 'awaiting_proof' transactions (Stage 3)
-  const [verifyingProofTx, setVerifyingProofTx] = useState(null);
-
-  // Flagged Modal state for 'flagged' transactions (Bermasalah)
-  const [flaggedModalTx, setFlaggedModalTx] = useState(null);
+  const [verifyingProofTx, setVerifyingProofTx] = useState<any>(null);
 
   // KLHK Issue Flagging input state inside modals
   const [showFlagForm, setShowFlagForm] = useState(false);
   const [flagNoteInput, setFlagNoteInput] = useState('');
 
   // Lightbox Fullscreen Preview state
-  const [lightboxImage, setLightboxImage] = useState(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Searchable Dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [dropdownSearch, setDropdownSearch] = useState('');
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on click outside
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     }
@@ -75,17 +68,17 @@ export default function KthTransactionsMonitoring() {
 
   // Collect unique project list from transactions, forestProjects, and projects
   const projectOptions = useMemo(() => {
-    const namesSet = new Set();
-    txs.forEach((t) => {
+    const namesSet = new Set<string>();
+    txs.forEach((t: any) => {
       if (t.projectName) namesSet.add(t.projectName);
     });
     if (forestProjects && forestProjects.length > 0) {
-      forestProjects.forEach((fp) => {
+      forestProjects.forEach((fp: any) => {
         if (fp.projectName) namesSet.add(fp.projectName);
       });
     }
     if (projects && projects.length > 0) {
-      projects.forEach((p) => {
+      projects.forEach((p: any) => {
         if (p.name) namesSet.add(p.name);
       });
     }
@@ -94,8 +87,8 @@ export default function KthTransactionsMonitoring() {
 
   // Transaction count per project name
   const projectTxCounts = useMemo(() => {
-    const counts = {};
-    txs.forEach((t) => {
+    const counts: Record<string, number> = {};
+    txs.forEach((t: any) => {
       if (t.projectName) {
         counts[t.projectName] = (counts[t.projectName] || 0) + 1;
       }
@@ -109,7 +102,7 @@ export default function KthTransactionsMonitoring() {
     return projectOptions.filter((p) => p.toLowerCase().includes(dropdownSearch.toLowerCase()));
   }, [projectOptions, dropdownSearch]);
 
-  const filteredTxs = txs.filter((t) => {
+  const filteredTxs = txs.filter((t: any) => {
     const matchesProject =
       selectedProject === 'all' || t.projectName.toLowerCase() === selectedProject.toLowerCase();
 
@@ -118,10 +111,10 @@ export default function KthTransactionsMonitoring() {
   });
 
   // Helper to match transaction project with rich PROJECTS_DATA
-  const getProjectDetails = (projectName) => {
+  const getProjectDetails = (projectName: string) => {
     if (!projectName) return PROJECTS_DATA[0];
     const found = PROJECTS_DATA.find(
-      (p) =>
+      (p: any) =>
         p.name.toLowerCase().includes(projectName.toLowerCase()) ||
         projectName.toLowerCase().includes(p.name.toLowerCase())
     );
@@ -129,7 +122,7 @@ export default function KthTransactionsMonitoring() {
   };
 
   // Stage 1 (processing) -> Stage 2 (awaiting_farmer)
-  const handleApproveDisbursement = (tx) => {
+  const handleApproveDisbursement = (tx: any) => {
     if (updateKTHTransactionStatus) {
       updateKTHTransactionStatus(tx.id, 'awaiting_farmer');
     }
@@ -140,7 +133,7 @@ export default function KthTransactionsMonitoring() {
   };
 
   // Move transaction to 'flagged' (Bermasalah)
-  const handleFlagTransaction = (tx) => {
+  const handleFlagTransaction = (tx: any) => {
     const note =
       flagNoteInput.trim() ||
       'Terdeteksi ketidaksesuaian laporan nota / foto bukti belanja oleh regulator.';
@@ -153,24 +146,8 @@ export default function KthTransactionsMonitoring() {
     setFlagNoteInput('');
   };
 
-  // Resolve issue flag and move to 'awaiting_proof' or 'processing'
-  const handleResolveFlag = (tx) => {
-    const targetStatus =
-      tx.proofImages && tx.proofImages.length > 0 ? 'awaiting_proof' : 'processing';
-    const updatedTx = { ...tx, status: targetStatus, issueNote: '' };
-    if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, targetStatus, '');
-    }
-    if (reviewingTx && reviewingTx.id === tx.id) {
-      setReviewingTx(updatedTx);
-    }
-    if (verifyingProofTx && verifyingProofTx.id === tx.id) {
-      setVerifyingProofTx(updatedTx);
-    }
-  };
-
   // Stage 3 (awaiting_proof) -> Stage 5 (completed)
-  const handleConfirmProof = (tx) => {
+  const handleConfirmProof = (tx: any) => {
     const updatedTx = { ...tx, status: 'completed' };
     if (updateKTHTransactionStatus) {
       updateKTHTransactionStatus(tx.id, 'completed');
@@ -434,7 +411,7 @@ export default function KthTransactionsMonitoring() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredTxs.map((tx) => (
+              {filteredTxs.map((tx: any) => (
                 <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
                   <td className="py-3.5 px-4 font-mono text-[11px]">
                     <div className="flex items-center gap-1.5 text-slate-700">
@@ -729,7 +706,7 @@ export default function KthTransactionsMonitoring() {
                         Riwayat Tahapan dMRV & Insentif KTH:
                       </span>
                       <div className="space-y-2">
-                        {prj.stages?.map((stg) => (
+                        {prj.stages?.map((stg: any) => (
                           <div
                             key={stg.year}
                             className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200/70 text-xs"
@@ -763,7 +740,7 @@ export default function KthTransactionsMonitoring() {
                 );
               })()}
 
-              {/* SECTION 3: RINCIAN BARANG & RINCIAN FAKTUR (RENCANA PENGGUNAAN DANA) */}
+              {/* SECTION 3: RINCIAN BARANG & RINCIAN FAKTUR */}
               <div className="space-y-2 text-xs">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block flex items-center gap-1.5">
                   <Package className="w-4 h-4 text-emerald-600" />
@@ -781,7 +758,7 @@ export default function KthTransactionsMonitoring() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-[10px]">
                       {reviewingTx.items && reviewingTx.items.length > 0 ? (
-                        reviewingTx.items.map((item, i) => (
+                        reviewingTx.items.map((item: any, i: number) => (
                           <tr key={i} className="hover:bg-slate-50">
                             <td className="p-2.5 font-medium text-slate-800">{item.name}</td>
                             <td className="p-2.5 text-center font-mono font-semibold text-slate-600">
@@ -815,7 +792,7 @@ export default function KthTransactionsMonitoring() {
                     <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
                       <tr>
                         <td
-                          colSpan="3"
+                          colSpan={3}
                           className="p-2.5 text-right uppercase text-[9px] text-slate-500"
                         >
                           Total Rencana Faktur:
@@ -1022,7 +999,7 @@ export default function KthTransactionsMonitoring() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-[10px]">
                       {verifyingProofTx.items && verifyingProofTx.items.length > 0 ? (
-                        verifyingProofTx.items.map((item, i) => (
+                        verifyingProofTx.items.map((item: any, i: number) => (
                           <tr key={i} className="hover:bg-slate-50">
                             <td className="p-2.5 font-medium text-slate-800">{item.name}</td>
                             <td className="p-2.5 text-center font-mono font-semibold text-slate-600">
@@ -1056,7 +1033,7 @@ export default function KthTransactionsMonitoring() {
                     <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
                       <tr>
                         <td
-                          colSpan="3"
+                          colSpan={3}
                           className="p-2.5 text-right uppercase text-[9px] text-slate-500"
                         >
                           Total Faktur Pembelian:
@@ -1082,7 +1059,7 @@ export default function KthTransactionsMonitoring() {
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    {verifyingProofTx.proofImages.map((imgUrl, i) => (
+                    {verifyingProofTx.proofImages.map((imgUrl: string, i: number) => (
                       <div
                         key={i}
                         onClick={() => setLightboxImage(imgUrl)}
@@ -1255,7 +1232,7 @@ export default function KthTransactionsMonitoring() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-[10px]">
-                        {selectedTxReceipt.items.map((item, i) => (
+                        {selectedTxReceipt.items.map((item: any, i: number) => (
                           <tr key={i}>
                             <td className="p-2 font-medium text-slate-800">{item.name}</td>
                             <td className="p-2 text-center font-mono font-semibold text-slate-500">
@@ -1279,7 +1256,7 @@ export default function KthTransactionsMonitoring() {
                     GALERI BUKTI FISIK LAPANGAN
                   </span>
                   <div className="grid grid-cols-3 gap-2">
-                    {selectedTxReceipt.proofImages.map((imgUrl, i) => (
+                    {selectedTxReceipt.proofImages.map((imgUrl: string, i: number) => (
                       <div
                         key={i}
                         onClick={() => setLightboxImage(imgUrl)}

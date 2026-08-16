@@ -1,15 +1,5 @@
 import { useCarbonStore } from '../../../store/useCarbonStore';
-import {
-  ChevronUp,
-  ChevronDown,
-  Leaf as LeafIcon,
-  CheckCircle2,
-  AlertTriangle,
-  Info,
-  TrendingUp,
-  ShoppingCart,
-  Activity,
-} from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, ShoppingCart } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -29,7 +19,7 @@ export default function ComplianceDashboard() {
   const endOfYear = new Date(currentYear, 11, 31);
   const remainingDaysCalculated = Math.max(
     0,
-    Math.ceil((endOfYear - today) / (1000 * 60 * 60 * 24))
+    Math.ceil((endOfYear.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   );
 
   // Fallback if complianceData not loaded yet

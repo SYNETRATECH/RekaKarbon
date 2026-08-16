@@ -7,10 +7,7 @@ import {
   ExternalLink,
   MapPin,
   TreePine,
-  Activity,
   Coins,
-  CheckCircle2,
-  Lock,
   Layers,
   Sparkles,
 } from 'lucide-react';
@@ -21,9 +18,9 @@ export default function PurchasedCertificatesProjects() {
   const certs =
     purchasedCertificates?.length > 0 ? purchasedCertificates : MOCK_PURCHASED_CERTIFICATES;
 
-  const [selectedCert, setSelectedCert] = useState(certs[0]);
+  const [selectedCert] = useState(certs[0]);
 
-  const totalVolume = certs.reduce((acc, c) => acc + c.purchasedVolumeTCO2e, 0);
+  const totalVolume = certs.reduce((acc: number, c: any) => acc + c.purchasedVolumeTCO2e, 0);
 
   return (
     <div className="space-y-8 animate-fade-in text-left">
@@ -121,7 +118,7 @@ export default function PurchasedCertificatesProjects() {
         </div>
 
         <div className="space-y-6">
-          {certs.map((cert) => (
+          {certs.map((cert: any) => (
             <div
               key={cert.id}
               className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden hover:border-emerald-500/50 transition-all space-y-0"

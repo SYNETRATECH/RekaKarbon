@@ -15,13 +15,27 @@ import {
   RotateCcw,
   Layers,
 } from 'lucide-react';
+import { ForestProjectItem } from '../../../types';
 
-const TILE_URLS = {
+const TILE_URLS: {
+  satellite: string;
+  topo: string;
+  street: string;
+} = {
   satellite:
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   topo: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
   street: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{y}/{x}{r}.png',
 };
+
+type ProjectData = {
+  polygonCoords: number;
+  coordinates: number;
+};
+
+type MapType = 'satellite' | 'topo' | 'street';
+
+const mapTypes: MapType[] = ['satellite', 'topo', 'street'];
 
 export default function ProjectEditorPage() {
   const {
@@ -49,7 +63,7 @@ export default function ProjectEditorPage() {
   });
 
   // Helper to safely extract initial polygon points array
-  const getInitialCoords = (prj) => {
+  const getInitialCoords = (prj: ProjectData) => {
     if (!prj) {
       return [
         { lat: -6.8947, lng: 112.0454 },
@@ -103,12 +117,12 @@ export default function ProjectEditorPage() {
 
   // Polygon Coordinates State
   const [coords, setCoords] = useState(getInitialCoords(editingProjectData));
-  const [tileType, setTileType] = useState('satellite');
+  const [tileType, setTileType] = useState<MapType>('satellite');
 
   // Leaflet Map Refs
   const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const polygonLayerRef = useRef(null);
+  const mapInstanceRef = useRef<L.Map>(null);
+  const polygonLayerRef = useRef<L.Polygon>(null);
   const markersGroupRef = useRef(L.layerGroup());
 
   // Geodetic Calculations with NaN Fallback Safety
@@ -174,7 +188,7 @@ export default function ProjectEditorPage() {
 
     if (coords.length > 0) {
       const sortedCoords = sortPolygonCoordinates(coords);
-      const latLngs = sortedCoords.map((c) => [c.lat, c.lng]);
+      const latLngs: L.LatLngExpression[] = sortedCoords.map((c) => [c.lat, c.lng]);
 
       // Draw Polygon
       if (coords.length >= 3) {
@@ -214,12 +228,12 @@ export default function ProjectEditorPage() {
     }
   }, [coords]);
 
-  const handlePointChange = (index, field, value) => {
+  const handlePointChange = (index: number, field: string, value: string) => {
     const numVal = parseFloat(value) || 0;
     setCoords((prev) => prev.map((p, idx) => (idx === index ? { ...p, [field]: numVal } : p)));
   };
 
-  const removePoint = (index) => {
+  const removePoint = (index: number) => {
     setCoords((prev) => prev.filter((_, idx) => idx !== index));
   };
 
@@ -234,7 +248,7 @@ export default function ProjectEditorPage() {
     ]);
   };
 
-  const handleSave = (e) => {
+  const handleSave = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
     const sortedCoords = sortPolygonCoordinates(coords);
@@ -247,7 +261,7 @@ export default function ProjectEditorPage() {
         polygonCoords: formattedCoords,
       });
     } else {
-      const newPrj = {
+      const newPrj: ForestProjectItem = {
         id: `PRJ-REG-00${Math.floor(100 + Math.random() * 900)}`,
         ...formData,
         coordinates: [centerLat, centerLng],
@@ -415,6 +429,8 @@ export default function ProjectEditorPage() {
                     type="file"
                     accept=".pdf,.xlsx,.xls"
                     onChange={(e) => {
+                      if (e.target.files == null) return;
+
                       const file = e.target.files[0];
                       if (file) {
                         setFormData({
@@ -534,7 +550,7 @@ export default function ProjectEditorPage() {
 
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-slate-400 uppercase">Layer:</span>
-              {['satellite', 'topo', 'street'].map((t) => (
+              {mapTypes.map((t) => (
                 <button
                   key={t}
                   onClick={() => setTileType(t)}

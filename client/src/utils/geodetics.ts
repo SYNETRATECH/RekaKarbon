@@ -1,17 +1,34 @@
+export type CoordPoint = { lat?: number; lng?: number } | [number, number];
+
+export interface GeodeticResult {
+  areaVal: string;
+  perimeterVal: string;
+  estimatedCarbon: string;
+}
+
 /**
  * Sorts polygon coordinates in polar angle order around centroid to form a clean perimeter boundary without self-intersections.
  */
-export function sortPolygonCoordinates(coords) {
+export function sortPolygonCoordinates<T extends CoordPoint>(coords: T[]): T[] {
   if (!coords || coords.length < 3) return coords;
 
-  const cLat = coords.reduce((sum, c) => sum + (c.lat ?? c[0]), 0) / coords.length;
-  const cLng = coords.reduce((sum, c) => sum + (c.lng ?? c[1]), 0) / coords.length;
+  const cLat =
+    coords.reduce((sum, c) => {
+      const lat = Array.isArray(c) ? c[0] : (c.lat ?? 0);
+      return sum + lat;
+    }, 0) / coords.length;
+
+  const cLng =
+    coords.reduce((sum, c) => {
+      const lng = Array.isArray(c) ? c[1] : (c.lng ?? 0);
+      return sum + lng;
+    }, 0) / coords.length;
 
   return [...coords].sort((a, b) => {
-    const latA = a.lat ?? a[0];
-    const lngA = a.lng ?? a[1];
-    const latB = b.lat ?? b[0];
-    const lngB = b.lng ?? b[1];
+    const latA = Array.isArray(a) ? a[0] : (a.lat ?? 0);
+    const lngA = Array.isArray(a) ? a[1] : (a.lng ?? 0);
+    const latB = Array.isArray(b) ? b[0] : (b.lat ?? 0);
+    const lngB = Array.isArray(b) ? b[1] : (b.lng ?? 0);
 
     const angleA = Math.atan2(latA - cLat, lngA - cLng);
     const angleB = Math.atan2(latB - cLat, lngB - cLng);
@@ -24,11 +41,14 @@ export function sortPolygonCoordinates(coords) {
  * Calculates geodetic measurements (area and perimeter) using coordinates and project center.
  * Uses a local flat-grid approximation suitable for close-range GIS calculations.
  *
- * @param {Array} coords - List of {lat, lng} coordinates.
- * @param {Array} center - Project center [lat, lng].
- * @returns {Object} { areaVal, perimeterVal, estimatedCarbon }
+ * @param coords - List of coordinates.
+ * @param center - Project center [lat, lng].
+ * @returns {GeodeticResult} { areaVal, perimeterVal, estimatedCarbon }
  */
-export function calculateGeodetics(coords, center) {
+export function calculateGeodetics(
+  coords: CoordPoint[],
+  center: [number, number] | number[]
+): GeodeticResult {
   if (!coords || coords.length < 3) {
     return {
       areaVal: 'Min. 3 Titik',
@@ -43,10 +63,14 @@ export function calculateGeodetics(coords, center) {
   const latMetersPerDegree = 111132;
   const lngMetersPerDegree = 111132 * Math.cos(latRad);
 
-  const projected = sortedCoords.map((c) => ({
-    x: ((c.lng ?? c[1]) - center[1]) * lngMetersPerDegree,
-    y: ((c.lat ?? c[0]) - latMid) * latMetersPerDegree,
-  }));
+  const projected = sortedCoords.map((c) => {
+    const lat = Array.isArray(c) ? c[0] : (c.lat ?? 0);
+    const lng = Array.isArray(c) ? c[1] : (c.lng ?? 0);
+    return {
+      x: (lng - center[1]) * lngMetersPerDegree,
+      y: (lat - latMid) * latMetersPerDegree,
+    };
+  });
 
   let areaSum = 0;
   let perimeterSum = 0;

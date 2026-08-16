@@ -1,16 +1,13 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import {
   Users,
   UserPlus,
   Edit2,
   Trash2,
-  Plus,
   CheckCircle2,
   Clock,
-  MapPin,
   X,
-  ShieldCheck,
   Search,
   Wallet,
   AlertTriangle,
@@ -23,8 +20,8 @@ export default function KthFarmersManagement() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingKTH, setEditingKTH] = useState(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [editingKTH, setEditingKTH] = useState<any>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -53,7 +50,7 @@ export default function KthFarmersManagement() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (kth) => {
+  const openEditModal = (kth: any) => {
     setEditingKTH(kth);
     setFormData({
       groupName: kth.groupName,
@@ -67,7 +64,7 @@ export default function KthFarmersManagement() {
     setIsModalOpen(true);
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (editingKTH) {
       updateKTHGroup(editingKTH.id, formData);
@@ -82,13 +79,13 @@ export default function KthFarmersManagement() {
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: string) => {
     deleteKTHGroup(id);
     setDeleteConfirmId(null);
   };
 
   const filteredGroups = groups.filter(
-    (g) =>
+    (g: any) =>
       !searchTerm ||
       g.groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       g.leaderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -156,7 +153,7 @@ export default function KthFarmersManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredGroups.map((kth) => (
+              {filteredGroups.map((kth: any) => (
                 <tr key={kth.id} className="hover:bg-slate-50/70 transition-colors">
                   <td className="py-3.5 px-4 font-mono font-black text-slate-900">{kth.id}</td>
                   <td className="py-3.5 px-4">

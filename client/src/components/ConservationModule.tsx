@@ -2,21 +2,10 @@ import { useState, useEffect } from 'react';
 import { useCarbonStore } from '../store/useCarbonStore';
 import NDVIGauge from './NDVIGauge';
 import { calculateGeodetics } from '../utils/geodetics';
-import {
-  FileText,
-  Activity,
-  CheckCircle2,
-  Eye,
-  Download,
-  ShieldCheck,
-  Users,
-  Wallet,
-  ExternalLink,
-  Search,
-} from 'lucide-react';
+import { Activity, Download, ShieldCheck, Users, Wallet, ExternalLink, Search } from 'lucide-react';
 
 export default function ConservationModule() {
-  const [blockchainSubTab, setBlockchainSubTab] = useState('buyers'); // 'buyers' | 'vendors'
+  const [blockchainSubTab, setBlockchainSubTab] = useState<'buyers' | 'vendors'>('buyers');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -37,12 +26,8 @@ export default function ConservationModule() {
     setActiveIndex,
     setActiveTab,
     setTileType,
-    setIsReportModalOpen,
-    setSelectedReportStage,
     setSelectedStage,
     setSelectedTx,
-    setIsPublicReportOpen,
-    setPublicReportType,
     searchVerichainHash,
   } = useCarbonStore();
 
@@ -674,11 +659,11 @@ export default function ConservationModule() {
 
         {/* Visual Map Layers Toggle Selection */}
         <div className="border-t border-slate-100 pt-4 space-y-3 mt-4 shrink-0">
-          <span className="text-[9px] font-bold text-slate-450 uppercase tracking-wider block text-left">
+          <span className="text-[9px] font-bold text-slate-455 uppercase tracking-wider block text-left">
             Visual Base Layer Peta
           </span>
           <div className="grid grid-cols-3 gap-1.5">
-            {['satellite', 'topo', 'street'].map((type) => {
+            {(['satellite', 'topo', 'street'] as const).map((type) => {
               const label =
                 type === 'satellite' ? 'Satelit' : type === 'topo' ? 'Topografi' : 'Jalan';
               return (

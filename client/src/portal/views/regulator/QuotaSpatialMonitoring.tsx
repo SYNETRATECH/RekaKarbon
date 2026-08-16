@@ -9,36 +9,50 @@ export default function QuotaSpatialMonitoring() {
   return (
     <div className="space-y-8 animate-fade-in text-left">
       <div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Halaman Alokasi Kuota & Monitoring Nasional</h2>
-        <p className="text-xs text-slate-500 font-semibold mt-1">Otoritas Regulator KLHK & Kemenkeu untuk penerbitan kuota PTBAE-PU dan pemantauan kepatuhan emisi nasional secara geografis.</p>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+          Halaman Alokasi Kuota & Monitoring Nasional
+        </h2>
+        <p className="text-xs text-slate-500 font-semibold mt-1">
+          Otoritas Regulator KLHK & Kemenkeu untuk penerbitan kuota PTBAE-PU dan pemantauan
+          kepatuhan emisi nasional secara geografis.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
         {/* Fitur 1: Issue Quota PTBAE-PU Form Card */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
           <div className="flex items-center gap-2 text-emerald-800">
             <Send className="w-5 h-5 text-[#00C48C]" />
-            <h4 className="font-black text-base text-slate-900">Penerbitan Kuota Emisi (Issue Quota PTBAE-PU)</h4>
+            <h4 className="font-black text-base text-slate-900">
+              Penerbitan Kuota Emisi (Issue Quota PTBAE-PU)
+            </h4>
           </div>
 
           <div className="space-y-3 text-xs">
             <div className="space-y-1">
               <label className="font-bold text-slate-700">Pilih Industri Terdaftar:</label>
-              <select 
+              <select
                 value={selectedEmitter}
                 onChange={(e) => setSelectedEmitter(e.target.value)}
                 className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-extrabold text-slate-900 focus:outline-none"
               >
-                <option value="PT Semen Nusantara Tuban">PT Semen Nusantara Tuban (Semen & Industri)</option>
-                <option value="PLTU Suralaya Unit 1-8">PLTU Suralaya Unit 1-8 (Energi Listrik)</option>
-                <option value="PT Bio Kertas Karawang">PT Bio Kertas Karawang (Kertas & Pulp)</option>
+                <option value="PT Semen Nusantara Tuban">
+                  PT Semen Nusantara Tuban (Semen & Industri)
+                </option>
+                <option value="PLTU Suralaya Unit 1-8">
+                  PLTU Suralaya Unit 1-8 (Energi Listrik)
+                </option>
+                <option value="PT Bio Kertas Karawang">
+                  PT Bio Kertas Karawang (Kertas & Pulp)
+                </option>
               </select>
             </div>
 
             <div className="space-y-1">
-              <label className="font-bold text-slate-700">Alokasi Token PTBAE-PU (tCO2e / Tahun FY 2025):</label>
-              <input 
+              <label className="font-bold text-slate-700">
+                Alokasi Token PTBAE-PU (tCO2e / Tahun FY 2025):
+              </label>
+              <input
                 type="number"
                 value={issueQuotaAmount}
                 onChange={(e) => setIssueQuotaAmount(Number(e.target.value))}
@@ -58,7 +72,7 @@ export default function QuotaSpatialMonitoring() {
             </div>
           </div>
 
-          <button 
+          <button
             onClick={() => {
               setIsIssued(true);
               setTimeout(() => setIsIssued(false), 4000);
@@ -72,7 +86,8 @@ export default function QuotaSpatialMonitoring() {
           {isIssued && (
             <div className="bg-emerald-50 border border-slate-200 text-emerald-900 text-xs font-bold p-3 rounded-xl flex items-center gap-2 animate-fade-in">
               <CheckCircle2 className="w-4 h-4 text-[#00C48C]" />
-              Kuota PTBAE-PU sebanyak {issueQuotaAmount.toLocaleString('id-ID')} tCO2e berhasil diterbitkan ke {selectedEmitter}!
+              Kuota PTBAE-PU sebanyak {issueQuotaAmount.toLocaleString('id-ID')} tCO2e berhasil
+              diterbitkan ke {selectedEmitter}!
             </div>
           )}
         </div>
@@ -82,10 +97,13 @@ export default function QuotaSpatialMonitoring() {
           <div>
             <div className="flex items-center gap-2 text-slate-900 mb-2">
               <MapIcon className="w-5 h-5 text-emerald-600" />
-              <h4 className="font-black text-base text-slate-900">Peta Pengawasan Spasial Nasional</h4>
+              <h4 className="font-black text-base text-slate-900">
+                Peta Pengawasan Spasial Nasional
+              </h4>
             </div>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Integrasi Spasial GIS NusaCarbon API memetakan titik koordinat geografis cerobong industri nasional dan status batas kuota secara real-time.
+              Integrasi Spasial GIS NusaCarbon API memetakan titik koordinat geografis cerobong
+              industri nasional dan status batas kuota secara real-time.
             </p>
 
             <div className="my-4 space-y-2 text-xs">
@@ -105,7 +123,6 @@ export default function QuotaSpatialMonitoring() {
             Terhubung ke Satellite & Sensors CEMS Live GIS Stream
           </div>
         </div>
-
       </div>
     </div>
   );
