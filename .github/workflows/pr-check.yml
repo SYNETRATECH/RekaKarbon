@@ -104,6 +104,10 @@ jobs:
         run: pnpm server:build
 
       # --- BLOCKCHAIN VERIFICATION ---
+      - name: Typecheck smart contracts code
+        if: steps.changes.outputs.blockchain == 'true'
+        run: pnpm blockchain:typecheck
+
       - name: Compile smart contracts
         if: steps.changes.outputs.blockchain == 'true'
         run: pnpm blockchain:compile

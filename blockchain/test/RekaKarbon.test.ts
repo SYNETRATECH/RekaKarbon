@@ -1,12 +1,32 @@
 import { expect } from 'chai';
 import hardhat from 'hardhat';
+import type { ContractTransactionResponse } from 'ethers';
+import type { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers.js';
+
 const { ethers } = hardhat;
 
+interface CarbonAsset {
+  assetType: string;
+  creator: string;
+  totalSupply: bigint;
+  mintedAt: bigint;
+  metadata: string;
+  isFrozen: boolean;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RekaKarbonContract = any;
+
 describe('RekaKarbon Smart Contract', function () {
-  let RekaKarbon;
-  let rekaKarbon;
-  let admin, ministry, oracle, corpA, corpB;
-  let contractAddress;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let RekaKarbon: any;
+  let rekaKarbon: RekaKarbonContract;
+  let admin: HardhatEthersSigner,
+    ministry: HardhatEthersSigner,
+    oracle: HardhatEthersSigner,
+    corpA: HardhatEthersSigner,
+    corpB: HardhatEthersSigner;
+  let contractAddress: string;
 
   const GLOBAL_RESERVE = 0n;
   const PTBAE_PU = 1n;
@@ -36,23 +56,20 @@ describe('RekaKarbon Smart Contract', function () {
     });
 
     it('Harus menolak jika akun tanpa izin mencoba mencetak Jatah Emisi', async function () {
-      let error;
+      let error: Error | undefined;
       try {
         await rekaKarbon.connect(corpA).issueQuota(corpA.address, 1000n);
       } catch (err) {
-        error = err;
+        error = err as Error;
       }
       expect(error).to.not.be.undefined;
-      expect(error.message).to.include('AccessControlUnauthorizedAccount');
+      expect(error?.message).to.include('AccessControlUnauthorizedAccount');
     });
   });
 
   describe('2. Mint Offset Credit (Verifikasi AI) & Automatic Tax', function () {
     it('Harus mengizinkan Oracle mencetak SPE-GRK dan mengalokasikan 5% ke Reserve', async function () {
-      // Oracle mencetak 2000 ton CO2-e
-      // 5% (100n) masuk ke Reserve Pool (Smart Contract)
-      // 95% (1900n) masuk ke pembuat (Corp B)
-      const tx = await rekaKarbon
+      const tx: ContractTransactionResponse = await rekaKarbon
         .connect(oracle)
         .mintOffsetCredit(corpB.address, 2000n, 'Lat: -6.2, Long: 106.8');
       await tx.wait();
@@ -64,7 +81,7 @@ describe('RekaKarbon Smart Contract', function () {
       const reserveBalance = await rekaKarbon.balanceOf(contractAddress, GLOBAL_RESERVE);
       expect(reserveBalance).to.equal(100n);
 
-      const assetData = await rekaKarbon.carbonAssets(newAssetId);
+      const assetData: CarbonAsset = await rekaKarbon.carbonAssets(newAssetId);
       expect(assetData.assetType).to.equal('SPE-GRK');
       expect(assetData.isFrozen).to.be.false;
     });
@@ -81,73 +98,67 @@ describe('RekaKarbon Smart Contract', function () {
 
     it('Admin harus bisa membekukan (freeze) suatu aset', async function () {
       await rekaKarbon.connect(admin).freezeAsset(PTBAE_PU);
-      const assetData = await rekaKarbon.carbonAssets(PTBAE_PU);
+      const assetData: CarbonAsset = await rekaKarbon.carbonAssets(PTBAE_PU);
       expect(assetData.isFrozen).to.be.true;
     });
 
     it('Harus gagal melakukan transfer jika aset sedang dibekukan', async function () {
-      let error;
+      let error: Error | undefined;
       try {
         await rekaKarbon
           .connect(corpA)
           .safeTransferFrom(corpA.address, corpB.address, PTBAE_PU, 10n, '0x');
       } catch (err) {
-        error = err;
+        error = err as Error;
       }
       expect(error).to.not.be.undefined;
-      expect(error.message).to.include('Aset sedang dibekukan');
+      expect(error?.message).to.include('Aset sedang dibekukan');
     });
 
     it('Admin harus bisa membuka kembali (unfreeze) suatu aset', async function () {
       await rekaKarbon.connect(admin).unfreezeAsset(PTBAE_PU);
-      const assetData = await rekaKarbon.carbonAssets(PTBAE_PU);
+      const assetData: CarbonAsset = await rekaKarbon.carbonAssets(PTBAE_PU);
       expect(assetData.isFrozen).to.be.false;
     });
   });
 
   describe('5. Retire Carbon (Bukti Kepatuhan)', function () {
     it('Harus bisa me-retire token (burn) dan mengurangi saldo', async function () {
-      const initialBalance = await rekaKarbon.balanceOf(corpA.address, PTBAE_PU);
+      const initialBalance: bigint = await rekaKarbon.balanceOf(corpA.address, PTBAE_PU);
       await rekaKarbon.connect(corpA).retireCarbon(PTBAE_PU, 50n);
-      const finalBalance = await rekaKarbon.balanceOf(corpA.address, PTBAE_PU);
+      const finalBalance: bigint = await rekaKarbon.balanceOf(corpA.address, PTBAE_PU);
       expect(finalBalance).to.equal(initialBalance - 50n);
     });
   });
 
   describe('6. Insurance Swap Reserve', function () {
     it('Harus menolak klaim asuransi jika token tidak dibekukan', async function () {
-      const newAssetId = 2n; // Milik Corp B
+      const newAssetId = 2n;
 
-      let error;
+      let error: Error | undefined;
       try {
         await rekaKarbon.connect(corpB).swapFrozenAsset(newAssetId, 50n);
       } catch (err) {
-        error = err;
+        error = err as Error;
       }
       expect(error).to.not.be.undefined;
-      expect(error.message).to.include('Aset tidak dibekukan');
+      expect(error?.message).to.include('Aset tidak dibekukan');
     });
 
     it('Harus bisa menukar token beku dengan token cadangan (GLOBAL_RESERVE) jika dibekukan', async function () {
       const newAssetId = 2n;
 
-      // 1. Admin bekukan SPE-GRK milik Corp B (misal: hutan Corp B terbakar)
       await rekaKarbon.connect(admin).freezeAsset(newAssetId);
-
-      // 2. Corp B melakukan klaim asuransi 50 token
       await rekaKarbon.connect(corpB).swapFrozenAsset(newAssetId, 50n);
 
-      // 3. Verifikasi saldo: Token bekunya berkurang 50
       const balanceFrozen = await rekaKarbon.balanceOf(corpB.address, newAssetId);
-      expect(balanceFrozen).to.equal(1850n); // 1900 - 50
+      expect(balanceFrozen).to.equal(1850n);
 
-      // 4. Verifikasi saldo asuransi Corp B bertambah 50
       const balanceReserve = await rekaKarbon.balanceOf(corpB.address, GLOBAL_RESERVE);
       expect(balanceReserve).to.equal(50n);
 
-      // 5. Saldo asuransi di Smart Contract berkurang 50
       const contractReserveBalance = await rekaKarbon.balanceOf(contractAddress, GLOBAL_RESERVE);
-      expect(contractReserveBalance).to.equal(50n); // 100 - 50
+      expect(contractReserveBalance).to.equal(50n);
     });
   });
 });

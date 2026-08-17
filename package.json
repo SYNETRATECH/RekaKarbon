@@ -27,8 +27,9 @@
     "server:typecheck": "pnpm --filter ./server typecheck",
     "server:test": "pnpm --filter ./server test",
     "blockchain:test": "pnpm --filter ./blockchain test",
-    "blockchain:compile": "pnpm --filter ./blockchain hardhat compile",
-    "typecheck": "pnpm client:typecheck && pnpm server:typecheck",
+    "blockchain:compile": "pnpm --filter ./blockchain compile",
+    "blockchain:typecheck": "pnpm --filter ./blockchain typecheck",
+    "typecheck": "pnpm client:typecheck && pnpm server:typecheck && pnpm blockchain:typecheck",
     "prepare": "husky"
   },
   "keywords": [],
