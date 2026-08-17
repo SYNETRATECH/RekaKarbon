@@ -13,6 +13,8 @@ services:
       - --rpc-ws-enabled=true
       - --rpc-ws-host=0.0.0.0
       - --host-allowlist="*"
+      - --miner-enabled=true
+      - --miner-coinbase=0x627306090abaB3A6e1400e9345bC60c78a8BEf57
     ports:
       - "8545:8545" # HTTP JSON-RPC
       - "8546:8546" # WebSocket
