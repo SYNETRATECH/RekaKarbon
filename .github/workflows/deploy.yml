@@ -26,10 +26,9 @@ jobs:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
+        password: ${{ secrets.SERVER_PASSWORD }}
         # Jika Anda menggunakan port selain 22, tambahkan baris 'port' di bawah ini:
         # port: 2227
-        # Jika Anda memakai password (bukan SSH key), hapus 'key:' dan gunakan:
-        # password: ${{ secrets.SERVER_PASSWORD }}
         
         # Script ini akan dieksekusi di dalam server Anda secara otomatis
         script: |
