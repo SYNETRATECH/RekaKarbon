@@ -39,6 +39,12 @@ jobs:
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
               - '.github/workflows/**'
+            blockchain:
+              - 'blockchain/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/**'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -96,3 +102,17 @@ jobs:
       - name: Build server
         if: steps.changes.outputs.server == 'true'
         run: pnpm server:build
+
+      # --- BLOCKCHAIN VERIFICATION ---
+      - name: Typecheck smart contracts code
+        if: steps.changes.outputs.blockchain == 'true'
+        run: pnpm blockchain:typecheck
+
+      - name: Compile smart contracts
+        if: steps.changes.outputs.blockchain == 'true'
+        run: pnpm blockchain:compile
+
+      - name: Test smart contracts
+        if: steps.changes.outputs.blockchain == 'true'
+        run: pnpm blockchain:test
+
