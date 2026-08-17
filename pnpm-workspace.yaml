@@ -1,9 +1,11 @@
 packages:
   - 'client'
   - 'server'
+  - 'blockchain'
 allowBuilds:
   '@prisma/engines': true
   esbuild: true
+  keccak: true
   prisma: true
   unrs-resolver: true
 engineStrict: true
