@@ -12,11 +12,8 @@ import {
   Search,
 } from 'lucide-react';
 
-import { MOCK_BURSA_ITEMS } from '../../../lib/mock/bursa';
-
 export default function CarbonDexMarket() {
-  const { bursaItems: storeBursaItems } = useCarbonStore();
-  const bursaItems = storeBursaItems?.length > 0 ? storeBursaItems : MOCK_BURSA_ITEMS;
+  const { bursaItems } = useCarbonStore();
 
   const [bursaFilter, setBursaFilter] = useState<'all' | 'hutan' | 'mangrove' | 'gambut'>('all');
   const [sortBy, setSortBy] = useState<'pasokan' | 'harga' | 'perubahan'>('pasokan');

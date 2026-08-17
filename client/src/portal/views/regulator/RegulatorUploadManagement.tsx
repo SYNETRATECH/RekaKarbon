@@ -24,13 +24,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { INITIAL_REGULATION_UPLOADS } from '../../../lib/mock/regulator';
 import { formatFileSize } from '../../../lib/formatters';
 import { formatDateTime } from '../../../lib/dates';
 
 export default function RegulatorUploadManagement() {
-  const { regulationUploads, addRegulationUpload } = useCarbonStore();
-  const docs = regulationUploads?.length > 0 ? regulationUploads : INITIAL_REGULATION_UPLOADS;
+  const { regulationUploads: docs, addRegulationUpload } = useCarbonStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');

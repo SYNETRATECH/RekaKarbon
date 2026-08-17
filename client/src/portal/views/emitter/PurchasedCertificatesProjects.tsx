@@ -13,14 +13,11 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MOCK_PURCHASED_CERTIFICATES } from '../../../lib/mock/certificates';
 import { formatCurrency } from '../../../lib/formatters';
 import { formatDate } from '../../../lib/dates';
 
 export default function PurchasedCertificatesProjects() {
-  const { purchasedCertificates } = useCarbonStore();
-  const certs =
-    purchasedCertificates?.length > 0 ? purchasedCertificates : MOCK_PURCHASED_CERTIFICATES;
+  const { purchasedCertificates: certs } = useCarbonStore();
 
   const [selectedCert] = useState(certs[0]);
 

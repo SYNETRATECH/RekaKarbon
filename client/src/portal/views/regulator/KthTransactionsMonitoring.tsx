@@ -22,15 +22,16 @@ import {
   FileSpreadsheet,
   Package,
 } from 'lucide-react';
-import { MOCK_KTH_TRANSACTIONS } from '../../../lib/mock/regulator';
-import { PROJECTS_DATA } from '../../../lib/mock/projects';
 import { formatCurrency } from '../../../lib/formatters';
 import { formatDateTime } from '../../../lib/dates';
 
 export default function KthTransactionsMonitoring() {
-  const { kthTransactions, forestProjects, projects, updateKTHTransactionStatus } =
-    useCarbonStore();
-  const txs = kthTransactions?.length > 0 ? kthTransactions : MOCK_KTH_TRANSACTIONS;
+  const {
+    kthTransactions: txs,
+    forestProjects,
+    projects,
+    updateKTHTransactionStatus,
+  } = useCarbonStore();
 
   const [selectedProject, setSelectedProject] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -112,15 +113,15 @@ export default function KthTransactionsMonitoring() {
     return matchesProject && matchesStatus;
   });
 
-  // Helper to match transaction project with rich PROJECTS_DATA
+  // Helper to match transaction project with rich store projects
   const getProjectDetails = (projectName: string) => {
-    if (!projectName) return PROJECTS_DATA[0];
-    const found = PROJECTS_DATA.find(
+    if (!projectName) return projects[0];
+    const found = projects.find(
       (p: any) =>
-        p.name.toLowerCase().includes(projectName.toLowerCase()) ||
-        projectName.toLowerCase().includes(p.name.toLowerCase())
+        p.title?.toLowerCase().includes(projectName.toLowerCase()) ||
+        p.category?.toLowerCase().includes(projectName.toLowerCase())
     );
-    return found || PROJECTS_DATA[0];
+    return found || projects[0];
   };
 
   // Stage 1 (processing) -> Stage 2 (awaiting_farmer)

@@ -12,12 +12,10 @@ import {
   Wallet,
   AlertTriangle,
 } from 'lucide-react';
-import { INITIAL_KTH_GROUPS } from '../../../lib/mock/regulator';
 import { formatCurrency } from '../../../lib/formatters';
 
 export default function KthFarmersManagement() {
-  const { kthGroups, addKTHGroup, updateKTHGroup, deleteKTHGroup } = useCarbonStore();
-  const groups = kthGroups?.length > 0 ? kthGroups : INITIAL_KTH_GROUPS;
+  const { kthGroups: groups, addKTHGroup, updateKTHGroup, deleteKTHGroup } = useCarbonStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);

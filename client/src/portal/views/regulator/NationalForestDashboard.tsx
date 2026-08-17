@@ -8,13 +8,10 @@ import {
   BarChart3,
   CheckCircle2,
 } from 'lucide-react';
-import { NATIONAL_FOREST_REGIONS } from '../../../lib/mock/regulator';
 import { formatArea, formatCarbon, formatCurrency } from '../../../lib/formatters';
 
 export default function NationalForestDashboard() {
-  const { nationalForestRegions } = useCarbonStore();
-  const regions =
-    nationalForestRegions?.length > 0 ? nationalForestRegions : NATIONAL_FOREST_REGIONS;
+  const { nationalForestRegions: regions } = useCarbonStore();
 
   return (
     <div className="space-y-8 animate-fade-in text-left">

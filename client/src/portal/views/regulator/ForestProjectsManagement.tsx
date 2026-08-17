@@ -18,19 +18,17 @@ import {
   Wallet,
   Building2,
 } from 'lucide-react';
-import { INITIAL_FOREST_PROJECTS } from '../../../lib/mock/regulator';
 import { formatCurrency, formatFileSize, parseNumeric } from '../../../lib/formatters';
 
 export default function ForestProjectsManagement() {
   const {
-    forestProjects,
+    forestProjects: projects,
     projects: landingProjects,
     setEditingProjectData,
     setAdminActiveTab,
     setSelectedStage,
     setSelectedTx,
   } = useCarbonStore();
-  const projects = forestProjects?.length > 0 ? forestProjects : INITIAL_FOREST_PROJECTS;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProgressProject, setSelectedProgressProject] = useState<any>(null);

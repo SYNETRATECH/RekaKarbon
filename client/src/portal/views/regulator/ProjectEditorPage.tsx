@@ -175,7 +175,11 @@ export default function ProjectEditorPage() {
   }, [coordinates, LModule]);
 
   // Geodetic Area Calculation
-  const geodeticStats = calculateGeodetics(coordinates as any, 'satellite');
+  const projectCenter: [number, number] =
+    coordinates && coordinates.length > 0 && Array.isArray(coordinates[0])
+      ? [coordinates[0][0], coordinates[0][1]]
+      : [-0.7893, 113.9213];
+  const geodeticStats = calculateGeodetics((coordinates || []) as any, projectCenter);
 
   // Form Inputs Handler
   const handleInputChange = (field: string, value: any) => {
