@@ -12,23 +12,9 @@ import {
   mockKthLogs,
 } from '../lib/mock/audit';
 import { api } from '../lib/api';
+import type { AnomalySummary, EnergyCorrelationItem } from '../types';
 
 const useMock = import.meta.env.VITE_USE_MOCK_DATA !== 'false';
-
-export interface AnomalySummary {
-  emitenTerdeteksiAnomali: number;
-  totalEmitenAktif: number;
-  rataDeviasiEmisi: string;
-  descDeviasi: string;
-  eFakturTidakCocok: number;
-  descEFaktur: string;
-}
-
-export interface EnergyCorrelationItem {
-  name: string;
-  reported: number;
-  estimated: number;
-}
 
 export interface AuditRepository {
   getAiAnomalyLogs(): Promise<any[]>;

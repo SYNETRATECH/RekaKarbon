@@ -1,9 +1,9 @@
 export interface NationalForestRegion {
   id: string;
   regionName: string; // e.g. "Kalimantan"
-  areaHectares: string; // "5.8 Miliar Ha"
-  carbonSequestrationTCO2e: string; // "68.2 M tCO2e"
-  fundingDisbursedIDR: string; // "Rp 18.5 Miliar"
+  areaHectares: number; // 5800000000
+  carbonSequestrationTCO2e: number; // 68200000
+  fundingDisbursedIDR: number; // 18500000000
   forestHealthPercent: number; // 96.4
 }
 
@@ -16,11 +16,11 @@ export interface ForestProjectItem {
   coordinates: [number, number];
   targetSequestrationTCO2e: number;
   actualSequestrationTCO2e: number;
-  fundingBudgetIDR: string;
+  fundingBudgetIDR: number;
   assignedKTH: string;
   dMRVStatus: 'verified' | 'pending_inspection' | 'revision';
   budgetReportFileName?: string;
-  budgetReportFileSize?: string;
+  budgetReportFileSize?: number | string;
   polygonCoords?: Array<{ lat: number; lng: number }> | Array<[number, number]>;
 }
 
@@ -32,7 +32,7 @@ export interface KTHGroupItem {
   location: string;
   kybStatus: 'verified' | 'pending' | 'rejected';
   registrationNumber: string;
-  totalIncentiveReceivedIDR: string;
+  totalIncentiveReceivedIDR: number;
   walletAddress: string;
 }
 
@@ -43,7 +43,7 @@ export interface KTHTransactionItem {
   kthName: string;
   projectName: string;
   volumeTCO2e: number;
-  amountIDR: string;
+  amountIDR: number;
   status:
     | 'completed'
     | 'processing'
@@ -71,7 +71,7 @@ export interface RegulationDocumentUploadItem {
   categoryLabel: string;
   agencyIssuer: 'KLHK' | 'DJP' | 'KLHK & DJP';
   fileName: string;
-  fileSize: string;
+  fileSize: number | string;
   uploadDate: string;
   signatoryPerson: string;
   targetEntityName: string; // e.g. "PT Semen Nusantara Tuban" or "Nasional"
@@ -82,4 +82,4 @@ export interface KTHGroupModel {
   id: string;
 }
 
-export interface RegulationUploadModel {}
+export type RegulationUploadModel = RegulationDocumentUploadItem;

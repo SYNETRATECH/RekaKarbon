@@ -1,5 +1,16 @@
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { TreePine, Leaf, Globe, MapPin, CheckCircle2, CloudRain } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 
 export default function SpatialMRVEvaluation() {
   const {
@@ -93,7 +104,7 @@ export default function SpatialMRVEvaluation() {
       {/* 3 HERO STAT CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Metric 1: Total Area Terverifikasi */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs flex items-center justify-between">
+        <Card className="rounded-3xl p-6 border-slate-200 shadow-2xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-500 block">
               Total Area Terverifikasi
@@ -108,10 +119,10 @@ export default function SpatialMRVEvaluation() {
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-[#00C48C] flex items-center justify-center shrink-0">
             <TreePine className="w-6 h-6" />
           </div>
-        </div>
+        </Card>
 
         {/* Metric 2: Total Kredit Karbon */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs flex items-center justify-between">
+        <Card className="rounded-3xl p-6 border-slate-200 shadow-2xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-500 block">Total Kredit Karbon</span>
             <h3 className="text-3xl font-black text-slate-900 leading-none">
@@ -124,10 +135,10 @@ export default function SpatialMRVEvaluation() {
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-[#00C48C] flex items-center justify-center shrink-0">
             <Leaf className="w-6 h-6" />
           </div>
-        </div>
+        </Card>
 
         {/* Metric 3: Blokade Awan */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs flex items-center justify-between">
+        <Card className="rounded-3xl p-6 border-slate-200 shadow-2xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-500 block">Blokade Awan</span>
             <h3 className="text-3xl font-black text-amber-500 leading-none">
@@ -140,13 +151,13 @@ export default function SpatialMRVEvaluation() {
           <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-500 flex items-center justify-center shrink-0">
             <Globe className="w-6 h-6" />
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* TWO-COLUMN MAIN WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: CONSERVATION AREAS TABLE (8 of 12 cols) */}
-        <div className="lg:col-span-8 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
+        <Card className="lg:col-span-8 rounded-3xl p-6 border-slate-200 shadow-2xs space-y-4">
           <div className="pb-2 border-b border-slate-100">
             <span className="text-[9px] font-black text-slate-400 tracking-widest uppercase block">
               NUSACARBON ENVINTEL API
@@ -156,125 +167,123 @@ export default function SpatialMRVEvaluation() {
             </h4>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-3">Kawasan</th>
-                  <th className="py-3 px-3 text-right">Luas (ha)</th>
-                  <th className="py-3 px-3">NDVI</th>
-                  <th className="py-3 px-3">EVI</th>
-                  <th className="py-3 px-3 text-right">Kredit (tCO2e)</th>
-                  <th className="py-3 px-3 text-center">Awan</th>
-                  <th className="py-3 px-3 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {areas.map((area: any) => {
-                  const isSelected = selectedArea?.id === area.id;
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="py-3 px-3">Kawasan</TableHead>
+                <TableHead className="py-3 px-3 text-right">Luas (ha)</TableHead>
+                <TableHead className="py-3 px-3">NDVI</TableHead>
+                <TableHead className="py-3 px-3">EVI</TableHead>
+                <TableHead className="py-3 px-3 text-right">Kredit (tCO2e)</TableHead>
+                <TableHead className="py-3 px-3 text-center">Awan</TableHead>
+                <TableHead className="py-3 px-3 text-center">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {areas.map((area: any) => {
+                const isSelected = selectedArea?.id === area.id;
 
-                  return (
-                    <tr
-                      key={area.id}
-                      onClick={() => setSelectedConservationId(area.id)}
-                      className={`transition-all cursor-pointer hover:bg-slate-50/80 ${
-                        isSelected ? 'bg-emerald-50/40 ring-1 ring-emerald-500/30' : ''
-                      }`}
-                    >
-                      {/* Kawasan Name & Location */}
-                      <td className="py-3.5 px-3">
-                        <p className="font-black text-slate-900 leading-tight">{area.name}</p>
-                        <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                          {area.location}
-                        </span>
-                      </td>
+                return (
+                  <TableRow
+                    key={area.id}
+                    onClick={() => setSelectedConservationId(area.id)}
+                    className={`cursor-pointer ${
+                      isSelected ? 'bg-emerald-50/40 border-l-4 border-l-[#033C2E]' : ''
+                    }`}
+                  >
+                    {/* Kawasan Name & Location */}
+                    <TableCell className="py-3.5 px-3">
+                      <p className="font-black text-slate-900 leading-tight">{area.name}</p>
+                      <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
+                        {area.location}
+                      </span>
+                    </TableCell>
 
-                      {/* Luas */}
-                      <td className="py-3.5 px-3 text-right font-black text-slate-700">
-                        {area.areaHectares.toLocaleString('id-ID')}
-                      </td>
+                    {/* Luas */}
+                    <TableCell className="py-3.5 px-3 text-right font-black text-slate-700">
+                      {area.areaHectares.toLocaleString('id-ID')}
+                    </TableCell>
 
-                      {/* NDVI Bar & Score */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-12 h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-[#00C48C] rounded-full"
-                              style={{ width: `${(area.ndvi / 1) * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="font-mono text-xs font-black text-slate-800">
-                            {area.ndvi}
-                          </span>
+                    {/* NDVI Bar & Score */}
+                    <TableCell className="py-3.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[#00C48C] rounded-full"
+                            style={{ width: `${(area.ndvi / 1) * 100}%` }}
+                          ></div>
                         </div>
-                      </td>
-
-                      {/* EVI Bar & Score */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-12 h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-emerald-400 rounded-full"
-                              style={{ width: `${(area.evi / 1) * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="font-mono text-xs font-black text-slate-800">
-                            {area.evi}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Kredit (tCO2e) */}
-                      <td className="py-3.5 px-3 text-right font-black text-slate-900">
-                        {area.carbonCredit.toLocaleString('id-ID')}
-                      </td>
-
-                      {/* Awan */}
-                      <td className="py-3.5 px-3 text-center font-bold">
-                        <span
-                          className={
-                            parseInt(area.cloudCover) > 50
-                              ? 'text-rose-600 font-black'
-                              : 'text-slate-600'
-                          }
-                        >
-                          {area.cloudCover}
+                        <span className="font-mono text-xs font-black text-slate-800">
+                          {area.ndvi}
                         </span>
-                      </td>
+                      </div>
+                    </TableCell>
 
-                      {/* Status */}
-                      <td className="py-3.5 px-3 text-center">
-                        {area.status === 'verified' && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <span>✓</span> Terverifikasi
-                          </span>
-                        )}
-                        {area.status === 'drone_required' && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                            <span>☁</span> Drone Required
-                          </span>
-                        )}
-                        {area.status === 'pending' && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                            <span>⏳</span> Pending
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    {/* EVI Bar & Score */}
+                    <TableCell className="py-3.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-400 rounded-full"
+                            style={{ width: `${(area.evi / 1) * 100}%` }}
+                          ></div>
+                        </div>
+                        <span className="font-mono text-xs font-black text-slate-800">
+                          {area.evi}
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    {/* Kredit (tCO2e) */}
+                    <TableCell className="py-3.5 px-3 text-right font-black text-slate-900">
+                      {area.carbonCredit.toLocaleString('id-ID')}
+                    </TableCell>
+
+                    {/* Awan */}
+                    <TableCell className="py-3.5 px-3 text-center font-bold">
+                      <span
+                        className={
+                          parseInt(area.cloudCover) > 50
+                            ? 'text-rose-600 font-black'
+                            : 'text-slate-600'
+                        }
+                      >
+                        {area.cloudCover}
+                      </span>
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell className="py-3.5 px-3 text-center">
+                      {area.status === 'verified' && (
+                        <Badge variant="mint" className="text-[11px] font-black px-2.5 py-0.5">
+                          ✓ Terverifikasi
+                        </Badge>
+                      )}
+                      {area.status === 'drone_required' && (
+                        <Badge variant="warning" className="text-[11px] font-black px-2.5 py-0.5">
+                          ☁ Drone Required
+                        </Badge>
+                      )}
+                      {area.status === 'pending' && (
+                        <Badge variant="secondary" className="text-[11px] font-black px-2.5 py-0.5">
+                          ⏳ Pending
+                        </Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
 
         {/* RIGHT COLUMN: INTERACTIVE POLYGON MAP PREVIEW (4 of 12 cols) */}
-        <div className="lg:col-span-4 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
+        <Card className="lg:col-span-4 rounded-3xl p-6 border-slate-200 shadow-2xs flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <h4 className="text-base font-black text-slate-900">Peta Polygon Interaktif</h4>
-            <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#00C48C] border border-emerald-200">
+            <Badge variant="mint" className="text-[10px]">
               Sentinel-2
-            </span>
+            </Badge>
           </div>
 
           {selectedArea ? (
@@ -343,21 +352,21 @@ export default function SpatialMRVEvaluation() {
 
               {/* Action Button */}
               {parseInt(selectedArea.cloudCover) > 50 ? (
-                <button
+                <Button
                   onClick={() => setAdminActiveTab('drone')}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black text-xs py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black text-xs py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                 >
                   <CloudRain className="w-4 h-4" />
                   Buka Modul Validasi Drone Hibrida
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={() => setAdminActiveTab('gate')}
-                  className="w-full bg-primary-gradient hover:opacity-95 text-white font-black text-xs py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
+                  className="w-full bg-primary-gradient hover:opacity-95 text-white font-black text-xs py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                 >
                   <CheckCircle2 className="w-4 h-4 text-[#00C48C]" />
                   Lanjut ke Gerbang Otorisasi
-                </button>
+                </Button>
               )}
             </div>
           ) : (
@@ -371,7 +380,7 @@ export default function SpatialMRVEvaluation() {
               </p>
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

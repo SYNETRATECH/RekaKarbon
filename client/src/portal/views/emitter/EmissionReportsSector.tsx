@@ -21,11 +21,8 @@ import {
   ChevronDown,
   ArrowLeft,
 } from 'lucide-react';
-import { MOCK_EMISSION_REPORTS } from '../../../lib/mock/reports';
-
 export default function EmissionReportsSector() {
-  const { emissionReports } = useCarbonStore();
-  const reports = emissionReports?.length > 0 ? emissionReports : MOCK_EMISSION_REPORTS;
+  const { emissionReports: reports } = useCarbonStore();
 
   const [selectedYear, setSelectedYear] = useState(2026);
   const [activeTabCategory, setActiveTabCategory] = useState(1); // 1 | 2 | 3

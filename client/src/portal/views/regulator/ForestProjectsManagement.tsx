@@ -18,18 +18,17 @@ import {
   Wallet,
   Building2,
 } from 'lucide-react';
-import { INITIAL_FOREST_PROJECTS } from '../../../lib/mock/regulator';
+import { formatCurrency, formatFileSize, parseNumeric } from '../../../lib/formatters';
 
 export default function ForestProjectsManagement() {
   const {
-    forestProjects,
+    forestProjects: projects,
     projects: landingProjects,
     setEditingProjectData,
     setAdminActiveTab,
     setSelectedStage,
     setSelectedTx,
   } = useCarbonStore();
-  const projects = forestProjects?.length > 0 ? forestProjects : INITIAL_FOREST_PROJECTS;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProgressProject, setSelectedProgressProject] = useState<any>(null);
@@ -300,17 +299,14 @@ export default function ForestProjectsManagement() {
       },
     ];
 
-    const totalBudgetVal = prj.fundingBudgetIDR
-      ? parseFloat(prj.fundingBudgetIDR.replace(/[^0-9.]/g, '')) *
-          (prj.fundingBudgetIDR.includes('Miliar') ? 1000000000 : 1000000) || 4500000000
-      : 4500000000;
+    const totalBudgetVal = parseNumeric(prj.fundingBudgetIDR) || 4500000000;
     const raisedBudgetVal = Math.round(
       totalBudgetVal * (pct > 0 ? Math.min(0.95, (pct / 100) * 0.75 + 0.15) : 0.62)
     );
     const fundingPct = Math.min(100, Math.round((raisedBudgetVal / totalBudgetVal) * 100));
 
-    const raisedBudgetFormatted = `Rp ${(raisedBudgetVal / 1000000000).toFixed(1)} M`;
-    const totalBudgetFormatted = `Rp ${(totalBudgetVal / 1000000000).toFixed(1)} M`;
+    const raisedBudgetFormatted = formatCurrency(raisedBudgetVal);
+    const totalBudgetFormatted = formatCurrency(totalBudgetVal);
 
     return {
       pct,
@@ -619,10 +615,10 @@ export default function ForestProjectsManagement() {
                         Total Anggaran Proyek
                       </span>
                       <p className="text-base font-black text-emerald-400 mt-1">
-                        {selectedProgressProject.fundingBudgetIDR}
+                        {formatCurrency(selectedProgressProject.fundingBudgetIDR)}
                       </p>
                       <span className="text-[10px] font-bold text-emerald-200 block mt-0.5">
-                        Tercairkan: Rp 2.8 Miliar
+                        Tercairkan: Rp 2.800.000.000
                       </span>
                     </div>
                   </div>
@@ -642,7 +638,7 @@ export default function ForestProjectsManagement() {
                     </span>
                     <span className="text-[10px] text-slate-500 font-semibold">
                       Dokumen Laporan Alokasi & Pengawasan Anggaran Proyek (
-                      {selectedProgressProject.budgetReportFileSize || '4.5 MB'})
+                      {formatFileSize(selectedProgressProject.budgetReportFileSize || 4718592)})
                     </span>
                   </div>
                 </div>
@@ -770,7 +766,7 @@ export default function ForestProjectsManagement() {
                             Total Anggaran Restorasi
                           </span>
                           <h4 className="text-base font-black text-emerald-400">
-                            {selectedProgressProject.fundingBudgetIDR}
+                            {formatCurrency(selectedProgressProject.fundingBudgetIDR)}
                           </h4>
                         </div>
                         <div className="text-right">

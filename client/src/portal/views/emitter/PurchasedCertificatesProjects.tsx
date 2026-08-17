@@ -11,12 +11,13 @@ import {
   Layers,
   Sparkles,
 } from 'lucide-react';
-import { MOCK_PURCHASED_CERTIFICATES } from '../../../lib/mock/certificates';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '../../../lib/formatters';
+import { formatDate } from '../../../lib/dates';
 
 export default function PurchasedCertificatesProjects() {
-  const { purchasedCertificates } = useCarbonStore();
-  const certs =
-    purchasedCertificates?.length > 0 ? purchasedCertificates : MOCK_PURCHASED_CERTIFICATES;
+  const { purchasedCertificates: certs } = useCarbonStore();
 
   const [selectedCert] = useState(certs[0]);
 
@@ -26,9 +27,12 @@ export default function PurchasedCertificatesProjects() {
     <div className="space-y-8 animate-fade-in text-left">
       {/* Header */}
       <div>
-        <span className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-md border border-slate-200">
+        <Badge
+          variant="outline"
+          className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 border-slate-200"
+        >
           CARBON CERTIFICATES & ASSETS
-        </span>
+        </Badge>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
           Sertifikat & Kondisi Proyek Karbon (Real-Time)
         </h2>
@@ -40,7 +44,7 @@ export default function PurchasedCertificatesProjects() {
 
       {/* HERO SUMMARY STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex items-center gap-4">
+        <Card className="rounded-2xl p-5 border-slate-200 shadow-2xs flex flex-row items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <Award className="w-6 h-6" />
           </div>
@@ -55,9 +59,9 @@ export default function PurchasedCertificatesProjects() {
               100% Terverifikasi
             </span>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex items-center gap-4">
+        <Card className="rounded-2xl p-5 border-slate-200 shadow-2xs flex flex-row items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#00C48C] flex items-center justify-center shrink-0">
             <TreePine className="w-6 h-6" />
           </div>
@@ -73,9 +77,9 @@ export default function PurchasedCertificatesProjects() {
               Offseting Aktif
             </span>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex items-center gap-4">
+        <Card className="rounded-2xl p-5 border-slate-200 shadow-2xs flex flex-row items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
             <Coins className="w-6 h-6" />
           </div>
@@ -88,9 +92,9 @@ export default function PurchasedCertificatesProjects() {
               Harga Acuan Rp 650rb/ton
             </span>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex items-center gap-4">
+        <Card className="rounded-2xl p-5 border-slate-200 shadow-2xs flex flex-row items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-6 h-6" />
           </div>
@@ -103,7 +107,7 @@ export default function PurchasedCertificatesProjects() {
               SPE-GRK & SRN-PPI
             </span>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* LIST OF PURCHASED CERTIFICATES WITH REAL-TIME CONDITION */}
@@ -180,7 +184,7 @@ export default function PurchasedCertificatesProjects() {
                     <div className="flex justify-between items-baseline border-t border-slate-200 pt-2">
                       <span className="text-xs text-slate-400 font-bold">Total Pembayaran</span>
                       <span className="text-sm font-black text-emerald-700">
-                        {cert.totalPaidIDR}
+                        {formatCurrency(cert.totalPaidIDR)}
                       </span>
                     </div>
                   </div>
@@ -206,7 +210,7 @@ export default function PurchasedCertificatesProjects() {
                       </span>
                     </div>
                     <span className="text-[10px] font-bold text-slate-400">
-                      Audit Terakhir: {cert.projectCondition.lastSpatialAuditDate}
+                      Audit Terakhir: {formatDate(cert.projectCondition.lastSpatialAuditDate)}
                     </span>
                   </div>
 
@@ -229,7 +233,7 @@ export default function PurchasedCertificatesProjects() {
                         Laju Penyerapan
                       </span>
                       <span className="text-sm font-black text-blue-900 block mt-1">
-                        {cert.projectCondition.carbonSequestrationRate}
+                        +{cert.projectCondition.carbonSequestrationRate} tCO2e/ha/thn
                       </span>
                       <span className="text-[9px] font-semibold text-blue-600 block mt-0.5">
                         Biomassa Tinggi
@@ -241,7 +245,7 @@ export default function PurchasedCertificatesProjects() {
                         Insentif KTH
                       </span>
                       <span className="text-sm font-black text-amber-900 block mt-1">
-                        {cert.projectCondition.kthIncentiveDisbursed}
+                        {formatCurrency(cert.projectCondition.kthIncentiveDisbursed)}
                       </span>
                       <span className="text-[9px] font-semibold text-amber-600 block mt-0.5">
                         Disalurkan 100%

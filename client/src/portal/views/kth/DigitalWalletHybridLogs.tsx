@@ -1,5 +1,8 @@
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { Wallet, Upload, CheckCircle2, FileImage } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function DigitalWalletHybridLogs() {
   const { kthLogs } = useCarbonStore();
@@ -22,7 +25,7 @@ export default function DigitalWalletHybridLogs() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Wallet Insentif Card */}
-        <div className="bg-slate-900 text-white rounded-3xl p-6 space-y-4 shadow-lg text-left flex flex-col justify-between">
+        <Card className="bg-slate-900 text-white rounded-3xl p-6 space-y-4 shadow-lg text-left flex flex-col justify-between border-slate-800">
           <div className="space-y-2">
             <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
               <Wallet className="w-4 h-4 text-[#00C48C]" />
@@ -36,29 +39,29 @@ export default function DigitalWalletHybridLogs() {
 
           <div className="pt-4 border-t border-slate-800 flex justify-between items-center text-xs">
             <span className="text-slate-400 font-semibold">Status Insentif:</span>
-            <span className="bg-emerald-500/20 text-emerald-300 font-bold px-3 py-1 rounded-full border border-emerald-500/30">
+            <Badge variant="mint" className="text-xs px-3 py-1 border-emerald-500/30">
               Tercairkan Langsung
-            </span>
+            </Badge>
           </div>
-        </div>
+        </Card>
 
         {/* Upload Log Hibrida Card */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4 text-left">
-          <div className="flex justify-between items-center">
-            <h4 className="font-black text-base text-slate-900 flex items-center gap-2">
+        <Card className="rounded-3xl border-slate-200 shadow-2xs space-y-4 text-left">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="font-black text-base text-slate-900 flex items-center gap-2">
               <FileImage className="w-4 h-4 text-[#00C48C]" />
               Log Unggahan Bukti Hibrida
-            </h4>
-            <button
+            </CardTitle>
+            <Button
+              className="bg-primary-gradient text-white text-[10px] font-extrabold px-3 py-1.5 h-auto rounded-xl shadow-xs cursor-pointer active:scale-95 flex items-center gap-1"
               onClick={handleUploadLog}
-              className="bg-primary-gradient text-white text-[10px] font-extrabold px-3 py-1.5 rounded-xl shadow-xs cursor-pointer active:scale-95 flex items-center gap-1"
             >
               <Upload className="w-3.5 h-3.5 text-[#00C48C]" />
               Unggah Foto / Drone
-            </button>
-          </div>
+            </Button>
+          </CardHeader>
 
-          <div className="space-y-3 text-xs">
+          <CardContent className="space-y-3 text-xs">
             {kthLogs.map((log: any) => (
               <div
                 key={log.id}
@@ -76,8 +79,8 @@ export default function DigitalWalletHybridLogs() {
                 <CheckCircle2 className="w-4 h-4 text-[#00C48C]" />
               </div>
             ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

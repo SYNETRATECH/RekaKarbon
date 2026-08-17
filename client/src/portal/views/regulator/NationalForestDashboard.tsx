@@ -5,16 +5,13 @@ import {
   Coins,
   ShieldCheck,
   MapPin,
-  TrendingUp,
   BarChart3,
   CheckCircle2,
 } from 'lucide-react';
-import { NATIONAL_FOREST_REGIONS } from '../../../lib/mock/regulator';
+import { formatArea, formatCarbon, formatCurrency } from '../../../lib/formatters';
 
 export default function NationalForestDashboard() {
-  const { nationalForestRegions } = useCarbonStore();
-  const regions =
-    nationalForestRegions?.length > 0 ? nationalForestRegions : NATIONAL_FOREST_REGIONS;
+  const { nationalForestRegions: regions } = useCarbonStore();
 
   return (
     <div className="space-y-8 animate-fade-in text-left">
@@ -76,7 +73,7 @@ export default function NationalForestDashboard() {
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Insentif Disalurkan
             </span>
-            <h3 className="text-2xl font-black text-slate-800">Rp 42.8 M</h3>
+            <h3 className="text-2xl font-black text-slate-800">Rp 42.800.000.000</h3>
             <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
               Ke Kelompok Tani
             </span>
@@ -127,17 +124,19 @@ export default function NationalForestDashboard() {
               <div className="space-y-2 pt-2 border-t border-slate-100 text-xs">
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-400 font-semibold">Luas Area</span>
-                  <span className="text-slate-900 font-black">{reg.areaHectares}</span>
+                  <span className="text-slate-900 font-black">{formatArea(reg.areaHectares)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-400 font-semibold">Estimasi Serapan</span>
                   <span className="text-emerald-600 font-black">
-                    {reg.carbonSequestrationTCO2e}
+                    {formatCarbon(reg.carbonSequestrationTCO2e)}
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-400 font-semibold">Insentif Terbuka</span>
-                  <span className="text-slate-900 font-black">{reg.fundingDisbursedIDR}</span>
+                  <span className="text-slate-900 font-black">
+                    {formatCurrency(reg.fundingDisbursedIDR)}
+                  </span>
                 </div>
                 <div className="flex justify-between py-1 items-center">
                   <span className="text-slate-400 font-semibold">Kesehatan Tutupan</span>
@@ -181,12 +180,14 @@ export default function NationalForestDashboard() {
               {regions.map((reg) => (
                 <tr key={reg.id} className="hover:bg-slate-50/70 transition-colors">
                   <td className="py-3.5 px-4 font-black text-slate-900">{reg.regionName}</td>
-                  <td className="py-3.5 px-4 text-slate-600 font-bold">{reg.areaHectares}</td>
+                  <td className="py-3.5 px-4 text-slate-600 font-bold">
+                    {formatArea(reg.areaHectares)}
+                  </td>
                   <td className="py-3.5 px-4 font-black text-emerald-600">
-                    {reg.carbonSequestrationTCO2e}
+                    {formatCarbon(reg.carbonSequestrationTCO2e)}
                   </td>
                   <td className="py-3.5 px-4 font-black text-slate-900">
-                    {reg.fundingDisbursedIDR}
+                    {formatCurrency(reg.fundingDisbursedIDR)}
                   </td>
                   <td className="py-3.5 px-4 text-right">
                     <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg text-[10px] font-extrabold inline-flex items-center gap-1">

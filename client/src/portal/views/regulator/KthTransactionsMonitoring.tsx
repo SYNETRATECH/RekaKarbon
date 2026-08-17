@@ -22,13 +22,16 @@ import {
   FileSpreadsheet,
   Package,
 } from 'lucide-react';
-import { MOCK_KTH_TRANSACTIONS } from '../../../lib/mock/regulator';
-import { PROJECTS_DATA } from '../../../lib/mock/projects';
+import { formatCurrency } from '../../../lib/formatters';
+import { formatDateTime } from '../../../lib/dates';
 
 export default function KthTransactionsMonitoring() {
-  const { kthTransactions, forestProjects, projects, updateKTHTransactionStatus } =
-    useCarbonStore();
-  const txs = kthTransactions?.length > 0 ? kthTransactions : MOCK_KTH_TRANSACTIONS;
+  const {
+    kthTransactions: txs,
+    forestProjects,
+    projects,
+    updateKTHTransactionStatus,
+  } = useCarbonStore();
 
   const [selectedProject, setSelectedProject] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -110,21 +113,21 @@ export default function KthTransactionsMonitoring() {
     return matchesProject && matchesStatus;
   });
 
-  // Helper to match transaction project with rich PROJECTS_DATA
+  // Helper to match transaction project with rich store projects
   const getProjectDetails = (projectName: string) => {
-    if (!projectName) return PROJECTS_DATA[0];
-    const found = PROJECTS_DATA.find(
+    if (!projectName) return projects[0];
+    const found = projects.find(
       (p: any) =>
-        p.name.toLowerCase().includes(projectName.toLowerCase()) ||
-        projectName.toLowerCase().includes(p.name.toLowerCase())
+        p.title?.toLowerCase().includes(projectName.toLowerCase()) ||
+        p.category?.toLowerCase().includes(projectName.toLowerCase())
     );
-    return found || PROJECTS_DATA[0];
+    return found || projects[0];
   };
 
   // Stage 1 (processing) -> Stage 2 (awaiting_farmer)
   const handleApproveDisbursement = (tx: any) => {
     if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, 'awaiting_farmer');
+      updateKTHTransactionStatus(tx.id, 'Pending');
     }
     setReviewingTx(null);
     setHoldNotice(false);
@@ -138,7 +141,7 @@ export default function KthTransactionsMonitoring() {
       flagNoteInput.trim() ||
       'Terdeteksi ketidaksesuaian laporan nota / foto bukti belanja oleh regulator.';
     if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, 'flagged', note);
+      updateKTHTransactionStatus(tx.id, 'Flagged', note);
     }
     setReviewingTx(null);
     setVerifyingProofTx(null);
@@ -148,9 +151,9 @@ export default function KthTransactionsMonitoring() {
 
   // Stage 3 (awaiting_proof) -> Stage 5 (completed)
   const handleConfirmProof = (tx: any) => {
-    const updatedTx = { ...tx, status: 'completed' };
+    const updatedTx = { ...tx, status: 'Verified' };
     if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, 'completed');
+      updateKTHTransactionStatus(tx.id, 'Verified');
     }
     setVerifyingProofTx(null);
     setSelectedTxReceipt(updatedTx);
@@ -421,10 +424,14 @@ export default function KthTransactionsMonitoring() {
                       <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     </div>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-500 font-semibold">{tx.date}</td>
+                  <td className="py-3.5 px-4 text-slate-500 font-semibold">
+                    {formatDateTime(tx.date)}
+                  </td>
                   <td className="py-3.5 px-4 font-extrabold text-slate-900">{tx.kthName}</td>
                   <td className="py-3.5 px-4 text-slate-700 font-semibold">{tx.projectName}</td>
-                  <td className="py-3.5 px-4 font-black text-emerald-700">{tx.amountIDR}</td>
+                  <td className="py-3.5 px-4 font-black text-emerald-700">
+                    {formatCurrency(tx.amountIDR)}
+                  </td>
                   <td className="py-3.5 px-4">
                     {tx.status === 'completed' ? (
                       <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">

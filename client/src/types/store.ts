@@ -11,8 +11,8 @@ import {
   KTHTransactionItem,
   RegulationUploadModel,
 } from './regulator';
-import { AnomalySummary, EnergyCorrelationItem } from '../repositories/audit.repository';
-import { AuthCredentials } from '../repositories';
+import { AnomalySummary, EnergyCorrelationItem } from './audit';
+import { AuthCredentials } from './auth';
 
 export interface UserProfile {
   name: string;

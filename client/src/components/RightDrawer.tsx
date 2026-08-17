@@ -1,68 +1,60 @@
 import { useNavigate } from 'react-router';
 import { useCarbonStore } from '../store/useCarbonStore';
-import { Map as MapIcon, Building2, Globe, X, LogIn } from 'lucide-react';
+import { Map as MapIcon, Building2, Globe, LogIn } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function RightDrawer() {
   const { activeModule, setActiveModule, isDrawerOpen, setIsDrawerOpen, setIsLoginModalOpen } =
     useCarbonStore();
   const navigate = useNavigate();
 
-  if (!isDrawerOpen) return null;
-
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-[#022C22]/20 backdrop-blur-xs z-40 transition-opacity duration-300"
-        onClick={() => setIsDrawerOpen(false)}
-      />
-
-      {/* Sliding Panel */}
-      <aside className="fixed top-0 right-0 h-screen w-80 bg-white border-l border-slate-200 flex flex-col justify-between z-50 shadow-2xl animate-slide-in">
+    <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+      <SheetContent
+        side="right"
+        className="p-0 flex flex-col justify-between border-l border-slate-200"
+      >
         <div>
-          {/* Header & Close Button */}
-          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100">
+          {/* Header & Logo */}
+          <SheetHeader className="h-16 flex flex-row items-center justify-between px-6 border-b border-slate-100 text-left space-y-0">
             <div className="flex items-center gap-3">
               <img
                 src={brandIcon}
                 alt="RekaKarbon Logo"
                 className="w-8 h-8 rounded-xl shadow-xs object-contain"
               />
-              <div className="flex flex-col space-y-0.5 text-left">
-                <h1 className="font-extrabold text-slate-900 tracking-tight text-sm leading-none">
+              <div className="flex flex-col space-y-0.5">
+                <SheetTitle className="font-extrabold text-slate-900 tracking-tight text-sm leading-none">
                   REKAKARBON
-                </h1>
+                </SheetTitle>
                 <span className="text-[8px] text-slate-400 font-bold tracking-wider uppercase leading-none">
                   Menu Kontrol
                 </span>
               </div>
             </div>
-            <button
-              onClick={() => setIsDrawerOpen(false)}
-              className="w-8 h-8 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          </SheetHeader>
 
           {/* Navigation Links */}
           <div className="px-4 py-6 space-y-4">
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest block px-3">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block px-3">
               TRANSPARENCY HUB
             </span>
             <nav className="space-y-2">
-              <button
+              <Button
+                variant={activeModule === 'conservation' ? 'default' : 'ghost'}
+                className={`w-full justify-start gap-3.5 px-4 py-6 rounded-xl font-semibold text-xs text-left cursor-pointer ${
+                  activeModule === 'conservation'
+                    ? 'bg-primary-gradient text-white shadow-md'
+                    : 'text-slate-650 hover:bg-slate-50 hover:text-slate-900'
+                }`}
                 onClick={() => {
                   setActiveModule('conservation');
                   setIsDrawerOpen(false);
                   navigate('/');
                 }}
-                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all font-semibold text-xs text-left cursor-pointer ${
-                  activeModule === 'conservation'
-                    ? 'bg-primary-gradient text-white shadow-md'
-                    : 'text-slate-650 hover:bg-slate-50 hover:text-slate-900'
-                }`}
               >
                 <MapIcon
                   className={`w-4 h-4 ${activeModule === 'conservation' ? 'text-[#00C48C]' : 'text-slate-400'}`}
@@ -75,19 +67,20 @@ export default function RightDrawer() {
                     Modul 1
                   </span>
                 </div>
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant={activeModule === 'corporate' ? 'default' : 'ghost'}
+                className={`w-full justify-start gap-3.5 px-4 py-6 rounded-xl font-semibold text-xs text-left cursor-pointer ${
+                  activeModule === 'corporate'
+                    ? 'bg-primary-gradient text-white shadow-md'
+                    : 'text-slate-650 hover:bg-slate-50 hover:text-slate-900'
+                }`}
                 onClick={() => {
                   setActiveModule('corporate');
                   setIsDrawerOpen(false);
                   navigate('/');
                 }}
-                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all font-semibold text-xs text-left cursor-pointer ${
-                  activeModule === 'corporate'
-                    ? 'bg-primary-gradient text-white shadow-md'
-                    : 'text-slate-650 hover:bg-slate-50 hover:text-slate-900'
-                }`}
               >
                 <Building2
                   className={`w-4 h-4 ${activeModule === 'corporate' ? 'text-rose-450 animate-pulse' : 'text-slate-400'}`}
@@ -100,22 +93,22 @@ export default function RightDrawer() {
                     Modul 2 · Defisit Karbon
                   </span>
                 </div>
-              </button>
+              </Button>
             </nav>
 
             <div className="h-px bg-slate-100 my-4"></div>
 
             {/* Login & Portal Authentication */}
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest block px-3">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block px-3">
               PORTAL OTENTIKASI ADMIN
             </span>
             <div className="pt-1">
-              <button
+              <Button
+                className="w-full flex items-center justify-between px-4 py-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md border border-slate-800"
                 onClick={() => {
                   setIsDrawerOpen(false);
                   setIsLoginModalOpen(true);
                 }}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all font-bold text-xs shadow-md cursor-pointer group active:scale-95 border border-slate-800"
               >
                 <div className="flex items-center gap-3 text-left">
                   <LogIn className="w-4 h-4 text-[#00C48C]" />
@@ -127,7 +120,7 @@ export default function RightDrawer() {
                   </div>
                 </div>
                 <span className="text-[10px] text-emerald-400 font-extrabold">↗</span>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -135,18 +128,12 @@ export default function RightDrawer() {
           <div className="px-4 mb-4">
             <div className="bg-primary-tint border border-emerald-100 p-4 rounded-2xl space-y-2 text-left">
               <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
-                <span
-                  className="text-[9px] font-extrabold tracking-wider uppercase"
-                  style={{ color: 'var(--color-primary)' }}
-                >
+                <Globe className="w-4 h-4 text-[#033C2E]" />
+                <Badge variant="mint" className="text-[9px]">
                   AKSES PUBLIK
-                </span>
+                </Badge>
               </div>
-              <p
-                className="text-xs leading-relaxed font-medium"
-                style={{ color: 'var(--color-primary)' }}
-              >
+              <p className="text-xs leading-relaxed font-medium text-[#033C2E]">
                 Zero-friction. Tidak perlu registrasi akun untuk mengakses data transparansi ini.
               </p>
             </div>
@@ -160,7 +147,7 @@ export default function RightDrawer() {
           </span>
           <span className="w-2.5 h-2.5 bg-[#00C48C] rounded-full ring-4 ring-emerald-50 animate-pulse"></span>
         </div>
-      </aside>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 }

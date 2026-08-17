@@ -1,6 +1,10 @@
 import { useState, ChangeEvent } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { ShieldCheck, Cpu, CheckCircle2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 export default function AuthorizationGate() {
   const { certificationPreview, conservationAreas, authorizeMintOffsetCredit } = useCarbonStore();
@@ -62,7 +66,7 @@ export default function AuthorizationGate() {
 
   const [selectedProjectName, setSelectedProjectName] = useState(preview.project);
   const [currentProjectData, setCurrentProjectData] = useState(
-    projectList.find((p) => p.name === preview.project) || projectList[0]
+    projectList.find((p: any) => p.name === preview.project) || projectList[0]
   );
   const [auditDate, setAuditDate] = useState(preview.auditDate);
   const [verifierName, setVerifierName] = useState(preview.verifier);
@@ -77,7 +81,7 @@ export default function AuthorizationGate() {
   const handleProjectChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const name = e.target.value;
     setSelectedProjectName(name);
-    const found = projectList.find((p) => p.name === name);
+    const found = projectList.find((p: any) => p.name === name);
     if (found) {
       setCurrentProjectData(found);
     }
@@ -116,7 +120,7 @@ export default function AuthorizationGate() {
             </p>
             <button
               onClick={() => setMintResult(null)}
-              className="text-[10px] font-bold text-slate-400 hover:text-white underline pt-1"
+              className="text-[10px] font-bold text-slate-400 hover:text-white underline pt-1 cursor-pointer"
             >
               Tutup Notifikasi
             </button>
@@ -140,7 +144,7 @@ export default function AuthorizationGate() {
       {/* TWO-COLUMN MAIN WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: FORM HASIL VERIFIKASI (8 of 12 cols) */}
-        <div className="lg:col-span-8 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-5 flex flex-col justify-between">
+        <Card className="lg:col-span-8 rounded-3xl p-6 border-slate-200 shadow-2xs space-y-5 flex flex-col justify-between">
           <div className="pb-2 border-b border-slate-100">
             <span className="text-[9px] font-black text-slate-400 tracking-widest uppercase block">
               FORM HASIL VERIFIKASI
@@ -160,7 +164,7 @@ export default function AuthorizationGate() {
                   onChange={handleProjectChange}
                   className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all cursor-pointer"
                 >
-                  {projectList.map((p) => (
+                  {projectList.map((p: any) => (
                     <option key={p.id} value={p.name}>
                       {p.name}
                     </option>
@@ -172,11 +176,11 @@ export default function AuthorizationGate() {
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                   TANGGAL AUDIT
                 </label>
-                <input
+                <Input
                   type="date"
                   value={auditDate}
                   onChange={(e) => setAuditDate(e.target.value)}
-                  className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono"
+                  className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50/70 font-mono"
                 />
               </div>
             </div>
@@ -187,12 +191,12 @@ export default function AuthorizationGate() {
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                   NAMA VERIFIKATOR LEGAL
                 </label>
-                <input
+                <Input
                   type="text"
                   value={verifierName}
                   onChange={(e) => setVerifierName(e.target.value)}
                   placeholder="Nama Lengkap & Gelar Verifikator"
-                  className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                  className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50/70"
                 />
               </div>
 
@@ -202,9 +206,9 @@ export default function AuthorizationGate() {
                 </label>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-black text-slate-900">{confidenceScore}%</span>
-                  <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  <Badge variant="mint" className="text-[11px]">
                     Sangat Tinggi
-                  </span>
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -240,10 +244,10 @@ export default function AuthorizationGate() {
               </p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* RIGHT COLUMN: PRATINJAU RINGKASAN SERTIFIKASI (4 of 12 cols) */}
-        <div className="lg:col-span-4 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-5 flex flex-col justify-between">
+        <Card className="lg:col-span-4 rounded-3xl p-6 border-slate-200 shadow-2xs space-y-5 flex flex-col justify-between">
           <div className="pb-2 border-b border-slate-100">
             <span className="text-[9px] font-black text-slate-400 tracking-widest uppercase block">
               PRATINJAU
@@ -322,15 +326,15 @@ export default function AuthorizationGate() {
           </div>
 
           {/* Big Authorize Button */}
-          <button
+          <Button
             onClick={handleAuthorize}
             disabled={isMinting}
-            className="w-full bg-[#033C2E] hover:bg-[#022a20] text-white font-black text-xs py-4 px-6 rounded-2xl shadow-lg shadow-emerald-950/20 flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-98"
+            className="w-full bg-[#033C2E] hover:bg-[#022a20] text-white font-black text-xs py-4 px-6 rounded-2xl shadow-lg shadow-emerald-950/20 flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-95"
           >
             <ShieldCheck className="w-5 h-5 text-[#00C48C]" />
             {isMinting ? 'Memvalidasi Smart Contract...' : 'Setujui & Sahkan Status Terverifikasi'}
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
     </div>
   );

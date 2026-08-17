@@ -1,11 +1,17 @@
 import { defineConfig } from 'vite';
 import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
+import path from 'node:path';
 
 // https://vite.dev/config/
 export default defineConfig({
   base: process.env.BASE_URL || '/',
   plugins: [reactRouter(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   optimizeDeps: {
     include: [
       'react',
@@ -16,6 +22,9 @@ export default defineConfig({
       'leaflet',
       'recharts',
       'chart.js',
+      'clsx',
+      'tailwind-merge',
+      'class-variance-authority',
     ],
   },
   server: {

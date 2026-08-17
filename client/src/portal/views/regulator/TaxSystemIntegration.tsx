@@ -1,41 +1,43 @@
 import { useCarbonStore } from '../../../store/useCarbonStore';
-import { FileSpreadsheet, CheckCircle2, RefreshCw } from 'lucide-react';
+import { FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function TaxSystemIntegration() {
   const { djpLogs } = useCarbonStore();
 
   return (
     <div className="space-y-8 animate-fade-in text-left">
-      <div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-          Halaman Integrasi Sistem Pajak Karbon
-        </h2>
-        <p className="text-xs text-slate-500 font-semibold mt-1">
-          Rekonsiliasi pelaporan denda emisi dengan nomor e-Faktur Pajak resmi DJP (Direktorat
-          Jenderal Pajak Kementerian Keuangan).
-        </p>
-      </div>
+      <PageHeader
+        badgeText="KLHK & DJP RECONCILIATION PORTAL"
+        title="Halaman Integrasi Sistem Pajak Karbon"
+        description="Rekonsiliasi pelaporan denda emisi dengan nomor e-Faktur Pajak resmi DJP (Direktorat Jenderal Pajak Kementerian Keuangan)."
+      />
 
-      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+      <Card className="rounded-3xl border-slate-200 shadow-2xs">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <CardTitle className="font-black text-sm text-slate-900 flex items-center gap-2">
             <FileSpreadsheet className="w-4 h-4 text-[#00C48C]" />
             Log Sync Rekonsiliasi API e-Faktur DJP
-          </h3>
-          <button
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => alert('Sinkronisasi ulang data e-Faktur DJP berhasil!')}
-            className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl flex items-center gap-1 hover:bg-emerald-100 transition-colors cursor-pointer border border-slate-200"
+            className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-slate-200 rounded-xl flex items-center gap-1 cursor-pointer"
           >
             <RefreshCw className="w-3 h-3 text-[#00C48C]" />
             Sync DJP Now
-          </button>
-        </div>
+          </Button>
+        </CardHeader>
 
-        <div className="space-y-3">
+        <CardContent className="space-y-3">
           {djpLogs.map((log) => (
-            <div
+            <Card
               key={log.id}
-              className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center text-xs"
+              className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-row justify-between items-center text-xs shadow-none"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -51,20 +53,21 @@ export default function TaxSystemIntegration() {
                 <span className="font-mono font-black text-rose-600 block">
                   Rp {log.totalFineIDR.toLocaleString('id-ID')}
                 </span>
-                <span
-                  className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full inline-block ${
+                <Badge
+                  variant={log.status === 'Reconciled' ? 'default' : 'secondary'}
+                  className={`text-[9px] font-extrabold px-2.5 py-0.5 ${
                     log.status === 'Reconciled'
-                      ? 'bg-emerald-100 text-emerald-900'
-                      : 'bg-amber-100 text-amber-900'
+                      ? 'bg-emerald-100 text-emerald-900 hover:bg-emerald-100'
+                      : 'bg-amber-100 text-amber-900 hover:bg-amber-100'
                   }`}
                 >
                   {log.status}
-                </span>
+                </Badge>
               </div>
-            </div>
+            </Card>
           ))}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

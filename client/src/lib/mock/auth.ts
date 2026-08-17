@@ -1,15 +1,4 @@
-export interface MockUser {
-  id: string;
-  email: string;
-  password?: string;
-  name: string;
-  role: 'emitter' | 'regulator' | 'auditor' | 'kth';
-  roleTitle: string;
-  agency: string;
-  avatar: string;
-  verichainKey: string;
-  token: string;
-}
+import type { MockUser } from '../../types';
 
 export const mockUsers: Record<string, MockUser> = {
   emitter: {

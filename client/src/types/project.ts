@@ -63,9 +63,9 @@ export interface Project {
   region: string;
   center: [number, number];
   zoom: number;
-  area: string;
+  area: string | number;
   rawAreaVal: number;
-  carbon: string;
+  carbon: string | number;
   rawCarbonVal: number;
   ndvi: number;
   evi: number;

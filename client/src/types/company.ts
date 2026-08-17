@@ -18,6 +18,6 @@ export interface Company {
   recommendedPartner: string;
   picAuditor: string;
   description: string;
-  originalCarbonDeficit: number;
-  originalOffsetCostIDR: number;
+  originalCarbonDeficit?: number;
+  originalOffsetCostIDR?: number;
 }

@@ -12,11 +12,10 @@ import {
   Wallet,
   AlertTriangle,
 } from 'lucide-react';
-import { INITIAL_KTH_GROUPS } from '../../../lib/mock/regulator';
+import { formatCurrency } from '../../../lib/formatters';
 
 export default function KthFarmersManagement() {
-  const { kthGroups, addKTHGroup, updateKTHGroup, deleteKTHGroup } = useCarbonStore();
-  const groups = kthGroups?.length > 0 ? kthGroups : INITIAL_KTH_GROUPS;
+  const { kthGroups: groups, addKTHGroup, updateKTHGroup, deleteKTHGroup } = useCarbonStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,7 +66,7 @@ export default function KthFarmersManagement() {
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (editingKTH) {
-      updateKTHGroup(editingKTH.id, formData);
+      updateKTHGroup(editingKTH.id, formData as any);
     } else {
       const newKTH = {
         id: `KTH-00${groups.length + 1}`,
@@ -179,7 +178,7 @@ export default function KthFarmersManagement() {
                     {kth.registrationNumber}
                   </td>
                   <td className="py-3.5 px-4 font-black text-emerald-700">
-                    {kth.totalIncentiveReceivedIDR}
+                    {formatCurrency(kth.totalIncentiveReceivedIDR)}
                   </td>
                   <td className="py-3.5 px-4">
                     {kth.kybStatus === 'verified' ? (

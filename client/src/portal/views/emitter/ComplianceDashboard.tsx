@@ -1,5 +1,6 @@
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { CheckCircle2, AlertTriangle, Info, ShoppingCart } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   ResponsiveContainer,
   LineChart,
@@ -68,7 +69,7 @@ export default function ComplianceDashboard() {
       {/* ROW 1: 3 HERO METRIC CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Metric 1: Intensitas Emisi Produksi */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs flex items-start justify-between">
+        <Card className="rounded-2xl p-6 border-slate-200 shadow-2xs flex flex-row items-start justify-between">
           <div className="space-y-2">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Intensitas Emisi Produksi
@@ -94,10 +95,10 @@ export default function ComplianceDashboard() {
               <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500" />
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Metric 2: Defisit Karbon */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs flex items-start justify-between">
+        <Card className="rounded-2xl p-6 border-slate-200 shadow-2xs flex flex-row items-start justify-between">
           <div className="space-y-2">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Defisit Karbon
@@ -125,10 +126,10 @@ export default function ComplianceDashboard() {
               <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500" />
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Metric 3: Hari Tersisa */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs flex items-start justify-between">
+        <Card className="rounded-2xl p-6 border-slate-200 shadow-2xs flex flex-row items-start justify-between">
           <div className="space-y-2">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Hari Tersisa
@@ -140,7 +141,7 @@ export default function ComplianceDashboard() {
               {hasDeficit ? `hingga 31 Des ${currentYear}` : 'Kepatuhan Terpenuhi'}
             </span>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* ROW 2: NERACA KARBON & INDIKATOR REGULASI (5 COLUMNS GRID) */}

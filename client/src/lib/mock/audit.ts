@@ -1,4 +1,15 @@
-export const mockAnomalySummary = {
+import type {
+  AnomalySummary,
+  AiAnomalyLog,
+  EnergyCorrelationItem,
+  SpatialSummary,
+  ConservationArea,
+  DroneScan,
+  KthPolygon,
+  KthLog,
+} from '../../types';
+
+export const mockAnomalySummary: AnomalySummary = {
   emitenTerdeteksiAnomali: 12,
   totalEmitenAktif: 47,
   rataDeviasiEmisi: '+43.2%',
@@ -7,7 +18,7 @@ export const mockAnomalySummary = {
   descEFaktur: 'Data utilitas energi divergen',
 };
 
-export const mockAiAnomalyLogs = [
+export const mockAiAnomalyLogs: AiAnomalyLog[] = [
   {
     id: 'IND-001',
     company: 'PT Semen Nusantara Jaya',
@@ -85,7 +96,7 @@ export const mockAiAnomalyLogs = [
   },
 ];
 
-export const mockEnergyCorrelationData = [
+export const mockEnergyCorrelationData: EnergyCorrelationItem[] = [
   { name: 'Semen Nusantara', reported: 80, estimated: 420 },
   { name: 'PLTU Kalimantan', reported: 0, estimated: 430 },
   { name: 'Petrokimia Selatan', reported: 0, estimated: 120 },
