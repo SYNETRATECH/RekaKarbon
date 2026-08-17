@@ -46,16 +46,13 @@ jobs:
           echo "Memasuki direktori proyek..."
           cd ~/VM_BLOCKHAIN
           
-          echo "Menginstall dependensi..."
-          npm ci
-          
           echo "Menjalankan Docker Hyperledger Besu..."
           sudo docker-compose up -d
           
           echo "Menunggu Node Besu siap (sleep 10s)..."
           sleep 10
           
-          echo "Melakukan Deployment Smart Contract ke Node Besu..."
-          npx hardhat run scripts/deploy.js --network besu_local
+          echo "Menginstall dependensi & Melakukan Deployment via Docker Node.js..."
+          sudo docker run --rm -v ~/VM_BLOCKHAIN:/app -w /app --network host node:20 bash -c "npm ci && npx hardhat run scripts/deploy.js --network besu_local"
           
           echo "✅ DEPLOYMENT SERVER SELESAI!"
