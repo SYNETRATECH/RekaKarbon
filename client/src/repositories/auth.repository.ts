@@ -5,6 +5,7 @@ const useMock = import.meta.env.VITE_USE_MOCK_DATA !== 'false';
 
 export interface AuthCredentials {
   identity?: string;
+  email?: string;
   password?: string;
   verichainKey?: string;
   role?: string;

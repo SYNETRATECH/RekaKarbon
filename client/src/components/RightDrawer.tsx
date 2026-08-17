@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router';
 import { useCarbonStore } from '../store/useCarbonStore';
 import { Map as MapIcon, Building2, Globe, X, LogIn } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
@@ -5,6 +6,7 @@ import brandIcon from '../assets/icon.png';
 export default function RightDrawer() {
   const { activeModule, setActiveModule, isDrawerOpen, setIsDrawerOpen, setIsLoginModalOpen } =
     useCarbonStore();
+  const navigate = useNavigate();
 
   if (!isDrawerOpen) return null;
 
@@ -54,6 +56,7 @@ export default function RightDrawer() {
                 onClick={() => {
                   setActiveModule('conservation');
                   setIsDrawerOpen(false);
+                  navigate('/');
                 }}
                 className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all font-semibold text-xs text-left cursor-pointer ${
                   activeModule === 'conservation'
@@ -78,6 +81,7 @@ export default function RightDrawer() {
                 onClick={() => {
                   setActiveModule('corporate');
                   setIsDrawerOpen(false);
+                  navigate('/');
                 }}
                 className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all font-semibold text-xs text-left cursor-pointer ${
                   activeModule === 'corporate'
@@ -114,7 +118,7 @@ export default function RightDrawer() {
                 className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all font-bold text-xs shadow-md cursor-pointer group active:scale-95 border border-slate-800"
               >
                 <div className="flex items-center gap-3 text-left">
-                  <LogIn className="w-4 h-4 text-[#00C48C] group-hover:scale-110 transition-transform" />
+                  <LogIn className="w-4 h-4 text-[#00C48C]" />
                   <div>
                     <p className="leading-none">Masuk Portal Admin</p>
                     <span className="text-[8px] text-emerald-400 font-semibold block mt-1">
@@ -122,9 +126,7 @@ export default function RightDrawer() {
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-extrabold group-hover:translate-x-0.5 transition-transform">
-                  ↗
-                </span>
+                <span className="text-[10px] text-emerald-400 font-extrabold">↗</span>
               </button>
             </div>
           </div>

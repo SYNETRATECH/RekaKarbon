@@ -1,92 +1,37 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Outlet } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import PortalSidebar from './PortalSidebar';
 import Modals from '../../components/Modals';
 import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
 
-// Emitter Views
-import ComplianceDashboard from '../views/emitter/ComplianceDashboard';
-import CarbonDexMarket from '../views/emitter/CarbonDexMarket';
-import EmissionReportsSector from '../views/emitter/EmissionReportsSector';
-import PurchasedCertificatesProjects from '../views/emitter/PurchasedCertificatesProjects';
-
-// Regulator Views
-import NationalForestDashboard from '../views/regulator/NationalForestDashboard';
-import ForestProjectsManagement from '../views/regulator/ForestProjectsManagement';
-import KthFarmersManagement from '../views/regulator/KthFarmersManagement';
-import KthTransactionsMonitoring from '../views/regulator/KthTransactionsMonitoring';
-import RegulatorUploadManagement from '../views/regulator/RegulatorUploadManagement';
-import ProjectEditorPage from '../views/regulator/ProjectEditorPage';
-
-// Auditor Views
-import EmissionsAuditAI from '../views/auditor/EmissionsAuditAI';
-import SpatialMRVEvaluation from '../views/auditor/SpatialMRVEvaluation';
-import DroneMappingController from '../views/auditor/DroneMappingController';
-import AuthorizationGate from '../views/auditor/AuthorizationGate';
-
-// KTH Views
-import LandPolygonMapping from '../views/kth/LandPolygonMapping';
-import DigitalWalletHybridLogs from '../views/kth/DigitalWalletHybridLogs';
-
 export default function PortalLayout() {
-  const { userRole, adminActiveTab, setAdminActiveTab, loginAsRole, userProfile } =
-    useCarbonStore();
+  const { userRole, loginAsRole, userProfile, initializeData, isDataLoaded } = useCarbonStore();
   const { role: urlRole, tab: urlTab } = useParams();
-  const navigate = useNavigate();
 
-  // Sync URL Params -> Store State on mount or direct URL navigation
+  useEffect(() => {
+    if (!isDataLoaded) {
+      initializeData();
+    }
+  }, [isDataLoaded, initializeData]);
+
+  // Ensure userRole matches URL role
   useEffect(() => {
     if (urlRole && urlRole !== userRole) {
       loginAsRole(urlRole, 'hse_director', urlTab);
-    } else if (urlTab && urlTab !== adminActiveTab) {
-      setAdminActiveTab(urlTab);
     }
-  }, [urlRole, urlTab]);
+  }, [urlRole, urlTab, userRole, loginAsRole]);
 
-  // Sync Store State -> URL Params on tab/role changes
-  useEffect(() => {
-    if (userRole && adminActiveTab) {
-      const targetPath = `/portal/${userRole}/${adminActiveTab}`;
-      if (window.location.pathname !== targetPath) {
-        navigate(targetPath, { replace: true });
-      }
-    }
-  }, [userRole, adminActiveTab, navigate]);
+  if (!isDataLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-100 text-slate-500 font-bold">
+        Memuat Portal RekaKarbon...
+      </div>
+    );
+  }
 
-  const renderActiveView = () => {
-    if (userRole === 'regulator') {
-      if (adminActiveTab === 'projects') return <ForestProjectsManagement />;
-      if (adminActiveTab === 'project-editor') return <ProjectEditorPage />;
-      if (adminActiveTab === 'kth') return <KthFarmersManagement />;
-      if (adminActiveTab === 'transactions') return <KthTransactionsMonitoring />;
-      if (adminActiveTab === 'upload') return <RegulatorUploadManagement />;
-      return <NationalForestDashboard />;
-    }
-
-    if (userRole === 'emitter') {
-      if (adminActiveTab === 'bursa' || adminActiveTab === 'market') return <CarbonDexMarket />;
-      if (adminActiveTab === 'laporan' || adminActiveTab === 'reports')
-        return <EmissionReportsSector />;
-      if (adminActiveTab === 'sertifikat' || adminActiveTab === 'certificates')
-        return <PurchasedCertificatesProjects />;
-      return <ComplianceDashboard />;
-    }
-
-    if (userRole === 'auditor') {
-      if (adminActiveTab === 'spatial') return <SpatialMRVEvaluation />;
-      if (adminActiveTab === 'drone') return <DroneMappingController />;
-      if (adminActiveTab === 'gate') return <AuthorizationGate />;
-      return <EmissionsAuditAI />;
-    }
-
-    if (userRole === 'kth') {
-      if (adminActiveTab === 'wallet') return <DigitalWalletHybridLogs />;
-      return <LandPolygonMapping />;
-    }
-
-    return <NationalForestDashboard />;
-  };
+  const activeRole = urlRole || userRole || 'emitter';
+  const activeTab = urlTab || 'dashboard';
 
   return (
     <div className="flex h-screen w-screen bg-slate-100 overflow-hidden font-sans text-slate-800">
@@ -100,11 +45,11 @@ export default function PortalLayout() {
           {/* Left: Active Page Title */}
           <div className="flex items-center gap-3">
             <h1 className="text-base font-black text-slate-900 tracking-tight capitalize">
-              {userRole} Portal
+              {activeRole} Portal
             </h1>
             <span className="text-slate-300">/</span>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-              {adminActiveTab}
+              {activeTab}
             </span>
           </div>
 
@@ -115,7 +60,7 @@ export default function PortalLayout() {
               <input
                 type="text"
                 placeholder={
-                  userRole === 'auditor'
+                  activeRole === 'auditor'
                     ? 'Cari kawasan, pabrik, atau nomor audit...'
                     : 'Cari transaksi, token, atau aktivitas...'
                 }
@@ -153,7 +98,9 @@ export default function PortalLayout() {
         </header>
 
         {/* TAB BODY CONTAINER */}
-        <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">{renderActiveView()}</div>
+        <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">
+          <Outlet />
+        </div>
       </main>
 
       {/* Global Overlays & Audit Modals */}

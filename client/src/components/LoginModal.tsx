@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router';
 import { useCarbonStore } from '../store/useCarbonStore';
 import {
   TreePine,
@@ -18,6 +19,7 @@ import brandIcon from '../assets/icon.png';
 export default function LoginModal() {
   const { isLoginModalOpen, setIsLoginModalOpen, loginAsRole, loginWithCredentials } =
     useCarbonStore();
+  const navigate = useNavigate();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [selectedRole, setSelectedRole] = useState<'emitter' | 'regulator' | 'auditor' | 'kth'>(
@@ -48,13 +50,19 @@ export default function LoginModal() {
     }
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    loginWithCredentials({
+    await loginWithCredentials({
       role: selectedRole,
       email: identityInput,
       password: passwordInput,
     });
+    navigate(`/portal/${selectedRole}`);
+  };
+
+  const handleBypassLogin = async () => {
+    await loginAsRole(selectedRole);
+    navigate(`/portal/${selectedRole}`);
   };
 
   return (
@@ -293,7 +301,7 @@ export default function LoginModal() {
               {/* ONE-CLICK BYPASS LOGIN BUTTON FOR INSTANT TESTING */}
               <button
                 type="button"
-                onClick={() => loginAsRole(selectedRole)}
+                onClick={handleBypassLogin}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl border border-slate-800 shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
               >
                 <span>⚡ Bypass Login (Langsung Masuk Page {selectedRole.toUpperCase()})</span>

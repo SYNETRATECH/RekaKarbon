@@ -22,6 +22,7 @@ build/
 dist/
 client/dist/
 server/dist/
+.react-router/
 
 # misc
 .DS_Store
