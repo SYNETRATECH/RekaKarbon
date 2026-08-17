@@ -54,7 +54,7 @@ jobs:
             --restart always \
             -p 8545:8545 \
             -p 8546:8546 \
-            hyperledger/besu:latest \
+            hyperledger/besu:23.4.4 \
             --network=dev \
             --rpc-http-enabled=true \
             --rpc-http-host=0.0.0.0 \
