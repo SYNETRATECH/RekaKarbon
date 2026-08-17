@@ -47,12 +47,12 @@ jobs:
           cd ~/VM_BLOCKHAIN
           
           echo "Menjalankan Docker Hyperledger Besu..."
-          sudo docker-compose up -d
+          echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker-compose up -d
           
           echo "Menunggu Node Besu siap (sleep 10s)..."
           sleep 10
           
           echo "Menginstall dependensi & Melakukan Deployment via Docker Node.js..."
-          sudo docker run --rm -v ~/VM_BLOCKHAIN:/app -w /app --network host node:20 bash -c "npm ci && npx hardhat run scripts/deploy.js --network besu_local"
+          echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker run --rm -v ~/VM_BLOCKHAIN:/app -w /app --network host node:20 bash -c "npm ci && npx hardhat run scripts/deploy.js --network besu_local"
           
           echo "✅ DEPLOYMENT SERVER SELESAI!"
