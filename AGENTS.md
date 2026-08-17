@@ -65,3 +65,19 @@ Aturan arsitektur client yang ditegakkan oleh `test:arch`: lapisan View (`compon
    - [client/src/lib/dates.ts](client/src/lib/dates.ts): `formatDate`, `formatLongDate`, `formatShortDate`, `formatDateTime`, `toDateOnlyISO`, `formatLastSeen`.
 3. **Standar Mata Uang & Zona Waktu**: Standar mata uang mengikuti notasi standar Rupiah Indonesia (contoh: `Rp 200.000.000` via `formatCurrency`), BUKAN imbuhan kata seperti `"200 juta"`. Zona waktu terstandarisasi ke `Asia/Jakarta` (`id-ID` locale).
 4. **Skill Rujukan**: Panduan lengkap format data dapat dibaca di Skill [.agents/skills/data-formatting-standards/SKILL.md](.agents/skills/data-formatting-standards/SKILL.md).
+
+---
+
+## 🎨 7. Standar Komponen UI (shadcn/ui) & Compound Layout Primitives
+
+Seluruh pembuatan dan refaktorisasi antarmuka frontend WAJIB mematuhi konsistensi visual berikut:
+
+1. **Penggunaan Primitif shadcn/ui**: Dilarang keras menggunakan elemen HTML mentah (`<button>`, `<input>`, `<table>`, `<dialog>`) secara langsung pada komponen View. Wajib menggunakan komponen dari `@/components/ui/` (`Button`, `Input`, `Card`, `Badge`, `Table`, `Dialog`, `Sheet`).
+2. **Penggunaan Komponen Layout Terpadu (Compound Primitives)**:
+   - `PageHeader` (`@/components/layout/PageHeader`): Digunakan secara terpusat untuk judul halaman, badge kategori, deskripsi, dan tombol aksi utama.
+   - `KpiStatCard` (`@/components/layout/KpiStatCard`): Digunakan untuk menampilkan kartu ringkasan metrik hero.
+   - `FilterToolbar` (`@/components/layout/FilterToolbar`): Digunakan untuk kontainer bilah pencarian dan tab filter kategori.
+3. **Presisi Token Warna & Intent**:
+   - `Primary Green`: Gunakan `.bg-primary-gradient` (latar belakang) atau `.text-primary-gradient` (teks judul).
+   - `Tech Mint`: Gunakan `#00C48C` (badge/indikator verified `variant="mint"`).
+   - Status Intent: Gunakan `variant="default"` (success), `variant="secondary"` (warning), dan `variant="destructive"` (danger) pada `Badge` & `Button`.
