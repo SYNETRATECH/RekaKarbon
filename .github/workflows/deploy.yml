@@ -66,8 +66,20 @@ jobs:
             --miner-enabled=true \
             --miner-coinbase=0x627306090abaB3A6e1400e9345bC60c78a8BEf57
           
-          echo "=== Menunggu Node Besu siap (15 detik) ==="
-          sleep 15
+          echo "=== Menunggu Node Besu siap (max 60 detik) ==="
+          for i in $(seq 1 12); do
+            if curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:8545 > /dev/null 2>&1; then
+              echo "✅ Node Besu sudah merespon pada percobaan ke-$i!"
+              break
+            fi
+            echo "Percobaan ke-$i: Besu belum siap, menunggu 5 detik..."
+            sleep 5
+            if [ $i -eq 12 ]; then
+              echo "❌ Besu gagal menyala setelah 60 detik. Menampilkan log:"
+              echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker logs --tail 30 besu-dev-node
+              exit 1
+            fi
+          done
           
           echo "=== Menginstall dependensi & Deploy Smart Contract ==="
           echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker run --rm \
