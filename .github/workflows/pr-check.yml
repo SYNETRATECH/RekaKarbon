@@ -18,6 +18,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Detect Changed Files
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            client:
+              - 'client/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/**'
+            server:
+              - 'server/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/**'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
@@ -35,27 +53,38 @@ jobs:
       - name: Check code formatting (Prettier)
         run: pnpm format:check
 
-      - name: Typecheck client & server
-        run: |
-          pnpm client:typecheck
-          pnpm server:typecheck
-
-      - name: Lint server
-        run: pnpm server:lint
-
-      - name: Test server
-        run: pnpm server:test
+      # --- CLIENT VERIFICATION ---
+      - name: Typecheck client
+        if: steps.changes.outputs.client == 'true'
+        run: pnpm client:typecheck
 
       - name: Lint client
+        if: steps.changes.outputs.client == 'true'
         run: pnpm client:lint
 
       - name: Test client (unit & architecture)
+        if: steps.changes.outputs.client == 'true'
         run: |
           pnpm --filter ./client test
           pnpm --filter ./client test:arch
 
-      - name: Build server
-        run: pnpm server:build
-
       - name: Build client
+        if: steps.changes.outputs.client == 'true'
         run: pnpm client:build
+
+      # --- SERVER VERIFICATION ---
+      - name: Typecheck server
+        if: steps.changes.outputs.server == 'true'
+        run: pnpm server:typecheck
+
+      - name: Lint server
+        if: steps.changes.outputs.server == 'true'
+        run: pnpm server:lint
+
+      - name: Test server
+        if: steps.changes.outputs.server == 'true'
+        run: pnpm server:test
+
+      - name: Build server
+        if: steps.changes.outputs.server == 'true'
+        run: pnpm server:build
