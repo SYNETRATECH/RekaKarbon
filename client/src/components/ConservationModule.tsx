@@ -21,6 +21,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function ConservationModule() {
   const [blockchainSubTab, setBlockchainSubTab] = useState<'buyers' | 'vendors'>('buyers');
@@ -457,12 +458,12 @@ export default function ConservationModule() {
                     <span className="absolute inset-y-0 left-2.5 flex items-center text-slate-400">
                       <Search className="w-3.5 h-3.5 text-[#00C48C]" />
                     </span>
-                    <input
+                    <Input
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Cari pembeli, sektor, atau Tx Hash..."
-                      className="w-full pl-8 pr-14 py-1.5 text-[10px] font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-[var(--color-primary)] transition-all"
+                      className="pl-8 pr-14 h-8 text-[10px] rounded-xl"
                     />
                     <button
                       type="submit"
@@ -561,12 +562,12 @@ export default function ConservationModule() {
                     <span className="absolute inset-y-0 left-2.5 flex items-center text-slate-400">
                       <Search className="w-3.5 h-3.5 text-[#00C48C]" />
                     </span>
-                    <input
+                    <Input
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Cari vendor, kategori, atau Tx Hash..."
-                      className="w-full pl-8 pr-14 py-1.5 text-[10px] font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-[var(--color-primary)] transition-all"
+                      className="pl-8 pr-14 h-8 text-[10px] rounded-xl"
                     />
                     <button
                       type="submit"

@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -268,12 +269,12 @@ export default function EmissionReportsSector() {
                     Boiler, Kiln, Generator Fired Heaters
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat1StationaryFuel}
                       onChange={(e) => setCat1StationaryFuel(e.target.value)}
                       placeholder="Contoh: 4.850.000"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       Liter / Tahun
@@ -293,12 +294,12 @@ export default function EmissionReportsSector() {
                     Truk Logistik Internal & Alat Berat
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat1VehicleFuel}
                       onChange={(e) => setCat1VehicleFuel(e.target.value)}
                       placeholder="Contoh: 1.240.000"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       Liter / Tahun
@@ -318,12 +319,12 @@ export default function EmissionReportsSector() {
                     Pembakaran cangkang sawit / limbah kayu
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat1BiomassResidue}
                       onChange={(e) => setCat1BiomassResidue(e.target.value)}
                       placeholder="Contoh: 15.200"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       Ton / Tahun
@@ -382,11 +383,11 @@ export default function EmissionReportsSector() {
                       <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
                         Rp
                       </span>
-                      <input
+                      <Input
                         type="number"
                         value={cat2CostSolar}
                         onChange={(e) => setCat2CostSolar(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-2 py-1.5 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
                       />
                     </div>
                   </div>
@@ -399,11 +400,11 @@ export default function EmissionReportsSector() {
                       <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
                         Rp
                       </span>
-                      <input
+                      <Input
                         type="number"
                         value={cat2CostBatubara}
                         onChange={(e) => setCat2CostBatubara(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-2 py-1.5 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
                       />
                     </div>
                   </div>
@@ -416,11 +417,11 @@ export default function EmissionReportsSector() {
                       <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
                         Rp
                       </span>
-                      <input
+                      <Input
                         type="number"
                         value={cat2CostGas}
                         onChange={(e) => setCat2CostGas(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-2 py-1.5 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
                       />
                     </div>
                   </div>
@@ -433,11 +434,11 @@ export default function EmissionReportsSector() {
                       <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
                         Rp
                       </span>
-                      <input
+                      <Input
                         type="number"
                         value={cat2CostPLN}
                         onChange={(e) => setCat2CostPLN(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-2 py-1.5 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
                       />
                     </div>
                   </div>
@@ -455,12 +456,12 @@ export default function EmissionReportsSector() {
                     Nomor faktur resmi Direktorat Jenderal Pajak untuk verifikasi keuangan utilitas
                     energi.
                   </p>
-                  <input
+                  <Input
                     type="text"
                     value={cat2EFakturDJP}
                     onChange={(e) => setCat2EFakturDJP(e.target.value)}
                     placeholder="Contoh: 010.000-26.88765432"
-                    className="w-full bg-white border border-amber-300 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-amber-500/20 focus:outline-none mt-2"
+                    className="bg-white border-amber-300 font-mono font-extrabold rounded-xl mt-2"
                   />
                 </div>
 
@@ -512,12 +513,12 @@ export default function EmissionReportsSector() {
                     Total tonase volume hasil produksi akhir pabrik
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat3ProductionCapacity}
                       onChange={(e) => setCat3ProductionCapacity(e.target.value)}
                       placeholder="Contoh: 450.000"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       Ton Produk / Tahun
@@ -534,12 +535,12 @@ export default function EmissionReportsSector() {
                     Total estimasi / laporan emisi historis tahun sebelumnya
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat3HistoricalEmissions}
                       onChange={(e) => setCat3HistoricalEmissions(e.target.value)}
                       placeholder="Contoh: 13.500"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       tCO2e / Tahun

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import {
   ShoppingCart,
   AlertTriangle,
@@ -91,12 +92,12 @@ export default function CarbonDexMarket() {
           {/* Searchbar replacing Leaf Icon */}
           <div className="relative w-full sm:w-64 md:w-72">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
+            <Input
               type="text"
               placeholder="Cari token atau kawasan..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50/80 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:bg-white focus:border-[var(--color-primary)] transition-all"
+              className="pl-9 pr-3 h-9 text-xs rounded-xl"
             />
           </div>
         </div>
@@ -345,12 +346,12 @@ export default function CarbonDexMarket() {
             <div className="space-y-4 text-xs">
               <div className="space-y-1">
                 <label className="font-bold text-slate-700">Jumlah Pembelian Token (tCO2e):</label>
-                <input
+                <Input
                   type="number"
                   max="2330"
                   value={buyQuantity}
                   onChange={(e) => setBuyQuantity(Math.min(2330, Number(e.target.value)))}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
+                  className="font-mono text-xs rounded-xl"
                 />
                 <span className="text-[9px] text-rose-600 font-bold block">
                   Cap Control Aktif: Maksimal 2.330 tCO2e (Sesuai Defisit Aktif)

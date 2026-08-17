@@ -13,6 +13,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { formatCurrency } from '../../../lib/formatters';
+import { Input } from '@/components/ui/input';
 
 export default function KthFarmersManagement() {
   const { kthGroups: groups, addKTHGroup, updateKTHGroup, deleteKTHGroup } = useCarbonStore();
@@ -122,12 +123,12 @@ export default function KthFarmersManagement() {
       <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari nama KTH, ketua pengurus, atau lokasi..."
-            className="w-full pl-10 pr-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="pl-10 pr-4 h-9 text-xs rounded-xl"
           />
         </div>
         <span className="text-xs font-extrabold text-slate-400">
@@ -237,52 +238,52 @@ export default function KthFarmersManagement() {
                 <label className="font-bold text-slate-600 block mb-1">
                   Nama Kelompok Tani Hutan (KTH)
                 </label>
-                <input
+                <Input
                   type="text"
                   required
                   value={formData.groupName}
                   onChange={(e) => setFormData({ ...formData, groupName: e.target.value })}
                   placeholder="Contoh: KTH Wana Lestari Baluran"
-                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none"
+                  className="rounded-xl text-xs"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-600 block mb-1">Nama Ketua Pengurus</label>
-                  <input
+                  <Input
                     type="text"
                     required
                     value={formData.leaderName}
                     onChange={(e) => setFormData({ ...formData, leaderName: e.target.value })}
                     placeholder="Contoh: Sutrisno"
-                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none"
+                    className="rounded-xl text-xs"
                   />
                 </div>
 
                 <div>
                   <label className="font-bold text-slate-600 block mb-1">Jumlah Anggota</label>
-                  <input
+                  <Input
                     type="number"
                     required
                     value={formData.memberCount}
                     onChange={(e) =>
                       setFormData({ ...formData, memberCount: Number(e.target.value) })
                     }
-                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none"
+                    className="rounded-xl text-xs"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="font-bold text-slate-600 block mb-1">Wilayah Operasional</label>
-                <input
+                <Input
                   type="text"
                   required
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   placeholder="Contoh: Situbondo, Jawa Timur"
-                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none"
+                  className="rounded-xl text-xs"
                 />
               </div>
 
@@ -290,12 +291,12 @@ export default function KthFarmersManagement() {
                 <label className="font-bold text-slate-600 block mb-1">
                   Nomor Registrasi SK KLHK
                 </label>
-                <input
+                <Input
                   type="text"
                   required
                   value={formData.registrationNumber}
                   onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none font-mono"
+                  className="rounded-xl text-xs font-mono"
                 />
               </div>
 

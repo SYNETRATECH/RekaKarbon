@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Coins,
   CheckCircle2,
@@ -284,12 +285,12 @@ export default function KthTransactionsMonitoring() {
               {/* Internal Search Input */}
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
+                <Input
                   type="text"
                   value={dropdownSearch}
                   onChange={(e) => setDropdownSearch(e.target.value)}
                   placeholder="Cari nama proyek..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  className="pl-8 pr-3 h-8 text-xs rounded-xl"
                   autoFocus
                 />
                 {dropdownSearch && (
