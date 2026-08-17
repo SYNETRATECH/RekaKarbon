@@ -35,21 +35,22 @@ jobs:
         strip_components: 0
         
     - name: 🚀 Execute Deployment on Server
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_IP }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        command_timeout: 10m
-        script: |
+      env:
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y sshpass
+        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME@$SERVER_IP" << 'EOF'
           set -e
           
           echo "=== Membersihkan kontainer & data lama (jika ada) ==="
-          echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker rm -f besu-dev-node 2>/dev/null || true
-          echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker volume rm besu_data 2>/dev/null || true
+          echo "$SERVER_PASSWORD" | sudo -S docker rm -f besu-dev-node 2>/dev/null || true
+          echo "$SERVER_PASSWORD" | sudo -S docker volume rm besu_data 2>/dev/null || true
           
           echo "=== Menjalankan Docker Hyperledger Besu ==="
-          echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker run -d \
+          echo "$SERVER_PASSWORD" | sudo -S docker run -d \
             --name besu-dev-node \
             --restart always \
             -p 8545:8545 \
@@ -75,13 +76,13 @@ jobs:
             sleep 5
             if [ $i -eq 12 ]; then
               echo "❌ Besu gagal menyala setelah 60 detik. Menampilkan log:"
-              echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker logs --tail 30 besu-dev-node
+              echo "$SERVER_PASSWORD" | sudo -S docker logs --tail 30 besu-dev-node
               exit 1
             fi
           done
           
           echo "=== Menginstall dependensi & Deploy Smart Contract ==="
-          echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker run --rm \
+          echo "$SERVER_PASSWORD" | sudo -S docker run --rm \
             -v ~/VM_BLOCKHAIN:/app \
             -w /app \
             --network host \
@@ -89,3 +90,4 @@ jobs:
             bash -c "npm ci && npx hardhat run scripts/deploy.js --network besu_local"
           
           echo "✅ DEPLOYMENT SERVER SELESAI!"
+        EOF
