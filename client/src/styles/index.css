@@ -37,6 +37,15 @@
   --color-primary-dark: #022c22;
   --color-primary-light: #034a38;
 
+  /* RekaKarbon Theme Tokens */
+  --color-tech-mint: #00c48c;
+  --color-status-success-bg: #ecfdf5;
+  --color-status-success-fg: #065f46;
+  --color-status-warning-bg: #fffbeb;
+  --color-status-warning-fg: #92400e;
+  --color-status-danger-bg: #fff1f2;
+  --color-status-danger-fg: #9f1239;
+
   /* Shadcn custom properties */
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;

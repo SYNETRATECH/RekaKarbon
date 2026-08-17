@@ -3,21 +3,18 @@ import { FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function TaxSystemIntegration() {
   const { djpLogs } = useCarbonStore();
 
   return (
     <div className="space-y-8 animate-fade-in text-left">
-      <div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-          Halaman Integrasi Sistem Pajak Karbon
-        </h2>
-        <p className="text-xs text-slate-500 font-semibold mt-1">
-          Rekonsiliasi pelaporan denda emisi dengan nomor e-Faktur Pajak resmi DJP (Direktorat
-          Jenderal Pajak Kementerian Keuangan).
-        </p>
-      </div>
+      <PageHeader
+        badgeText="KLHK & DJP RECONCILIATION PORTAL"
+        title="Halaman Integrasi Sistem Pajak Karbon"
+        description="Rekonsiliasi pelaporan denda emisi dengan nomor e-Faktur Pajak resmi DJP (Direktorat Jenderal Pajak Kementerian Keuangan)."
+      />
 
       <Card className="rounded-3xl border-slate-200 shadow-2xs">
         <CardHeader className="flex flex-row items-center justify-between pb-4">
