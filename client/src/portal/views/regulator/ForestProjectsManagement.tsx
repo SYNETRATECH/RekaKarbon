@@ -19,6 +19,24 @@ import {
   Building2,
 } from 'lucide-react';
 import { formatCurrency, formatFileSize, parseNumeric } from '../../../lib/formatters';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 
 export default function ForestProjectsManagement() {
   const {
@@ -31,6 +49,7 @@ export default function ForestProjectsManagement() {
   } = useCarbonStore();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const [selectedProgressProject, setSelectedProgressProject] = useState<any>(null);
   const [blockchainSubTab, setBlockchainSubTab] = useState<'buyers' | 'vendors'>('buyers');
 
@@ -394,12 +413,12 @@ export default function ForestProjectsManagement() {
       <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari nama proyek, lokasi, atau KTH..."
-            className="w-full pl-10 pr-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="pl-10 pr-4 h-9 text-xs rounded-xl"
           />
         </div>
         <span className="text-xs font-extrabold text-slate-400">
@@ -409,122 +428,108 @@ export default function ForestProjectsManagement() {
 
       {/* PROJECTS TABLE */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50 text-slate-400 font-black uppercase text-[10px] tracking-wider border-y border-slate-200">
-                <th className="py-3 px-4">Kode ID</th>
-                <th className="py-3 px-4">Nama Proyek Kehutanan</th>
-                <th className="py-3 px-4">Kategori Hutan</th>
-                <th className="py-3 px-4">KTH Penanggung Jawab</th>
-                <th className="py-3 px-4">Target vs Realisasi Serapan</th>
-                <th className="py-3 px-4">Anggaran Pendanaan</th>
-                <th className="py-3 px-4">Status dMRV</th>
-                <th className="py-3 px-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredProjects.map((prj: any) => {
-                const progressData = getProjectProgressData(prj);
-                return (
-                  <tr key={prj.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-black text-slate-900">{prj.id}</td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <TreePine className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <div>
-                          <span className="font-extrabold text-slate-900 block">
-                            {prj.projectName}
-                          </span>
-                          <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-slate-300" />
-                            {prj.location}
-                          </span>
-                        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Kode ID</TableHead>
+              <TableHead>Nama Proyek Kehutanan</TableHead>
+              <TableHead>Kategori Hutan</TableHead>
+              <TableHead>KTH Penanggung Jawab</TableHead>
+              <TableHead>Target vs Realisasi Serapan</TableHead>
+              <TableHead>Anggaran Pendanaan</TableHead>
+              <TableHead>Status dMRV</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredProjects.map((prj: any) => {
+              const progressData = getProjectProgressData(prj);
+              return (
+                <TableRow key={prj.id}>
+                  <TableCell className="font-mono font-black text-slate-900">{prj.id}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <TreePine className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <span className="font-extrabold text-slate-900 block">
+                          {prj.projectName}
+                        </span>
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-300" />
+                          {prj.location}
+                        </span>
                       </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-md text-[10px] border border-slate-200">
-                        {prj.categoryLabel}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-md text-[10px] border border-slate-200">
+                      {prj.categoryLabel}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-bold text-slate-800">{prj.assignedKTH}</TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="font-black text-emerald-600 block">
+                          {prj.actualSequestrationTCO2e.toLocaleString('id-ID')} /{' '}
+                          {prj.targetSequestrationTCO2e.toLocaleString('id-ID')} tCO2e
+                        </span>
+                        <span className="text-[10px] font-extrabold text-emerald-700">
+                          {progressData.pct}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-1">
+                        <div
+                          className="bg-primary-gradient h-full transition-all duration-500 rounded-full"
+                          style={{ width: `${progressData.pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono font-black text-slate-900">
+                    {formatCurrency(prj.fundingBudgetIDR)}
+                  </TableCell>
+                  <TableCell>
+                    {prj.verificationStatus === 'verified' ? (
+                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Terverifikasi dMRV
                       </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-slate-800">{prj.assignedKTH}</td>
-                    <td className="py-3.5 px-4">
-                      <div>
-                        <div className="flex justify-between items-baseline gap-2">
-                          <span className="font-black text-emerald-600 block">
-                            {prj.actualSequestrationTCO2e.toLocaleString('id-ID')} /{' '}
-                            {prj.targetSequestrationTCO2e.toLocaleString('id-ID')} tCO2e
-                          </span>
-                          <span className="text-[10px] font-extrabold text-emerald-700">
-                            {progressData.pct}%
-                          </span>
-                        </div>
-                        <div className="w-28 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1 border border-slate-200">
-                          <div
-                            className="h-full bg-emerald-500 rounded-full"
-                            style={{ width: `${progressData.pct}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div>
-                        <div className="flex justify-between items-baseline gap-2">
-                          <span className="font-black text-slate-900 block">
-                            <span className="text-emerald-600 font-extrabold">
-                              {progressData.raisedBudgetFormatted}
-                            </span>{' '}
-                            / {progressData.totalBudgetFormatted}
-                          </span>
-                          <span className="text-[10px] font-extrabold text-emerald-700">
-                            {progressData.fundingPct}%
-                          </span>
-                        </div>
-                        <div className="w-28 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1 border border-slate-200">
-                          <div
-                            className="h-full bg-emerald-500 rounded-full"
-                            style={{ width: `${progressData.fundingPct}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {prj.dMRVStatus === 'verified' ? (
-                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          Terverifikasi AI
-                        </span>
-                      ) : (
-                        <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-amber-600" />
-                          Perlu Inspeksi
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-right space-x-1.5">
-                      <button
-                        onClick={() => setSelectedProgressProject(prj)}
-                        className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-extrabold text-[11px] border border-emerald-200 inline-flex items-center gap-1 transition-colors cursor-pointer"
-                        title="Lihat Progress Reboisasi & Detail Proyek"
-                      >
-                        <Activity className="w-3.5 h-3.5 text-emerald-600" />
-                        Progress
-                      </button>
-                      <button
-                        onClick={() => openEditPage(prj)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-                        title="Edit Proyek & Titik Polygon"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    ) : (
+                      <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        Dalam Audit AI
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <button
+                      onClick={() => openEditPage(prj)}
+                      className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors cursor-pointer"
+                      title="Lihat Detail Transaksi Blockchain & Pembeli"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setSelectedProgressProject(prj)}
+                      className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors cursor-pointer"
+                      title="Lihat Progress & Pembeli"
+                    >
+                      <Activity className="w-3.5 h-3.5 text-emerald-600" />
+                    </button>
+                    <button
+                      onClick={() => openEditPage(prj)}
+                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                      title="Edit Proyek Kehutanan"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </div>
 
       {/* MODAL PROGRESS PROYEK & TRANSPARANSI DANA ON-CHAIN */}
@@ -645,8 +650,9 @@ export default function ForestProjectsManagement() {
 
                 <button
                   onClick={() =>
-                    alert(
-                      `Mengunduh berkas: ${selectedProgressProject.budgetReportFileName || 'LAPORAN_ANGGARAN_TUBAN_2026.pdf'}`
+                    setDownloadNotice(
+                      selectedProgressProject.budgetReportFileName ||
+                        'LAPORAN_ANGGARAN_TUBAN_2026.pdf'
                     )
                   }
                   className="px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-100 text-emerald-900 font-extrabold text-xs border border-emerald-300 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
@@ -870,108 +876,90 @@ export default function ForestProjectsManagement() {
                     {/* TAB 1: PEMBELI TOKEN KARBON (TOKEN BUYERS) */}
                     {blockchainSubTab === 'buyers' && (
                       <div className="space-y-2.5">
-                        <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                          <table className="w-full text-left text-xs">
-                            <thead>
-                              <tr className="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-wider border-b border-slate-200">
-                                <th className="py-2.5 px-3.5">Nama Perusahaan / Entitas</th>
-                                <th className="py-2.5 px-3.5">Sektor Industri</th>
-                                <th className="py-2.5 px-3.5">Volume Pembelian</th>
-                                <th className="py-2.5 px-3.5">No. Sertifikat SPE-GRK</th>
-                                <th className="py-2.5 px-3.5">Tanggal Tx</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 font-medium">
-                              {progData.tokenBuyers.map((tb: any) => (
-                                <tr key={tb.id} className="hover:bg-slate-50/70">
-                                  <td className="py-3 px-3.5">
-                                    <div className="flex items-center gap-2">
-                                      <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                      <span className="font-extrabold text-slate-900 block">
-                                        {tb.companyName}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-3.5 text-slate-600 font-semibold">
-                                    {tb.sector}
-                                  </td>
-                                  <td className="py-3 px-3.5 font-black text-emerald-600 font-mono">
-                                    +{tb.tCO2e.toLocaleString('id-ID')} tCO2e
-                                  </td>
-                                  <td className="py-3 px-3.5 font-mono text-[10px] font-bold text-slate-700">
-                                    {tb.speCertificateId}
-                                  </td>
-                                  <td className="py-3 px-3.5 text-slate-400 text-[10px]">
-                                    {tb.date}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Nama Perusahaan / Entitas</TableHead>
+                              <TableHead>Sektor Industri</TableHead>
+                              <TableHead>Volume Pembelian</TableHead>
+                              <TableHead>No. Sertifikat SPE-GRK</TableHead>
+                              <TableHead>Tanggal Tx</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {progData.tokenBuyers.map((tb: any) => (
+                              <TableRow key={tb.id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <span className="font-extrabold text-slate-900 block">
+                                      {tb.companyName}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-slate-600 font-semibold">
+                                  {tb.sector}
+                                </TableCell>
+                                <TableCell className="font-black text-emerald-600 font-mono">
+                                  +{tb.tCO2e.toLocaleString('id-ID')} tCO2e
+                                </TableCell>
+                                <TableCell className="font-mono text-[10px] font-bold text-slate-700">
+                                  {tb.speCertificateId}
+                                </TableCell>
+                                <TableCell className="text-slate-400 text-[10px]">
+                                  {tb.date}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
                     )}
 
                     {/* TAB 2: BUKTI PENGGUNAAN DANA (ALIRAN DANA & VENDOR DISBURSEMENT PROOFS) */}
                     {blockchainSubTab === 'vendors' && (
                       <div className="space-y-2.5">
-                        <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                          <table className="w-full text-left text-xs">
-                            <thead>
-                              <tr className="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-wider border-b border-slate-200">
-                                <th className="py-2.5 px-3.5">Tanggal</th>
-                                <th className="py-2.5 px-3.5">Penerima Dana (Vendor / KTH)</th>
-                                <th className="py-2.5 px-3.5">Kategori & Deskripsi Penggunaan</th>
-                                <th className="py-2.5 px-3.5">Jumlah IDR</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 font-medium">
-                              {progData.disbursementHistory.map((tx: any) => {
-                                const displayAmount =
-                                  typeof tx.amount === 'number'
-                                    ? `Rp ${tx.amount.toLocaleString('id-ID')}`
-                                    : typeof tx.amount === 'string' && tx.amount.startsWith('Rp')
-                                      ? tx.amount
-                                      : `Rp ${tx.amount}`;
-                                return (
-                                  <tr
-                                    key={tx.id}
-                                    onClick={() =>
-                                      setSelectedTx({
-                                        project: {
-                                          name: selectedProgressProject.projectName,
-                                          region: selectedProgressProject.location,
-                                          totalBudget: 4500000000,
-                                          reforestationPartner: selectedProgressProject.assignedKTH,
-                                        },
-                                        tx: tx,
-                                      })
-                                    }
-                                    className="hover:bg-emerald-50/50 cursor-pointer transition-colors group"
-                                  >
-                                    <td className="py-3 px-3.5 text-slate-400 font-mono text-[10px]">
-                                      {tx.date}
-                                    </td>
-                                    <td className="py-3 px-3.5 font-extrabold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                                      {tx.vendor}
-                                    </td>
-                                    <td className="py-3 px-3.5">
-                                      <span className="font-bold text-slate-800 block text-[11px]">
-                                        {tx.category}
-                                      </span>
-                                      <span className="text-[10px] text-slate-400 block mt-0.5">
-                                        {tx.desc}
-                                      </span>
-                                    </td>
-                                    <td className="py-3 px-3.5 font-black text-slate-900 font-mono">
-                                      {displayAmount}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Tanggal</TableHead>
+                              <TableHead>Penerima Dana (Vendor / KTH)</TableHead>
+                              <TableHead>Kategori & Deskripsi Penggunaan</TableHead>
+                              <TableHead>Jumlah IDR</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {progData.disbursementHistory.map((tx: any) => {
+                              const displayAmount =
+                                typeof tx.amount === 'number'
+                                  ? `Rp ${tx.amount.toLocaleString('id-ID')}`
+                                  : typeof tx.amount === 'string' && tx.amount.startsWith('Rp')
+                                    ? tx.amount
+                                    : `Rp ${Number(tx.amount || 0).toLocaleString('id-ID')}`;
+                              return (
+                                <TableRow key={tx.id}>
+                                  <TableCell className="font-mono text-slate-500 text-[10px]">
+                                    {tx.date}
+                                  </TableCell>
+                                  <TableCell className="font-extrabold text-slate-900">
+                                    {tx.vendor}
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="font-bold text-slate-800 block">
+                                      {tx.category}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 block">
+                                      {tx.desc}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="font-mono font-black text-emerald-700">
+                                    {displayAmount}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
 
                         {/* GALERI BUKTI FISIK LAPANGAN & NOTA */}
                         <div className="pt-3 border-t border-slate-200/60 space-y-2">
@@ -1033,6 +1021,29 @@ export default function ForestProjectsManagement() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <FileText className="w-5 h-5 text-emerald-600" />
+              <span>Pengunduhan Berkas Resmi</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Berkas <span className="font-mono font-bold text-slate-900">{downloadNotice}</span>{' '}
+              sedang diunduh dan diproses dari repository publik RekaKarbon.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setDownloadNotice(null)}
+              className="w-full bg-primary-gradient text-white font-extrabold"
+            >
+              Tutup & Lanjutkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

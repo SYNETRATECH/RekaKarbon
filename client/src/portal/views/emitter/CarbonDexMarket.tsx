@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import {
   ShoppingCart,
   AlertTriangle,
@@ -64,15 +66,15 @@ export default function CarbonDexMarket() {
       </div>
 
       {/* 2. TOP ALERT BOX (WARNING BANNER) */}
-      <div className="shrink-0 bg-rose-50/70 border border-rose-200/80 p-3.5 rounded-2xl flex items-center gap-3.5 text-left">
-        <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
-        <div className="text-xs space-y-0.5">
-          <h4 className="font-extrabold text-rose-700">Defisit aktif: 2.330 tCO2e</h4>
-          <p className="text-[11px] font-medium text-rose-600">
+      <Alert variant="destructive">
+        <AlertTriangle className="w-4 h-4 text-rose-600" />
+        <div>
+          <AlertTitle className="text-rose-900">Defisit aktif: 2.330 tCO2e</AlertTitle>
+          <AlertDescription className="text-rose-700">
             Beli minimal 2330 tCO2e sebelum 31 Des 2025 untuk menghindari denda Rp 1.51 M.
-          </p>
+          </AlertDescription>
         </div>
-      </div>
+      </Alert>
 
       {/* 3. MAIN CARD CONTAINER (Dynamic Height: flex-1 flex flex-col min-h-0) */}
       <div className="flex-1 flex flex-col min-h-0 bg-white rounded-3xl border border-slate-200 shadow-2xs p-6 space-y-4">
@@ -90,12 +92,12 @@ export default function CarbonDexMarket() {
           {/* Searchbar replacing Leaf Icon */}
           <div className="relative w-full sm:w-64 md:w-72">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
+            <Input
               type="text"
               placeholder="Cari token atau kawasan..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50/80 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:bg-white focus:border-[var(--color-primary)] transition-all"
+              className="pl-9 pr-3 h-9 text-xs rounded-xl"
             />
           </div>
         </div>
@@ -344,12 +346,12 @@ export default function CarbonDexMarket() {
             <div className="space-y-4 text-xs">
               <div className="space-y-1">
                 <label className="font-bold text-slate-700">Jumlah Pembelian Token (tCO2e):</label>
-                <input
+                <Input
                   type="number"
                   max="2330"
                   value={buyQuantity}
                   onChange={(e) => setBuyQuantity(Math.min(2330, Number(e.target.value)))}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
+                  className="font-mono text-xs rounded-xl"
                 />
                 <span className="text-[9px] text-rose-600 font-bold block">
                   Cap Control Aktif: Maksimal 2.330 tCO2e (Sesuai Defisit Aktif)

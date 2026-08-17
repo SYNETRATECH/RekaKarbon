@@ -1,16 +1,24 @@
+import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { FileCheck2, Fingerprint } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 export default function EmitterKYBValidation() {
   const { kybQueue } = useCarbonStore();
+  const [webAuthnTarget, setWebAuthnTarget] = useState<string | null>(null);
 
   const handleWebAuthnTrigger = (companyName: string) => {
-    alert(
-      `Mengirimkan pemicu kunci keamanan biometrik (WebAuthn Passwordless Key) ke perangkat administrator ${companyName}!`
-    );
+    setWebAuthnTarget(companyName);
   };
 
   return (
@@ -67,6 +75,29 @@ export default function EmitterKYBValidation() {
           ))}
         </CardContent>
       </Card>
+
+      <Dialog open={!!webAuthnTarget} onOpenChange={(open) => !open && setWebAuthnTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <Fingerprint className="w-5 h-5 text-emerald-600" />
+              <span>Pemicu Biometrik WebAuthn</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Mengirimkan pemicu kunci keamanan biometrik (WebAuthn Passwordless Key) ke perangkat
+              administrator <span className="font-bold text-slate-900">{webAuthnTarget}</span>!
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setWebAuthnTarget(null)}
+              className="w-full bg-primary-gradient text-white font-extrabold"
+            >
+              Tutup & Lanjutkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

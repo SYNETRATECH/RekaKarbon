@@ -1,12 +1,22 @@
+import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
-import { FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { FileSpreadsheet, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/layout/PageHeader';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 export default function TaxSystemIntegration() {
   const { djpLogs } = useCarbonStore();
+  const [showSyncNotice, setShowSyncNotice] = useState(false);
 
   return (
     <div className="space-y-8 animate-fade-in text-left">
@@ -25,7 +35,7 @@ export default function TaxSystemIntegration() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => alert('Sinkronisasi ulang data e-Faktur DJP berhasil!')}
+            onClick={() => setShowSyncNotice(true)}
             className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-slate-200 rounded-xl flex items-center gap-1 cursor-pointer"
           >
             <RefreshCw className="w-3 h-3 text-[#00C48C]" />
@@ -68,6 +78,28 @@ export default function TaxSystemIntegration() {
           ))}
         </CardContent>
       </Card>
+
+      <Dialog open={showSyncNotice} onOpenChange={setShowSyncNotice}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <span>Rekonsiliasi API e-Faktur DJP</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Sinkronisasi ulang data e-Faktur Pajak DJP berhasil diperbarui secara real-time!
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setShowSyncNotice(false)}
+              className="w-full bg-primary-gradient text-white font-extrabold"
+            >
+              Tutup & Lanjutkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

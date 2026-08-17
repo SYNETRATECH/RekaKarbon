@@ -5,6 +5,14 @@ import { useCarbonStore } from '../../../store/useCarbonStore';
 import { sortPolygonCoordinates } from '../../../utils/geodetics';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { ForestProjectItem } from '../../../types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 const TILE_URLS: {
   satellite: string;
@@ -289,11 +297,11 @@ export default function ProjectEditorPage() {
               <label className="text-xs font-extrabold text-slate-700 block mb-1">
                 Nama Proyek Kehutanan
               </label>
-              <input
+              <Input
                 type="text"
                 value={formData.projectName}
                 onChange={(e) => handleInputChange('projectName', e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                className="rounded-xl text-xs"
                 required
               />
             </div>
@@ -303,36 +311,42 @@ export default function ProjectEditorPage() {
                 <label className="text-xs font-extrabold text-slate-700 block mb-1">
                   Kategori Hutan
                 </label>
-                <select
+                <Select
                   value={formData.category}
-                  onChange={(e) => {
+                  onValueChange={(val) => {
                     const labelMap: Record<string, string> = {
                       mangrove: 'Mangrove & Blue Carbon',
                       peatland: 'Gambut / Peatland Restoration',
                       agroforestry: 'Agroforestry & Hutan Rakyat',
                       reforestation: 'Restorasi Hutan Lindung',
                     };
-                    handleInputChange('category', e.target.value);
-                    handleInputChange('categoryLabel', labelMap[e.target.value] || 'Konservasi');
+                    handleInputChange('category', val);
+                    if (labelMap[val]) {
+                      handleInputChange('categoryLabel', labelMap[val]);
+                    }
                   }}
-                  className="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none"
                 >
-                  <option value="mangrove">Mangrove</option>
-                  <option value="peatland">Gambut</option>
-                  <option value="agroforestry">Agroforestry</option>
-                  <option value="reforestation">Restorasi Hutan</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Kategori Hutan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mangrove">Mangrove & Blue Carbon</SelectItem>
+                    <SelectItem value="peatland">Gambut / Peatland Restoration</SelectItem>
+                    <SelectItem value="agroforestry">Agroforestry & Hutan Rakyat</SelectItem>
+                    <SelectItem value="reforestation">Restorasi Hutan Lindung</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="text-xs font-extrabold text-slate-700 block mb-1">
                   Lokasi Wilayah
                 </label>
-                <input
+                <Input
                   type="text"
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl text-xs"
                   required
                 />
               </div>
@@ -343,11 +357,11 @@ export default function ProjectEditorPage() {
                 <label className="text-xs font-extrabold text-slate-700 block mb-1">
                   Target Karbon (tCO2e)
                 </label>
-                <input
+                <Input
                   type="number"
                   value={formData.targetSequestrationTCO2e}
                   onChange={(e) => handleInputChange('targetSequestrationTCO2e', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl text-xs"
                   required
                 />
               </div>
@@ -356,11 +370,11 @@ export default function ProjectEditorPage() {
                 <label className="text-xs font-extrabold text-slate-700 block mb-1">
                   Alokasi Anggaran
                 </label>
-                <input
+                <Input
                   type="text"
                   value={formData.fundingBudgetIDR}
                   onChange={(e) => handleInputChange('fundingBudgetIDR', e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                  className="rounded-xl text-xs"
                   required
                 />
               </div>
@@ -370,11 +384,11 @@ export default function ProjectEditorPage() {
               <label className="text-xs font-extrabold text-slate-700 block mb-1">
                 Kelompok Tani Hutan (KTH)
               </label>
-              <input
+              <Input
                 type="text"
                 value={formData.assignedKTH}
                 onChange={(e) => handleInputChange('assignedKTH', e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                className="rounded-xl text-xs"
                 required
               />
             </div>
@@ -414,19 +428,19 @@ export default function ProjectEditorPage() {
               {coordinates.map((coord, idx) => (
                 <div key={idx} className="flex items-center gap-2 text-xs">
                   <span className="w-6 font-extrabold text-slate-400 text-center">{idx + 1}</span>
-                  <input
+                  <Input
                     type="number"
                     step="0.000001"
                     value={coord[0]}
                     onChange={(e) => handleCoordChange(idx, 'lat', e.target.value)}
-                    className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 font-mono text-[11px]"
+                    className="flex-1 h-8 font-mono text-[11px] rounded-lg"
                   />
-                  <input
+                  <Input
                     type="number"
                     step="0.000001"
                     value={coord[1]}
                     onChange={(e) => handleCoordChange(idx, 'lng', e.target.value)}
-                    className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 font-mono text-[11px]"
+                    className="flex-1 h-8 font-mono text-[11px] rounded-lg"
                   />
                   {coordinates.length > 3 && (
                     <button

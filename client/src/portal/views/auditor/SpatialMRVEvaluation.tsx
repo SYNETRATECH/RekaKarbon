@@ -21,68 +21,8 @@ export default function SpatialMRVEvaluation() {
     setAdminActiveTab,
   } = useCarbonStore();
 
-  const summary = spatialSummary || {
-    totalAreaTerverifikasi: '286.7k ha',
-    subArea: '3 kawasan aktif',
-    totalKreditKarbon: '601.2k',
-    subKredit: 'tCO2e tervalidasi',
-    blokadeAwan: '1 Area',
-    subAwan: 'Butuh ground-truth drone',
-  };
-
-  const areas =
-    conservationAreas && conservationAreas.length > 0
-      ? conservationAreas
-      : [
-          {
-            id: 'AREA-BALURAN',
-            name: 'Hutan Konservasi Baluran',
-            location: 'Banyuwangi, Jawa Timur',
-            areaHectares: 25000,
-            ndvi: 0.78,
-            evi: 0.62,
-            carbonCredit: 48750,
-            cloudCover: '12%',
-            status: 'verified',
-            statusLabel: 'Terverifikasi',
-          },
-          {
-            id: 'AREA-KATINGAN',
-            name: 'Restorasi Gambut Katingan',
-            location: 'Katingan, Kalimantan Tengah',
-            areaHectares: 142000,
-            ndvi: 0.71,
-            evi: 0.54,
-            carbonCredit: 284300,
-            cloudCover: '67%',
-            status: 'drone_required',
-            statusLabel: 'Drone Required',
-          },
-          {
-            id: 'AREA-LEUSER',
-            name: 'Hutan Lindung Leuser',
-            location: 'Aceh, Sumatera',
-            areaHectares: 88500,
-            ndvi: 0.83,
-            evi: 0.69,
-            carbonCredit: 193700,
-            cloudCover: '8%',
-            status: 'verified',
-            statusLabel: 'Terverifikasi',
-          },
-          {
-            id: 'AREA-BERAU',
-            name: 'Mangrove Pesisir Berau',
-            location: 'Berau, Kalimantan Timur',
-            areaHectares: 31200,
-            ndvi: 0.65,
-            evi: 0.48,
-            carbonCredit: 74500,
-            cloudCover: '29%',
-            status: 'pending',
-            statusLabel: 'Pending',
-          },
-        ];
+  const summary = spatialSummary;
+  const areas = conservationAreas || [];
 
   const selectedArea = areas.find((a) => a.id === selectedConservationId) || areas[0] || null;
 
@@ -104,16 +44,16 @@ export default function SpatialMRVEvaluation() {
       {/* 3 HERO STAT CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Metric 1: Total Area Terverifikasi */}
-        <Card className="rounded-3xl p-6 border-slate-200 shadow-2xs flex items-center justify-between">
+        <Card className="rounded-3xl border-slate-200 shadow-2xs p-6 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-500 block">
               Total Area Terverifikasi
             </span>
             <h3 className="text-3xl font-black text-slate-900 leading-none">
-              {summary.totalAreaTerverifikasi}
+              {summary?.totalAreaTerverifikasi ?? '-'}
             </h3>
             <span className="text-[11px] font-medium text-slate-400 block pt-0.5">
-              {summary.subArea}
+              {summary?.subArea ?? '-'}
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-[#00C48C] flex items-center justify-center shrink-0">
@@ -121,31 +61,33 @@ export default function SpatialMRVEvaluation() {
           </div>
         </Card>
 
-        {/* Metric 2: Total Kredit Karbon */}
-        <Card className="rounded-3xl p-6 border-slate-200 shadow-2xs flex items-center justify-between">
+        {/* Metric 2: Total Kredit Karbon Terbit */}
+        <Card className="rounded-3xl border-slate-200 shadow-2xs p-6 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 block">Total Kredit Karbon</span>
-            <h3 className="text-3xl font-black text-slate-900 leading-none">
-              {summary.totalKreditKarbon}
+            <span className="text-xs font-semibold text-slate-500 block">
+              Total Kredit Karbon SPE
+            </span>
+            <h3 className="text-3xl font-black text-emerald-600 leading-none">
+              {summary?.totalKreditKarbon ?? '-'}
             </h3>
             <span className="text-[11px] font-medium text-slate-400 block pt-0.5">
-              {summary.subKredit}
+              {summary?.subKredit ?? '-'}
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-[#00C48C] flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-[#033C2E] flex items-center justify-center shrink-0">
             <Leaf className="w-6 h-6" />
           </div>
         </Card>
 
-        {/* Metric 3: Blokade Awan */}
-        <Card className="rounded-3xl p-6 border-slate-200 shadow-2xs flex items-center justify-between">
+        {/* Metric 3: Area Terblokir Awan */}
+        <Card className="rounded-3xl border-slate-200 shadow-2xs p-6 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 block">Blokade Awan</span>
+            <span className="text-xs font-semibold text-slate-500 block">Area Terblokir Awan</span>
             <h3 className="text-3xl font-black text-amber-500 leading-none">
-              {summary.blokadeAwan}
+              {summary?.blokadeAwan ?? '-'}
             </h3>
             <span className="text-[11px] font-medium text-slate-400 block pt-0.5">
-              {summary.subAwan}
+              {summary?.subAwan ?? '-'}
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-500 flex items-center justify-center shrink-0">

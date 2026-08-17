@@ -1,5 +1,31 @@
 import { useState, FormEvent } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   UploadCloud,
   FileText,
@@ -18,11 +44,12 @@ import {
   Cpu,
   Check,
   ChevronRight,
-  ChevronDown,
   ArrowLeft,
 } from 'lucide-react';
 export default function EmissionReportsSector() {
   const { emissionReports: reports } = useCarbonStore();
+
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
 
   const [selectedYear, setSelectedYear] = useState(2026);
   const [activeTabCategory, setActiveTabCategory] = useState(1); // 1 | 2 | 3
@@ -104,18 +131,19 @@ export default function EmissionReportsSector() {
           <span className="text-xs font-extrabold text-slate-600 whitespace-nowrap">
             Tahun Kepatuhan:
           </span>
-          <div className="relative inline-block">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="appearance-none bg-slate-100 hover:bg-slate-200/70 border border-slate-200 text-slate-900 font-extrabold text-xs rounded-xl pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer transition-all"
-            >
-              <option value={2026}>FY 2026 (Aktif)</option>
-              <option value={2025}>FY 2025 (Arsip Audit)</option>
-              <option value={2024}>FY 2024 (Arsip Audit)</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
+          <Select
+            value={String(selectedYear)}
+            onValueChange={(val) => setSelectedYear(Number(val))}
+          >
+            <SelectTrigger className="h-8 text-xs font-extrabold w-44">
+              <SelectValue placeholder="Pilih Tahun" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2026">FY 2026 (Aktif)</SelectItem>
+              <SelectItem value="2025">FY 2025 (Arsip Audit)</SelectItem>
+              <SelectItem value="2024">FY 2024 (Arsip Audit)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -222,19 +250,19 @@ export default function EmissionReportsSector() {
           {/* ================= CATEGORY 1 ================= */}
           {activeTabCategory === 1 && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl flex items-start gap-3 text-left">
-                <Flame className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                <div className="text-xs space-y-1">
-                  <h4 className="font-extrabold text-[#003E29]">
+              <Alert variant="mint">
+                <Flame className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div>
+                  <AlertTitle className="text-[#003E29]">
                     1. Laporan Aktivitas Emisi Tahunan (Activity-Based Template Standar)
-                  </h4>
-                  <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  </AlertTitle>
+                  <AlertDescription className="text-slate-600">
                     Perusahaan menginput data aktivitas fisik emisi menggunakan templat standar yang
                     memisahkan kategori emisi berdasarkan metodologi inventarisasi emisi global
                     (Greenhouse Gas Protocol & Kaidah IPCC).
-                  </p>
+                  </AlertDescription>
                 </div>
-              </div>
+              </Alert>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
                 {/* Field 1: Mesin Stasioner */}
@@ -249,12 +277,12 @@ export default function EmissionReportsSector() {
                     Boiler, Kiln, Generator Fired Heaters
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat1StationaryFuel}
                       onChange={(e) => setCat1StationaryFuel(e.target.value)}
                       placeholder="Contoh: 4.850.000"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       Liter / Tahun
@@ -274,12 +302,12 @@ export default function EmissionReportsSector() {
                     Truk Logistik Internal & Alat Berat
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat1VehicleFuel}
                       onChange={(e) => setCat1VehicleFuel(e.target.value)}
                       placeholder="Contoh: 1.240.000"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       Liter / Tahun
@@ -299,12 +327,12 @@ export default function EmissionReportsSector() {
                     Pembakaran cangkang sawit / limbah kayu
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat1BiomassResidue}
                       onChange={(e) => setCat1BiomassResidue(e.target.value)}
                       placeholder="Contoh: 15.200"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       Ton / Tahun
@@ -335,19 +363,19 @@ export default function EmissionReportsSector() {
           {/* ================= CATEGORY 2 ================= */}
           {activeTabCategory === 2 && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-amber-50/70 border border-amber-200/80 p-4 rounded-2xl flex items-start gap-3 text-left">
-                <Receipt className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <div className="text-xs space-y-1">
-                  <h4 className="font-extrabold text-amber-950">
+              <Alert variant="warning">
+                <Receipt className="w-5 h-5 text-amber-600 shrink-0" />
+                <div>
+                  <AlertTitle className="text-amber-950">
                     2. Data Keuangan Utilitas Energi Agregat Tahunan (Integrasi e-Faktur DJP)
-                  </h4>
-                  <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  </AlertTitle>
+                  <AlertDescription className="text-slate-600">
                     Sebagai pembanding logis yang dianalisis oleh AI untuk mendeteksi kejujuran
                     pelaporan tanpa mengekspos margin keuntungan internal, sertakan pos pengeluaran
                     utilitas yang terhubung langsung dengan nomor e-Faktur Pajak resmi DJP.
-                  </p>
+                  </AlertDescription>
                 </div>
-              </div>
+              </Alert>
 
               {/* 4 Financial Utility Cost Positions */}
               <div className="space-y-2">
@@ -363,11 +391,11 @@ export default function EmissionReportsSector() {
                       <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
                         Rp
                       </span>
-                      <input
+                      <Input
                         type="number"
                         value={cat2CostSolar}
                         onChange={(e) => setCat2CostSolar(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-2 py-1.5 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
                       />
                     </div>
                   </div>
@@ -380,11 +408,11 @@ export default function EmissionReportsSector() {
                       <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
                         Rp
                       </span>
-                      <input
+                      <Input
                         type="number"
                         value={cat2CostBatubara}
                         onChange={(e) => setCat2CostBatubara(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-2 py-1.5 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
                       />
                     </div>
                   </div>
@@ -397,11 +425,11 @@ export default function EmissionReportsSector() {
                       <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
                         Rp
                       </span>
-                      <input
+                      <Input
                         type="number"
                         value={cat2CostGas}
                         onChange={(e) => setCat2CostGas(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-2 py-1.5 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
                       />
                     </div>
                   </div>
@@ -414,11 +442,11 @@ export default function EmissionReportsSector() {
                       <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
                         Rp
                       </span>
-                      <input
+                      <Input
                         type="number"
                         value={cat2CostPLN}
                         onChange={(e) => setCat2CostPLN(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-2 py-1.5 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
                       />
                     </div>
                   </div>
@@ -436,12 +464,12 @@ export default function EmissionReportsSector() {
                     Nomor faktur resmi Direktorat Jenderal Pajak untuk verifikasi keuangan utilitas
                     energi.
                   </p>
-                  <input
+                  <Input
                     type="text"
                     value={cat2EFakturDJP}
                     onChange={(e) => setCat2EFakturDJP(e.target.value)}
                     placeholder="Contoh: 010.000-26.88765432"
-                    className="w-full bg-white border border-amber-300 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-amber-500/20 focus:outline-none mt-2"
+                    className="bg-white border-amber-300 font-mono font-extrabold rounded-xl mt-2"
                   />
                 </div>
 
@@ -493,12 +521,12 @@ export default function EmissionReportsSector() {
                     Total tonase volume hasil produksi akhir pabrik
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat3ProductionCapacity}
                       onChange={(e) => setCat3ProductionCapacity(e.target.value)}
                       placeholder="Contoh: 450.000"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       Ton Produk / Tahun
@@ -515,12 +543,12 @@ export default function EmissionReportsSector() {
                     Total estimasi / laporan emisi historis tahun sebelumnya
                   </p>
                   <div className="relative mt-2">
-                    <input
+                    <Input
                       type="number"
                       value={cat3HistoricalEmissions}
                       onChange={(e) => setCat3HistoricalEmissions(e.target.value)}
                       placeholder="Contoh: 13.500"
-                      className="w-full bg-white border border-slate-200 rounded-xl p-2.5 font-mono font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
                       tCO2e / Tahun
@@ -736,55 +764,53 @@ export default function EmissionReportsSector() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                <th className="py-3 px-4">Judul Berkas Laporan</th>
-                <th className="py-3 px-4">Tahun</th>
-                <th className="py-3 px-4">Tanggal Unggah</th>
-                <th className="py-3 px-4">Ukuran</th>
-                <th className="py-3 px-4">Total Emisi</th>
-                <th className="py-3 px-4">Status Verifikasi</th>
-                <th className="py-3 px-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {reports.map((rep: any) => (
-                <tr key={rep.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3.5 px-4 font-extrabold text-slate-900 flex items-center gap-2.5">
-                    <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{rep.title}</span>
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-slate-700">{rep.year}</td>
-                  <td className="py-3.5 px-4 text-slate-500 font-medium">{rep.uploadDate}</td>
-                  <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">
-                    {rep.fileSize}
-                  </td>
-                  <td className="py-3.5 px-4 font-black text-rose-500 font-mono">
-                    {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO2e
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      Lolos Audit AI dMRV
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <button
-                      onClick={() => alert(`Mengunduh berkas ${rep.fileName}...`)}
-                      className="p-2 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer inline-flex items-center gap-1 font-extrabold text-xs"
-                      title="Unduh Berkas PDF Resmi"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>Unduh</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Judul Berkas Laporan</TableHead>
+              <TableHead>Tahun</TableHead>
+              <TableHead>Tanggal Unggah</TableHead>
+              <TableHead>Ukuran</TableHead>
+              <TableHead>Total Emisi</TableHead>
+              <TableHead>Status Verifikasi</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {reports.map((rep: any) => (
+              <TableRow key={rep.id}>
+                <TableCell className="font-extrabold text-slate-900 flex items-center gap-2.5">
+                  <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{rep.title}</span>
+                </TableCell>
+                <TableCell className="font-mono font-bold text-slate-700">{rep.year}</TableCell>
+                <TableCell className="text-slate-500 font-medium">{rep.uploadDate}</TableCell>
+                <TableCell className="text-slate-500 font-mono text-[11px]">
+                  {rep.fileSize}
+                </TableCell>
+                <TableCell className="font-black text-rose-500 font-mono">
+                  {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO2e
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    Lolos Audit AI dMRV
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <button
+                    onClick={() => setDownloadNotice(rep.fileName)}
+                    className="p-2 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer inline-flex items-center gap-1 font-extrabold text-xs"
+                    title="Unduh Berkas PDF Resmi"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Unduh</span>
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
       {/* AI CROSS-VARIABLE AUDIT SIMULATION MODAL */}
@@ -953,6 +979,29 @@ export default function EmissionReportsSector() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <FileText className="w-5 h-5 text-emerald-600" />
+              <span>Pengunduhan Berkas Resmi</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Berkas <span className="font-mono font-bold text-slate-900">{downloadNotice}</span>{' '}
+              sedang diunduh dan diproses dari repository publik RekaKarbon.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setDownloadNotice(null)}
+              className="w-full bg-primary-gradient text-white font-extrabold"
+            >
+              Tutup & Lanjutkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

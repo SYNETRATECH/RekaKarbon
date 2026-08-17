@@ -20,53 +20,8 @@ export default function DroneMappingController() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  const archive = droneArchive || {
-    areaName: 'Restorasi Gambut Katingan',
-    location: 'Katingan, Kalimantan Tengah',
-    cloudCover: '67% awan',
-    layers: [
-      { id: 'orto', title: 'Ortofoto', status: 'Tersedia', statusType: 'ready', icon: 'camera' },
-      {
-        id: 'canopy',
-        title: 'Canopy Height',
-        status: 'Proses...',
-        statusType: 'processing',
-        icon: 'layers',
-      },
-      { id: 'dsm', title: 'DSM/DEM', status: 'Antrian', statusType: 'queued', icon: 'activity' },
-    ],
-  };
-
-  const schedules = droneSchedules || {
-    period: '2025–2030',
-    year1: {
-      title: 'Tahun Pertama',
-      subTitle: '4× / tahun (Triwulanan)',
-      badge: '4× / tahun',
-      slots: [
-        { month: 'Jan', status: 'done', label: '✓ Selesai' },
-        { month: 'Apr', status: 'done', label: '✓ Selesai' },
-        { month: 'Jul', status: 'scheduled', label: '• Terjadwal' },
-        { month: 'Okt', status: 'upcoming', label: '○ Mendatang' },
-      ],
-    },
-    year2: {
-      title: 'Tahun Kedua',
-      subTitle: '3× / tahun (Caturwulanan)',
-      badge: '3× / tahun',
-      slots: [
-        { month: 'Jan', status: 'upcoming', label: '○ Mendatang' },
-        { month: 'Mei', status: 'upcoming', label: '○ Mendatang' },
-        { month: 'Sep', status: 'upcoming', label: '○ Mendatang' },
-      ],
-    },
-    year3to5: {
-      title: 'Tahun Ketiga–Kelima',
-      subTitle: '1× / tahun',
-      badge: '1× / tahun',
-      slots: [{ month: 'Jun', status: 'upcoming', label: '○ Mendatang' }],
-    },
-  };
+  const archive = droneArchive;
+  const schedules = droneSchedules;
 
   const handleUploadSim = () => {
     setIsUploading(true);
@@ -136,23 +91,25 @@ export default function DroneMappingController() {
 
           {/* Area Card: Restorasi Gambut Katingan */}
           <div className="p-5 rounded-2xl border-2 border-emerald-500/30 bg-emerald-50/20 space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h5 className="text-sm font-black text-slate-900 leading-tight">
-                  {archive.areaName}
-                </h5>
-                <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                  {archive.location}
-                </span>
-              </div>
-              <Badge variant="warning" className="text-[10px] font-black">
-                ☁ {archive.cloudCover}
-              </Badge>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-slate-500">Kawasan Terpilih:</span>
+              <span className="text-xs font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">
+                {archive?.areaName ?? ''}
+              </span>
+              <span className="text-xs text-slate-500 font-medium">
+                ({archive?.location ?? ''})
+              </span>
+            </div>
+
+            {/* Cloud warning badge */}
+            <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-xl text-xs font-bold border border-amber-200">
+              <FlaskConical className="w-3.5 h-3.5" />
+              <span>{archive?.cloudCover ?? ''}</span>
             </div>
 
             {/* Layer Cards mapped dynamically from mock */}
             <div className="grid grid-cols-3 gap-2.5 pt-1">
-              {archive.layers.map((layer: any) => {
+              {archive?.layers?.map((layer: any) => {
                 const isSelected = activeLayer === layer.id;
                 let bgStyle = 'bg-white/80 border-slate-200 hover:bg-white text-slate-900';
                 let iconBg = 'bg-slate-100 text-slate-700';

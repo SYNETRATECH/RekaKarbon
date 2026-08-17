@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useCarbonStore } from '../store/useCarbonStore';
 import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 export default function CorporateModule() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,12 +90,12 @@ export default function CorporateModule() {
           <span className="absolute inset-y-0 left-2.5 flex items-center text-slate-400">
             <Search className="w-3.5 h-3.5 text-[#00C48C]" />
           </span>
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari nama perusahaan, sektor, atau wilayah..."
-            className="w-full pl-8 pr-3 py-1.5 text-[10px] font-medium rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-[var(--color-primary)] transition-all"
+            className="pl-8 pr-3 h-8 text-[10px] bg-white rounded-xl"
           />
         </div>
       </div>

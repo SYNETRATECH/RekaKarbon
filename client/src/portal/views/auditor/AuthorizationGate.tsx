@@ -1,91 +1,40 @@
-import { useState, ChangeEvent } from 'react';
+import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { ShieldCheck, Cpu, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export default function AuthorizationGate() {
   const { certificationPreview, conservationAreas, authorizeMintOffsetCredit } = useCarbonStore();
 
-  const preview = certificationPreview || {
-    project: 'Hutan Konservasi Baluran',
-    location: 'Banyuwangi, Jawa Timur',
-    areaHectares: '25,000 ha',
-    carbonCreditSPE: '48,750 tCO2e',
-    ndvi: 0.78,
-    evi: 0.62,
-    verifier: 'Dr. Andika Putra Wijaya, SH',
-    confidenceScore: 94,
-    confidenceLevel: 'Sangat Tinggi',
-    auditDate: '2025-07-17',
-  };
+  const preview = certificationPreview;
+  const projectList = conservationAreas || [];
 
-  const projectList =
-    conservationAreas && conservationAreas.length > 0
-      ? conservationAreas
-      : [
-          {
-            id: 'AREA-BALURAN',
-            name: 'Hutan Konservasi Baluran',
-            location: 'Banyuwangi, Jawa Timur',
-            areaHectares: 25000,
-            carbonCredit: 48750,
-            ndvi: 0.78,
-            evi: 0.62,
-          },
-          {
-            id: 'AREA-KATINGAN',
-            name: 'Restorasi Gambut Katingan',
-            location: 'Katingan, Kalimantan Tengah',
-            areaHectares: 142000,
-            carbonCredit: 284300,
-            ndvi: 0.71,
-            evi: 0.54,
-          },
-          {
-            id: 'AREA-LEUSER',
-            name: 'Hutan Lindung Leuser',
-            location: 'Aceh, Sumatera',
-            areaHectares: 88500,
-            carbonCredit: 193700,
-            ndvi: 0.83,
-            evi: 0.69,
-          },
-          {
-            id: 'AREA-BERAU',
-            name: 'Mangrove Pesisir Berau',
-            location: 'Berau, Kalimantan Timur',
-            areaHectares: 31200,
-            carbonCredit: 74500,
-            ndvi: 0.65,
-            evi: 0.48,
-          },
-        ];
-
-  const [selectedProjectName, setSelectedProjectName] = useState(preview.project);
+  const [selectedProjectName, setSelectedProjectName] = useState(preview?.project ?? '');
   const [currentProjectData, setCurrentProjectData] = useState(
-    projectList.find((p: any) => p.name === preview.project) || projectList[0]
+    projectList.find((p: any) => p.name === preview?.project) || projectList[0] || null
   );
-  const [auditDate, setAuditDate] = useState(preview.auditDate);
-  const [verifierName, setVerifierName] = useState(preview.verifier);
-  const [confidenceScore] = useState(preview.confidenceScore);
+  const [auditDate, setAuditDate] = useState(preview?.auditDate ?? '');
+  const [verifierName, setVerifierName] = useState(preview?.verifier ?? '');
+  const [confidenceScore] = useState(preview?.confidenceScore ?? 90);
   const [auditNotes, setAuditNotes] = useState(
     'Kawasan konservasi telah melalui pemindaian satelit Sentinel-2 dMRV dan ground-truth fotogrametri drone CHM. Seluruh parameter kerapatan biomasa dan kanopi vegetasi lolos ambang batas kelayakan SPE-GRK KLHK.'
   );
 
   const [isMinting, setIsMinting] = useState(false);
   const [mintResult, setMintResult] = useState<{ success: boolean; txHash: string } | null>(null);
-
-  const handleProjectChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const name = e.target.value;
-    setSelectedProjectName(name);
-    const found = projectList.find((p: any) => p.name === name);
-    if (found) {
-      setCurrentProjectData(found);
-    }
-  };
 
   const handleAuthorize = async () => {
     setIsMinting(true);
@@ -159,29 +108,34 @@ export default function AuthorizationGate() {
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                   PROYEK KONSERVASI
                 </label>
-                <select
+                <Select
                   value={selectedProjectName}
-                  onChange={handleProjectChange}
-                  className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all cursor-pointer"
+                  onValueChange={(val) => {
+                    setSelectedProjectName(val);
+                    const found = projectList.find((p: any) => p.name === val);
+                    if (found) {
+                      setCurrentProjectData(found);
+                    }
+                  }}
                 >
-                  {projectList.map((p: any) => (
-                    <option key={p.id} value={p.name}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Proyek Konservasi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectList.map((p: any) => (
+                      <SelectItem key={p.id} value={p.name}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                   TANGGAL AUDIT
                 </label>
-                <Input
-                  type="date"
-                  value={auditDate}
-                  onChange={(e) => setAuditDate(e.target.value)}
-                  className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50/70 font-mono"
-                />
+                <DatePicker value={auditDate} onChange={(newDate) => setAuditDate(newDate)} />
               </div>
             </div>
 
@@ -218,32 +172,29 @@ export default function AuthorizationGate() {
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                 CATATAN LAPANGAN & TEMUAN AUDIT
               </label>
-              <textarea
+              <Textarea
                 rows={4}
                 value={auditNotes}
                 onChange={(e) => setAuditNotes(e.target.value)}
                 placeholder="Tuliskan ringkasan hasil uji kepatuhan metodologi dMRV dan verifikasi on-site..."
-                className="w-full p-4 text-xs font-medium rounded-2xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all leading-relaxed resize-none"
-              ></textarea>
+              />
             </div>
           </div>
 
           {/* Hyperledger Besu Info Banner */}
-          <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/50 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 text-[#00C48C] flex items-center justify-center shrink-0 shadow-xs">
-              <Cpu className="w-5 h-5" />
-            </div>
+          <Alert variant="mint">
+            <Cpu className="w-5 h-5 text-emerald-600 shrink-0" />
             <div>
-              <h5 className="text-xs font-black text-slate-900">
+              <AlertTitle className="text-slate-900">
                 Hyperledger Besu — Fungsi MintOffsetCredit
-              </h5>
-              <p className="text-[10px] text-slate-600 font-medium mt-0.5 leading-relaxed">
+              </AlertTitle>
+              <AlertDescription className="text-slate-600">
                 Tombol otorisasi di bawah akan mengubah status proyek menjadi{' '}
                 <span className="font-bold text-emerald-800">ACTIVE/Verified</span> secara permanen
                 (immutable) dan memicu pencetakan token kompensasi SPE-GRK ke bursa karbon.
-              </p>
+              </AlertDescription>
             </div>
-          </div>
+          </Alert>
         </Card>
 
         {/* RIGHT COLUMN: PRATINJAU RINGKASAN SERTIFIKASI (4 of 12 cols) */}

@@ -9,6 +9,14 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { formatArea, formatCarbon, formatCurrency } from '../../../lib/formatters';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 
 export default function NationalForestDashboard() {
   const { nationalForestRegions: regions } = useCarbonStore();
@@ -165,41 +173,39 @@ export default function NationalForestDashboard() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50 text-slate-400 font-black uppercase text-[10px] tracking-wider border-y border-slate-200">
-                <th className="py-3 px-4">Wilayah Hutan</th>
-                <th className="py-3 px-4">Luas Kawasan</th>
-                <th className="py-3 px-4">Kapasitas Serapan</th>
-                <th className="py-3 px-4">Dana Disalurkan</th>
-                <th className="py-3 px-4 text-right">Status Monitoring</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {regions.map((reg) => (
-                <tr key={reg.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 px-4 font-black text-slate-900">{reg.regionName}</td>
-                  <td className="py-3.5 px-4 text-slate-600 font-bold">
-                    {formatArea(reg.areaHectares)}
-                  </td>
-                  <td className="py-3.5 px-4 font-black text-emerald-600">
-                    {formatCarbon(reg.carbonSequestrationTCO2e)}
-                  </td>
-                  <td className="py-3.5 px-4 font-black text-slate-900">
-                    {formatCurrency(reg.fundingDisbursedIDR)}
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg text-[10px] font-extrabold inline-flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      Terverifikasi Satelit KLHK
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Wilayah Hutan</TableHead>
+              <TableHead>Luas Kawasan</TableHead>
+              <TableHead>Kapasitas Serapan</TableHead>
+              <TableHead>Dana Disalurkan</TableHead>
+              <TableHead className="text-right">Status Monitoring</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {regions.map((reg) => (
+              <TableRow key={reg.id}>
+                <TableCell className="font-black text-slate-900">{reg.regionName}</TableCell>
+                <TableCell className="text-slate-600 font-bold">
+                  {formatArea(reg.areaHectares)}
+                </TableCell>
+                <TableCell className="font-black text-emerald-600">
+                  {formatCarbon(reg.carbonSequestrationTCO2e)}
+                </TableCell>
+                <TableCell className="font-black text-slate-900">
+                  {formatCurrency(reg.fundingDisbursedIDR)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg text-[10px] font-extrabold inline-flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Terverifikasi Satelit KLHK
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
