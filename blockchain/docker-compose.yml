@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  besu-node:
+    image: hyperledger/besu:latest
+    container_name: besu-dev-node
+    command: 
+      - --network=dev
+      - --rpc-http-enabled=true
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-cors-origins="*"
+      - --rpc-http-api=ETH,NET,WEB3,DEBUG,MINER,TXPOOL
+      - --rpc-ws-enabled=true
+      - --rpc-ws-host=0.0.0.0
+      - --host-allowlist="*"
+      - --miner-enabled=true
+      - --miner-coinbase=0x627306090abaB3A6e1400e9345bC60c78a8BEf57
+    ports:
+      - "8545:8545" # HTTP JSON-RPC
+      - "8546:8546" # WebSocket
+    volumes:
+      - besu_data:/opt/besu/data
+    restart: always
+
+volumes:
+  besu_data:
