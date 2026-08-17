@@ -1,4 +1,6 @@
 import hardhat from "hardhat";
+import fs from "fs";
+import path from "path";
 const { ethers } = hardhat;
 
 async function main() {
@@ -36,8 +38,6 @@ async function main() {
     console.log("✅ ORACLE_ROLE berhasil diberikan kepada akun Backend (Deployer).");
 
     // 2. SIMPAN CONTRACT ADDRESS KE FILE JSON (AGAR BACKEND MUDAH BACA)
-    const fs = require('fs');
-    const path = require('path');
     const deploymentInfo = {
         contractAddress: contractAddress,
         network: "besu_dev",
@@ -45,7 +45,7 @@ async function main() {
         timestamp: new Date().toISOString()
     };
     
-    const filePath = path.join(__dirname, '..', 'deployment-info.json');
+    const filePath = path.join(process.cwd(), 'deployment-info.json');
     fs.writeFileSync(filePath, JSON.stringify(deploymentInfo, null, 2));
     console.log(`✅ Informasi deployment disimpan ke: ${filePath}`);
     console.log("=======================================================\n");
