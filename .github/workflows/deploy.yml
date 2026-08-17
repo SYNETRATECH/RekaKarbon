@@ -41,6 +41,15 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         password: ${{ secrets.SERVER_PASSWORD }}
         script: |
+          echo "Memeriksa apakah Node.js sudah ter-install di server..."
+          if ! command -v npm &> /dev/null; then
+            echo "Node.js belum ada. Memulai instalasi otomatis via CI/CD..."
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+          else
+            echo "Node.js sudah siap."
+          fi
+
           echo "Memasuki direktori proyek..."
           cd ~/VM_BLOCKHAIN
           
