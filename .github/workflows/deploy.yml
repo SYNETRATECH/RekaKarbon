@@ -14,35 +14,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v3
+
     - name: 🔐 Connect to Tailscale Network
       uses: tailscale/github-action@v2
       with:
         authkey: ${{ secrets.TS_AUTHKEY }}
         tags: tag:ci
 
-    - name: 🚀 Deploy to Production Server
+    - name: 🚚 Transfer Files via SCP
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        # Memindahkakan seluruh file dari GitHub ke server folder ~/VM_BLOCKHAIN
+        source: "."
+        target: "~/VM_BLOCKHAIN"
+        strip_components: 0
+        
+    - name: 🚀 Execute Deployment on Server
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SERVER_USERNAME }}
         password: ${{ secrets.SERVER_PASSWORD }}
-        # Jika Anda menggunakan port selain 22, tambahkan baris 'port' di bawah ini:
-        # port: 2227
-        
-        # Script ini akan dieksekusi di dalam server Anda secara otomatis
         script: |
           echo "Memasuki direktori proyek..."
-          # Pastikan Anda sudah pernah melakukan 'git clone' di server pada folder ~/VM_BLOCKHAIN
           cd ~/VM_BLOCKHAIN
-          
-          echo "Menarik kode terbaru dari GitHub..."
-          git pull origin main
           
           echo "Menginstall dependensi..."
           npm ci
           
           echo "Menjalankan Docker Hyperledger Besu..."
-          docker-compose up -d
+          sudo docker-compose up -d
           
           echo "Menunggu Node Besu siap (sleep 10s)..."
           sleep 10
