@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import L from 'leaflet';
+import { useEffect, useRef, useState } from 'react';
+import type L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useCarbonStore } from '../store/useCarbonStore';
 
@@ -16,6 +16,7 @@ export default function MapCanvas() {
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const polygonLayerRef = useRef<L.LayerGroup | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const [LModule, setLModule] = useState<typeof L | null>(null);
 
   const {
     activeModule,
@@ -31,32 +32,41 @@ export default function MapCanvas() {
 
   const activeProj = projects[activeIndex];
 
+  // Dynamically import Leaflet on client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('leaflet').then((leaflet) => {
+        setLModule(leaflet.default || leaflet);
+      });
+    }
+  }, []);
+
   // Initialize Map Instance
   useEffect(() => {
-    if (!mapInstanceRef.current && mapRef.current && activeProj) {
-      const initMap = L.map(mapRef.current, {
-        center: activeProj.center as [number, number],
-        zoom: activeProj.zoom,
-        zoomControl: false,
-      });
+    if (!LModule || mapInstanceRef.current || !mapRef.current || !activeProj) return;
 
-      L.control.zoom({ position: 'topright' }).addTo(initMap);
+    const initMap = LModule.map(mapRef.current, {
+      center: activeProj.center as [number, number],
+      zoom: activeProj.zoom,
+      zoomControl: false,
+    });
 
-      // Default tile layer
-      const defaultTile = L.tileLayer(TILE_URLS[tileType], {
-        attribution: 'Map Tiles',
-      }).addTo(initMap);
+    LModule.control.zoom({ position: 'topright' }).addTo(initMap);
 
-      mapInstanceRef.current = initMap;
-      tileLayerRef.current = defaultTile;
+    // Default tile layer
+    const defaultTile = LModule.tileLayer(TILE_URLS[tileType], {
+      attribution: 'Map Tiles',
+    }).addTo(initMap);
 
-      // Force Leaflet to recalculate size after DOM rendering completes
-      setTimeout(() => {
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.invalidateSize();
-        }
-      }, 100);
-    }
+    mapInstanceRef.current = initMap;
+    tileLayerRef.current = defaultTile;
+
+    // Force Leaflet to recalculate size after DOM rendering completes
+    setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 100);
 
     return () => {
       if (mapInstanceRef.current) {
@@ -64,7 +74,7 @@ export default function MapCanvas() {
         mapInstanceRef.current = null;
       }
     };
-  }, [activeProj]);
+  }, [LModule, activeProj]);
 
   // Update map view on active project changes
   useEffect(() => {
@@ -86,20 +96,20 @@ export default function MapCanvas() {
 
   // Update map tiles when tileType changes
   useEffect(() => {
-    if (mapInstanceRef.current && tileLayerRef.current) {
+    if (LModule && mapInstanceRef.current && tileLayerRef.current) {
       mapInstanceRef.current.removeLayer(tileLayerRef.current);
 
-      const newTile = L.tileLayer(TILE_URLS[tileType], {
+      const newTile = LModule.tileLayer(TILE_URLS[tileType], {
         attribution: 'Map Tiles',
       }).addTo(mapInstanceRef.current);
 
       tileLayerRef.current = newTile;
     }
-  }, [tileType]);
+  }, [tileType, LModule]);
 
   // Redraw Polygon overlay and Markers whenever activeModule, activeCoords, or companies changes
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!LModule || !mapInstanceRef.current) return;
 
     const map = mapInstanceRef.current;
 
@@ -115,7 +125,7 @@ export default function MapCanvas() {
 
     if (activeModule === 'conservation') {
       // 3. Draw Polygons for all projects
-      const polygonGroup = L.layerGroup().addTo(map);
+      const polygonGroup = LModule.layerGroup().addTo(map);
       polygonLayerRef.current = polygonGroup;
 
       projects.forEach((proj, idx) => {
@@ -126,7 +136,7 @@ export default function MapCanvas() {
         const latLngs: [number, number][] = coords.map((c: any) =>
           Array.isArray(c) ? [c[0], c[1]] : [c.lat, c.lng]
         );
-        const polygon = L.polygon(latLngs, {
+        const polygon = LModule.polygon(latLngs, {
           color: isActive ? '#059669' : '#94a3b8',
           fillColor: isActive ? '#10b981' : '#cbd5e1',
           fillOpacity: isActive ? 0.25 : 0.15,
@@ -135,7 +145,7 @@ export default function MapCanvas() {
 
         // Click handler to select this project on map
         polygon.on('click', (e) => {
-          L.DomEvent.stopPropagation(e);
+          LModule.DomEvent.stopPropagation(e);
           setActiveIndex(idx);
         });
 
@@ -181,14 +191,14 @@ export default function MapCanvas() {
             const lat = Array.isArray(coord) ? coord[0] : coord.lat;
             const lng = Array.isArray(coord) ? coord[1] : coord.lng;
 
-            const markerIcon = L.divIcon({
+            const markerIcon = LModule.divIcon({
               className: 'pulse-marker',
               html: `<div class="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-md animate-pulse"></div>`,
               iconSize: [16, 16],
               iconAnchor: [8, 8],
             });
 
-            const marker = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
+            const marker = LModule.marker([lat, lng], { icon: markerIcon }).addTo(map);
             marker.bindPopup(`
               <div style="font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-size: 11px; padding: 4px;">
                 <p style="font-weight: bold; color: #022c22; margin: 0 0 4px 0;">Titik Geometri #${markerIdx + 1}</p>
@@ -208,14 +218,16 @@ export default function MapCanvas() {
           Math.round((comp.actualEmission / comp.emissionCap) * 50)
         );
 
-        const customIcon = L.divIcon({
+        const customIcon = LModule.divIcon({
           className: 'custom-company-marker',
           html: `<div class="w-6 h-6 rounded-full ${isUnpaid ? 'bg-rose-500 ring-rose-300 animate-pulse' : 'bg-emerald-500 ring-emerald-300'} ring-4 shadow-xl border-2 border-white flex items-center justify-center text-[10px] text-white font-bold cursor-pointer">${isUnpaid ? '!' : '✓'}</div>`,
           iconSize: [24, 24],
           iconAnchor: [12, 12],
         });
 
-        const marker = L.marker(comp.center as [number, number], { icon: customIcon }).addTo(map);
+        const marker = LModule.marker(comp.center as [number, number], { icon: customIcon }).addTo(
+          map
+        );
 
         marker.on('click', () => {
           setSelectedCompanyIndex(idx);
@@ -295,6 +307,7 @@ export default function MapCanvas() {
       }
     }
   }, [
+    LModule,
     activeCoords,
     activeModule,
     companies,
@@ -306,12 +319,12 @@ export default function MapCanvas() {
 
   // Center camera bounds or focus area
   const handleFocusBounds = () => {
-    if (!mapInstanceRef.current) return;
+    if (!LModule || !mapInstanceRef.current) return;
     if (activeModule === 'conservation' && activeCoords && activeCoords.length > 0) {
       const latLngs: [number, number][] = activeCoords.map((c: any) =>
         Array.isArray(c) ? [c[0], c[1]] : [c.lat, c.lng]
       );
-      mapInstanceRef.current.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40] });
+      mapInstanceRef.current.fitBounds(LModule.latLngBounds(latLngs), { padding: [40, 40] });
     } else if (activeModule === 'corporate') {
       const selectedComp = companies[selectedCompanyIndex];
       if (selectedComp) {
