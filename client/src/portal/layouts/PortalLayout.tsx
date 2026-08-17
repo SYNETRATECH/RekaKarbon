@@ -1,9 +1,12 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate, Outlet } from 'react-router';
+import { useParams, Outlet } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import PortalSidebar from './PortalSidebar';
 import Modals from '../../components/Modals';
 import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 export default function PortalLayout() {
   const { userRole, loginAsRole, userProfile, initializeData, isDataLoaded } = useCarbonStore();
@@ -48,34 +51,34 @@ export default function PortalLayout() {
               {activeRole} Portal
             </h1>
             <span className="text-slate-300">/</span>
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider">
               {activeTab}
-            </span>
+            </Badge>
           </div>
 
           {/* Right: Search & Profile Info */}
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 z-10" />
+              <Input
                 type="text"
                 placeholder={
                   activeRole === 'auditor'
                     ? 'Cari kawasan, pabrik, atau nomor audit...'
                     : 'Cari transaksi, token, atau aktivitas...'
                 }
-                className="pl-9 pr-4 py-1.5 text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 w-64 transition-all"
+                className="pl-9 w-64 h-9"
               />
             </div>
 
-            <button className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors relative cursor-pointer">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
-            </button>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="w-4 h-4 text-slate-500" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full"></span>
+            </Button>
 
-            <button className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
-              <Settings className="w-4 h-4" />
-            </button>
+            <Button variant="ghost" size="icon">
+              <Settings className="w-4 h-4 text-slate-500" />
+            </Button>
 
             <div className="h-6 w-px bg-slate-200"></div>
 

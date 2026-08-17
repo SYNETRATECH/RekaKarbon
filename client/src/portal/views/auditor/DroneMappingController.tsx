@@ -9,6 +9,9 @@ import {
   Calendar,
   CheckCircle2,
 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function DroneMappingController() {
   const { droneArchive, droneSchedules } = useCarbonStore();
@@ -112,7 +115,7 @@ export default function DroneMappingController() {
       {/* MAIN TWO-COLUMN WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: REPOSITORI ORTOFOTO (5 of 12 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-5 flex flex-col justify-between">
+        <Card className="lg:col-span-5 rounded-3xl p-6 border-slate-200 shadow-2xs space-y-5 flex flex-col justify-between">
           {/* Header */}
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
@@ -122,13 +125,13 @@ export default function DroneMappingController() {
               <h4 className="text-base font-black text-slate-900 mt-0.5">Arsip Pemetaan Drone</h4>
             </div>
 
-            <button
+            <Button
               onClick={handleUploadSim}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
             >
               <Upload className="w-3.5 h-3.5 text-[#00C48C]" />
               Upload Berkas
-            </button>
+            </Button>
           </div>
 
           {/* Area Card: Restorasi Gambut Katingan */}
@@ -142,9 +145,9 @@ export default function DroneMappingController() {
                   {archive.location}
                 </span>
               </div>
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+              <Badge variant="warning" className="text-[10px] font-black">
                 ☁ {archive.cloudCover}
-              </span>
+              </Badge>
             </div>
 
             {/* Layer Cards mapped dynamically from mock */}
@@ -207,10 +210,10 @@ export default function DroneMappingController() {
               </p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* RIGHT COLUMN: JADWAL BERTINGKAT (7 of 12 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-5 flex flex-col justify-between">
+        <Card className="lg:col-span-7 rounded-3xl p-6 border-slate-200 shadow-2xs space-y-5 flex flex-col justify-between">
           {/* Header */}
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
@@ -222,10 +225,10 @@ export default function DroneMappingController() {
               </h4>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 text-xs font-black border border-slate-200">
-              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+            <Badge variant="outline" className="text-xs font-black">
+              <Calendar className="w-3.5 h-3.5 text-slate-500 mr-1" />
               {schedules.period}
-            </span>
+            </Badge>
           </div>
 
           {/* Schedule Stages mapped from mock */}
@@ -239,9 +242,9 @@ export default function DroneMappingController() {
                     {schedules.year1.subTitle}
                   </span>
                 </div>
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <Badge variant="mint" className="text-[9px] font-black">
                   {schedules.year1.badge}
-                </span>
+                </Badge>
               </div>
 
               <div className="grid grid-cols-4 gap-2">
@@ -286,9 +289,9 @@ export default function DroneMappingController() {
                     {schedules.year2.subTitle}
                   </span>
                 </div>
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                <Badge variant="secondary" className="text-[9px] font-black">
                   {schedules.year2.badge}
-                </span>
+                </Badge>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -315,9 +318,9 @@ export default function DroneMappingController() {
                     {schedules.year3to5.subTitle}
                   </span>
                 </div>
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                <Badge variant="outline" className="text-[9px] font-black">
                   {schedules.year3to5.badge}
-                </span>
+                </Badge>
               </div>
 
               <div className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
@@ -334,17 +337,17 @@ export default function DroneMappingController() {
           {/* Legend */}
           <div className="flex items-center gap-4 pt-3 border-t border-slate-100 text-[10px] font-bold">
             <span className="text-slate-400 uppercase tracking-wider text-[9px]">Keterangan</span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold">
+            <Badge variant="mint" className="text-[9px]">
               Selesai
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-extrabold">
+            </Badge>
+            <Badge variant="warning" className="text-[9px]">
               Terjadwal
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-extrabold">
+            </Badge>
+            <Badge variant="secondary" className="text-[9px]">
               Mendatang
-            </span>
+            </Badge>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* BOTTOM BANNER: INSTRUCTIONS & DIRECT UPLOAD */}
@@ -372,14 +375,14 @@ export default function DroneMappingController() {
             </span>
           </div>
 
-          <button
+          <Button
             onClick={handleUploadSim}
             disabled={isUploading}
             className="bg-[#00C48C] hover:bg-[#00d89a] text-slate-950 font-black text-xs px-6 py-3.5 rounded-2xl shadow-md flex items-center gap-2 transition-all cursor-pointer active:scale-95 shrink-0"
           >
             <Upload className="w-4 h-4" />
             {isUploading ? 'Mengunggah...' : 'Unggah Sekarang'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

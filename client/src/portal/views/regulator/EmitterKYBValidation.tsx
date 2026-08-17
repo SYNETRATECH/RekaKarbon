@@ -1,5 +1,8 @@
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { FileCheck2, Fingerprint } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function EmitterKYBValidation() {
   const { kybQueue } = useCarbonStore();
@@ -22,17 +25,19 @@ export default function EmitterKYBValidation() {
         </p>
       </div>
 
-      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
-        <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-          <FileCheck2 className="w-4 h-4 text-[#00C48C]" />
-          Antrean Registrasi Industri Baru (KYB Validation)
-        </h3>
+      <Card className="rounded-3xl border-slate-200 shadow-2xs">
+        <CardHeader className="pb-4">
+          <CardTitle className="font-black text-sm text-slate-900 flex items-center gap-2">
+            <FileCheck2 className="w-4 h-4 text-[#00C48C]" />
+            Antrean Registrasi Industri Baru (KYB Validation)
+          </CardTitle>
+        </CardHeader>
 
-        <div className="space-y-3">
+        <CardContent className="space-y-3">
           {kybQueue.map((item: any) => (
-            <div
+            <Card
               key={item.id}
-              className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center text-xs"
+              className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-row justify-between items-center text-xs shadow-none"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -45,22 +50,23 @@ export default function EmitterKYBValidation() {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="bg-emerald-100 text-emerald-900 text-[10px] font-bold px-3 py-1 rounded-full">
+                <Badge className="bg-emerald-100 text-emerald-900 hover:bg-emerald-100 text-[10px] font-bold px-3 py-1 rounded-full border-none">
                   AMDAL: {item.documentStatus}
-                </span>
+                </Badge>
 
-                <button
+                <Button
+                  size="sm"
                   onClick={() => handleWebAuthnTrigger(item.companyName)}
-                  className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-800"
+                  className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-800"
                 >
                   <Fingerprint className="w-3.5 h-3.5 text-[#00C48C]" />
                   Pemicu Biometrik WebAuthn
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           ))}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

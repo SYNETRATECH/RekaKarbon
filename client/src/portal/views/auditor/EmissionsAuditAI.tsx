@@ -10,6 +10,17 @@ import {
   CheckCircle2,
   ShieldCheck,
 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 
 export default function EmissionsAuditAI() {
   const {
@@ -82,7 +93,7 @@ export default function EmissionsAuditAI() {
       {/* 3 HERO STAT CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Metric 1: Emiten Terdeteksi Anomali */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs flex items-center justify-between">
+        <Card className="rounded-3xl border-slate-200 shadow-2xs p-6 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-500 block">
               Emiten Terdeteksi Anomali
@@ -97,10 +108,10 @@ export default function EmissionsAuditAI() {
           <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-6 h-6" />
           </div>
-        </div>
+        </Card>
 
         {/* Metric 2: Rata-rata Deviasi Emisi */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs flex items-center justify-between">
+        <Card className="rounded-3xl border-slate-200 shadow-2xs p-6 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-500 block">
               Rata-rata Deviasi Emisi
@@ -115,10 +126,10 @@ export default function EmissionsAuditAI() {
           <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-500 flex items-center justify-center shrink-0">
             <TrendingDown className="w-6 h-6" />
           </div>
-        </div>
+        </Card>
 
         {/* Metric 3: e-Faktur DJP Tidak Cocok */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs flex items-center justify-between">
+        <Card className="rounded-3xl border-slate-200 shadow-2xs p-6 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-500 block">
               e-Faktur DJP Tidak Cocok
@@ -133,13 +144,13 @@ export default function EmissionsAuditAI() {
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-[#00C48C] flex items-center justify-center shrink-0">
             <FileText className="w-6 h-6" />
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* MAIN TWO-COLUMN WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: ISOLATION FOREST QUEUE TABLE (8 of 12 cols) */}
-        <div className="lg:col-span-8 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4 flex flex-col justify-between">
+        <Card className="lg:col-span-8 rounded-3xl border-slate-200 shadow-2xs p-6 space-y-4 flex flex-col justify-between">
           {/* Card Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
             <div>
@@ -153,151 +164,146 @@ export default function EmissionsAuditAI() {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() =>
                   setFilterPriority((prev) =>
                     prev === 'ALL' ? 'KRITIS' : prev === 'KRITIS' ? 'TINGGI' : 'ALL'
                   )
                 }
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 border-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
                 Filter {filterPriority !== 'ALL' && `(${filterPriority})`}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => useCarbonStore.getState().initializeData()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 border-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
               >
                 <RotateCw className="w-3.5 h-3.5 text-slate-500" />
                 Refresh
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Queue Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-3">Nama Pabrik</th>
-                  <th className="py-3 px-3">Sektor</th>
-                  <th className="py-3 px-3 text-center">Skor Anomali</th>
-                  <th className="py-3 px-3 text-right">Δ Listrik</th>
-                  <th className="py-3 px-3 text-right">Δ Batubara</th>
-                  <th className="py-3 px-3 text-right">Δ Gas</th>
-                  <th className="py-3 px-3 text-center">e-Faktur</th>
-                  <th className="py-3 px-3 text-center">Prioritas</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredLogs.map((log: any) => {
-                  const isSelected = selectedAnomalyId === log.id;
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="py-3 px-3">Nama Pabrik</TableHead>
+                <TableHead className="py-3 px-3">Sektor</TableHead>
+                <TableHead className="py-3 px-3 text-center">Skor Anomali</TableHead>
+                <TableHead className="py-3 px-3 text-right">Δ Listrik</TableHead>
+                <TableHead className="py-3 px-3 text-right">Δ Batubara</TableHead>
+                <TableHead className="py-3 px-3 text-right">Δ Gas</TableHead>
+                <TableHead className="py-3 px-3 text-center">e-Faktur</TableHead>
+                <TableHead className="py-3 px-3 text-center">Prioritas</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredLogs.map((log: any) => {
+                const isSelected = selectedAnomalyId === log.id;
 
-                  // Score Badge Color
-                  let scoreBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
-                  let dotColor = 'bg-rose-500';
-                  if (log.anomalyScore < 0.8) {
-                    scoreBadgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
-                    dotColor = 'bg-blue-500';
-                  } else if (log.anomalyScore < 0.9) {
-                    scoreBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
-                    dotColor = 'bg-amber-500';
-                  }
+                let scoreBadgeVariant: 'destructive' | 'warning' | 'secondary' = 'destructive';
+                if (log.anomalyScore < 0.8) {
+                  scoreBadgeVariant = 'secondary';
+                } else if (log.anomalyScore < 0.9) {
+                  scoreBadgeVariant = 'warning';
+                }
 
-                  // Priority Color
-                  let priorityTextClass = 'text-rose-600 font-black';
-                  let priorityDot = 'bg-rose-500';
-                  if (log.priority === 'TINGGI') {
-                    priorityTextClass = 'text-amber-600 font-black';
-                    priorityDot = 'bg-amber-500';
-                  } else if (log.priority === 'SEDANG') {
-                    priorityTextClass = 'text-blue-600 font-black';
-                    priorityDot = 'bg-blue-500';
-                  }
+                return (
+                  <TableRow
+                    key={log.id}
+                    onClick={() => setSelectedAnomalyId(log.id)}
+                    className={`cursor-pointer ${
+                      isSelected ? 'bg-emerald-50/40 border-l-4 border-l-[#033C2E] font-medium' : ''
+                    }`}
+                  >
+                    {/* Nama Pabrik & ID */}
+                    <TableCell className="py-3.5 px-3">
+                      <p className="font-black text-slate-900 leading-tight">{log.company}</p>
+                      <span className="font-mono text-[10px] text-slate-400 font-semibold block mt-0.5">
+                        {log.id}
+                      </span>
+                    </TableCell>
 
-                  return (
-                    <tr
-                      key={log.id}
-                      onClick={() => setSelectedAnomalyId(log.id)}
-                      className={`transition-all cursor-pointer hover:bg-slate-50/80 ${
-                        isSelected ? 'bg-emerald-50/40 ring-1 ring-emerald-500/30 font-medium' : ''
-                      }`}
-                    >
-                      {/* Nama Pabrik & ID */}
-                      <td className="py-3.5 px-3">
-                        <p className="font-black text-slate-900 leading-tight">{log.company}</p>
-                        <span className="font-mono text-[10px] text-slate-400 font-semibold block mt-0.5">
-                          {log.id}
-                        </span>
-                      </td>
+                    {/* Sektor */}
+                    <TableCell className="py-3.5 px-3 text-slate-600 font-medium">
+                      {log.sector}
+                    </TableCell>
 
-                      {/* Sektor */}
-                      <td className="py-3.5 px-3 text-slate-600 font-medium">{log.sector}</td>
+                    {/* Skor Anomali */}
+                    <TableCell className="py-3.5 px-3 text-center">
+                      <Badge
+                        variant={scoreBadgeVariant}
+                        className="text-[11px] px-2.5 py-0.5 font-black"
+                      >
+                        {log.anomalyScore}
+                      </Badge>
+                    </TableCell>
 
-                      {/* Skor Anomali */}
-                      <td className="py-3.5 px-3 text-center">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full border ${scoreBadgeClass}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
-                          {log.anomalyScore}
-                        </span>
-                      </td>
+                    {/* Δ Listrik */}
+                    <TableCell className="py-3.5 px-3 text-right font-black text-rose-500">
+                      {log.deltaElectricity}
+                    </TableCell>
 
-                      {/* Δ Listrik */}
-                      <td className="py-3.5 px-3 text-right font-black text-rose-500">
-                        {log.deltaElectricity}
-                      </td>
+                    {/* Δ Batubara */}
+                    <TableCell className="py-3.5 px-3 text-right font-black text-rose-500">
+                      {log.deltaCoal}
+                    </TableCell>
 
-                      {/* Δ Batubara */}
-                      <td className="py-3.5 px-3 text-right font-black text-rose-500">
-                        {log.deltaCoal}
-                      </td>
+                    {/* Δ Gas */}
+                    <TableCell className="py-3.5 px-3 text-right font-black text-rose-500">
+                      {log.deltaGas}
+                    </TableCell>
 
-                      {/* Δ Gas */}
-                      <td className="py-3.5 px-3 text-right font-black text-rose-500">
-                        {log.deltaGas}
-                      </td>
+                    {/* e-Faktur */}
+                    <TableCell className="py-3.5 px-3 text-center font-bold">
+                      {log.eFakturMatch ? (
+                        <Badge variant="mint" className="text-xs">
+                          ✓ Cocok
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-xs">
+                          ✕ Tidak
+                        </Badge>
+                      )}
+                    </TableCell>
 
-                      {/* e-Faktur */}
-                      <td className="py-3.5 px-3 text-center font-bold">
-                        {log.eFakturMatch ? (
-                          <span className="inline-flex items-center gap-1 text-emerald-600 text-xs">
-                            <span>✓</span> Cocok
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-rose-500 text-xs">
-                            <span>✕</span> Tidak
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Prioritas */}
-                      <td className="py-3.5 px-3 text-center">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[11px] uppercase ${priorityTextClass}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${priorityDot}`}></span>
-                          {log.priority}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                    {/* Prioritas */}
+                    <TableCell className="py-3.5 px-3 text-center">
+                      <Badge
+                        variant={
+                          log.priority === 'KRITIS'
+                            ? 'destructive'
+                            : log.priority === 'TINGGI'
+                              ? 'warning'
+                              : 'secondary'
+                        }
+                        className="text-[11px] uppercase font-black"
+                      >
+                        {log.priority}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
 
           <div className="pt-2 flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100">
             <span>Menampilkan {filteredLogs.length} dari 47 entitas emiten</span>
             <span className="font-semibold text-slate-500">Threshold Model: s(x,n) &ge; 0.80</span>
           </div>
-        </div>
+        </Card>
 
         {/* RIGHT COLUMN: CORRELATION CHART & DETAIL INSPECTOR (4 of 12 cols) */}
         <div className="lg:col-span-4 space-y-6 flex flex-col">
           {/* TOP CARD: MULTI-VARIABEL KORELASI CHART */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
+          <Card className="rounded-3xl border-slate-200 shadow-2xs p-6 space-y-4">
             <div>
               <span className="text-[9px] font-black text-slate-400 tracking-widest uppercase block">
                 MULTI-VARIABEL KORELASI
@@ -436,10 +442,10 @@ export default function EmissionsAuditAI() {
                 <span className="text-slate-600">Estimasi AI</span>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* BOTTOM CARD: DETAIL INSPECTOR & AUDIT ACTION */}
-          <div className="flex-1 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs flex flex-col justify-center min-h-[190px]">
+          <Card className="flex-1 rounded-3xl p-6 border-slate-200 shadow-2xs flex flex-col justify-center min-h-[190px]">
             {selectedLog ? (
               <div className="space-y-4 animate-fade-in">
                 <div className="flex items-start justify-between">
@@ -454,17 +460,14 @@ export default function EmissionsAuditAI() {
                       {selectedLog.sector}
                     </span>
                   </div>
-                  <span
-                    className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
-                      selectedLog.auditStatus === 'Verified'
-                        ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
-                        : 'bg-rose-100 text-rose-900 border border-rose-200'
-                    }`}
+                  <Badge
+                    variant={selectedLog.auditStatus === 'Verified' ? 'mint' : 'destructive'}
+                    className="text-[10px] font-black px-2.5 py-0.5"
                   >
                     {selectedLog.auditStatus === 'Verified'
                       ? '✓ Terverifikasi'
                       : 'Status: Perlu Audit'}
-                  </span>
+                  </Badge>
                 </div>
 
                 <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2 text-xs">
@@ -487,7 +490,7 @@ export default function EmissionsAuditAI() {
                   </p>
                 </div>
 
-                <button
+                <Button
                   onClick={() => handleVerify(selectedLog.id)}
                   disabled={isVerifying || selectedLog.auditStatus === 'Verified'}
                   className={`w-full py-2.5 px-4 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
@@ -502,7 +505,7 @@ export default function EmissionsAuditAI() {
                     : selectedLog.auditStatus === 'Verified'
                       ? 'Audit Telah Disetujui'
                       : 'Verifikasi & Terbitkan Berita Acara'}
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="text-center py-6 space-y-2">
@@ -515,7 +518,7 @@ export default function EmissionsAuditAI() {
                 </p>
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>

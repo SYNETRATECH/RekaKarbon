@@ -82,4 +82,4 @@ export interface KTHGroupModel {
   id: string;
 }
 
-export interface RegulationUploadModel {}
+export type RegulationUploadModel = RegulationDocumentUploadItem;

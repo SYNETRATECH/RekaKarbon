@@ -67,7 +67,7 @@ export default function KthFarmersManagement() {
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (editingKTH) {
-      updateKTHGroup(editingKTH.id, formData);
+      updateKTHGroup(editingKTH.id, formData as any);
     } else {
       const newKTH = {
         id: `KTH-00${groups.length + 1}`,

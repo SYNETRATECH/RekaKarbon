@@ -175,7 +175,7 @@ export default function ProjectEditorPage() {
   }, [coordinates, LModule]);
 
   // Geodetic Area Calculation
-  const geodeticStats = calculateGeodetics(coordinates);
+  const geodeticStats = calculateGeodetics(coordinates, 'satellite');
 
   // Form Inputs Handler
   const handleInputChange = (field: string, value: any) => {
@@ -224,12 +224,12 @@ export default function ProjectEditorPage() {
       category: formData.category as any,
       categoryLabel: formData.categoryLabel,
       location: formData.location,
-      areaHectares: parseFloat(geodeticStats.areaHa),
+      areaHectares: geodeticStats.areaHectares,
       targetSequestrationTCO2e: Number(formData.targetSequestrationTCO2e),
       fundingBudgetIDR: formData.fundingBudgetIDR,
       assignedKTH: formData.assignedKTH,
       status: 'Active',
-      coordinates,
+      coordinates: coordinates as any,
       center: coordinates[0] || [-6.89, 112.05],
       zoom: 13,
       verifiedDate: new Date().toLocaleDateString('id-ID', {

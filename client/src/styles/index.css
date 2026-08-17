@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-brand-50: #f0fdf4;
@@ -12,21 +12,50 @@
   --color-brand-800: #166534;
   --color-brand-900: #14532d;
   --color-brand-950: #052e16;
-  
+
   --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 
   /* Primary Green Gradient — 12 steps left-to-right */
   --gradient-primary: linear-gradient(
     to right,
-    #022C22, #022F24, #023126, #023428,
-    #02372A, #02392C, #033C2E, #033F30,
-    #034232, #034434, #034736, #034A38
+    #022c22,
+    #022f24,
+    #023126,
+    #023428,
+    #02372a,
+    #02392c,
+    #033c2e,
+    #033f30,
+    #034232,
+    #034434,
+    #034736,
+    #034a38
   );
 
   /* Midpoint for solid fallback and hover states */
-  --color-primary: #033C2E;
-  --color-primary-dark: #022C22;
-  --color-primary-light: #034A38;
+  --color-primary: #033c2e;
+  --color-primary-dark: #022c22;
+  --color-primary-light: #034a38;
+
+  /* Shadcn custom properties */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 160 84% 39%;
+  --radius: 0.75rem;
 }
 
 /* Custom scrollbar styling */
@@ -69,20 +98,6 @@
   }
 }
 
-/* Drawer sliding animation */
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-.animate-slide-in {
-  animation: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
 /* Simple fade animation */
 @keyframes fade-in {
   from {
@@ -108,9 +123,18 @@
 .hover\:bg-primary-gradient-dark:hover {
   background: linear-gradient(
     to right,
-    #011A15, #011E17, #02211A, #02251C,
-    #02281E, #022B20, #022D22, #023024,
-    #023226, #023528, #02382A, #033B2C
+    #011a15,
+    #011e17,
+    #02211a,
+    #02251c,
+    #02281e,
+    #022b20,
+    #022d22,
+    #023024,
+    #023226,
+    #023528,
+    #02382a,
+    #033b2c
   );
 }
 
@@ -135,18 +159,15 @@
 
 /* ─── Print Stylesheet for A4 PDF Certificate Export ──────────────────────── */
 @media print {
-  /* Hide all dashboard UI, maps, layout columns, header, and other modals */
   body > * {
     visibility: hidden !important;
   }
 
-  /* Show only the active printable report modal wrapper and its children */
   #report-modal-wrapper,
   #report-modal-wrapper * {
     visibility: visible !important;
   }
 
-  /* Reset layout position for the report wrapper to fill the print viewport */
   #report-modal-wrapper {
     position: absolute !important;
     left: 0 !important;
@@ -162,7 +183,6 @@
     pointer-events: auto !important;
   }
 
-  /* Expand modal content dialog to full size of printed paper */
   #report-modal-content {
     width: 100% !important;
     max-width: none !important;
@@ -175,12 +195,10 @@
     overflow: visible !important;
   }
 
-  /* Hide print header/buttons and footer close actions */
   #report-modal-header {
     display: none !important;
   }
 
-  /* Format document content for standard high contrast printing */
   #report-document-body {
     padding: 0 !important;
     margin: 0 !important;
@@ -190,16 +208,13 @@
     line-height: 1.5 !important;
   }
 
-  /* Force background colors and gradients to print correctly */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Page margins and layout styling */
   @page {
     size: A4;
     margin: 1.5cm;
   }
 }
-

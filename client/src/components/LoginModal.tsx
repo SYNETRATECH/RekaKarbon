@@ -5,16 +5,19 @@ import {
   TreePine,
   Building2,
   CheckSquare,
-  Lock,
   Mail,
+  Lock,
   Key,
   ShieldCheck,
   ArrowRight,
-  X,
   UserCheck,
   UserPlus,
 } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 export default function LoginModal() {
   const { isLoginModalOpen, setIsLoginModalOpen, loginAsRole, loginWithCredentials } =
@@ -30,8 +33,6 @@ export default function LoginModal() {
   const [identityInput, setIdentityInput] = useState('admin@semennusantara.co.id');
   const [passwordInput, setPasswordInput] = useState('••••••••••••');
   const [verichainKeyInput, setVerichainKeyInput] = useState('VCH-KEY-99412-2025');
-
-  if (!isLoginModalOpen) return null;
 
   const handleRoleSelect = (roleKey: 'emitter' | 'regulator' | 'auditor' | 'kth') => {
     setSelectedRole(roleKey);
@@ -57,19 +58,21 @@ export default function LoginModal() {
       email: identityInput,
       password: passwordInput,
     });
+    setIsLoginModalOpen(false);
     navigate(`/portal/${selectedRole}`);
   };
 
   const handleBypassLogin = async () => {
     await loginAsRole(selectedRole);
+    setIsLoginModalOpen(false);
     navigate(`/portal/${selectedRole}`);
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-xl flex flex-col relative animate-fade-in text-left">
+    <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
+      <DialogContent className="p-0 max-w-xl border-slate-200 overflow-hidden text-left gap-0">
         {/* Header Bar */}
-        <div className="h-16 bg-slate-900 text-white px-6 flex items-center justify-between shrink-0">
+        <DialogHeader className="h-16 bg-slate-900 text-white px-6 flex flex-row items-center justify-between shrink-0 space-y-0">
           <div className="flex items-center gap-3">
             <img
               src={brandIcon}
@@ -77,51 +80,49 @@ export default function LoginModal() {
               className="w-8 h-8 rounded-xl shadow-xs object-contain"
             />
             <div>
-              <h3 className="font-extrabold text-sm text-white leading-none">REKAKARBON PORTAL</h3>
+              <DialogTitle className="font-extrabold text-sm text-white leading-none">
+                REKAKARBON PORTAL
+              </DialogTitle>
               <span className="text-[9px] text-[#00C48C] font-extrabold block mt-0.5">
                 Otentikasi Terenkripsi Verichain
               </span>
             </div>
           </div>
-          <button
-            onClick={() => setIsLoginModalOpen(false)}
-            className="text-slate-400 hover:text-white p-2 hover:bg-slate-800 rounded-xl transition-all cursor-pointer font-bold text-xs"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Modal Content */}
-        <div className="p-6 md:p-8 space-y-6 overflow-y-auto max-h-[85vh]">
+        <div className="p-6 md:p-8 space-y-6 overflow-y-auto max-h-[80vh]">
           {/* Auth Mode Toggle Switcher (Login vs Sign In / Register) */}
           <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
-            <button
-              onClick={() => setAuthMode('login')}
-              className={`flex-1 py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            <Button
+              variant={authMode === 'login' ? 'default' : 'ghost'}
+              className={`flex-1 py-2 text-xs font-black rounded-xl cursor-pointer ${
                 authMode === 'login'
                   ? 'bg-primary-gradient text-white shadow-xs'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
+              onClick={() => setAuthMode('login')}
             >
               <UserCheck className="w-4 h-4 text-[#00C48C]" />
               Masuk (Sign In)
-            </button>
-            <button
-              onClick={() => setAuthMode('register')}
-              className={`flex-1 py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            </Button>
+            <Button
+              variant={authMode === 'register' ? 'default' : 'ghost'}
+              className={`flex-1 py-2 text-xs font-black rounded-xl cursor-pointer ${
                 authMode === 'register'
                   ? 'bg-primary-gradient text-white shadow-xs'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
+              onClick={() => setAuthMode('register')}
             >
               <UserPlus className="w-4 h-4 text-[#00C48C]" />
               Daftar Baru (Sign Up)
-            </button>
+            </Button>
           </div>
 
           {/* Role Selection Label */}
           <div className="space-y-2">
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest block">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               1. PILIH HAK AKSES PERAN (ROLE)
             </span>
 
@@ -137,16 +138,20 @@ export default function LoginModal() {
                 }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${selectedRole === 'emitter' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                    selectedRole === 'emitter'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
                 >
                   <Building2 className="w-4 h-4" />
                 </div>
                 <h5 className="font-extrabold text-[11px] text-slate-900 leading-tight">
                   Pelaku Usaha
                 </h5>
-                <span className="text-[8px] font-bold text-slate-700 bg-slate-200/80 px-1.5 py-0.2 rounded-full">
+                <Badge variant="secondary" className="text-[8px] px-1.5 py-0">
                   Emitter / Industri
-                </span>
+                </Badge>
               </div>
 
               {/* Role 2: Regulator */}
@@ -159,16 +164,20 @@ export default function LoginModal() {
                 }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${selectedRole === 'regulator' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                    selectedRole === 'regulator'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
                 >
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <h5 className="font-extrabold text-[11px] text-slate-900 leading-tight">
                   Regulator
                 </h5>
-                <span className="text-[8px] font-bold text-slate-700 bg-slate-200/80 px-1.5 py-0.2 rounded-full">
+                <Badge variant="secondary" className="text-[8px] px-1.5 py-0">
                   KLHK & DJP
-                </span>
+                </Badge>
               </div>
 
               {/* Role 3: Auditor */}
@@ -181,16 +190,20 @@ export default function LoginModal() {
                 }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${selectedRole === 'auditor' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                    selectedRole === 'auditor'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
                 >
                   <CheckSquare className="w-4 h-4" />
                 </div>
                 <h5 className="font-extrabold text-[11px] text-slate-900 leading-tight">
                   Auditor LVV
                 </h5>
-                <span className="text-[8px] font-bold text-slate-700 bg-slate-200/80 px-1.5 py-0.2 rounded-full">
+                <Badge variant="secondary" className="text-[8px] px-1.5 py-0">
                   Independen
-                </span>
+                </Badge>
               </div>
 
               {/* Role 4: KTH */}
@@ -203,23 +216,27 @@ export default function LoginModal() {
                 }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${selectedRole === 'kth' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                    selectedRole === 'kth'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
                 >
                   <TreePine className="w-4 h-4" />
                 </div>
                 <h5 className="font-extrabold text-[11px] text-slate-900 leading-tight">
                   Kelompok Tani
                 </h5>
-                <span className="text-[8px] font-bold text-slate-700 bg-slate-200/80 px-1.5 py-0.2 rounded-full">
+                <Badge variant="secondary" className="text-[8px] px-1.5 py-0">
                   KTH Proyek
-                </span>
+                </Badge>
               </div>
             </div>
           </div>
 
           {/* Form Input Section */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest block">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
               2. KREDENSIAL {authMode === 'login' ? 'MASUK' : 'PENDAFTARAN'} (
               {selectedRole.toUpperCase()})
             </span>
@@ -234,14 +251,14 @@ export default function LoginModal() {
                     : 'ID Lisensi Auditor / Email'}
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 z-10">
                   <Mail className="w-4 h-4 text-[#00C48C]" />
                 </span>
-                <input
+                <Input
                   type="text"
                   value={identityInput}
                   onChange={(e) => setIdentityInput(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-[var(--color-primary)] transition-all"
+                  className="pl-10"
                   required
                 />
               </div>
@@ -253,14 +270,14 @@ export default function LoginModal() {
                 Kata Sandi / Password
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 z-10">
                   <Lock className="w-4 h-4 text-[#00C48C]" />
                 </span>
-                <input
+                <Input
                   type="password"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-[var(--color-primary)] transition-all"
+                  className="pl-10"
                   required
                 />
               </div>
@@ -272,14 +289,14 @@ export default function LoginModal() {
                 Verichain Security Key / Token Otoritas
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 z-10">
                   <Key className="w-4 h-4 text-[#00C48C]" />
                 </span>
-                <input
+                <Input
                   type="text"
                   value={verichainKeyInput}
                   onChange={(e) => setVerichainKeyInput(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-emerald-800 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-[var(--color-primary)] transition-all"
+                  className="pl-10 font-mono font-bold text-emerald-800"
                   required
                 />
               </div>
@@ -287,37 +304,36 @@ export default function LoginModal() {
 
             {/* Action Buttons */}
             <div className="pt-2 space-y-2">
-              {/* Primary Submit Button */}
-              <button
+              <Button
                 type="submit"
-                className="w-full bg-primary-gradient hover:opacity-95 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                className="w-full bg-primary-gradient hover:opacity-95 text-white font-extrabold text-xs py-5 rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2 active:scale-95"
               >
                 <ShieldCheck className="w-4 h-4 text-[#00C48C]" />
                 {authMode === 'login'
                   ? `Masuk Portal (${selectedRole.toUpperCase()})`
                   : `Daftar Akun (${selectedRole.toUpperCase()})`}
-              </button>
+              </Button>
 
-              {/* ONE-CLICK BYPASS LOGIN BUTTON FOR INSTANT TESTING */}
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={handleBypassLogin}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl border border-slate-800 shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-5 rounded-xl border border-slate-800 shadow-xs cursor-pointer flex items-center justify-center gap-2 active:scale-95"
               >
                 <span>⚡ Bypass Login (Langsung Masuk Page {selectedRole.toUpperCase()})</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#00C48C]" />
-              </button>
+              </Button>
             </div>
           </form>
 
           {/* Footer note */}
           <div className="text-center pt-2 border-t border-slate-100">
-            <p className="text-[10px] text-slate-400">
-              Otentikasi aman terhubung ke **KLHK SIMPONI & NusaCarbon Verichain API**.
+            <p className="text-[10px] text-slate-400 font-medium">
+              Otentikasi aman terhubung ke KLHK SIMPONI & NusaCarbon Verichain API.
             </p>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
