@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import {
   Award,
@@ -11,15 +10,13 @@ import {
   Layers,
   Sparkles,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '../../../lib/formatters';
 import { formatDate } from '../../../lib/dates';
 
 export default function PurchasedCertificatesProjects() {
   const { purchasedCertificates: certs } = useCarbonStore();
-
-  const [selectedCert] = useState(certs[0]);
 
   const totalVolume = certs.reduce((acc: number, c: any) => acc + c.purchasedVolumeTCO2e, 0);
 

@@ -1,7 +1,7 @@
 import { useState, ChangeEvent } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { ShieldCheck, Cpu, CheckCircle2 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';

@@ -1,6 +1,6 @@
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { CheckCircle2, AlertTriangle, Info, ShoppingCart } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
   ResponsiveContainer,
   LineChart,

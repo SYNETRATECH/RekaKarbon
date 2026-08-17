@@ -64,7 +64,7 @@ class MockAuditRepository implements AuditRepository {
   async getCertificationPreview() {
     return mockCertificationPreview;
   }
-  async authorizeMintingCredit(data: any) {
+  async authorizeMintingCredit(_data: any) {
     return {
       success: true,
       txHash: `0x7f9a${Math.floor(Math.random() * 89999 + 10000)}...besu`,

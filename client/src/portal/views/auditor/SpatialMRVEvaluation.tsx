@@ -1,6 +1,6 @@
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { TreePine, Leaf, Globe, MapPin, CheckCircle2, CloudRain } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
