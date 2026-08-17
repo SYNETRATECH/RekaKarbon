@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { MOCK_KTH_TRANSACTIONS } from '../../../lib/mock/regulator';
 import { PROJECTS_DATA } from '../../../lib/mock/projects';
+import { formatCurrency } from '../../../lib/formatters';
+import { formatDateTime } from '../../../lib/dates';
 
 export default function KthTransactionsMonitoring() {
   const { kthTransactions, forestProjects, projects, updateKTHTransactionStatus } =
@@ -421,10 +423,14 @@ export default function KthTransactionsMonitoring() {
                       <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     </div>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-500 font-semibold">{tx.date}</td>
+                  <td className="py-3.5 px-4 text-slate-500 font-semibold">
+                    {formatDateTime(tx.date)}
+                  </td>
                   <td className="py-3.5 px-4 font-extrabold text-slate-900">{tx.kthName}</td>
                   <td className="py-3.5 px-4 text-slate-700 font-semibold">{tx.projectName}</td>
-                  <td className="py-3.5 px-4 font-black text-emerald-700">{tx.amountIDR}</td>
+                  <td className="py-3.5 px-4 font-black text-emerald-700">
+                    {formatCurrency(tx.amountIDR)}
+                  </td>
                   <td className="py-3.5 px-4">
                     {tx.status === 'completed' ? (
                       <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">

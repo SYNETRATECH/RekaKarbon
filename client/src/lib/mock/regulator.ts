@@ -3,39 +3,40 @@ import type {
   ForestProjectItem,
   KTHGroupItem,
   KTHTransactionItem,
+  RegulationDocumentUploadItem,
 } from '../../types';
 
 export const NATIONAL_FOREST_REGIONS: NationalForestRegion[] = [
   {
     id: 'REG-KALIMANTAN',
     regionName: 'Kalimantan (Hutan Tropis & Gambut)',
-    areaHectares: '5.8 Miliar Ha',
-    carbonSequestrationTCO2e: '68.2 M tCO2e',
-    fundingDisbursedIDR: 'Rp 18.5 Miliar',
+    areaHectares: 5800000000,
+    carbonSequestrationTCO2e: 68200000,
+    fundingDisbursedIDR: 18500000000,
     forestHealthPercent: 96.4,
   },
   {
     id: 'REG-PAPUA',
     regionName: 'Papua & Maluku (Hutan Primer)',
-    areaHectares: '4.1 Miliar Ha',
-    carbonSequestrationTCO2e: '52.1 M tCO2e',
-    fundingDisbursedIDR: 'Rp 14.2 Miliar',
+    areaHectares: 4100000000,
+    carbonSequestrationTCO2e: 52100000,
+    fundingDisbursedIDR: 14200000000,
     forestHealthPercent: 98.1,
   },
   {
     id: 'REG-SUMATRA',
     regionName: 'Sumatra (Konservasi & Mangrove)',
-    areaHectares: '1.6 Miliar Ha',
-    carbonSequestrationTCO2e: '18.4 M tCO2e',
-    fundingDisbursedIDR: 'Rp 6.1 Miliar',
+    areaHectares: 1600000000,
+    carbonSequestrationTCO2e: 18400000,
+    fundingDisbursedIDR: 6100000000,
     forestHealthPercent: 91.8,
   },
   {
     id: 'REG-JAWA',
     regionName: 'Jawa & Nusa Tenggara (Reforestri Agro)',
-    areaHectares: '900 Ribu Ha',
-    carbonSequestrationTCO2e: '9.8 M tCO2e',
-    fundingDisbursedIDR: 'Rp 4.0 Miliar',
+    areaHectares: 900000,
+    carbonSequestrationTCO2e: 9800000,
+    fundingDisbursedIDR: 4000000000,
     forestHealthPercent: 94.2,
   },
 ];
@@ -56,11 +57,11 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
     ],
     targetSequestrationTCO2e: 15000,
     actualSequestrationTCO2e: 12400,
-    fundingBudgetIDR: 'Rp 4.5 Miliar',
+    fundingBudgetIDR: 4500000000,
     assignedKTH: 'KTH Mangrove Tuban Mandiri',
     dMRVStatus: 'verified',
     budgetReportFileName: 'LAPORAN_ANGGARAN_TUBAN_2026.pdf',
-    budgetReportFileSize: '4.5 MB',
+    budgetReportFileSize: 4718592,
   },
   {
     id: 'PRJ-REG-002',
@@ -77,11 +78,11 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
     ],
     targetSequestrationTCO2e: 45000,
     actualSequestrationTCO2e: 38200,
-    fundingBudgetIDR: 'Rp 12.0 Miliar',
+    fundingBudgetIDR: 12000000000,
     assignedKTH: 'KTH Dayak Mentarang',
     dMRVStatus: 'verified',
     budgetReportFileName: 'LAPORAN_ANGGARAN_KAYAN_2026.pdf',
-    budgetReportFileSize: '8.1 MB',
+    budgetReportFileSize: 8493465,
   },
   {
     id: 'PRJ-REG-003',
@@ -98,11 +99,11 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
     ],
     targetSequestrationTCO2e: 10000,
     actualSequestrationTCO2e: 8900,
-    fundingBudgetIDR: 'Rp 3.2 Miliar',
+    fundingBudgetIDR: 3200000000,
     assignedKTH: 'KTH Hijau Sejahtera Batu',
     dMRVStatus: 'pending_inspection',
     budgetReportFileName: 'LAPORAN_ANGGARAN_BATU_2026.pdf',
-    budgetReportFileSize: '2.9 MB',
+    budgetReportFileSize: 3040870,
   },
   {
     id: 'PRJ-REG-004',
@@ -119,11 +120,11 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
     ],
     targetSequestrationTCO2e: 28000,
     actualSequestrationTCO2e: 21500,
-    fundingBudgetIDR: 'Rp 8.7 Miliar',
+    fundingBudgetIDR: 8700000000,
     assignedKTH: 'KTH Gambut Berbak Asri',
     dMRVStatus: 'verified',
     budgetReportFileName: 'LAPORAN_ANGGARAN_BERBAK_2026.pdf',
-    budgetReportFileSize: '5.4 MB',
+    budgetReportFileSize: 5662310,
   },
 ];
 
@@ -136,7 +137,7 @@ export const INITIAL_KTH_GROUPS: KTHGroupItem[] = [
     location: 'Situbondo, Jawa Timur',
     kybStatus: 'verified',
     registrationNumber: 'SK.LHK-5891/KTH/2024',
-    totalIncentiveReceivedIDR: 'Rp 650 Juta',
+    totalIncentiveReceivedIDR: 650000000,
     walletAddress: '0x8f2a948571029485710294857102948571029485',
   },
   {
@@ -147,7 +148,7 @@ export const INITIAL_KTH_GROUPS: KTHGroupItem[] = [
     location: 'Tuban, Jawa Timur',
     kybStatus: 'verified',
     registrationNumber: 'SK.LHK-4102/KTH/2023',
-    totalIncentiveReceivedIDR: 'Rp 820 Juta',
+    totalIncentiveReceivedIDR: 820000000,
     walletAddress: '0x3c91029485710294857102948571029485710294',
   },
   {
@@ -158,7 +159,7 @@ export const INITIAL_KTH_GROUPS: KTHGroupItem[] = [
     location: 'Malinau, Kaltara',
     kybStatus: 'verified',
     registrationNumber: 'SK.LHK-7721/KTH/2024',
-    totalIncentiveReceivedIDR: 'Rp 1.45 Miliar',
+    totalIncentiveReceivedIDR: 1450000000,
     walletAddress: '0x5e10294857102948571029485710294857102948',
   },
   {
@@ -169,7 +170,7 @@ export const INITIAL_KTH_GROUPS: KTHGroupItem[] = [
     location: 'Tanjung Jabung, Jambi',
     kybStatus: 'pending',
     registrationNumber: 'SK.LHK-9012/KTH/2025',
-    totalIncentiveReceivedIDR: 'Rp 380 Juta',
+    totalIncentiveReceivedIDR: 380000000,
     walletAddress: '0x1d48571029485710294857102948571029485710',
   },
 ];
@@ -178,11 +179,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
   {
     id: 'TX-KTH-2026-0891',
     txHash: '0x8a1c94857102948571029485710294857102948571029485',
-    date: '14 Feb 2026 · 14:32 WIB',
+    date: '2026-02-14T14:32:00.000Z',
     kthName: 'KTH Mangrove Tuban Mandiri',
     projectName: 'Restorasi Mangrove Hutan Lindung Tuban',
     volumeTCO2e: 5000,
-    amountIDR: 'Rp 450.000.000',
+    amountIDR: 450000000,
     status: 'completed',
     items: [
       {
@@ -219,11 +220,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
   {
     id: 'TX-KTH-2026-0842',
     txHash: '0x4b9102948571029485710294857102948571029485710294',
-    date: '10 Feb 2026 · 10:15 WIB',
+    date: '2026-02-10T10:15:00.000Z',
     kthName: 'KTH Wana Lestari Baluran',
     projectName: 'Hutan Konservasi Baluran Situbondo',
     volumeTCO2e: 3840,
-    amountIDR: 'Rp 320.000.000',
+    amountIDR: 320000000,
     status: 'completed',
     items: [
       {
@@ -253,11 +254,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
   {
     id: 'TX-KTH-2026-0799',
     txHash: '0x2e8571029485710294857102948571029485710294857102',
-    date: '02 Feb 2026 · 09:45 WIB',
+    date: '2026-02-02T09:45:00.000Z',
     kthName: 'KTH Dayak Mentarang',
     projectName: 'Konservasi Hutan Hujan Kayan Mentarang',
     volumeTCO2e: 12000,
-    amountIDR: 'Rp 950.000.000',
+    amountIDR: 950000000,
     status: 'completed',
     items: [
       {
@@ -287,11 +288,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
   {
     id: 'TX-KTH-2026-0711',
     txHash: '0x991029485710294857102948571029485710294857102948',
-    date: '25 Jan 2026 · 16:20 WIB',
+    date: '2026-01-25T16:20:00.000Z',
     kthName: 'KTH Gambut Berbak Asri',
     projectName: 'Restorasi Lahan Gambut Berbak',
     volumeTCO2e: 2500,
-    amountIDR: 'Rp 180.000.000',
+    amountIDR: 180000000,
     status: 'processing',
     items: [
       {
@@ -322,11 +323,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
   {
     id: 'TX-KTH-2026-0650',
     txHash: '0x3f9102948571029485710294857102948571029485710291',
-    date: '18 Jan 2026 · 11:45 WIB',
+    date: '2026-01-18T11:45:00.000Z',
     kthName: 'KTH Bina Wana Baluran',
     projectName: 'Hutan Konservasi Baluran Situbondo',
     volumeTCO2e: 4100,
-    amountIDR: 'Rp 280.000.000',
+    amountIDR: 280000000,
     status: 'awaiting_proof',
     items: [
       {
@@ -357,11 +358,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
   {
     id: 'TX-KTH-2026-0610',
     txHash: '0x7c9102948571029485710294857102948571029485710288',
-    date: '12 Jan 2026 · 14:10 WIB',
+    date: '2026-01-12T14:10:00.000Z',
     kthName: 'KTH Mangrove Tuban Mandiri',
     projectName: 'Restorasi Mangrove Hutan Lindung Tuban',
     volumeTCO2e: 3200,
-    amountIDR: 'Rp 210.000.000',
+    amountIDR: 210000000,
     status: 'awaiting_farmer',
     items: [
       {
@@ -376,11 +377,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
   {
     id: 'TX-KTH-2026-0580',
     txHash: '0x1d9102948571029485710294857102948571029485710277',
-    date: '05 Jan 2026 · 09:30 WIB',
+    date: '2026-01-05T09:30:00.000Z',
     kthName: 'KTH Dayak Mentarang',
     projectName: 'Konservasi Hutan Hujan Kayan Mentarang',
     volumeTCO2e: 1500,
-    amountIDR: 'Rp 120.000.000',
+    amountIDR: 120000000,
     status: 'flagged',
     issueNote:
       'Foto nota transaksi pengadaan bibit buram dan kuantitas bibit meranti pada laporan tidak sesuai dengan hasil scan dMRV drone.',
@@ -398,7 +399,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
   },
 ];
 
-export const INITIAL_REGULATION_UPLOADS = [
+export const INITIAL_REGULATION_UPLOADS: RegulationDocumentUploadItem[] = [
   {
     id: 'DOC-REG-2026-001',
     documentTitle: 'SK Penetapan Alokasi Kuota Emisi PTBAE-PU 2026',
@@ -406,8 +407,8 @@ export const INITIAL_REGULATION_UPLOADS = [
     categoryLabel: 'SK Kuota PTBAE-PU',
     agencyIssuer: 'KLHK & DJP',
     fileName: 'SK_KLHK_PTBAE_2026_SEMEN_NUSANTARA.pdf',
-    fileSize: '4.8 MB',
-    uploadDate: '12 Feb 2026 · 11:30 WIB',
+    fileSize: 5033165,
+    uploadDate: '2026-02-12T11:30:00.000Z',
     signatoryPerson: 'Dr. Ir. Ahmad Fauzi (Direktur Pengawasan KLHK)',
     targetEntityName: 'PT Semen Nusantara Tuban',
     status: 'published',
@@ -419,8 +420,8 @@ export const INITIAL_REGULATION_UPLOADS = [
     categoryLabel: 'Sertifikat SPE-GRK',
     agencyIssuer: 'KLHK',
     fileName: 'SPE_GRK_MANGROVE_TUBAN_2026.pdf',
-    fileSize: '6.2 MB',
-    uploadDate: '08 Feb 2026 · 15:45 WIB',
+    fileSize: 6501171,
+    uploadDate: '2026-02-08T15:45:00.000Z',
     signatoryPerson: 'Dr. Ir. Ahmad Fauzi (Direktur Pengawasan KLHK)',
     targetEntityName: 'Restorasi Mangrove Hutan Lindung Tuban',
     status: 'published',
@@ -432,8 +433,8 @@ export const INITIAL_REGULATION_UPLOADS = [
     categoryLabel: 'Surat Tagihan Pajak DJP',
     agencyIssuer: 'DJP',
     fileName: 'STP_DJP_PAJAK_KARBON_PTBAE_2025.pdf',
-    fileSize: '3.1 MB',
-    uploadDate: '01 Feb 2026 · 09:15 WIB',
+    fileSize: 3250585,
+    uploadDate: '2026-02-01T09:15:00.000Z',
     signatoryPerson: 'DJP Kemenkeu RI & Dir. Pengawasan',
     targetEntityName: 'PT Semen Nusantara Tuban',
     status: 'published',
@@ -445,8 +446,8 @@ export const INITIAL_REGULATION_UPLOADS = [
     categoryLabel: 'SK Pengesahan KTH',
     agencyIssuer: 'KLHK',
     fileName: 'SK_KTH_WANA_LESTARI_BALURAN_2026.pdf',
-    fileSize: '2.5 MB',
-    uploadDate: '20 Jan 2026 · 14:10 WIB',
+    fileSize: 2621440,
+    uploadDate: '2026-01-20T14:10:00.000Z',
     signatoryPerson: 'Direktorat Jenderal PSKL KLHK',
     targetEntityName: 'KTH Wana Lestari Baluran',
     status: 'published',

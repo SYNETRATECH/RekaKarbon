@@ -14,6 +14,8 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MOCK_PURCHASED_CERTIFICATES } from '../../../lib/mock/certificates';
+import { formatCurrency } from '../../../lib/formatters';
+import { formatDate } from '../../../lib/dates';
 
 export default function PurchasedCertificatesProjects() {
   const { purchasedCertificates } = useCarbonStore();
@@ -185,7 +187,7 @@ export default function PurchasedCertificatesProjects() {
                     <div className="flex justify-between items-baseline border-t border-slate-200 pt-2">
                       <span className="text-xs text-slate-400 font-bold">Total Pembayaran</span>
                       <span className="text-sm font-black text-emerald-700">
-                        {cert.totalPaidIDR}
+                        {formatCurrency(cert.totalPaidIDR)}
                       </span>
                     </div>
                   </div>
@@ -211,7 +213,7 @@ export default function PurchasedCertificatesProjects() {
                       </span>
                     </div>
                     <span className="text-[10px] font-bold text-slate-400">
-                      Audit Terakhir: {cert.projectCondition.lastSpatialAuditDate}
+                      Audit Terakhir: {formatDate(cert.projectCondition.lastSpatialAuditDate)}
                     </span>
                   </div>
 
@@ -234,7 +236,7 @@ export default function PurchasedCertificatesProjects() {
                         Laju Penyerapan
                       </span>
                       <span className="text-sm font-black text-blue-900 block mt-1">
-                        {cert.projectCondition.carbonSequestrationRate}
+                        +{cert.projectCondition.carbonSequestrationRate} tCO2e/ha/thn
                       </span>
                       <span className="text-[9px] font-semibold text-blue-600 block mt-0.5">
                         Biomassa Tinggi
@@ -246,7 +248,7 @@ export default function PurchasedCertificatesProjects() {
                         Insentif KTH
                       </span>
                       <span className="text-sm font-black text-amber-900 block mt-1">
-                        {cert.projectCondition.kthIncentiveDisbursed}
+                        {formatCurrency(cert.projectCondition.kthIncentiveDisbursed)}
                       </span>
                       <span className="text-[9px] font-semibold text-amber-600 block mt-0.5">
                         Disalurkan 100%

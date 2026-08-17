@@ -13,6 +13,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { INITIAL_KTH_GROUPS } from '../../../lib/mock/regulator';
+import { formatCurrency } from '../../../lib/formatters';
 
 export default function KthFarmersManagement() {
   const { kthGroups, addKTHGroup, updateKTHGroup, deleteKTHGroup } = useCarbonStore();
@@ -179,7 +180,7 @@ export default function KthFarmersManagement() {
                     {kth.registrationNumber}
                   </td>
                   <td className="py-3.5 px-4 font-black text-emerald-700">
-                    {kth.totalIncentiveReceivedIDR}
+                    {formatCurrency(kth.totalIncentiveReceivedIDR)}
                   </td>
                   <td className="py-3.5 px-4">
                     {kth.kybStatus === 'verified' ? (

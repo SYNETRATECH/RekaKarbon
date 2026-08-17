@@ -25,6 +25,8 @@ import {
 } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { INITIAL_REGULATION_UPLOADS } from '../../../lib/mock/regulator';
+import { formatFileSize } from '../../../lib/formatters';
+import { formatDateTime } from '../../../lib/dates';
 
 export default function RegulatorUploadManagement() {
   const { regulationUploads, addRegulationUpload } = useCarbonStore();
@@ -85,10 +87,10 @@ export default function RegulatorUploadManagement() {
         month: 'short',
         year: 'numeric',
       }),
-      signatoryPerson: formData.signatoryPerson,
-      status: 'Published',
+      signatoryPerson: formData.signatoryPerson || 'Pejabat Pengawasan KLHK',
+      status: 'published' as any,
       fileName: formData.fileName || 'Dokumen_Regulasi.pdf',
-      fileSize: formData.fileSize,
+      fileSize: formData.fileSize || 4500000,
     };
 
     addRegulationUpload(newDoc);
@@ -264,19 +266,19 @@ export default function RegulatorUploadManagement() {
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
                       <div>
-                        <span className="font-extrabold text-slate-900 block">
-                          {doc.documentTitle}
+                        <span className="font-extrabold text-slate-900 block truncate max-w-xs">
+                          {doc.fileName} ({formatFileSize(doc.fileSize)})
                         </span>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {doc.fileName} ({doc.fileSize})
+                        <span className="text-[10px] text-slate-400 font-mono block">
+                          ID: {doc.id}
                         </span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="py-3.5 px-4">
                     <Badge
-                      variant="outline"
-                      className="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-md text-[10px] border-slate-200 block w-fit"
+                      variant="secondary"
+                      className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold"
                     >
                       {doc.categoryLabel}
                     </Badge>
@@ -288,7 +290,7 @@ export default function RegulatorUploadManagement() {
                     {doc.targetEntityName}
                   </TableCell>
                   <TableCell className="py-3.5 px-4 text-slate-500 font-semibold">
-                    {doc.uploadDate}
+                    {formatDateTime(doc.uploadDate)}
                   </TableCell>
                   <TableCell className="py-3.5 px-4 font-bold text-slate-700">
                     {doc.signatoryPerson}
