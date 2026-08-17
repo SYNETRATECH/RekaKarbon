@@ -1,3 +1,6 @@
+export * from './auth';
+export * from './audit';
+export * from './governance';
 export * from './project';
 export * from './company';
 export * from './compliance';

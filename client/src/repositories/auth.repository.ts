@@ -1,21 +1,8 @@
-import { mockUsers, MockUser } from '../lib/mock/auth';
+import { mockUsers } from '../lib/mock/auth';
 import { api } from '../lib/api';
+import type { MockUser, AuthCredentials, AuthResponse } from '../types';
 
 const useMock = import.meta.env.VITE_USE_MOCK_DATA !== 'false';
-
-export interface AuthCredentials {
-  identity?: string;
-  email?: string;
-  password?: string;
-  verichainKey?: string;
-  role?: string;
-}
-
-export interface AuthResponse {
-  user: MockUser;
-  token: string;
-  role: 'emitter' | 'regulator' | 'auditor' | 'kth';
-}
 
 export interface AuthRepository {
   login(credentials: AuthCredentials): Promise<AuthResponse>;

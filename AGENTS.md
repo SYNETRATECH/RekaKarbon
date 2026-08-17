@@ -9,7 +9,7 @@ Berkas ini mendefinisikan aturan dan rujukan penting yang harus dipatuhi oleh se
 Untuk setiap pengerjaan frontend di dalam `/client`:
 
 - **Teknologi**: Menggunakan **React**, **Tailwind CSS v4**, **Zustand** (untuk state global), dan **React Router**.
-- **Struktur Modular**: Komponen UI harus dipisah secara modular di dalam [client/src/components](client/src/components/) dan state dikelola secara terpusat di [useCarbonStore.js](client/src/store/useCarbonStore.js).
+- **Struktur Modular**: Komponen UI harus dipisah secara modular di dalam [client/src/components](client/src/components/) dan state dikelola secara terpusat di [useCarbonStore.ts](client/src/store/useCarbonStore.ts).
 - **Navigasi Drawer**: Portal utama dilarang menggunakan sidebar kiri permanen. Gunakan navigasi geser kanan ([RightDrawer.jsx](client/src/components/RightDrawer.jsx)) yang diaktifkan melalui tombol kontrol di pojok kanan atas.
 - **Rujukan Aturan Lengkap**: Ikuti pedoman spesifikasi desain dan pembatasan visual terperinci di [rekakarbon-frontend-agent-spec.md](client/AGENTS/rekakarbon-frontend-agent-spec.md).
 
@@ -18,12 +18,23 @@ Untuk setiap pengerjaan frontend di dalam `/client`:
 ## 🚫 2. Aturan Penting Saat Menulis Kode
 
 1. **Presisi Warna & Tema**: Wajib menggunakan token warna yang disepakati. **Primary Green sekarang berupa GRADIENT 12 langkah** — gunakan CSS utility class `.bg-primary-gradient` (background) atau `.text-primary-gradient` (teks judul), BUKAN warna solid `#003E29`. CSS variable `var(--color-primary)` (`#033C2E`) digunakan untuk teks dan border. Token lainnya: Tech Mint: `#00C48C`, Warning Red: `#EF4444`, Warning Orange: `#F59E0B`.
-2. **Kalkulasi Geodetik**: Semua kalkulasi area spasial di modul peta wajib menggunakan fungsi terstandarisasi di [geodetics.js](client/src/utils/geodetics.js) untuk mencegah deviasi data numerik.
+2. **Kalkulasi Geodetik**: Semua kalkulasi area spasial di modul peta wajib menggunakan fungsi terstandarisasi di [geodetics.ts](client/src/utils/geodetics.ts) untuk mencegah deviasi data numerik.
 3. **Error Prevention**: Tombol tindakan berisiko tinggi (misalnya mode burning/offset atau modifikasi data audit) harus menyertakan warna peringatan/urgensi (merah/oranye) dan konfirmasi UI untuk mencegah kesalahan eksekusi.
 
 ---
 
-## ✅ 3. Pemeriksaan Kualitas Kode (PR Check)
+## 📝 3. Konvensi Penamaan Kode & Sentralisasi Tipe
+
+Seluruh modifikasi kode wajib mematuhi standar penamaan dan tata kelola tipe berikut:
+
+1. **Variabel & Fungsi**: Wajib menggunakan `camelCase` (contoh: `forestProjects`, `calculateGeodetics()`, `getProjectDetails()`).
+2. **Komponen React**: Wajib menggunakan `PascalCase` (contoh: `CarbonDexMarket`, `ForestProjectsManagement`, `RightDrawer`).
+3. **Tipe & Interface TypeScript**: Wajib menggunakan `PascalCase` dan **WAJIB disimpan terpusat di dalam [client/src/types/](client/src/types/)** (dire-export via [index.ts](client/src/types/index.ts)). Dilarang keras mendefinisikan interface dummy secara inline di dalam berkas mock data atau repositori.
+4. **Konstanta Global & Fixture Mock**: Wajib menggunakan `UPPER_SNAKE_CASE` (contoh: `MOCK_BURSA_ITEMS`, `COMPANIES_DATA`, `VITE_USE_MOCK_DATA`).
+
+---
+
+## ✅ 4. Pemeriksaan Kualitas Kode (PR Check)
 
 Setiap Pull Request ke branch `main` diverifikasi otomatis oleh workflow [.github/workflows/pr-check.yml](.github/workflows/pr-check.yml). Pastikan seluruh pemeriksaan lolos secara lokal sebelum membuka PR:
 
@@ -37,9 +48,9 @@ Aturan arsitektur client yang ditegakkan oleh `test:arch`: lapisan View (`compon
 
 ---
 
-## 📦 4. Standar Pengelolaan Mock Data & Repository Pattern
+## 📦 5. Standar Pengelolaan Mock Data & Repository Pattern
 
-1. **Pemisahan Mock Data**: Seluruh data dummy/statis WAJIB disimpan terpisah di dalam folder `client/src/lib/mock/<feature>.ts` dan dilarang keras dituliskan secara hardcode langsung di dalam komponen `.jsx`/`.tsx`.
+1. **Pemisahan Mock Data**: Seluruh data dummy/statis WAJIB disimpan terpisah di dalam folder `client/src/lib/mock/<feature>.ts` dan dilarang keras dituliskan secara hardcode langsung di dalam komponen `.jsx`/`.tsx`. Seluruh mock data wajib di-type secara eksplisit menggunakan tipe dari `src/types`.
 2. **Abstraksi Repository**: Setiap fitur data WAJIB dibungkus dengan arsitektur Repository Pattern di `client/src/repositories/<feature>.repository.ts` menggunakan interface spesifik dan dua kelas implementasi (`Mock...Repository` dan `Api...Repository`) yang dikontrol melalui environment variable `VITE_USE_MOCK_DATA`.
-3. **Integrasi Zustand Store**: Komponen UI harus mengonsumsi data dari Zustand Store (`useCarbonStore.js`), yang secara asinkron memanggil kelas repository terdaftar.
-4. **Skill Rujukan**: Rincian langkah pembuatan mock repository pattern dapat dibaca di Skill [.agents/skills/mock-repository-pattern/SKILL.md](file:///home/mashupsoat/Project/rekakarbon/RekaKarbon/.agents/skills/mock-repository-pattern/SKILL.md).
+3. **Integrasi Zustand Store**: Komponen UI harus mengonsumsi data dari Zustand Store (`useCarbonStore.ts`), yang secara asinkron memanggil kelas repository terdaftar.
+4. **Skill Rujukan**: Rincian langkah pembuatan mock repository pattern dapat dibaca di Skill [.agents/skills/mock-repository-pattern/SKILL.md](.agents/skills/mock-repository-pattern/SKILL.md).

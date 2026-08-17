@@ -26,4 +26,5 @@ export { regulatorRepository } from './regulator.repository';
 export type { RegulatorRepository } from './regulator.repository';
 
 export { authRepository } from './auth.repository';
-export type { AuthRepository, AuthCredentials, AuthResponse } from './auth.repository';
+export type { AuthRepository } from './auth.repository';
+export type { AuthCredentials, AuthResponse } from '../types';

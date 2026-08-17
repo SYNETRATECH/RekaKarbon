@@ -1,56 +1,64 @@
-export const mockMultiSigRequests = [
+import type { MultiSigRequest, KybQueueItem, DjpLogItem } from '../../types';
+
+export const mockMultiSigRequests: MultiSigRequest[] = [
   {
     id: 'MS-001',
-    action: 'Pembelian 2.330 tCO2e Token DEX',
-    requester: 'Admin Operasional',
+    txType: 'Pembelian 2.330 tCO2e Token DEX',
+    applicant: 'Admin Operasional',
     status: 'Pending',
-    requiredSignatures: 2,
-    currentSignatures: 1,
+    requiredSigners: 2,
+    signersCount: 1,
+    date: '2026-08-15',
   },
   {
     id: 'MS-002',
-    action: 'Eksekusi Burn 100 Fraksi Token',
-    requester: 'Compliance Manager',
+    txType: 'Eksekusi Burn 100 Fraksi Token',
+    applicant: 'Compliance Manager',
     status: 'Approved',
-    requiredSignatures: 2,
-    currentSignatures: 2,
+    requiredSigners: 2,
+    signersCount: 2,
+    date: '2026-08-14',
   },
 ];
 
-export const mockKybQueue = [
+export const mockKybQueue: KybQueueItem[] = [
   {
     id: 'KYB-881',
-    companyName: 'PT Bio Kertas Karawang',
-    nib: '912030491823',
-    documentStatus: 'Verified',
-    webAuthnStatus: 'Pending',
-    dateSubmitted: '12 Agu 2026',
+    entityName: 'PT Bio Kertas Karawang',
+    category: 'corporate',
+    submissionDate: '12 Agu 2026',
+    documentsCount: 4,
+    verificationStatus: 'pending',
+    assignedVerifier: 'Auditor KLHK',
   },
   {
     id: 'KYB-882',
-    companyName: 'PT Smelter Alumunium Bontang',
-    nib: '810293810293',
-    documentStatus: 'In Review',
-    webAuthnStatus: 'Disabled',
-    dateSubmitted: '14 Agu 2026',
+    entityName: 'PT Smelter Alumunium Bontang',
+    category: 'corporate',
+    submissionDate: '14 Agu 2026',
+    documentsCount: 5,
+    verificationStatus: 'pending',
+    assignedVerifier: 'Auditor KLHK',
   },
 ];
 
-export const mockDjpLogs = [
+export const mockDjpLogs: DjpLogItem[] = [
   {
     id: 'DJP-2026-001',
-    company: 'PT Semen Nusantara Tuban',
-    taxInvoiceNo: '010.000-26.00000891',
-    deficit: 2330,
-    totalFineIDR: 1514500000,
-    status: 'Reconciled',
+    timestamp: '2026-08-16 10:30',
+    taxPayerName: 'PT Semen Nusantara Tuban',
+    npwp: '01.234.567.8-012.000',
+    stpDocId: 'STP-DJP-2026-001',
+    carbonTaxCalculatedIDR: 1514500000,
+    status: 'synced',
   },
   {
     id: 'DJP-2026-002',
-    company: 'PLTU Suralaya Unit 1-8',
-    taxInvoiceNo: '010.000-26.00000892',
-    deficit: 12500,
-    totalFineIDR: 8125000000,
-    status: 'Pending e-Faktur',
+    timestamp: '2026-08-16 14:15',
+    taxPayerName: 'PLTU Suralaya Unit 1-8',
+    npwp: '02.345.678.9-023.000',
+    stpDocId: 'STP-DJP-2026-002',
+    carbonTaxCalculatedIDR: 8125000000,
+    status: 'pending',
   },
 ];
