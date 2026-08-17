@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -22,7 +23,7 @@ export default function AuthorizationGate() {
   const projectList = conservationAreas || [];
 
   const [selectedProjectName, setSelectedProjectName] = useState(preview?.project ?? '');
-  const [_currentProjectData] = useState(
+  const [currentProjectData, setCurrentProjectData] = useState(
     projectList.find((p: any) => p.name === preview?.project) || projectList[0] || null
   );
   const [auditDate, setAuditDate] = useState(preview?.auditDate ?? '');
@@ -111,6 +112,10 @@ export default function AuthorizationGate() {
                   value={selectedProjectName}
                   onValueChange={(val) => {
                     setSelectedProjectName(val);
+                    const found = projectList.find((p: any) => p.name === val);
+                    if (found) {
+                      setCurrentProjectData(found);
+                    }
                   }}
                 >
                   <SelectTrigger>
@@ -177,21 +182,19 @@ export default function AuthorizationGate() {
           </div>
 
           {/* Hyperledger Besu Info Banner */}
-          <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/50 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 text-[#00C48C] flex items-center justify-center shrink-0 shadow-xs">
-              <Cpu className="w-5 h-5" />
-            </div>
+          <Alert variant="mint">
+            <Cpu className="w-5 h-5 text-emerald-600 shrink-0" />
             <div>
-              <h5 className="text-xs font-black text-slate-900">
+              <AlertTitle className="text-slate-900">
                 Hyperledger Besu — Fungsi MintOffsetCredit
-              </h5>
-              <p className="text-[10px] text-slate-600 font-medium mt-0.5 leading-relaxed">
+              </AlertTitle>
+              <AlertDescription className="text-slate-600">
                 Tombol otorisasi di bawah akan mengubah status proyek menjadi{' '}
                 <span className="font-bold text-emerald-800">ACTIVE/Verified</span> secara permanen
                 (immutable) dan memicu pencetakan token kompensasi SPE-GRK ke bursa karbon.
-              </p>
+              </AlertDescription>
             </div>
-          </div>
+          </Alert>
         </Card>
 
         {/* RIGHT COLUMN: PRATINJAU RINGKASAN SERTIFIKASI (4 of 12 cols) */}

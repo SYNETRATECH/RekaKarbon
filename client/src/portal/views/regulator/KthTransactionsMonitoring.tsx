@@ -1,5 +1,15 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import {
   Coins,
   CheckCircle2,
@@ -33,6 +43,7 @@ export default function KthTransactionsMonitoring() {
     updateKTHTransactionStatus,
   } = useCarbonStore();
 
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedTxReceipt, setSelectedTxReceipt] = useState<any>(null);
@@ -815,15 +826,15 @@ export default function KthTransactionsMonitoring() {
 
               {/* KLHK ISSUE FLAGGING FORM */}
               {showFlagForm && (
-                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3 animate-fadeIn">
-                  <div className="flex items-center gap-2 text-rose-900 font-extrabold text-xs">
+                <Alert variant="destructive" className="space-y-3 animate-fadeIn">
+                  <AlertTitle className="flex items-center gap-2 text-rose-900">
                     <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                     <span>Form Penandaan Transaksi Bermasalah (KLHK)</span>
-                  </div>
-                  <p className="text-[11px] text-rose-700">
+                  </AlertTitle>
+                  <AlertDescription className="text-rose-700">
                     Masukkan catatan detail mengenai indikasi ketidaksesuaian/masalah pada pengajuan
                     ini untuk disampaikan ke KTH:
-                  </p>
+                  </AlertDescription>
                   <textarea
                     value={flagNoteInput}
                     onChange={(e) => setFlagNoteInput(e.target.value)}
@@ -847,7 +858,7 @@ export default function KthTransactionsMonitoring() {
                       Simpan & Tandai Bermasalah
                     </button>
                   </div>
-                </div>
+                </Alert>
               )}
             </div>
 
@@ -1091,15 +1102,15 @@ export default function KthTransactionsMonitoring() {
 
               {/* KLHK ISSUE FLAGGING FORM */}
               {showFlagForm && (
-                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3 animate-fadeIn">
-                  <div className="flex items-center gap-2 text-rose-900 font-extrabold text-xs">
+                <Alert variant="destructive" className="space-y-3 animate-fadeIn">
+                  <AlertTitle className="flex items-center gap-2 text-rose-900">
                     <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                     <span>Form Penandaan Transaksi Bermasalah (KLHK)</span>
-                  </div>
-                  <p className="text-[11px] text-rose-700">
+                  </AlertTitle>
+                  <AlertDescription className="text-rose-700">
                     Masukkan catatan detail mengenai ketidaksesuaian nota belanja atau bukti fisik
                     yang diunggah KTH:
-                  </p>
+                  </AlertDescription>
                   <textarea
                     value={flagNoteInput}
                     onChange={(e) => setFlagNoteInput(e.target.value)}
@@ -1123,7 +1134,7 @@ export default function KthTransactionsMonitoring() {
                       Simpan & Tandai Bermasalah
                     </button>
                   </div>
-                </div>
+                </Alert>
               )}
             </div>
 
@@ -1286,9 +1297,7 @@ export default function KthTransactionsMonitoring() {
 
             <div className="flex gap-2 pt-1 shrink-0">
               <button
-                onClick={() =>
-                  alert(`Mengunduh bukti transfer PDF: BUKTI_TRANSFER_${selectedTxReceipt.id}.pdf`)
-                }
+                onClick={() => setDownloadNotice(`BUKTI_TRANSFER_${selectedTxReceipt.id}.pdf`)}
                 className="flex-1 bg-primary-gradient hover:opacity-95 text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98"
               >
                 <Download className="w-4 h-4 text-[#00C48C]" />
@@ -1320,6 +1329,29 @@ export default function KthTransactionsMonitoring() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <FileText className="w-5 h-5 text-emerald-600" />
+              <span>Pengunduhan Bukti Transfer Resmi</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Berkas <span className="font-mono font-bold text-slate-900">{downloadNotice}</span>{' '}
+              sedang diunduh dan diproses dari repository publik RekaKarbon.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setDownloadNotice(null)}
+              className="w-full bg-primary-gradient text-white font-extrabold"
+            >
+              Tutup & Lanjutkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

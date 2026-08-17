@@ -19,6 +19,15 @@ import {
   Building2,
 } from 'lucide-react';
 import { formatCurrency, formatFileSize, parseNumeric } from '../../../lib/formatters';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export default function ForestProjectsManagement() {
   const {
@@ -31,6 +40,7 @@ export default function ForestProjectsManagement() {
   } = useCarbonStore();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const [selectedProgressProject, setSelectedProgressProject] = useState<any>(null);
   const [blockchainSubTab, setBlockchainSubTab] = useState<'buyers' | 'vendors'>('buyers');
 
@@ -645,8 +655,9 @@ export default function ForestProjectsManagement() {
 
                 <button
                   onClick={() =>
-                    alert(
-                      `Mengunduh berkas: ${selectedProgressProject.budgetReportFileName || 'LAPORAN_ANGGARAN_TUBAN_2026.pdf'}`
+                    setDownloadNotice(
+                      selectedProgressProject.budgetReportFileName ||
+                        'LAPORAN_ANGGARAN_TUBAN_2026.pdf'
                     )
                   }
                   className="px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-100 text-emerald-900 font-extrabold text-xs border border-emerald-300 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
@@ -1033,6 +1044,29 @@ export default function ForestProjectsManagement() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <FileText className="w-5 h-5 text-emerald-600" />
+              <span>Pengunduhan Berkas Resmi</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Berkas <span className="font-mono font-bold text-slate-900">{downloadNotice}</span>{' '}
+              sedang diunduh dan diproses dari repository publik RekaKarbon.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setDownloadNotice(null)}
+              className="w-full bg-primary-gradient text-white font-extrabold"
+            >
+              Tutup & Lanjutkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

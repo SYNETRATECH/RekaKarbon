@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   ShoppingCart,
   AlertTriangle,
@@ -64,15 +65,15 @@ export default function CarbonDexMarket() {
       </div>
 
       {/* 2. TOP ALERT BOX (WARNING BANNER) */}
-      <div className="shrink-0 bg-rose-50/70 border border-rose-200/80 p-3.5 rounded-2xl flex items-center gap-3.5 text-left">
-        <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
-        <div className="text-xs space-y-0.5">
-          <h4 className="font-extrabold text-rose-700">Defisit aktif: 2.330 tCO2e</h4>
-          <p className="text-[11px] font-medium text-rose-600">
+      <Alert variant="destructive">
+        <AlertTriangle className="w-4 h-4 text-rose-600" />
+        <div>
+          <AlertTitle className="text-rose-900">Defisit aktif: 2.330 tCO2e</AlertTitle>
+          <AlertDescription className="text-rose-700">
             Beli minimal 2330 tCO2e sebelum 31 Des 2025 untuk menghindari denda Rp 1.51 M.
-          </p>
+          </AlertDescription>
         </div>
-      </div>
+      </Alert>
 
       {/* 3. MAIN CARD CONTAINER (Dynamic Height: flex-1 flex flex-col min-h-0) */}
       <div className="flex-1 flex flex-col min-h-0 bg-white rounded-3xl border border-slate-200 shadow-2xs p-6 space-y-4">

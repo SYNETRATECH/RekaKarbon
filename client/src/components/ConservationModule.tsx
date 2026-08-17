@@ -2,7 +2,25 @@ import { useState, useEffect } from 'react';
 import { useCarbonStore } from '../store/useCarbonStore';
 import NDVIGauge from './NDVIGauge';
 import { calculateGeodetics } from '../utils/geodetics';
-import { Activity, Download, ShieldCheck, Users, Wallet, ExternalLink, Search } from 'lucide-react';
+import {
+  Activity,
+  Download,
+  ShieldCheck,
+  Users,
+  Wallet,
+  ExternalLink,
+  Search,
+  FileCheck2,
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export default function ConservationModule() {
   const [blockchainSubTab, setBlockchainSubTab] = useState<'buyers' | 'vendors'>('buyers');
@@ -38,6 +56,8 @@ export default function ConservationModule() {
     activeCoords,
     activeProj ? activeProj.center : [0, 0]
   );
+
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
 
   if (!activeProj) return null;
 
@@ -87,7 +107,7 @@ export default function ConservationModule() {
           <div className="flex gap-2 w-full shrink-0 font-sans">
             <button
               onClick={() => {
-                alert(`Mengunduh berkas: LAPORAN_ANGGARAN_TUBAN_2026.pdf`);
+                setDownloadNotice('LAPORAN_ANGGARAN_TUBAN_2026.pdf');
               }}
               className="w-full bg-primary-gradient hover:opacity-95 text-white text-[10px] font-extrabold py-2.5 px-3 rounded-xl border border-emerald-700 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center leading-none"
             >
@@ -683,6 +703,29 @@ export default function ConservationModule() {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <FileCheck2 className="w-5 h-5 text-emerald-600" />
+              <span>Pengunduhan Berkas Resmi</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Berkas <span className="font-mono font-bold text-slate-900">{downloadNotice}</span>{' '}
+              sedang diunduh dan diproses dari repository publik RekaKarbon.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setDownloadNotice(null)}
+              className="w-full bg-primary-gradient text-white font-extrabold"
+            >
+              Tutup & Lanjutkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

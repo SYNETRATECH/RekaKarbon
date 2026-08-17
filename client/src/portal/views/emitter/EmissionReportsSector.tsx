@@ -1,5 +1,15 @@
 import { useState, FormEvent } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -29,6 +39,8 @@ import {
 } from 'lucide-react';
 export default function EmissionReportsSector() {
   const { emissionReports: reports } = useCarbonStore();
+
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
 
   const [selectedYear, setSelectedYear] = useState(2026);
   const [activeTabCategory, setActiveTabCategory] = useState(1); // 1 | 2 | 3
@@ -229,19 +241,19 @@ export default function EmissionReportsSector() {
           {/* ================= CATEGORY 1 ================= */}
           {activeTabCategory === 1 && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl flex items-start gap-3 text-left">
-                <Flame className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                <div className="text-xs space-y-1">
-                  <h4 className="font-extrabold text-[#003E29]">
+              <Alert variant="mint">
+                <Flame className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div>
+                  <AlertTitle className="text-[#003E29]">
                     1. Laporan Aktivitas Emisi Tahunan (Activity-Based Template Standar)
-                  </h4>
-                  <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  </AlertTitle>
+                  <AlertDescription className="text-slate-600">
                     Perusahaan menginput data aktivitas fisik emisi menggunakan templat standar yang
                     memisahkan kategori emisi berdasarkan metodologi inventarisasi emisi global
                     (Greenhouse Gas Protocol & Kaidah IPCC).
-                  </p>
+                  </AlertDescription>
                 </div>
-              </div>
+              </Alert>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
                 {/* Field 1: Mesin Stasioner */}
@@ -342,19 +354,19 @@ export default function EmissionReportsSector() {
           {/* ================= CATEGORY 2 ================= */}
           {activeTabCategory === 2 && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-amber-50/70 border border-amber-200/80 p-4 rounded-2xl flex items-start gap-3 text-left">
-                <Receipt className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <div className="text-xs space-y-1">
-                  <h4 className="font-extrabold text-amber-950">
+              <Alert variant="warning">
+                <Receipt className="w-5 h-5 text-amber-600 shrink-0" />
+                <div>
+                  <AlertTitle className="text-amber-950">
                     2. Data Keuangan Utilitas Energi Agregat Tahunan (Integrasi e-Faktur DJP)
-                  </h4>
-                  <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  </AlertTitle>
+                  <AlertDescription className="text-slate-600">
                     Sebagai pembanding logis yang dianalisis oleh AI untuk mendeteksi kejujuran
                     pelaporan tanpa mengekspos margin keuntungan internal, sertakan pos pengeluaran
                     utilitas yang terhubung langsung dengan nomor e-Faktur Pajak resmi DJP.
-                  </p>
+                  </AlertDescription>
                 </div>
-              </div>
+              </Alert>
 
               {/* 4 Financial Utility Cost Positions */}
               <div className="space-y-2">
@@ -779,7 +791,7 @@ export default function EmissionReportsSector() {
                   </td>
                   <td className="py-3.5 px-4 text-right">
                     <button
-                      onClick={() => alert(`Mengunduh berkas ${rep.fileName}...`)}
+                      onClick={() => setDownloadNotice(rep.fileName)}
                       className="p-2 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer inline-flex items-center gap-1 font-extrabold text-xs"
                       title="Unduh Berkas PDF Resmi"
                     >
@@ -960,6 +972,29 @@ export default function EmissionReportsSector() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <FileText className="w-5 h-5 text-emerald-600" />
+              <span>Pengunduhan Berkas Resmi</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Berkas <span className="font-mono font-bold text-slate-900">{downloadNotice}</span>{' '}
+              sedang diunduh dan diproses dari repository publik RekaKarbon.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setDownloadNotice(null)}
+              className="w-full bg-primary-gradient text-white font-extrabold"
+            >
+              Tutup & Lanjutkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
