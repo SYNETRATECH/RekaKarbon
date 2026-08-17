@@ -35,15 +35,8 @@ export default function EmissionsAuditAI() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
 
-  // Summary Metrics (fallback to mock default if loading)
-  const summary = anomalySummary || {
-    emitenTerdeteksiAnomali: 12,
-    totalEmitenAktif: 47,
-    rataDeviasiEmisi: '+43.2%',
-    descDeviasi: 'Under-reporting terdeteksi',
-    eFakturTidakCocok: 8,
-    descEFaktur: 'Data utilitas energi divergen',
-  };
+  // Summary Metrics from store repository
+  const summary = anomalySummary;
 
   const filteredLogs = aiAnomalyLogs.filter((log: any) => {
     if (filterPriority === 'ALL') return true;
@@ -99,10 +92,10 @@ export default function EmissionsAuditAI() {
               Emiten Terdeteksi Anomali
             </span>
             <h3 className="text-3xl font-black text-rose-500 leading-none">
-              {summary.emitenTerdeteksiAnomali}
+              {summary?.emitenTerdeteksiAnomali ?? 0}
             </h3>
             <span className="text-[11px] font-medium text-slate-400 block pt-0.5">
-              Dari {summary.totalEmitenAktif} emiten aktif
+              Dari {summary?.totalEmitenAktif ?? 0} emiten aktif
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
@@ -117,10 +110,10 @@ export default function EmissionsAuditAI() {
               Rata-rata Deviasi Emisi
             </span>
             <h3 className="text-3xl font-black text-amber-500 leading-none">
-              {summary.rataDeviasiEmisi}
+              {summary?.rataDeviasiEmisi ?? '0%'}
             </h3>
             <span className="text-[11px] font-medium text-slate-400 block pt-0.5">
-              {summary.descDeviasi}
+              {summary?.descDeviasi ?? ''}
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-500 flex items-center justify-center shrink-0">
@@ -135,10 +128,10 @@ export default function EmissionsAuditAI() {
               e-Faktur DJP Tidak Cocok
             </span>
             <h3 className="text-3xl font-black text-slate-800 leading-none">
-              {summary.eFakturTidakCocok}
+              {summary?.eFakturTidakCocok ?? 0}
             </h3>
             <span className="text-[11px] font-medium text-slate-400 block pt-0.5">
-              {summary.descEFaktur}
+              {summary?.descEFaktur ?? ''}
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-[#00C48C] flex items-center justify-center shrink-0">

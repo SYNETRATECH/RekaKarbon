@@ -18,68 +18,16 @@ import { DatePicker } from '@/components/ui/date-picker';
 export default function AuthorizationGate() {
   const { certificationPreview, conservationAreas, authorizeMintOffsetCredit } = useCarbonStore();
 
-  const preview = certificationPreview || {
-    project: 'Hutan Konservasi Baluran',
-    location: 'Banyuwangi, Jawa Timur',
-    areaHectares: '25,000 ha',
-    carbonCreditSPE: '48,750 tCO2e',
-    ndvi: 0.78,
-    evi: 0.62,
-    verifier: 'Dr. Andika Putra Wijaya, SH',
-    confidenceScore: 94,
-    confidenceLevel: 'Sangat Tinggi',
-    auditDate: '2025-07-17',
-  };
+  const preview = certificationPreview;
+  const projectList = conservationAreas || [];
 
-  const projectList =
-    conservationAreas && conservationAreas.length > 0
-      ? conservationAreas
-      : [
-          {
-            id: 'AREA-BALURAN',
-            name: 'Hutan Konservasi Baluran',
-            location: 'Banyuwangi, Jawa Timur',
-            areaHectares: 25000,
-            carbonCredit: 48750,
-            ndvi: 0.78,
-            evi: 0.62,
-          },
-          {
-            id: 'AREA-KATINGAN',
-            name: 'Restorasi Gambut Katingan',
-            location: 'Katingan, Kalimantan Tengah',
-            areaHectares: 142000,
-            carbonCredit: 284300,
-            ndvi: 0.71,
-            evi: 0.54,
-          },
-          {
-            id: 'AREA-LEUSER',
-            name: 'Hutan Lindung Leuser',
-            location: 'Aceh, Sumatera',
-            areaHectares: 88500,
-            carbonCredit: 193700,
-            ndvi: 0.83,
-            evi: 0.69,
-          },
-          {
-            id: 'AREA-BERAU',
-            name: 'Mangrove Pesisir Berau',
-            location: 'Berau, Kalimantan Timur',
-            areaHectares: 31200,
-            carbonCredit: 74500,
-            ndvi: 0.65,
-            evi: 0.48,
-          },
-        ];
-
-  const [selectedProjectName, setSelectedProjectName] = useState(preview.project);
-  const [currentProjectData, setCurrentProjectData] = useState(
-    projectList.find((p: any) => p.name === preview.project) || projectList[0]
+  const [selectedProjectName, setSelectedProjectName] = useState(preview?.project ?? '');
+  const [_currentProjectData] = useState(
+    projectList.find((p: any) => p.name === preview?.project) || projectList[0] || null
   );
-  const [auditDate, setAuditDate] = useState(preview.auditDate);
-  const [verifierName, setVerifierName] = useState(preview.verifier);
-  const [confidenceScore] = useState(preview.confidenceScore);
+  const [auditDate, setAuditDate] = useState(preview?.auditDate ?? '');
+  const [verifierName, setVerifierName] = useState(preview?.verifier ?? '');
+  const [confidenceScore] = useState(preview?.confidenceScore ?? 90);
   const [auditNotes, setAuditNotes] = useState(
     'Kawasan konservasi telah melalui pemindaian satelit Sentinel-2 dMRV dan ground-truth fotogrametri drone CHM. Seluruh parameter kerapatan biomasa dan kanopi vegetasi lolos ambang batas kelayakan SPE-GRK KLHK.'
   );

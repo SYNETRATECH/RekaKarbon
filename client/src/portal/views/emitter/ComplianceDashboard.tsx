@@ -23,35 +23,19 @@ export default function ComplianceDashboard() {
     Math.ceil((endOfYear.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   );
 
-  // Fallback if complianceData not loaded yet
-  const data = complianceData || {
-    emissionVsQuotaPercent: 118.6,
-    emissionIntensity: 0.118,
-    emissionIntensityStandard: 0.1,
-    carbonDeficit: 2330,
-    actualEmissions: 14830,
-    quotaPTBAE: 12500,
-    governedBy: 'UU 7/2021 & Permen LHK 21/22',
-    administrativeSanction: 'Peringatan & Pembekuan Kuota',
-    djpReportStatus: 'Draft e-Faktur Belum Terbit',
-    annualProductionVolume: 125678,
-    carbonPricePerTon: 650000,
-    totalEstimatedCostIDR: 'Rp 1.51 M',
-    annualHistory: [
-      { year: '2022', historis: 0.45, label: 'Rp 0.45 M (Historis)' },
-      { year: '2023', historis: 0.82, label: 'Rp 0.82 M (Historis)' },
-      { year: '2024', historis: 1.15, label: 'Rp 1.15 M (Historis)' },
-      { year: '2025', historis: 1.35, label: 'Rp 1.35 M (Historis)' },
-      { year: '2026', historis: 1.51, proyeksi: 1.51, label: 'Rp 1.51 M (Saat Ini)' },
-      { year: '2027', proyeksi: 1.78, label: 'Rp 1.78 M (Proyeksi)' },
-      { year: '2028', proyeksi: 1.95, label: 'Rp 1.95 M (Proyeksi)' },
-    ],
-  };
+  // Compliance Data from store repository
+  if (!complianceData) {
+    return (
+      <div className="p-8 text-center text-slate-400 font-semibold">Memuat Data Kepatuhan...</div>
+    );
+  }
 
-  const deficitAmount = data.carbonDeficit;
+  const data = complianceData;
+
+  const deficitAmount = data?.carbonDeficit ?? 0;
   const hasDeficit = deficitAmount > 0;
   const remainingDays = hasDeficit ? remainingDaysCalculated : 0;
-  const annualChartData = data.annualHistory;
+  const annualChartData = data?.annualHistory ?? [];
 
   return (
     <div className="space-y-8 animate-fade-in text-left">
