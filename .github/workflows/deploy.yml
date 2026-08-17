@@ -24,17 +24,6 @@ jobs:
         tags: tag:ci
 
     - name: 🚚 Transfer Files via SCP
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.SERVER_IP }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        # Memindahkakan seluruh file dari GitHub ke server folder ~/VM_BLOCKHAIN
-        source: "."
-        target: "~/VM_BLOCKHAIN"
-        strip_components: 0
-        
-    - name: 🚀 Execute Deployment on Server
       env:
         SERVER_IP: ${{ secrets.SERVER_IP }}
         SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
@@ -42,6 +31,15 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y sshpass
+        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME@$SERVER_IP" "mkdir -p ~/VM_BLOCKHAIN"
+        sshpass -p "$SERVER_PASSWORD" scp -o StrictHostKeyChecking=no -r ./* "$SERVER_USERNAME@$SERVER_IP:~/VM_BLOCKHAIN"
+        
+    - name: 🚀 Execute Deployment on Server
+      env:
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+      run: |
         sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME@$SERVER_IP" << EOF
           set -e
           

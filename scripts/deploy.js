@@ -27,6 +27,28 @@ async function main() {
     console.log("\n=======================================================");
     console.log("✅ DEPLOYMENT BERHASIL!");
     console.log("✅ RekaKarbon Contract Address:", contractAddress);
+
+    // 1. SETUP ROLES UNTUK BACKEND
+    console.log("\nMemproses pengaturan otorisasi (Roles)...");
+    const ORACLE_ROLE = await rekaKarbon.ORACLE_ROLE();
+    // Berikan peran ORACLE (AI) kepada akun deployer (Backend) agar bisa mintOffsetCredit
+    await rekaKarbon.grantRole(ORACLE_ROLE, deployer.address);
+    console.log("✅ ORACLE_ROLE berhasil diberikan kepada akun Backend (Deployer).");
+
+    // 2. SIMPAN CONTRACT ADDRESS KE FILE JSON (AGAR BACKEND MUDAH BACA)
+    const fs = require('fs');
+    const path = require('path');
+    const deploymentInfo = {
+        contractAddress: contractAddress,
+        network: "besu_dev",
+        deployer: deployer.address,
+        timestamp: new Date().toISOString()
+    };
+    
+    const filePath = path.join(__dirname, '..', 'deployment-info.json');
+    fs.writeFileSync(filePath, JSON.stringify(deploymentInfo, null, 2));
+    console.log(`✅ Informasi deployment disimpan ke: ${filePath}`);
+    console.log("=======================================================\n");
     console.log("=======================================================\n");
 }
 
