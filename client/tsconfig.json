@@ -13,8 +13,15 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "rootDirs": [".", "./.react-router/types"]
   },
-  "include": ["src", "vite.config.ts", "vitest.config.ts"],
+  "include": [
+    "src",
+    "react-router.config.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    ".react-router/types/**/*"
+  ],
   "exclude": ["node_modules", "dist", "prototype"]
 }

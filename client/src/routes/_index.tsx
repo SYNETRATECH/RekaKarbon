@@ -1,18 +1,36 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { useCarbonStore } from './store/useCarbonStore';
-import MapCanvas from './components/MapCanvas';
-import RightDrawer from './components/RightDrawer';
-import ConservationModule from './components/ConservationModule';
-import CorporateModule from './components/CorporateModule';
-import Modals from './components/Modals';
-import LoginModal from './components/LoginModal';
-import AdminPortalView from './components/AdminPortalView';
+import { useCarbonStore } from '../store/useCarbonStore';
+import MapCanvas from '../components/MapCanvas';
+import RightDrawer from '../components/RightDrawer';
+import ConservationModule from '../components/ConservationModule';
+import CorporateModule from '../components/CorporateModule';
+import Modals from '../components/Modals';
+import LoginModal from '../components/LoginModal';
 import { Menu, Globe, Building2 } from 'lucide-react';
-import brandIcon from './assets/icon.png';
+import brandIcon from '../assets/icon.png';
 
-function LandingPage() {
-  const { activeModule, companies, setIsDrawerOpen } = useCarbonStore();
+export function meta() {
+  return [
+    { title: 'RekaKarbon - Platform Verifikasi Emisi & Konservasi' },
+    { name: 'description', content: 'Transparency Portal RekaKarbon' },
+  ];
+}
+
+export default function LandingPageRoute() {
+  const { activeModule, companies, setIsDrawerOpen, initializeData, isDataLoaded } =
+    useCarbonStore();
+
+  useEffect(() => {
+    initializeData();
+  }, [initializeData]);
+
+  if (!isDataLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-100 text-slate-500 font-bold">
+        Memuat Data Sistem RekaKarbon...
+      </div>
+    );
+  }
 
   const unpaidCount = companies.filter((c) => c.paymentStatus === 'unpaid').length;
 
@@ -108,58 +126,7 @@ function LandingPage() {
       {/* Overlays & Drawers */}
       <RightDrawer />
       <Modals />
-    </div>
-  );
-}
-
-function MainApp() {
-  const { userRole, initializeData, isDataLoaded, loginAsRole } = useCarbonStore();
-  const location = useLocation();
-
-  useEffect(() => {
-    initializeData();
-  }, [initializeData]);
-
-  // Auto-login to portal role if accessing /portal route directly.
-  // location.pathname is relative to BrowserRouter's basename, so it will
-  // correctly be '/portal/...' regardless of the deployment sub-path.
-  useEffect(() => {
-    if (!userRole && location.pathname.startsWith('/portal')) {
-      const parts = location.pathname.split('/').filter(Boolean);
-      // parts[0] === 'portal', parts[1] is the role, parts[2] is the tab
-      const targetRole = parts[1] || 'emitter';
-      const targetTab = parts[2] || null;
-      loginAsRole(targetRole, 'hse_director', targetTab);
-    }
-  }, [userRole, loginAsRole, location.pathname]);
-
-  if (!isDataLoaded) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-100 text-slate-500 font-bold">
-        Memuat Data Sistem RekaKarbon...
-      </div>
-    );
-  }
-
-  const isPortalRoute = location.pathname.startsWith('/portal');
-
-  return (
-    <>
-      {userRole || isPortalRoute ? <AdminPortalView /> : <LandingPage />}
       <LoginModal />
-    </>
-  );
-}
-
-export default function App() {
-  return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Routes>
-        <Route path="/" element={<MainApp />} />
-        <Route path="/portal" element={<MainApp />} />
-        <Route path="/portal/:role" element={<MainApp />} />
-        <Route path="/portal/:role/:tab" element={<MainApp />} />
-      </Routes>
-    </BrowserRouter>
+    </div>
   );
 }

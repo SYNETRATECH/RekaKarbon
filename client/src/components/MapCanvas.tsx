@@ -64,7 +64,7 @@ export default function MapCanvas() {
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [activeProj]);
 
   // Update map view on active project changes
   useEffect(() => {

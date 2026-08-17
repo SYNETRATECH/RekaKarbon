@@ -12,7 +12,7 @@ import {
   authRepository,
   AuthCredentials,
 } from '../repositories';
-import { CarbonStoreState, SearchedTxData } from '../types/store';
+import { CarbonStoreState } from '../types/store';
 import { ForestProjectItem, KTHGroupModel, RegulationUploadModel } from '../types/regulator';
 import { Project } from '../types/project';
 
@@ -130,6 +130,7 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
     set((state) => ({ regulationUploads: [newDoc, ...state.regulationUploads] })),
 
   initializeData: async () => {
+    if (get().isDataLoaded) return;
     const [
       projects,
       companies,

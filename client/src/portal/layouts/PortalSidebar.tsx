@@ -1,4 +1,4 @@
-import { useNavigate } from 'react';
+import { useNavigate, useParams, NavLink } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   LayoutDashboard,
@@ -29,8 +29,11 @@ interface NavItem {
 }
 
 export default function PortalSidebar() {
-  const { userRole, adminActiveTab, setAdminActiveTab, logout } = useCarbonStore();
+  const { userRole, logout } = useCarbonStore();
+  const { role: urlRole, tab: activeTab } = useParams();
   const navigate = useNavigate();
+
+  const currentRole = urlRole || userRole || 'emitter';
 
   const handleLogout = () => {
     logout();
@@ -39,7 +42,7 @@ export default function PortalSidebar() {
 
   // Navigation Items per Role
   const getNavItems = (): NavItem[] => {
-    if (userRole === 'regulator') {
+    if (currentRole === 'regulator') {
       return [
         { id: 'forest', label: 'Dasbor Hutan & Pendanaan', icon: Globe },
         { id: 'projects', label: 'Manajemen Proyek Kehutanan', icon: FolderPlus },
@@ -47,14 +50,14 @@ export default function PortalSidebar() {
         { id: 'transactions', label: 'Monitoring Transaksi Tani', icon: Coins },
         { id: 'upload', label: 'Upload Regulasi & Kuota', icon: FileUp },
       ];
-    } else if (userRole === 'auditor') {
+    } else if (currentRole === 'auditor') {
       return [
         { id: 'audit', label: 'Verifikasi Audit AI', icon: Activity },
         { id: 'spatial', label: 'Evaluasi Spasial dMRV', icon: Globe },
         { id: 'drone', label: 'Drone Mapping Controller', icon: Camera },
         { id: 'gate', label: 'Gerbang Otorisasi', icon: ShieldCheck },
       ];
-    } else if (userRole === 'kth') {
+    } else if (currentRole === 'kth') {
       return [
         { id: 'polygon', label: 'Registrasi Polygon Lahan', icon: MapIcon },
         { id: 'wallet', label: 'Dompet Insentif & Log Hibrida', icon: Wallet },
@@ -88,7 +91,7 @@ export default function PortalSidebar() {
                 REKAKARBON
               </h1>
               <span className="text-[9px] font-bold text-[#00C48C] tracking-wider uppercase block mt-1 text-left">
-                {userRole === 'auditor' ? 'AUDITOR PORTAL' : 'Verichain Platform'}
+                {currentRole === 'auditor' ? 'AUDITOR PORTAL' : 'Verichain Platform'}
               </span>
             </div>
           </div>
@@ -98,17 +101,18 @@ export default function PortalSidebar() {
         <nav className="p-4 space-y-1.5 text-left">
           {navItems.map((item) => {
             const IconComponent = item.icon;
+            const targetPath = `/portal/${currentRole}/${item.id}`;
             const isActive =
-              adminActiveTab === item.id ||
-              (userRole === 'auditor' &&
-                (!adminActiveTab || adminActiveTab === 'anomaly') &&
+              activeTab === item.id ||
+              (currentRole === 'auditor' &&
+                (!activeTab || activeTab === 'anomaly') &&
                 item.id === 'audit') ||
-              (userRole === 'regulator' && !adminActiveTab && item.id === 'forest') ||
-              (userRole === 'emitter' && !adminActiveTab && item.id === 'compliance');
+              (currentRole === 'regulator' && !activeTab && item.id === 'forest') ||
+              (currentRole === 'emitter' && !activeTab && item.id === 'compliance');
             return (
-              <button
+              <NavLink
                 key={item.id}
-                onClick={() => setAdminActiveTab(item.id)}
+                to={targetPath}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-extrabold text-left transition-all cursor-pointer ${
                   isActive
                     ? 'bg-primary-gradient text-white shadow-md shadow-emerald-950/15'
@@ -128,28 +132,28 @@ export default function PortalSidebar() {
                     {item.badge}
                   </span>
                 )}
-              </button>
+              </NavLink>
             );
           })}
         </nav>
 
         {/* Sistem / Secondary Nav for Auditor */}
-        {userRole === 'auditor' && (
+        {currentRole === 'auditor' && (
           <div className="px-4 pt-4 border-t border-slate-100 text-left">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4 block mb-2">
               SISTEM
             </span>
-            <button
-              onClick={() => setAdminActiveTab('settings')}
+            <NavLink
+              to={`/portal/${currentRole}/settings`}
               className={`w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                adminActiveTab === 'settings'
+                activeTab === 'settings'
                   ? 'bg-primary-gradient text-white'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
               <Settings className="w-4 h-4 text-slate-400" />
               Pengaturan
-            </button>
+            </NavLink>
           </div>
         )}
       </div>
