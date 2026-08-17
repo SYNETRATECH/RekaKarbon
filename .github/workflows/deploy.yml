@@ -42,7 +42,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y sshpass
-        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME@$SERVER_IP" << 'EOF'
+        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME@$SERVER_IP" << EOF
           set -e
           
           echo "=== Membersihkan kontainer & data lama (jika ada) ==="
@@ -67,14 +67,14 @@ jobs:
             --min-gas-price=0
           
           echo "=== Menunggu Node Besu siap (max 60 detik) ==="
-          for i in $(seq 1 12); do
+          for i in \$(seq 1 12); do
             if curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:8545 > /dev/null 2>&1; then
-              echo "✅ Node Besu sudah merespon pada percobaan ke-$i!"
+              echo "✅ Node Besu sudah merespon pada percobaan ke-\$i!"
               break
             fi
-            echo "Percobaan ke-$i: Besu belum siap, menunggu 5 detik..."
+            echo "Percobaan ke-\$i: Besu belum siap, menunggu 5 detik..."
             sleep 5
-            if [ $i -eq 12 ]; then
+            if [ \$i -eq 12 ]; then
               echo "❌ Besu gagal menyala setelah 60 detik. Menampilkan log:"
               echo "$SERVER_PASSWORD" | sudo -S docker logs --tail 30 besu-dev-node
               exit 1
