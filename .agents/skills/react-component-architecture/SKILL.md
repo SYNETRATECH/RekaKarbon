@@ -123,7 +123,18 @@ When creating or updating feature data in RekaKarbon:
 
 ---
 
-## 5 — Component Execution Check
+## 5 — Data Formatting & Utility Conventions
+
+- Components MUST consume raw numerical / ISO data from Zustand Store and apply formatters dynamically:
+  - Currency: `formatCurrency(amount)` from `src/lib/formatters.ts` -> `Rp 200.000.000`
+  - Carbon Tonnage: `formatCarbon(val)` from `src/lib/formatters.ts` -> `48.200 tCO2e`
+  - Land Area: `formatArea(val)` from `src/lib/formatters.ts` -> `2.450 ha`
+  - Dates: `formatDate(date)`, `formatDateTime(date)`, `formatLastSeen(date)` from `src/lib/dates.ts`
+- Do NOT write custom regex or inline string splits for currency or date formatting inside React components.
+
+---
+
+## 6 — Component Execution Check
 
 Before finishing component development, verify:
 

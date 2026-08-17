@@ -54,3 +54,14 @@ Aturan arsitektur client yang ditegakkan oleh `test:arch`: lapisan View (`compon
 2. **Abstraksi Repository**: Setiap fitur data WAJIB dibungkus dengan arsitektur Repository Pattern di `client/src/repositories/<feature>.repository.ts` menggunakan interface spesifik dan dua kelas implementasi (`Mock...Repository` dan `Api...Repository`) yang dikontrol melalui environment variable `VITE_USE_MOCK_DATA`.
 3. **Integrasi Zustand Store**: Komponen UI harus mengonsumsi data dari Zustand Store (`useCarbonStore.ts`), yang secara asinkron memanggil kelas repository terdaftar.
 4. **Skill Rujukan**: Rincian langkah pembuatan mock repository pattern dapat dibaca di Skill [.agents/skills/mock-repository-pattern/SKILL.md](.agents/skills/mock-repository-pattern/SKILL.md).
+
+---
+
+## 🔢 6. Aturan Format Data & Dynamic UI Rendering (API Payload Readiness)
+
+1. **Penyimpanan Data Mentah (Raw Domain Data)**: Interface domain di [client/src/types/](client/src/types/) dan fixture mock di [client/src/lib/mock/](client/src/lib/mock/) WAJIB menyimpan nilai numerik murni (`number`) untuk nominal uang, tonnage karbon, luas area, dan ukuran berkas. Tanggal WAJIB disimpan sebagai string ISO 8601 (`YYYY-MM-DD` atau ISO timestamp). Dilarang keras menyisipkan string format UI (seperti `"Rp 450 Juta"`, `"5.8 Miliar Ha"`, `"14 Jan 2026"`) di dalam model data backend/mock.
+2. **Penformatan UI Dinamis**: Seluruh penformatan tampilan visual WAJIB dilakukan secara dinamis pada komponen UI menggunakan modul terpusat:
+   - [client/src/lib/formatters.ts](client/src/lib/formatters.ts): `formatCurrency` (`Rp 200.000.000`), `formatCarbon` (`48.200 tCO2e`), `formatArea` (`2.450 ha`), `formatPercent`, `formatFileSize`, `formatNumber`.
+   - [client/src/lib/dates.ts](client/src/lib/dates.ts): `formatDate`, `formatLongDate`, `formatShortDate`, `formatDateTime`, `toDateOnlyISO`, `formatLastSeen`.
+3. **Standar Mata Uang & Zona Waktu**: Standar mata uang mengikuti notasi standar Rupiah Indonesia (contoh: `Rp 200.000.000` via `formatCurrency`), BUKAN imbuhan kata seperti `"200 juta"`. Zona waktu terstandarisasi ke `Asia/Jakarta` (`id-ID` locale).
+4. **Skill Rujukan**: Panduan lengkap format data dapat dibaca di Skill [.agents/skills/data-formatting-standards/SKILL.md](.agents/skills/data-formatting-standards/SKILL.md).

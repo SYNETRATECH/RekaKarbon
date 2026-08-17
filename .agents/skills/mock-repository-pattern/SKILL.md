@@ -10,7 +10,8 @@ Petunjuk ini mendefinisikan aturan dan standar wajib bagi seluruh AI Agent ketik
 ## 📌 Aturan Utama
 
 1. **Dilarang keras hardcode data dummy langsung di dalam komponen UI (`.jsx` / `.tsx`)**.
-2. **Setiap fitur baru WAJIB memiliki 3 komponen utama**:
+2. **Mock Data Harus Berupa Data Mentah (Raw Domain Data)**: Fixture mock di `src/lib/mock/` WAJIB menyimpan angka numerik murni (`number`) dan ISO dates (`YYYY-MM-DD`). Dilarang keras memasukkan pre-formatted UI strings (misal: `"Rp 450 Juta"`, `"14 Jan 2026"`) ke dalam mock fixture.
+3. **Setiap fitur baru WAJIB memiliki 3 komponen utama**:
    - **Type Interface** di `src/types/<feature>.ts`
    - **Static Mock Data** di `src/lib/mock/<feature>.ts`
    - **Repository Implementation** di `src/repositories/<feature>.repository.ts`
@@ -21,14 +22,15 @@ Petunjuk ini mendefinisikan aturan dan standar wajib bagi seluruh AI Agent ketik
 
 ### Langkah 1: Definisi Type Interface (`src/types/<feature>.ts`)
 
-Definisikan struktur data spesifik menggunakan TypeScript interface.
+Definisikan struktur data spesifik menggunakan TypeScript interface (gunakan tipe numerik & ISO string untuk tanggal).
 
 ```typescript
 // src/types/feature.ts
 export interface FeatureData {
   id: string;
   name: string;
-  value: number;
+  amountIDR: number; // 200000000 (BUKAN string "Rp 200 Juta")
+  createdDate: string; // "2026-02-14" (ISO 8601)
 }
 ```
 
@@ -40,7 +42,9 @@ Simpan data statis di dalam folder `src/lib/mock/`.
 // src/lib/mock/feature.ts
 import type { FeatureData } from '../../types';
 
-export const FEATURE_MOCK_DATA: FeatureData[] = [{ id: '1', name: 'Item Alpha', value: 100 }];
+export const FEATURE_MOCK_DATA: FeatureData[] = [
+  { id: '1', name: 'Item Alpha', amountIDR: 200000000, createdDate: '2026-02-14' },
+];
 ```
 
 ### Langkah 3: Implementasi Repository Pattern (`src/repositories/<feature>.repository.ts`)
