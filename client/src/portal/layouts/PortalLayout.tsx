@@ -7,6 +7,7 @@ import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function PortalLayout() {
   const { userRole, loginAsRole, userProfile, initializeData, isDataLoaded } = useCarbonStore();
@@ -37,7 +38,7 @@ export default function PortalLayout() {
   const activeTab = urlTab || 'dashboard';
 
   return (
-    <div className="flex h-screen w-screen bg-slate-100 overflow-hidden font-sans text-slate-800">
+    <SidebarProvider className="flex h-screen w-screen bg-slate-100 overflow-hidden font-sans text-slate-800">
       {/* PORTAL SIDEBAR */}
       <PortalSidebar />
 
@@ -108,6 +109,6 @@ export default function PortalLayout() {
 
       {/* Global Overlays & Audit Modals */}
       <Modals />
-    </div>
+    </SidebarProvider>
   );
 }
