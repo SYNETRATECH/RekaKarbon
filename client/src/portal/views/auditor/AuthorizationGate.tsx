@@ -1,10 +1,19 @@
-import { useState, ChangeEvent } from 'react';
+import { useState } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import { ShieldCheck, Cpu, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export default function AuthorizationGate() {
   const { certificationPreview, conservationAreas, authorizeMintOffsetCredit } = useCarbonStore();
@@ -78,15 +87,6 @@ export default function AuthorizationGate() {
   const [isMinting, setIsMinting] = useState(false);
   const [mintResult, setMintResult] = useState<{ success: boolean; txHash: string } | null>(null);
 
-  const handleProjectChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const name = e.target.value;
-    setSelectedProjectName(name);
-    const found = projectList.find((p: any) => p.name === name);
-    if (found) {
-      setCurrentProjectData(found);
-    }
-  };
-
   const handleAuthorize = async () => {
     setIsMinting(true);
     const res = await authorizeMintOffsetCredit({
@@ -159,29 +159,30 @@ export default function AuthorizationGate() {
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                   PROYEK KONSERVASI
                 </label>
-                <select
+                <Select
                   value={selectedProjectName}
-                  onChange={handleProjectChange}
-                  className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all cursor-pointer"
+                  onValueChange={(val) => {
+                    setSelectedProjectName(val);
+                  }}
                 >
-                  {projectList.map((p: any) => (
-                    <option key={p.id} value={p.name}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Proyek Konservasi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectList.map((p: any) => (
+                      <SelectItem key={p.id} value={p.name}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                   TANGGAL AUDIT
                 </label>
-                <Input
-                  type="date"
-                  value={auditDate}
-                  onChange={(e) => setAuditDate(e.target.value)}
-                  className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50/70 font-mono"
-                />
+                <DatePicker value={auditDate} onChange={(newDate) => setAuditDate(newDate)} />
               </div>
             </div>
 
@@ -218,13 +219,12 @@ export default function AuthorizationGate() {
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                 CATATAN LAPANGAN & TEMUAN AUDIT
               </label>
-              <textarea
+              <Textarea
                 rows={4}
                 value={auditNotes}
                 onChange={(e) => setAuditNotes(e.target.value)}
                 placeholder="Tuliskan ringkasan hasil uji kepatuhan metodologi dMRV dan verifikasi on-site..."
-                className="w-full p-4 text-xs font-medium rounded-2xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all leading-relaxed resize-none"
-              ></textarea>
+              />
             </div>
           </div>
 

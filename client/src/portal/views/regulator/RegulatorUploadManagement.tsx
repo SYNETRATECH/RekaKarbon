@@ -16,6 +16,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -355,35 +362,50 @@ export default function RegulatorUploadManagement() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="font-bold text-slate-600 block mb-1">Kategori Dokumen</label>
-                <select
+                <Select
                   value={formData.category}
-                  onChange={(e) =>
+                  onValueChange={(val) => {
+                    const labelMap: Record<string, string> = {
+                      sk_ptbae: 'SK Kuota PTBAE-PU',
+                      spe_grk: 'Sertifikat SPE-GRK',
+                      stp_djp: 'Surat Tagihan Pajak DJP',
+                      kth_sk: 'SK Pengesahan KTH',
+                    };
                     setFormData({
                       ...formData,
-                      category: e.target.value,
-                      categoryLabel: e.target.options[e.target.selectedIndex].text,
-                    })
-                  }
-                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none"
+                      category: val,
+                      categoryLabel: labelMap[val] || 'Dokumen Resmi',
+                    });
+                  }}
                 >
-                  <option value="sk_ptbae">SK Kuota PTBAE-PU</option>
-                  <option value="spe_grk">Sertifikat SPE-GRK</option>
-                  <option value="stp_djp">Surat Tagihan Pajak DJP</option>
-                  <option value="kth_sk">SK Pengesahan KTH</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sk_ptbae">SK Kuota PTBAE-PU</SelectItem>
+                    <SelectItem value="spe_grk">Sertifikat SPE-GRK</SelectItem>
+                    <SelectItem value="stp_djp">Surat Tagihan Pajak DJP</SelectItem>
+                    <SelectItem value="kth_sk">SK Pengesahan KTH</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="font-bold text-slate-600 block mb-1">Instansi Penerbit</label>
-                <select
+                <Select
                   value={formData.agencyIssuer}
-                  onChange={(e) => setFormData({ ...formData, agencyIssuer: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none"
+                  onValueChange={(val) => setFormData({ ...formData, agencyIssuer: val })}
                 >
-                  <option value="KLHK & DJP">KLHK & DJP Kemenkeu</option>
-                  <option value="KLHK">Kementerian LHK RI</option>
-                  <option value="DJP">Direktorat Jenderal Pajak</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Instansi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="KLHK & DJP">KLHK & DJP Kemenkeu</SelectItem>
+                    <SelectItem value="KLHK">Kementerian LHK RI</SelectItem>
+                    <SelectItem value="DJP">Direktorat Jenderal Pajak</SelectItem>
+                    <SelectItem value="Dishut Prov">Dinas Kehutanan Provinsi</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

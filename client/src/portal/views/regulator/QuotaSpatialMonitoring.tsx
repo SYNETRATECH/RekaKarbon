@@ -3,6 +3,13 @@ import { Send, CheckCircle2, ShieldCheck, Map as MapIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function QuotaSpatialMonitoring() {
   const [selectedEmitter, setSelectedEmitter] = useState('PT Semen Nusantara Tuban');
@@ -35,21 +42,22 @@ export default function QuotaSpatialMonitoring() {
             <div className="space-y-3">
               <div className="space-y-1">
                 <label className="font-bold text-slate-700">Pilih Industri Terdaftar:</label>
-                <select
-                  value={selectedEmitter}
-                  onChange={(e) => setSelectedEmitter(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-extrabold text-slate-900 focus:outline-none"
-                >
-                  <option value="PT Semen Nusantara Tuban">
-                    PT Semen Nusantara Tuban (Semen & Industri)
-                  </option>
-                  <option value="PLTU Suralaya Unit 1-8">
-                    PLTU Suralaya Unit 1-8 (Energi Listrik)
-                  </option>
-                  <option value="PT Bio Kertas Karawang">
-                    PT Bio Kertas Karawang (Kertas & Pulp)
-                  </option>
-                </select>
+                <Select value={selectedEmitter} onValueChange={setSelectedEmitter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Industri Terdaftar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PT Semen Nusantara Tuban">
+                      PT Semen Nusantara Tuban (Semen & Industri)
+                    </SelectItem>
+                    <SelectItem value="PLTU Suralaya Unit 1-8">
+                      PLTU Suralaya Unit 1-8 (Energi Listrik)
+                    </SelectItem>
+                    <SelectItem value="PT Bio Kertas Karawang">
+                      PT Bio Kertas Karawang (Kertas & Pulp)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1">

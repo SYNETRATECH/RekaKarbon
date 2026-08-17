@@ -1,6 +1,13 @@
 import { useState, FormEvent } from 'react';
 import { useCarbonStore } from '../../../store/useCarbonStore';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   UploadCloud,
   FileText,
   CheckCircle2,
@@ -18,7 +25,6 @@ import {
   Cpu,
   Check,
   ChevronRight,
-  ChevronDown,
   ArrowLeft,
 } from 'lucide-react';
 export default function EmissionReportsSector() {
@@ -104,18 +110,19 @@ export default function EmissionReportsSector() {
           <span className="text-xs font-extrabold text-slate-600 whitespace-nowrap">
             Tahun Kepatuhan:
           </span>
-          <div className="relative inline-block">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="appearance-none bg-slate-100 hover:bg-slate-200/70 border border-slate-200 text-slate-900 font-extrabold text-xs rounded-xl pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer transition-all"
-            >
-              <option value={2026}>FY 2026 (Aktif)</option>
-              <option value={2025}>FY 2025 (Arsip Audit)</option>
-              <option value={2024}>FY 2024 (Arsip Audit)</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
+          <Select
+            value={String(selectedYear)}
+            onValueChange={(val) => setSelectedYear(Number(val))}
+          >
+            <SelectTrigger className="h-8 text-xs font-extrabold w-44">
+              <SelectValue placeholder="Pilih Tahun" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2026">FY 2026 (Aktif)</SelectItem>
+              <SelectItem value="2025">FY 2025 (Arsip Audit)</SelectItem>
+              <SelectItem value="2024">FY 2024 (Arsip Audit)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

@@ -5,6 +5,13 @@ import { useCarbonStore } from '../../../store/useCarbonStore';
 import { sortPolygonCoordinates } from '../../../utils/geodetics';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { ForestProjectItem } from '../../../types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const TILE_URLS: {
   satellite: string;
@@ -303,25 +310,31 @@ export default function ProjectEditorPage() {
                 <label className="text-xs font-extrabold text-slate-700 block mb-1">
                   Kategori Hutan
                 </label>
-                <select
+                <Select
                   value={formData.category}
-                  onChange={(e) => {
+                  onValueChange={(val) => {
                     const labelMap: Record<string, string> = {
                       mangrove: 'Mangrove & Blue Carbon',
                       peatland: 'Gambut / Peatland Restoration',
                       agroforestry: 'Agroforestry & Hutan Rakyat',
                       reforestation: 'Restorasi Hutan Lindung',
                     };
-                    handleInputChange('category', e.target.value);
-                    handleInputChange('categoryLabel', labelMap[e.target.value] || 'Konservasi');
+                    handleInputChange('category', val);
+                    if (labelMap[val]) {
+                      handleInputChange('categoryLabel', labelMap[val]);
+                    }
                   }}
-                  className="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none"
                 >
-                  <option value="mangrove">Mangrove</option>
-                  <option value="peatland">Gambut</option>
-                  <option value="agroforestry">Agroforestry</option>
-                  <option value="reforestation">Restorasi Hutan</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Kategori Hutan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mangrove">Mangrove & Blue Carbon</SelectItem>
+                    <SelectItem value="peatland">Gambut / Peatland Restoration</SelectItem>
+                    <SelectItem value="agroforestry">Agroforestry & Hutan Rakyat</SelectItem>
+                    <SelectItem value="reforestation">Restorasi Hutan Lindung</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
