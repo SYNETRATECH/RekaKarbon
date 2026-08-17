@@ -1,13 +1,4 @@
-import type {
-  AnomalySummary,
-  AiAnomalyLog,
-  EnergyCorrelationItem,
-  SpatialSummary,
-  ConservationArea,
-  DroneScan,
-  KthPolygon,
-  KthLog,
-} from '../../types';
+import type { AnomalySummary, AiAnomalyLog, EnergyCorrelationItem } from '../../types';
 
 export const mockAnomalySummary: AnomalySummary = {
   emitenTerdeteksiAnomali: 12,

@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import type L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useCarbonStore } from '../../../store/useCarbonStore';
-import { calculateGeodetics, sortPolygonCoordinates } from '../../../utils/geodetics';
-import { ArrowLeft, Save, MapPin, Plus, Trash2 } from 'lucide-react';
+import { sortPolygonCoordinates } from '../../../utils/geodetics';
+import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { ForestProjectItem } from '../../../types';
 
 const TILE_URLS: {
@@ -54,7 +54,7 @@ export default function ProjectEditorPage() {
     ]
   );
 
-  const [activeTileType, setActiveTileType] = useState<MapType>('satellite');
+  const [activeTileType] = useState<MapType>('satellite');
   const [LModule, setLModule] = useState<typeof L | null>(null);
 
   // Map DOM & Leaflet Refs
@@ -173,13 +173,6 @@ export default function ProjectEditorPage() {
       markersRef.current.push(marker);
     });
   }, [coordinates, LModule]);
-
-  // Geodetic Area Calculation
-  const projectCenter: [number, number] =
-    coordinates && coordinates.length > 0 && Array.isArray(coordinates[0])
-      ? [coordinates[0][0], coordinates[0][1]]
-      : [-0.7893, 113.9213];
-  const geodeticStats = calculateGeodetics((coordinates || []) as any, projectCenter);
 
   // Form Inputs Handler
   const handleInputChange = (field: string, value: any) => {
