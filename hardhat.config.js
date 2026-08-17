@@ -4,7 +4,7 @@ export default {
   solidity: {
     version: "0.8.24", // Versi solidity yang stabil dan disupport openzeppelin
     settings: {
-      evmVersion: "cancun",
+      evmVersion: "paris", // Menggunakan Paris untuk menghindari error opcode 0x5f (PUSH0) di Besu dev network
       optimizer: {
         enabled: true,
         runs: 200
