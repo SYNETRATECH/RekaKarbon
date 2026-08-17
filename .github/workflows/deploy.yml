@@ -1,0 +1,55 @@
+name: Continuous Deployment (CD)
+
+on:
+  workflow_run:
+    workflows: ["Continuous Integration (CI)"]
+    types:
+      - completed
+    branches: [ "main" ]
+
+jobs:
+  deploy-to-server:
+    # Hanya berjalan jika CI (Testing) berhasil
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 🔐 Connect to Tailscale Network
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.TS_AUTHKEY }}
+        tags: tag:ci
+
+    - name: 🚀 Deploy to Production Server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        # Jika Anda menggunakan port selain 22, tambahkan baris 'port' di bawah ini:
+        # port: 2227
+        # Jika Anda memakai password (bukan SSH key), hapus 'key:' dan gunakan:
+        # password: ${{ secrets.SERVER_PASSWORD }}
+        
+        # Script ini akan dieksekusi di dalam server Anda secara otomatis
+        script: |
+          echo "Memasuki direktori proyek..."
+          # Pastikan Anda sudah pernah melakukan 'git clone' di server pada folder ~/VM_BLOCKHAIN
+          cd ~/VM_BLOCKHAIN
+          
+          echo "Menarik kode terbaru dari GitHub..."
+          git pull origin main
+          
+          echo "Menginstall dependensi..."
+          npm ci
+          
+          echo "Menjalankan Docker Hyperledger Besu..."
+          docker-compose up -d
+          
+          echo "Menunggu Node Besu siap (sleep 10s)..."
+          sleep 10
+          
+          echo "Melakukan Deployment Smart Contract ke Node Besu..."
+          npx hardhat run scripts/deploy.js --network besu_local
+          
+          echo "✅ DEPLOYMENT SERVER SELESAI!"
