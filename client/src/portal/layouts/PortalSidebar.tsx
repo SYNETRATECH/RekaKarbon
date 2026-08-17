@@ -109,8 +109,7 @@ export default function PortalSidebar() {
             {navItems.map((item) => {
               const IconComponent = item.icon;
               const targetPath = `/portal/${currentRole}/${item.id}`;
-              const isActive =
-                activeTab === item.id ||
+              const isDefaultTab =
                 (currentRole === 'auditor' &&
                   (!activeTab || activeTab === 'anomaly') &&
                   item.id === 'audit') ||
@@ -118,24 +117,29 @@ export default function PortalSidebar() {
                 (currentRole === 'emitter' && !activeTab && item.id === 'compliance');
               return (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton isActive={isActive} asChild>
-                    <NavLink to={targetPath}>
-                      <div className="flex items-center gap-3 text-left min-w-0 flex-1">
-                        <IconComponent
-                          className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#00C48C]' : 'text-slate-400'}`}
-                        />
-                        <span className="text-left leading-snug truncate">{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        <Badge
-                          variant="secondary"
-                          className={`shrink-0 text-[10px] font-black border-none ${item.badgeBg || 'bg-amber-500 text-white'}`}
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  <NavLink to={targetPath} end={item.id !== 'compliance' && item.id !== 'forest'}>
+                    {({ isActive }) => {
+                      const active = isActive || isDefaultTab;
+                      return (
+                        <SidebarMenuButton isActive={active}>
+                          <div className="flex items-center gap-3 text-left min-w-0 flex-1">
+                            <IconComponent
+                              className={`w-5 h-5 shrink-0 ${active ? 'text-[#00C48C]' : 'text-slate-400'}`}
+                            />
+                            <span className="text-left leading-snug truncate">{item.label}</span>
+                          </div>
+                          {item.badge && (
+                            <Badge
+                              variant="secondary"
+                              className={`shrink-0 text-[10px] font-black border-none ${item.badgeBg || 'bg-amber-500 text-white'}`}
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </SidebarMenuButton>
+                      );
+                    }}
+                  </NavLink>
                 </SidebarMenuItem>
               );
             })}
