@@ -64,7 +64,9 @@ jobs:
             --rpc-ws-enabled=true \
             --rpc-ws-host=0.0.0.0 \
             --host-allowlist="*" \
-            --min-gas-price=0
+            --min-gas-price=0 \
+            --miner-enabled=true \
+            --miner-coinbase=0x627306090abaB3A6e1400e9345bC60c78a8BEf57
           
           echo "=== Menunggu Node Besu siap (max 60 detik) ==="
           for i in \$(seq 1 12); do
