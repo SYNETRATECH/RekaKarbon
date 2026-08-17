@@ -14,7 +14,7 @@ export default {
   networks: {
     besu_local: {
       url: "http://127.0.0.1:8545",
-      chainId: 1337, // Default chainId untuk network "dev" di Hyperledger Besu
+      chainId: 2018, // Chain ID sebenarnya untuk mode --network=dev di Hyperledger Besu
       // Ini adalah private key default untuk node 'dev' di Besu yang memiliki saldo ETH berlimpah
       accounts: ["0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"]
     }
