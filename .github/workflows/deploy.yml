@@ -44,8 +44,9 @@ jobs:
         script: |
           set -e
           
-          echo "=== Membersihkan kontainer lama (jika ada) ==="
+          echo "=== Membersihkan kontainer & data lama (jika ada) ==="
           echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker rm -f besu-dev-node 2>/dev/null || true
+          echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker volume rm besu_data 2>/dev/null || true
           
           echo "=== Menjalankan Docker Hyperledger Besu ==="
           echo ${{ secrets.SERVER_PASSWORD }} | sudo -S docker run -d \
@@ -53,7 +54,6 @@ jobs:
             --restart always \
             -p 8545:8545 \
             -p 8546:8546 \
-            -v besu_data:/opt/besu/data \
             hyperledger/besu:latest \
             --network=dev \
             --rpc-http-enabled=true \
