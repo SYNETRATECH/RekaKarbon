@@ -1,4 +1,5 @@
 import { useCarbonStore } from '../store/useCarbonStore';
+import LogoutDialog from './LogoutDialog';
 import {
   Globe,
   FileText,
@@ -1407,6 +1408,7 @@ export default function Modals() {
           </div>
         </div>
       )}
+      <LogoutDialog />
     </>
   );
 }

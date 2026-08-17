@@ -230,6 +230,8 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   setIsDrawerOpen: (isOpen) => set({ isDrawerOpen: isOpen }),
   setIsLoginModalOpen: (isOpen) => set({ isLoginModalOpen: isOpen }),
+  isLogoutDialogOpen: false,
+  setIsLogoutDialogOpen: (isOpen) => set({ isLogoutDialogOpen: isOpen }),
   setAdminActiveTab: (tab) => set({ adminActiveTab: tab }),
   setSubRole: (roleKey) => set({ subRole: roleKey }),
 
@@ -264,6 +266,7 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
     set({
       userRole: null,
       adminActiveTab: 'dashboard',
+      isLogoutDialogOpen: false,
     });
   },
   setSearchQuery: (query) => set({ searchQuery: query }),

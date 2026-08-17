@@ -1,4 +1,4 @@
-import { useNavigate, useParams, NavLink } from 'react-router';
+import { useParams, NavLink } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   LayoutDashboard,
@@ -41,15 +41,13 @@ interface NavItem {
 }
 
 export default function PortalSidebar() {
-  const { userRole, logout } = useCarbonStore();
+  const { userRole, setIsLogoutDialogOpen } = useCarbonStore();
   const { role: urlRole, tab: activeTab } = useParams();
-  const navigate = useNavigate();
 
   const currentRole = urlRole || userRole || 'emitter';
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    setIsLogoutDialogOpen(true);
   };
 
   // Navigation Items per Role
