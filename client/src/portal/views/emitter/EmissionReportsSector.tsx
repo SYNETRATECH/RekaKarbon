@@ -12,6 +12,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -756,55 +764,53 @@ export default function EmissionReportsSector() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                <th className="py-3 px-4">Judul Berkas Laporan</th>
-                <th className="py-3 px-4">Tahun</th>
-                <th className="py-3 px-4">Tanggal Unggah</th>
-                <th className="py-3 px-4">Ukuran</th>
-                <th className="py-3 px-4">Total Emisi</th>
-                <th className="py-3 px-4">Status Verifikasi</th>
-                <th className="py-3 px-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {reports.map((rep: any) => (
-                <tr key={rep.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3.5 px-4 font-extrabold text-slate-900 flex items-center gap-2.5">
-                    <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{rep.title}</span>
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-slate-700">{rep.year}</td>
-                  <td className="py-3.5 px-4 text-slate-500 font-medium">{rep.uploadDate}</td>
-                  <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">
-                    {rep.fileSize}
-                  </td>
-                  <td className="py-3.5 px-4 font-black text-rose-500 font-mono">
-                    {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO2e
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      Lolos Audit AI dMRV
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <button
-                      onClick={() => setDownloadNotice(rep.fileName)}
-                      className="p-2 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer inline-flex items-center gap-1 font-extrabold text-xs"
-                      title="Unduh Berkas PDF Resmi"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>Unduh</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Judul Berkas Laporan</TableHead>
+              <TableHead>Tahun</TableHead>
+              <TableHead>Tanggal Unggah</TableHead>
+              <TableHead>Ukuran</TableHead>
+              <TableHead>Total Emisi</TableHead>
+              <TableHead>Status Verifikasi</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {reports.map((rep: any) => (
+              <TableRow key={rep.id}>
+                <TableCell className="font-extrabold text-slate-900 flex items-center gap-2.5">
+                  <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{rep.title}</span>
+                </TableCell>
+                <TableCell className="font-mono font-bold text-slate-700">{rep.year}</TableCell>
+                <TableCell className="text-slate-500 font-medium">{rep.uploadDate}</TableCell>
+                <TableCell className="text-slate-500 font-mono text-[11px]">
+                  {rep.fileSize}
+                </TableCell>
+                <TableCell className="font-black text-rose-500 font-mono">
+                  {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO2e
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    Lolos Audit AI dMRV
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <button
+                    onClick={() => setDownloadNotice(rep.fileName)}
+                    className="p-2 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer inline-flex items-center gap-1 font-extrabold text-xs"
+                    title="Unduh Berkas PDF Resmi"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Unduh</span>
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
       {/* AI CROSS-VARIABLE AUDIT SIMULATION MODAL */}

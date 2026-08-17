@@ -12,6 +12,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import {
   Coins,
   CheckCircle2,
   Clock,
@@ -412,136 +420,134 @@ export default function KthTransactionsMonitoring() {
 
       {/* TRANSACTIONS TABLE */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50 text-slate-400 font-black uppercase text-[10px] tracking-wider border-y border-slate-200">
-                <th className="py-3 px-4">TxHash Blockchain</th>
-                <th className="py-3 px-4">Tanggal Transaksi</th>
-                <th className="py-3 px-4">KTH Penerima Insentif</th>
-                <th className="py-3 px-4">Proyek Kehutanan Acuan</th>
-                <th className="py-3 px-4">Nominal Insentif (IDR)</th>
-                <th className="py-3 px-4">Status Verifikasi</th>
-                <th className="py-3 px-4 text-right">Aksi / Bukti Transfer</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredTxs.map((tx: any) => (
-                <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 px-4 font-mono text-[11px]">
-                    <div className="flex items-center gap-1.5 text-slate-700">
-                      <span className="font-bold">
-                        {tx.txHash.substring(0, 10)}...{tx.txHash.substring(40)}
-                      </span>
-                      <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    </div>
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-500 font-semibold">
-                    {formatDateTime(tx.date)}
-                  </td>
-                  <td className="py-3.5 px-4 font-extrabold text-slate-900">{tx.kthName}</td>
-                  <td className="py-3.5 px-4 text-slate-700 font-semibold">{tx.projectName}</td>
-                  <td className="py-3.5 px-4 font-black text-emerald-700">
-                    {formatCurrency(tx.amountIDR)}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    {tx.status === 'completed' ? (
-                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Berhasil Dicairkan
-                      </span>
-                    ) : tx.status === 'flagged' ? (
-                      <span className="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3 text-rose-600 animate-pulse" />
-                        Bermasalah
-                      </span>
-                    ) : tx.status === 'awaiting_proof' ? (
-                      <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-indigo-600" />
-                        Verifikasi Laporan
-                      </span>
-                    ) : tx.status === 'awaiting_farmer' ? (
-                      <span className="bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-sky-600" />
-                        Menunggu Laporan Tani
-                      </span>
-                    ) : (
-                      <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-amber-600" />
-                        Pengajuan Baru
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    {tx.status === 'completed' ? (
-                      <button
-                        onClick={() => setSelectedTxReceipt(tx)}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-extrabold text-[11px] transition-colors ml-auto inline-flex items-center gap-1.5 cursor-pointer shadow-2xs group"
-                        title="Lihat Bukti Transfer Insentif KTH"
-                      >
-                        <FileText className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
-                        <span>Lihat Resi</span>
-                      </button>
-                    ) : tx.status === 'flagged' ? (
-                      <button
-                        onClick={() => {
-                          setShowFlagForm(false);
-                          setFlagNoteInput('');
-                          if (tx.proofImages && tx.proofImages.length > 0) {
-                            setVerifyingProofTx(tx);
-                          } else {
-                            setReviewingTx(tx);
-                          }
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300/80 font-extrabold text-[11px] transition-colors ml-auto inline-flex items-center gap-1.5 cursor-pointer shadow-2xs group hover:scale-102"
-                        title="Tinjau Detail Transaksi Bermasalah & Catatan KLHK"
-                      >
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 group-hover:scale-110 transition-transform" />
-                        <span>Tinjau Masalah</span>
-                      </button>
-                    ) : tx.status === 'awaiting_proof' ? (
-                      <button
-                        onClick={() => {
-                          setShowFlagForm(false);
-                          setFlagNoteInput('');
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>TxHash Blockchain</TableHead>
+              <TableHead>Tanggal Transaksi</TableHead>
+              <TableHead>KTH Penerima Insentif</TableHead>
+              <TableHead>Proyek Kehutanan Acuan</TableHead>
+              <TableHead>Nominal Insentif (IDR)</TableHead>
+              <TableHead>Status Verifikasi</TableHead>
+              <TableHead className="text-right">Aksi / Bukti Transfer</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTxs.map((tx: any) => (
+              <TableRow key={tx.id}>
+                <TableCell className="font-mono text-[11px]">
+                  <div className="flex items-center gap-1.5 text-slate-700">
+                    <span className="font-bold">
+                      {tx.txHash.substring(0, 10)}...{tx.txHash.substring(40)}
+                    </span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </div>
+                </TableCell>
+                <TableCell className="text-slate-500 font-semibold">
+                  {formatDateTime(tx.date)}
+                </TableCell>
+                <TableCell className="font-extrabold text-slate-900">{tx.kthName}</TableCell>
+                <TableCell className="text-slate-700 font-semibold">{tx.projectName}</TableCell>
+                <TableCell className="font-black text-emerald-700">
+                  {formatCurrency(tx.amountIDR)}
+                </TableCell>
+                <TableCell>
+                  {tx.status === 'completed' ? (
+                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Berhasil Dicairkan
+                    </span>
+                  ) : tx.status === 'flagged' ? (
+                    <span className="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-rose-600 animate-pulse" />
+                      Bermasalah
+                    </span>
+                  ) : tx.status === 'awaiting_proof' ? (
+                    <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-indigo-600" />
+                      Verifikasi Laporan
+                    </span>
+                  ) : tx.status === 'awaiting_farmer' ? (
+                    <span className="bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-sky-600" />
+                      Menunggu Laporan Tani
+                    </span>
+                  ) : (
+                    <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-amber-600" />
+                      Pengajuan Baru
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  {tx.status === 'completed' ? (
+                    <button
+                      onClick={() => setSelectedTxReceipt(tx)}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-extrabold text-[11px] transition-colors ml-auto inline-flex items-center gap-1.5 cursor-pointer shadow-2xs group"
+                      title="Lihat Bukti Transfer Insentif KTH"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
+                      <span>Lihat Resi</span>
+                    </button>
+                  ) : tx.status === 'flagged' ? (
+                    <button
+                      onClick={() => {
+                        setShowFlagForm(false);
+                        setFlagNoteInput('');
+                        if (tx.proofImages && tx.proofImages.length > 0) {
                           setVerifyingProofTx(tx);
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300/80 font-extrabold text-[11px] transition-colors ml-auto inline-flex items-center gap-1.5 cursor-pointer shadow-2xs group hover:scale-102"
-                        title="Verifikasi Nota & Laporan Belanja KTH"
-                      >
-                        <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-600 group-hover:scale-110 transition-transform" />
-                        <span>Verifikasi Laporan</span>
-                      </button>
-                    ) : tx.status === 'awaiting_farmer' ? (
-                      <button
-                        disabled
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-400 font-extrabold text-[11px] ml-auto inline-flex items-center gap-1.5 cursor-not-allowed border border-slate-200 opacity-90"
-                        title="Dana telah dicairkan ke KTH. Menunggu kelompok tani mengunggah nota & foto bukti belanja."
-                      >
-                        <Clock className="w-3.5 h-3.5 text-sky-500" />
-                        <span>Menunggu Input Tani</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setHoldNotice(false);
-                          setShowFlagForm(false);
-                          setFlagNoteInput('');
+                        } else {
                           setReviewingTx(tx);
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300/80 font-extrabold text-[11px] transition-colors ml-auto inline-flex items-center gap-1.5 cursor-pointer shadow-2xs group hover:scale-102"
-                        title="Tinjau Permintaan Insentif Tani & Data Proyek"
-                      >
-                        <Clock className="w-3.5 h-3.5 text-amber-600 group-hover:scale-110 transition-transform" />
-                        <span>Tinjau Permintaan</span>
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300/80 font-extrabold text-[11px] transition-colors ml-auto inline-flex items-center gap-1.5 cursor-pointer shadow-2xs group hover:scale-102"
+                      title="Tinjau Detail Transaksi Bermasalah & Catatan KLHK"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600 group-hover:scale-110 transition-transform" />
+                      <span>Tinjau Masalah</span>
+                    </button>
+                  ) : tx.status === 'awaiting_proof' ? (
+                    <button
+                      onClick={() => {
+                        setShowFlagForm(false);
+                        setFlagNoteInput('');
+                        setVerifyingProofTx(tx);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300/80 font-extrabold text-[11px] transition-colors ml-auto inline-flex items-center gap-1.5 cursor-pointer shadow-2xs group hover:scale-102"
+                      title="Verifikasi Nota & Laporan Belanja KTH"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-600 group-hover:scale-110 transition-transform" />
+                      <span>Verifikasi Laporan</span>
+                    </button>
+                  ) : tx.status === 'awaiting_farmer' ? (
+                    <button
+                      disabled
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-400 font-extrabold text-[11px] ml-auto inline-flex items-center gap-1.5 cursor-not-allowed border border-slate-200 opacity-90"
+                      title="Dana telah dicairkan ke KTH. Menunggu kelompok tani mengunggah nota & foto bukti belanja."
+                    >
+                      <Clock className="w-3.5 h-3.5 text-sky-500" />
+                      <span>Menunggu Input Tani</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setHoldNotice(false);
+                        setShowFlagForm(false);
+                        setFlagNoteInput('');
+                        setReviewingTx(tx);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300/80 font-extrabold text-[11px] transition-colors ml-auto inline-flex items-center gap-1.5 cursor-pointer shadow-2xs group hover:scale-102"
+                      title="Tinjau Permintaan Insentif Tani & Data Proyek"
+                    >
+                      <Clock className="w-3.5 h-3.5 text-amber-600 group-hover:scale-110 transition-transform" />
+                      <span>Tinjau Permintaan</span>
+                    </button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
       {/* STAGE 1 MODAL: REVIEW MODAL (PENGAJUAN BARU / BERMASALAH) */}
@@ -765,64 +771,49 @@ export default function KthTransactionsMonitoring() {
                   <Package className="w-4 h-4 text-emerald-600" />
                   3. RINCIAN BARANG & RINCIAN FAKTUR (RENCANA ALOKASI DANA)
                 </span>
-                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-100 text-slate-600 text-[9px] uppercase font-bold">
-                      <tr>
-                        <th className="p-2.5 border-b">Nama Barang / Deskripsi Jasa</th>
-                        <th className="p-2.5 border-b text-center">Volume</th>
-                        <th className="p-2.5 border-b text-right">Harga Satuan</th>
-                        <th className="p-2.5 border-b text-right">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-[10px]">
-                      {reviewingTx.items && reviewingTx.items.length > 0 ? (
-                        reviewingTx.items.map((item: any, i: number) => (
-                          <tr key={i} className="hover:bg-slate-50">
-                            <td className="p-2.5 font-medium text-slate-800">{item.name}</td>
-                            <td className="p-2.5 text-center font-mono font-semibold text-slate-600">
-                              {item.qty}
-                            </td>
-                            <td className="p-2.5 text-right font-mono text-slate-600">
-                              Rp {item.price.toLocaleString('id-ID')}
-                            </td>
-                            <td className="p-2.5 text-right font-mono font-bold text-emerald-800">
-                              Rp {item.total.toLocaleString('id-ID')}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr className="hover:bg-slate-50">
-                          <td className="p-2.5 font-medium text-slate-800">
-                            Insentif Pengadaan & Pemeliharaan Zona KTH
-                          </td>
-                          <td className="p-2.5 text-center font-mono font-semibold text-slate-600">
-                            1 Paket
-                          </td>
-                          <td className="p-2.5 text-right font-mono text-slate-600">
-                            {reviewingTx.amountIDR}
-                          </td>
-                          <td className="p-2.5 text-right font-mono font-bold text-emerald-800">
-                            {reviewingTx.amountIDR}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                    <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="p-2.5 text-right uppercase text-[9px] text-slate-500"
-                        >
-                          Total Rencana Faktur:
-                        </td>
-                        <td className="p-2.5 text-right font-mono font-black text-slate-900 text-xs">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nama Barang / Deskripsi Jasa</TableHead>
+                      <TableHead className="text-center">Volume</TableHead>
+                      <TableHead className="text-right">Harga Satuan</TableHead>
+                      <TableHead className="text-right">Subtotal</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reviewingTx.items && reviewingTx.items.length > 0 ? (
+                      reviewingTx.items.map((item: any, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
+                          <TableCell className="text-center font-mono font-semibold text-slate-600">
+                            {item.qty}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-slate-600">
+                            Rp {item.price.toLocaleString('id-ID')}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-emerald-800">
+                            Rp {item.total.toLocaleString('id-ID')}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell className="font-medium text-slate-800">
+                          Insentif Pengadaan & Pemeliharaan Zona KTH
+                        </TableCell>
+                        <TableCell className="text-center font-mono font-semibold text-slate-600">
+                          1 Paket
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-slate-600">
                           {reviewingTx.amountIDR}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold text-emerald-800">
+                          {reviewingTx.amountIDR}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* KLHK ISSUE FLAGGING FORM */}
@@ -1006,64 +997,49 @@ export default function KthTransactionsMonitoring() {
                   <Package className="w-4 h-4 text-indigo-600" />
                   3. RINCIAN BARANG & FAKTUR TERBELI
                 </span>
-                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-100 text-slate-600 text-[9px] uppercase font-bold">
-                      <tr>
-                        <th className="p-2.5 border-b">Nama Barang / Deskripsi Jasa</th>
-                        <th className="p-2.5 border-b text-center">Volume</th>
-                        <th className="p-2.5 border-b text-right">Harga Satuan</th>
-                        <th className="p-2.5 border-b text-right">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-[10px]">
-                      {verifyingProofTx.items && verifyingProofTx.items.length > 0 ? (
-                        verifyingProofTx.items.map((item: any, i: number) => (
-                          <tr key={i} className="hover:bg-slate-50">
-                            <td className="p-2.5 font-medium text-slate-800">{item.name}</td>
-                            <td className="p-2.5 text-center font-mono font-semibold text-slate-600">
-                              {item.qty}
-                            </td>
-                            <td className="p-2.5 text-right font-mono text-slate-600">
-                              Rp {item.price.toLocaleString('id-ID')}
-                            </td>
-                            <td className="p-2.5 text-right font-mono font-bold text-indigo-800">
-                              Rp {item.total.toLocaleString('id-ID')}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr className="hover:bg-slate-50">
-                          <td className="p-2.5 font-medium text-slate-800">
-                            Insentif Kegiatan Pemeliharaan KTH & Alat Restorasi
-                          </td>
-                          <td className="p-2.5 text-center font-mono font-semibold text-slate-600">
-                            1 Paket
-                          </td>
-                          <td className="p-2.5 text-right font-mono text-slate-600">
-                            {verifyingProofTx.amountIDR}
-                          </td>
-                          <td className="p-2.5 text-right font-mono font-bold text-indigo-800">
-                            {verifyingProofTx.amountIDR}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                    <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="p-2.5 text-right uppercase text-[9px] text-slate-500"
-                        >
-                          Total Faktur Pembelian:
-                        </td>
-                        <td className="p-2.5 text-right font-mono font-black text-slate-900 text-xs">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nama Barang / Deskripsi Jasa</TableHead>
+                      <TableHead className="text-center">Volume</TableHead>
+                      <TableHead className="text-right">Harga Satuan</TableHead>
+                      <TableHead className="text-right">Subtotal</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {verifyingProofTx.items && verifyingProofTx.items.length > 0 ? (
+                      verifyingProofTx.items.map((item: any, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
+                          <TableCell className="text-center font-mono font-semibold text-slate-600">
+                            {item.qty}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-slate-600">
+                            Rp {item.price.toLocaleString('id-ID')}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-indigo-800">
+                            Rp {item.total.toLocaleString('id-ID')}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell className="font-medium text-slate-800">
+                          Insentif Kegiatan Pemeliharaan KTH & Alat Restorasi
+                        </TableCell>
+                        <TableCell className="text-center font-mono font-semibold text-slate-600">
+                          1 Paket
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-slate-600">
                           {verifyingProofTx.amountIDR}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold text-indigo-800">
+                          {verifyingProofTx.amountIDR}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* SECTION 4: GALERI BUKTI FISIK LAPANGAN & NOTA DIGITAL */}
@@ -1241,30 +1217,28 @@ export default function KthTransactionsMonitoring() {
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
                     RINCIAN BARANG & RINCIAN FAKTUR
                   </span>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-slate-100 text-slate-600 text-[9px] uppercase font-bold">
-                        <tr>
-                          <th className="p-2 border-b">Barang / Jasa</th>
-                          <th className="p-2 border-b text-center">Vol</th>
-                          <th className="p-2 border-b text-right">Subtotal</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-[10px]">
-                        {selectedTxReceipt.items.map((item: any, i: number) => (
-                          <tr key={i}>
-                            <td className="p-2 font-medium text-slate-800">{item.name}</td>
-                            <td className="p-2 text-center font-mono font-semibold text-slate-500">
-                              {item.qty}
-                            </td>
-                            <td className="p-2 text-right font-mono font-bold text-emerald-800">
-                              Rp {item.total.toLocaleString('id-ID')}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Barang / Jasa</TableHead>
+                        <TableHead className="text-center">Vol</TableHead>
+                        <TableHead className="text-right">Subtotal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedTxReceipt.items.map((item: any, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
+                          <TableCell className="text-center font-mono font-semibold text-slate-500">
+                            {item.qty}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-emerald-800">
+                            Rp {item.total.toLocaleString('id-ID')}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
 

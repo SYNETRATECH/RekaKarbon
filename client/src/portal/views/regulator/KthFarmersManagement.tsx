@@ -14,6 +14,14 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../../../lib/formatters';
 import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 
 export default function KthFarmersManagement() {
   const { kthGroups: groups, addKTHGroup, updateKTHGroup, deleteKTHGroup } = useCarbonStore();
@@ -138,83 +146,81 @@ export default function KthFarmersManagement() {
 
       {/* KTH GROUPS TABLE */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50 text-slate-400 font-black uppercase text-[10px] tracking-wider border-y border-slate-200">
-                <th className="py-3 px-4">Kode KTH</th>
-                <th className="py-3 px-4">Nama Kelompok Tani Hutan</th>
-                <th className="py-3 px-4">Ketua Pengurus & Anggota</th>
-                <th className="py-3 px-4">Wilayah Operasional</th>
-                <th className="py-3 px-4">No. Registrasi SK KLHK</th>
-                <th className="py-3 px-4">Total Insentif Diterima</th>
-                <th className="py-3 px-4">Status KYB</th>
-                <th className="py-3 px-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredGroups.map((kth: any) => (
-                <tr key={kth.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 px-4 font-mono font-black text-slate-900">{kth.id}</td>
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <div>
-                        <span className="font-extrabold text-slate-900 block">{kth.groupName}</span>
-                        <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                          <Wallet className="w-3 h-3 text-slate-300" />
-                          {kth.walletAddress.substring(0, 10)}...{kth.walletAddress.substring(34)}
-                        </span>
-                      </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Kode KTH</TableHead>
+              <TableHead>Nama Kelompok Tani Hutan</TableHead>
+              <TableHead>Ketua Pengurus & Anggota</TableHead>
+              <TableHead>Wilayah Operasional</TableHead>
+              <TableHead>No. Registrasi SK KLHK</TableHead>
+              <TableHead>Total Insentif Diterima</TableHead>
+              <TableHead>Status KYB</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredGroups.map((kth: any) => (
+              <TableRow key={kth.id}>
+                <TableCell className="font-mono font-black text-slate-900">{kth.id}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div>
+                      <span className="font-extrabold text-slate-900 block">{kth.groupName}</span>
+                      <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                        <Wallet className="w-3 h-3 text-slate-300" />
+                        {kth.walletAddress.substring(0, 10)}...{kth.walletAddress.substring(34)}
+                      </span>
                     </div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="font-extrabold text-slate-900 block">{kth.leaderName}</span>
-                    <span className="text-[10px] font-bold text-slate-400 block">
-                      {kth.memberCount} Anggota Terdaftar
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="font-extrabold text-slate-900 block">{kth.leaderName}</span>
+                  <span className="text-[10px] font-bold text-slate-400 block">
+                    {kth.memberCount} Anggota Terdaftar
+                  </span>
+                </TableCell>
+                <TableCell className="text-slate-600 font-semibold">{kth.location}</TableCell>
+                <TableCell className="font-mono text-[11px] font-bold text-slate-800">
+                  {kth.registrationNumber}
+                </TableCell>
+                <TableCell className="font-black text-emerald-700">
+                  {formatCurrency(kth.totalIncentiveReceivedIDR)}
+                </TableCell>
+                <TableCell>
+                  {kth.kybStatus === 'verified' ? (
+                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Terverifikasi KYB
                     </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-600 font-semibold">{kth.location}</td>
-                  <td className="py-3.5 px-4 font-mono text-[11px] font-bold text-slate-800">
-                    {kth.registrationNumber}
-                  </td>
-                  <td className="py-3.5 px-4 font-black text-emerald-700">
-                    {formatCurrency(kth.totalIncentiveReceivedIDR)}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    {kth.kybStatus === 'verified' ? (
-                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Terverifikasi KYB
-                      </span>
-                    ) : (
-                      <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-amber-600" />
-                        Menunggu Dokumen
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 text-right space-x-2">
-                    <button
-                      onClick={() => openEditModal(kth)}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-                      title="Edit KTH"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirmId(kth.id)}
-                      className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
-                      title="Hapus KTH"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  ) : (
+                    <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-amber-600" />
+                      Menunggu Dokumen
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right space-x-2">
+                  <button
+                    onClick={() => openEditModal(kth)}
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                    title="Edit KTH"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirmId(kth.id)}
+                    className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
+                    title="Hapus KTH"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
       {/* CREATE / EDIT MODAL */}

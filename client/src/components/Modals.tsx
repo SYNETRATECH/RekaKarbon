@@ -11,6 +11,14 @@ import {
   QrCode,
   Lock,
 } from 'lucide-react';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 import droneFootageVideo from '../assets/drone_footage.mp4';
 
 export default function Modals() {
@@ -435,140 +443,138 @@ export default function Modals() {
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">
                   HASIL AUDIT dMRV (SATELIT & DRONE UAV)
                 </span>
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-100 text-slate-600 text-[9px] uppercase font-bold">
-                      <tr>
-                        <th className="p-2.5 border-b">Parameter Audit</th>
-                        <th className="p-2.5 border-b">Nilai Terukur</th>
-                        <th className="p-2.5 border-b">Status Ambang Batas</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-[10px] font-medium">
-                      {selectedReportStage ? (
-                        <>
-                          <tr>
-                            <td className="p-2.5">Kerapatan Kanopi Vegetasi</td>
-                            <td className="p-2.5 font-mono font-bold text-emerald-700">
-                              {selectedReportStage.canopyDensity}%
-                            </td>
-                            <td className="p-2.5">
-                              <span
-                                className={`font-bold px-1.5 py-0.5 rounded text-[8px] ${
-                                  selectedReportStage.canopyDensity >= 70
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : 'bg-yellow-50 text-yellow-755'
-                                }`}
-                              >
-                                {selectedReportStage.canopyDensity >= 70
-                                  ? 'Sangat Rapat'
-                                  : selectedReportStage.canopyDensity >= 40
-                                    ? 'Rapat'
-                                    : 'Fase Tumbuh'}
-                              </span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="p-2.5">Tinggi Kanopi Model (CHM)</td>
-                            <td className="p-2.5 font-mono font-bold text-slate-800">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Parameter Audit</TableHead>
+                      <TableHead>Nilai Terukur</TableHead>
+                      <TableHead>Status Ambang Batas</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedReportStage ? (
+                      <>
+                        <TableRow>
+                          <TableCell>Kerapatan Kanopi Vegetasi</TableCell>
+                          <TableCell className="font-mono font-bold text-emerald-700">
+                            {selectedReportStage.canopyDensity}%
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`font-bold px-1.5 py-0.5 rounded text-[8px] ${
+                                selectedReportStage.canopyDensity >= 70
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-yellow-50 text-yellow-755'
+                              }`}
+                            >
+                              {selectedReportStage.canopyDensity >= 70
+                                ? 'Sangat Rapat'
+                                : selectedReportStage.canopyDensity >= 40
+                                  ? 'Rapat'
+                                  : 'Fase Tumbuh'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Tinggi Kanopi Model (CHM)</TableCell>
+                          <TableCell className="font-mono font-bold text-slate-800">
+                            {selectedReportStage.year <= activeProj.currentYear
+                              ? `${activeProj.canopyHeight.toFixed(2)} m`
+                              : 'Dalam Pemantauan'}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`font-bold px-1.5 py-0.5 rounded text-[8px] ${
+                                selectedReportStage.year <= activeProj.currentYear
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
                               {selectedReportStage.year <= activeProj.currentYear
-                                ? `${activeProj.canopyHeight.toFixed(2)} m`
-                                : 'Dalam Pemantauan'}
-                            </td>
-                            <td className="p-2.5">
-                              <span
-                                className={`font-bold px-1.5 py-0.5 rounded text-[8px] ${
-                                  selectedReportStage.year <= activeProj.currentYear
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : 'bg-slate-100 text-slate-500'
-                                }`}
-                              >
-                                {selectedReportStage.year <= activeProj.currentYear
-                                  ? 'Memenuhi (≥1.5m)'
-                                  : 'N/A'}
-                              </span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="p-2.5">Ground Sampling Distance (GSD) Drone</td>
-                            <td className="p-2.5 font-mono font-bold text-slate-800">
-                              {selectedReportStage.gsd} cm/px
-                            </td>
-                            <td className="p-2.5">
-                              <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
-                                Resolusi Tinggi
-                              </span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="p-2.5">Sertifikasi SPE-GRK Terbit</td>
-                            <td className="p-2.5 font-mono font-bold text-emerald-700">
-                              +{selectedReportStage.speCreditMinted.toLocaleString('id-ID')} tCO2e
-                            </td>
-                            <td className="p-2.5">
-                              <span
-                                className={`font-bold px-1.5 py-0.5 rounded text-[8px] ${
-                                  selectedReportStage.speStatus.includes('Terbit')
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : 'bg-yellow-50 text-yellow-755'
-                                }`}
-                              >
-                                {selectedReportStage.speStatus}
-                              </span>
-                            </td>
-                          </tr>
-                        </>
-                      ) : (
-                        <>
-                          <tr>
-                            <td className="p-2.5">Vegetation Health (NDVI)</td>
-                            <td className="p-2.5 font-mono font-bold text-emerald-700">
-                              {activeProj.ndvi.toFixed(2)}
-                            </td>
-                            <td className="p-2.5">
-                              <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
-                                Sangat Sehat
-                              </span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="p-2.5">Enhanced Vegetation Index (EVI)</td>
-                            <td className="p-2.5 font-mono font-bold text-emerald-700">
-                              {activeProj.evi.toFixed(2)}
-                            </td>
-                            <td className="p-2.5">
-                              <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
-                                Optimal
-                              </span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="p-2.5">Tingkat Kelangsungan Hidup Pohon</td>
-                            <td className="p-2.5 font-mono font-bold text-emerald-700">
-                              {(activeProj.survivalRate * 100).toFixed(1)}%
-                            </td>
-                            <td className="p-2.5">
-                              <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
-                                {activeProj.reforestationStatus}
-                              </span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="p-2.5">Tinggi Kanopi Model (CHM)</td>
-                            <td className="p-2.5 font-mono font-bold text-slate-800">
-                              {activeProj.canopyHeight.toFixed(2)} m
-                            </td>
-                            <td className="p-2.5">
-                              <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
-                                Memenuhi (≥1.5m)
-                              </span>
-                            </td>
-                          </tr>
-                        </>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                                ? 'Memenuhi (≥1.5m)'
+                                : 'N/A'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Ground Sampling Distance (GSD) Drone</TableCell>
+                          <TableCell className="font-mono font-bold text-slate-800">
+                            {selectedReportStage.gsd} cm/px
+                          </TableCell>
+                          <TableCell>
+                            <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
+                              Resolusi Tinggi
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Sertifikasi SPE-GRK Terbit</TableCell>
+                          <TableCell className="font-mono font-bold text-emerald-700">
+                            +{selectedReportStage.speCreditMinted.toLocaleString('id-ID')} tCO2e
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`font-bold px-1.5 py-0.5 rounded text-[8px] ${
+                                selectedReportStage.speStatus.includes('Terbit')
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-yellow-50 text-yellow-755'
+                              }`}
+                            >
+                              {selectedReportStage.speStatus}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      </>
+                    ) : (
+                      <>
+                        <TableRow>
+                          <TableCell>Vegetation Health (NDVI)</TableCell>
+                          <TableCell className="font-mono font-bold text-emerald-700">
+                            {activeProj.ndvi.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
+                              Sangat Sehat
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Enhanced Vegetation Index (EVI)</TableCell>
+                          <TableCell className="font-mono font-bold text-emerald-700">
+                            {activeProj.evi.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
+                              Optimal
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Tingkat Kelangsungan Hidup Pohon</TableCell>
+                          <TableCell className="font-mono font-bold text-emerald-700">
+                            {(activeProj.survivalRate * 100).toFixed(1)}%
+                          </TableCell>
+                          <TableCell>
+                            <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
+                              {activeProj.reforestationStatus}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Tinggi Kanopi Model (CHM)</TableCell>
+                          <TableCell className="font-mono font-bold text-slate-800">
+                            {activeProj.canopyHeight.toFixed(2)} m
+                          </TableCell>
+                          <TableCell>
+                            <span className="bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded text-[8px]">
+                              Memenuhi (≥1.5m)
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      </>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Section 3: Smart Contract & Finance Audit */}
@@ -876,62 +882,49 @@ export default function Modals() {
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
                   RINCIAN BARANG & RINCIAN FAKTUR
                 </span>
-                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-100 text-slate-600 text-[9px] uppercase font-bold">
-                      <tr>
-                        <th className="p-2.5 border-b">Nama Barang / Deskripsi Jasa</th>
-                        <th className="p-2.5 border-b text-center">Volume</th>
-                        <th className="p-2.5 border-b text-right">Harga Satuan</th>
-                        <th className="p-2.5 border-b text-right">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-[10px]">
-                      {selectedTx.tx.items ? (
-                        selectedTx.tx.items.map((item: any, i: number) => (
-                          <tr key={i} className="hover:bg-slate-50">
-                            <td className="p-2.5 font-medium text-slate-800">{item.name}</td>
-                            <td className="p-2.5 text-center font-mono font-semibold text-slate-605">
-                              {item.qty}
-                            </td>
-                            <td className="p-2.5 text-right font-mono text-slate-600">
-                              Rp {item.price.toLocaleString('id-ID')}
-                            </td>
-                            <td className="p-2.5 text-right font-mono font-bold text-emerald-800">
-                              Rp {item.total.toLocaleString('id-ID')}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr className="hover:bg-slate-50">
-                          <td className="p-2.5 font-medium text-slate-800">{selectedTx.tx.desc}</td>
-                          <td className="p-2.5 text-center font-mono font-semibold text-slate-605">
-                            1 Paket
-                          </td>
-                          <td className="p-2.5 text-right font-mono text-slate-600">
-                            Rp {selectedTx.tx.amount.toLocaleString('id-ID')}
-                          </td>
-                          <td className="p-2.5 text-right font-mono font-bold text-emerald-800">
-                            Rp {selectedTx.tx.amount.toLocaleString('id-ID')}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                    <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="p-2.5 text-right uppercase text-[9px] text-slate-500"
-                        >
-                          Total Transaksi:
-                        </td>
-                        <td className="p-2.5 text-right font-mono font-black text-slate-900 text-xs">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nama Barang / Deskripsi Jasa</TableHead>
+                      <TableHead className="text-center">Volume</TableHead>
+                      <TableHead className="text-right">Harga Satuan</TableHead>
+                      <TableHead className="text-right">Subtotal</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedTx.tx.items ? (
+                      selectedTx.tx.items.map((item: any, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
+                          <TableCell className="text-center font-mono font-semibold text-slate-600">
+                            {item.qty}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-slate-600">
+                            Rp {item.price.toLocaleString('id-ID')}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-emerald-800">
+                            Rp {item.total.toLocaleString('id-ID')}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell className="font-medium text-slate-800">
+                          {selectedTx.tx.desc}
+                        </TableCell>
+                        <TableCell className="text-center font-mono font-semibold text-slate-600">
+                          1 Paket
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-slate-600">
                           Rp {selectedTx.tx.amount.toLocaleString('id-ID')}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold text-emerald-800">
+                          Rp {selectedTx.tx.amount.toLocaleString('id-ID')}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Multi-Photo Proof & Receipt Gallery */}
@@ -1278,54 +1271,52 @@ export default function Modals() {
                 <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">
                   2. Transparansi Proyek Kehutanan & Pembeli Token Karbon
                 </h3>
-                <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                  <table className="w-full text-left border-collapse text-[10px]">
-                    <thead className="bg-slate-100 font-bold uppercase text-slate-600 border-b border-slate-200">
-                      <tr>
-                        <th className="p-3">Nama Kawasan Hutan</th>
-                        <th className="p-3">Wilayah</th>
-                        <th className="p-3">Luas Area</th>
-                        <th className="p-3">Stok Karbon</th>
-                        <th className="p-3">Kelangsungan Hidup</th>
-                        <th className="p-3">Daftar Penebus / Pembeli Token</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 font-medium">
-                      {projects.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50">
-                          <td className="p-3 font-extrabold text-slate-900">{p.name}</td>
-                          <td className="p-3 text-slate-500">{p.region}</td>
-                          <td className="p-3 font-mono">{p.area}</td>
-                          <td className="p-3 font-mono font-bold text-emerald-800">{p.carbon}</td>
-                          <td className="p-3">
-                            <span className="bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded font-bold text-[9px]">
-                              {(p.survivalRate * 100).toFixed(1)}% ({p.reforestationStatus})
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            {p.tokenBuyers && p.tokenBuyers.length > 0 ? (
-                              <div className="space-y-1">
-                                {p.tokenBuyers.map((tb: any) => (
-                                  <div key={tb.id} className="font-mono text-[9px] text-slate-800">
-                                    <span className="font-bold text-slate-900">
-                                      {tb.companyName}
-                                    </span>{' '}
-                                    ({tb.tCO2e.toLocaleString('id-ID')} tCO2e)
-                                    <span className="text-slate-400 block text-[8px]">
-                                      SPE: {tb.speCertificateId}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-slate-400 italic">Belum ada transaksi</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nama Kawasan Hutan</TableHead>
+                      <TableHead>Wilayah</TableHead>
+                      <TableHead>Luas Area</TableHead>
+                      <TableHead>Stok Karbon</TableHead>
+                      <TableHead>Kelangsungan Hidup</TableHead>
+                      <TableHead>Daftar Penebus / Pembeli Token</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projects.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-extrabold text-slate-900">{p.name}</TableCell>
+                        <TableCell className="text-slate-500">{p.region}</TableCell>
+                        <TableCell className="font-mono">{p.area}</TableCell>
+                        <TableCell className="font-mono font-bold text-emerald-800">
+                          {p.carbon}
+                        </TableCell>
+                        <TableCell>
+                          <span className="bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded font-bold text-[9px]">
+                            {(p.survivalRate * 100).toFixed(1)}% ({p.reforestationStatus})
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {p.tokenBuyers && p.tokenBuyers.length > 0 ? (
+                            <div className="space-y-1">
+                              {p.tokenBuyers.map((tb: any) => (
+                                <div key={tb.id} className="font-mono text-[9px] text-slate-800">
+                                  <span className="font-bold text-slate-900">{tb.companyName}</span>{' '}
+                                  ({tb.tCO2e.toLocaleString('id-ID')} tCO2e)
+                                  <span className="text-slate-400 block text-[8px]">
+                                    SPE: {tb.speCertificateId}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic">Belum ada transaksi</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Section 3: Monitoring Emisi Industri */}
@@ -1333,52 +1324,50 @@ export default function Modals() {
                 <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">
                   3. Status Kepatuhan Industri & Defisit Karbon Korporat
                 </h3>
-                <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                  <table className="w-full text-left border-collapse text-[10px]">
-                    <thead className="bg-slate-100 font-bold uppercase text-slate-600 border-b border-slate-200">
-                      <tr>
-                        <th className="p-3">Nama Perusahaan / Industri</th>
-                        <th className="p-3">Sektor</th>
-                        <th className="p-3">Emisi Aktual</th>
-                        <th className="p-3">Batas Kuota</th>
-                        <th className="p-3">Defisit Karbon</th>
-                        <th className="p-3">Estimasi Denda UU HPP</th>
-                        <th className="p-3">Status Kepatuhan</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 font-medium">
-                      {companies.map((c) => (
-                        <tr key={c.id} className="hover:bg-slate-50">
-                          <td className="p-3 font-extrabold text-slate-900">{c.name}</td>
-                          <td className="p-3 text-slate-500">{c.sector}</td>
-                          <td className="p-3 font-mono text-slate-800">
-                            {c.actualEmission.toLocaleString('id-ID')} t
-                          </td>
-                          <td className="p-3 font-mono text-slate-500">
-                            {c.emissionCap.toLocaleString('id-ID')} t
-                          </td>
-                          <td className="p-3 font-mono font-bold text-rose-600">
-                            {c.carbonDeficit.toLocaleString('id-ID')} t
-                          </td>
-                          <td className="p-3 font-mono font-black text-rose-700">
-                            Rp {c.offsetCostIDR.toLocaleString('id-ID')}
-                          </td>
-                          <td className="p-3">
-                            <span
-                              className={`px-2 py-0.5 rounded font-extrabold text-[8px] ${
-                                c.paymentStatus === 'paid'
-                                  ? 'bg-emerald-100 text-emerald-900'
-                                  : 'bg-rose-100 text-rose-900'
-                              }`}
-                            >
-                              {c.complianceRating}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nama Perusahaan / Industri</TableHead>
+                      <TableHead>Sektor</TableHead>
+                      <TableHead>Emisi Aktual</TableHead>
+                      <TableHead>Batas Kuota</TableHead>
+                      <TableHead>Defisit Karbon</TableHead>
+                      <TableHead>Estimasi Denda UU HPP</TableHead>
+                      <TableHead>Status Kepatuhan</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {companies.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-extrabold text-slate-900">{c.name}</TableCell>
+                        <TableCell className="text-slate-500">{c.sector}</TableCell>
+                        <TableCell className="font-mono text-slate-800">
+                          {c.actualEmission.toLocaleString('id-ID')} t
+                        </TableCell>
+                        <TableCell className="font-mono text-slate-500">
+                          {c.emissionCap.toLocaleString('id-ID')} t
+                        </TableCell>
+                        <TableCell className="font-mono font-bold text-rose-600">
+                          +{c.carbonDeficit.toLocaleString('id-ID')} t
+                        </TableCell>
+                        <TableCell className="font-mono font-bold text-slate-900">
+                          Rp {c.offsetCostIDR.toLocaleString('id-ID')}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`px-2 py-0.5 rounded font-extrabold text-[9px] ${
+                              c.carbonDeficit > 0
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}
+                          >
+                            {c.carbonDeficit > 0 ? 'Defisit Kuota' : 'Patuh / Surplus'}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Document Official Footer & Digital Signature */}
