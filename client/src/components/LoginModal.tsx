@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { useCarbonStore } from '../store/useCarbonStore';
+import type { CarbonStoreState } from '../types';
 import {
   TreePine,
   Building2,
@@ -19,22 +20,22 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
+type UserRole = NonNullable<CarbonStoreState['userRole']>;
+
 export default function LoginModal() {
   const { isLoginModalOpen, setIsLoginModalOpen, loginAsRole, loginWithCredentials } =
     useCarbonStore();
   const navigate = useNavigate();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [selectedRole, setSelectedRole] = useState<'emitter' | 'regulator' | 'auditor' | 'kth'>(
-    'emitter'
-  );
+  const [selectedRole, setSelectedRole] = useState<UserRole>('emitter');
 
   // Dummy form states
   const [identityInput, setIdentityInput] = useState('admin@semennusantara.co.id');
   const [passwordInput, setPasswordInput] = useState('••••••••••••');
   const [verichainKeyInput, setVerichainKeyInput] = useState('VCH-KEY-99412-2025');
 
-  const handleRoleSelect = (roleKey: 'emitter' | 'regulator' | 'auditor' | 'kth') => {
+  const handleRoleSelect = (roleKey: UserRole) => {
     setSelectedRole(roleKey);
     if (roleKey === 'emitter') {
       setIdentityInput('admin@semennusantara.co.id');
