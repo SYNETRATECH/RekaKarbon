@@ -11,7 +11,7 @@ Sistem backend bertindak sebagai _Oracle_ (yang berhak mencetak sertifikat karbo
 Jalankan perintah ini di root folder proyek NestJS Anda:
 
 ```bash
-npm install ethers
+pnpm add ethers
 ```
 
 ---
@@ -38,7 +38,7 @@ CONTRACT_ADDRESS=0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0
 
 # Private Key dari akun Deployer (Akun ini sudah memiliki ORACLE_ROLE)
 # Jangan gunakan awalan 0x jika tidak diperlukan
-PRIVATE_KEY=Dari saya petrus
+PRIVATE_KEY=<Private Key Node yang baru Anda buat>
 ```
 
 ---
