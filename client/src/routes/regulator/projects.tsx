@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import type { ForestProjectItem } from '../../types';
 import {
   TreePine,
   Edit2,
@@ -19,6 +20,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { formatCurrency, formatFileSize, parseNumeric } from '../../lib/formatters';
+import { formatDate } from '../../lib/dates';
 import {
   Dialog,
   DialogContent,
@@ -78,24 +80,23 @@ export default function ForestProjectsManagement() {
       p.assignedKTH.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getProjectProgressData = (prj: any) => {
+  const getProjectProgressData = (prj: ForestProjectItem) => {
     const pct = Math.min(
       100,
-      Math.round((prj.actualSequestrationTCO2e / prj.targetSequestrationTCO2e) * 100)
+      Math.round((prj.actualSequestrationTCO2e / (prj.targetSequestrationTCO2e || 1)) * 100)
     );
-    const plantedTrees = Math.floor(pct * 1500);
-    const targetTrees = 150000;
 
-    const stages = [
+    const detail = prj.progressDetail;
+    const stages = detail?.stages || [
       {
         year: 1,
         title: 'Tahun 1: Pembibitan & Persiapan Lahan Kritis',
         milestone: 'Pengadaan 40.000 bibit & pembukaan alur drainase pasang surut.',
-        status: 'completed',
+        status: 'completed' as const,
         canopyDensity: 32,
         gsd: 2.5,
         kthName: prj.assignedKTH || 'KTH Mangrove Tuban Mandiri',
-        farmerIncentive: 350000000,
+        farmerIncentiveIDR: 350000000,
         incentiveStatus: 'Telah Disalurkan (dMRV Verified)',
         speCreditMinted: 1200,
         speStatus: 'Terbit (Minted)',
@@ -103,252 +104,32 @@ export default function ForestProjectsManagement() {
         targetTrees: 40000,
         remainingTrees: 0,
       },
-      {
-        year: 2,
-        title: 'Tahun 2: Penanaman Fisik & Pemasangan Sensor IoT',
-        milestone: 'Penanaman bibit tahap utama & pemasangan 12 pasang node sensor kelembaban.',
-        status: 'completed',
-        canopyDensity: 58,
-        gsd: 2.5,
-        kthName: prj.assignedKTH || 'KTH Mangrove Tuban Mandiri',
-        farmerIncentive: 650000000,
-        incentiveStatus: 'Telah Disalurkan (dMRV Verified)',
-        speCreditMinted: 3500,
-        speStatus: 'Terbit (Minted)',
-        plantedTrees: 84000,
-        targetTrees: 84000,
-        remainingTrees: 0,
-      },
-      {
-        year: 3,
-        title: 'Tahun 3: Monitoring Drone LiDAR & Verifikasi dMRV AI',
-        milestone: 'Pemindaian drone berkala, verifikasi AI canopy height >1.5m, & audit serapan.',
-        status: 'ongoing',
-        canopyDensity: 84,
-        gsd: 2.5,
-        kthName: prj.assignedKTH || 'KTH Mangrove Tuban Mandiri',
-        farmerIncentive: 500000000,
-        incentiveStatus: 'Proses Inspek (Ongoing)',
-        speCreditMinted: 4200,
-        speStatus: 'Proses Verifikasi AI',
-        plantedTrees: plantedTrees,
-        targetTrees: targetTrees,
-        remainingTrees: 26000,
-      },
-      {
-        year: 4,
-        title: 'Tahun 4: Penerbitan Sertifikat SPE-GRK & Monetisasi Karbon',
-        milestone: 'Penerbitan sertifikat SPE-GRK nasional & integrasi bursa karbon.',
-        status: 'upcoming',
-        canopyDensity: 0,
-        gsd: 2.5,
-        kthName: prj.assignedKTH || 'KTH Mangrove Tuban Mandiri',
-        farmerIncentive: 400000000,
-        incentiveStatus: 'Alokasi Mendatang',
-        speCreditMinted: 6100,
-        speStatus: 'Mendatang',
-        plantedTrees: 0,
-        targetTrees: targetTrees,
-        remainingTrees: targetTrees,
-      },
     ];
 
-    const tokenBuyers = [
-      {
-        id: 'tb-01',
-        companyName: 'PT Semen Nusantara Tuban',
-        tCO2e: 4500,
-        sector: 'Semen & Manufaktur',
-        speCertificateId: 'SPE-GRK-2026-0891',
-        txHash: '0x9b1a8f2c0091e4a5d8b7...',
-        date: '12 Jul 2025',
-      },
-      {
-        id: 'tb-02',
-        companyName: 'PT Pertamina Power Indonesia',
-        tCO2e: 3200,
-        sector: 'Energi & Petrokimia',
-        speCertificateId: 'SPE-GRK-2026-0892',
-        txHash: '0x3f7a1c8901b2c3d4e5f6...',
-        date: '04 Jun 2025',
-      },
-      {
-        id: 'tb-03',
-        companyName: 'PT PLN Nusantara Power',
-        tCO2e: 2800,
-        sector: 'Ketenagalistrikan PLTU',
-        speCertificateId: 'SPE-GRK-2026-0893',
-        txHash: '0x7e2d1c0b9a8f7e6d5c4...',
-        date: '18 Mei 2025',
-      },
-      {
-        id: 'tb-04',
-        companyName: 'PT Vale Indonesia Tbk',
-        tCO2e: 1900,
-        sector: 'Pertambangan Nikel',
-        speCertificateId: 'SPE-GRK-2026-0894',
-        txHash: '0x1a2b3c4d5e6f7a8b9c0...',
-        date: '02 Apr 2025',
-      },
-    ];
-
-    const disbursementHistory = [
-      {
-        id: 'tx-01',
-        date: '14 Jul 2025',
-        amount: 650000000,
-        category: 'Pemeliharaan & Insentif Tanam',
-        desc: 'Insentif Tanam & Pemeliharaan KTH Mangrove Tuban (24 Anggota)',
-        txHash: '0x8f3a9b2c1d4e7f0a5b6c7d8e9f0a1b2c',
-        blockNumber: '#184920',
-        vendor: prj.assignedKTH || 'KTH Mangrove Tuban Mandiri',
-        status: 'Tercairkan via Smart Contract',
-        items: [
-          {
-            name: 'Insentif Tanam & Pemeliharaan KTH (24 Anggota)',
-            qty: '24 Orang',
-            price: 20000000,
-            total: 480000000,
-          },
-          {
-            name: 'Pengadaan Pupuk Bio-Fertilizer Organik',
-            qty: '400 Karung',
-            price: 250000,
-            total: 100000000,
-          },
-          {
-            name: 'Operasional Alat Penyiangan & Parang Gulma',
-            qty: '24 Paket',
-            price: 2916666,
-            total: 70000000,
-          },
-        ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop',
-        ],
-      },
-      {
-        id: 'tx-02',
-        date: '28 Jun 2025',
-        amount: 850000000,
-        category: 'Monitoring Drone & Sensor',
-        desc: 'Sewa UAV LiDAR & pemindaian orthophoto udara dMRV',
-        txHash: '0x3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a',
-        blockNumber: '#183712',
-        vendor: 'PT Aero Mapping Indonesia',
-        status: 'Tercairkan via Smart Contract',
-        items: [
-          {
-            name: 'Sewa Drone VTOL LiDAR Multiterrain (5 Hari)',
-            qty: '5 Hari',
-            price: 100000000,
-            total: 500000000,
-          },
-          {
-            name: 'Jasa Pengolahan Citra dMRV & Model Canopy Height (CHM)',
-            qty: '1 Paket',
-            price: 200000000,
-            total: 200000000,
-          },
-          {
-            name: 'Honor Pilot Drone Sertifikasi FASI & Surveyor GIS',
-            qty: '5 Orang',
-            price: 30000000,
-            total: 150000000,
-          },
-        ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=600&auto=format&fit=crop',
-        ],
-      },
-      {
-        id: 'tx-03',
-        date: '15 Mei 2025',
-        amount: 450000000,
-        category: 'Pembibitan & Pupuk Organik',
-        desc: 'Pengadaan 40.000 bibit mangrove unggul & bio-fertilizer',
-        txHash: '0x5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0',
-        blockNumber: '#181204',
-        vendor: 'CV Tani Makmur Agro Tuban',
-        status: 'Tercairkan via Smart Contract',
-        items: [
-          {
-            name: 'Bibit Mangrove Rhizophora Mucronata >40cm',
-            qty: '40.000 Batang',
-            price: 10000,
-            total: 400000000,
-          },
-          {
-            name: 'Polybag & Bambu Ajir Penyangga',
-            qty: '40.000 Set',
-            price: 1250,
-            total: 50000000,
-          },
-        ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-        ],
-      },
-      {
-        id: 'tx-04',
-        date: '10 Apr 2025',
-        amount: 850000000,
-        category: 'Restorasi Fisik Lahan',
-        desc: 'Pembersihan alur pasang surut & pemasangan pemecah gelombang bambu',
-        txHash: '0x9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4',
-        blockNumber: '#179450',
-        vendor: prj.assignedKTH || 'KTH Mangrove Tuban Mandiri',
-        status: 'Tercairkan via Smart Contract',
-        items: [
-          {
-            name: 'Konstruksi Pemecah Gelombang Bambu (Alat Pemecah Ombak)',
-            qty: '1.200 Meter',
-            price: 500000,
-            total: 600000000,
-          },
-          {
-            name: 'Pembersihan Alur Sedimen Pasang Surut & Trash Trap',
-            qty: '1 Paket',
-            price: 250000000,
-            total: 250000000,
-          },
-        ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop',
-        ],
-      },
-    ];
+    const tokenBuyers = detail?.tokenBuyers || [];
+    const disbursementHistory = detail?.disbursementHistory || [];
 
     const totalBudgetVal = parseNumeric(prj.fundingBudgetIDR) || 4500000000;
-    const raisedBudgetVal = Math.round(
-      totalBudgetVal * (pct > 0 ? Math.min(0.95, (pct / 100) * 0.75 + 0.15) : 0.62)
-    );
+    const raisedBudgetVal =
+      detail?.disbursedBudgetIDR ||
+      Math.round(totalBudgetVal * (pct > 0 ? Math.min(0.95, (pct / 100) * 0.75 + 0.15) : 0.62));
     const fundingPct = Math.min(100, Math.round((raisedBudgetVal / totalBudgetVal) * 100));
-
-    const raisedBudgetFormatted = formatCurrency(raisedBudgetVal);
-    const totalBudgetFormatted = formatCurrency(totalBudgetVal);
 
     return {
       pct,
-      plantedTrees,
-      targetTrees,
-      survivalRate: '87.5%',
-      canopyHeight: '1.85 m',
-      ndviScore: '0.84',
+      plantedTrees: Math.floor(pct * 1500),
+      targetTrees: 150000,
+      survivalRate: detail?.survivalRatePercent ? `${detail.survivalRatePercent}%` : '87.5%',
+      canopyHeight: detail?.canopyHeightMeters ? `${detail.canopyHeightMeters} m` : '1.85 m',
+      ndviScore: detail?.ndviScore ? String(detail.ndviScore) : '0.84',
       stages,
       tokenBuyers,
       disbursementHistory,
       raisedBudgetVal,
       totalBudgetVal,
       fundingPct,
-      raisedBudgetFormatted,
-      totalBudgetFormatted,
+      raisedBudgetFormatted: formatCurrency(raisedBudgetVal),
+      totalBudgetFormatted: formatCurrency(totalBudgetVal),
     };
   };
 
@@ -740,7 +521,9 @@ export default function ForestProjectsManagement() {
                           <div>
                             <span className="text-slate-400 font-bold block">Insentif KTH:</span>
                             <span className="font-extrabold text-emerald-600">
-                              Rp {(stage.farmerIncentive / 1000000).toFixed(0)} Juta
+                              {formatCurrency(
+                                stage.farmerIncentiveIDR || stage.farmerIncentive || 0
+                              )}
                             </span>
                           </div>
                           <div>
@@ -787,7 +570,7 @@ export default function ForestProjectsManagement() {
                             Status Pencairan
                           </span>
                           <span className="text-xs font-black text-emerald-300">
-                            62% Tercairkan
+                            {progData.fundingPct}% Tercairkan
                           </span>
                         </div>
                       </div>
@@ -797,34 +580,17 @@ export default function ForestProjectsManagement() {
                         <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden flex border border-slate-700">
                           <div
                             className="bg-emerald-500 h-3"
-                            style={{ width: '62%' }}
-                            title="Restorasi & Penanaman (62%)"
-                          ></div>
-                          <div
-                            className="bg-emerald-700 h-3"
-                            style={{ width: '15%' }}
-                            title="Pemeliharaan (15%)"
-                          ></div>
-                          <div
-                            className="bg-sky-500 h-3"
-                            style={{ width: '10%' }}
-                            title="Monitoring Drone (10%)"
-                          ></div>
-                          <div
-                            className="bg-amber-500 h-3"
-                            style={{ width: '8%' }}
-                            title="Buffer Risiko (8%)"
-                          ></div>
-                          <div
-                            className="bg-purple-500 h-3"
-                            style={{ width: '5%' }}
-                            title="API Integrasi (5%)"
+                            style={{ width: `${progData.fundingPct}%` }}
+                            title={`Restorasi & Penanaman (${progData.fundingPct}%)`}
                           ></div>
                         </div>
                         <div className="flex justify-between text-[10px] text-slate-300 font-mono font-bold">
-                          <span>Tercairkan: Rp 2.800.000.000</span>
+                          <span>Tercairkan: {progData.raisedBudgetFormatted}</span>
                           <span className="text-amber-300">
-                            Sisa Belum Pencairan: Rp 1.700.000.000
+                            Sisa Belum Pencairan:{' '}
+                            {formatCurrency(
+                              Math.max(0, progData.totalBudgetVal - progData.raisedBudgetVal)
+                            )}
                           </span>
                         </div>
                       </div>
@@ -833,23 +599,7 @@ export default function ForestProjectsManagement() {
                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 pt-1 border-t border-slate-800 text-[9px] font-semibold text-slate-300">
                         <div className="flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                          Restorasi (62%)
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-700 shrink-0"></span>
-                          Pemeliharaan (15%)
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
-                          Monitoring (10%)
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>Buffer
-                          Risiko (8%)
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
-                          Sistem API (5%)
+                          Restorasi ({progData.fundingPct}%)
                         </div>
                       </div>
                     </div>
@@ -914,7 +664,7 @@ export default function ForestProjectsManagement() {
                                   {tb.speCertificateId}
                                 </TableCell>
                                 <TableCell className="text-slate-400 text-[10px]">
-                                  {tb.date}
+                                  {formatDate(tb.date)}
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -936,35 +686,27 @@ export default function ForestProjectsManagement() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {progData.disbursementHistory.map((tx: any) => {
-                              const displayAmount =
-                                typeof tx.amount === 'number'
-                                  ? `Rp ${tx.amount.toLocaleString('id-ID')}`
-                                  : typeof tx.amount === 'string' && tx.amount.startsWith('Rp')
-                                    ? tx.amount
-                                    : `Rp ${Number(tx.amount || 0).toLocaleString('id-ID')}`;
-                              return (
-                                <TableRow key={tx.id}>
-                                  <TableCell className="font-mono text-slate-500 text-[10px]">
-                                    {tx.date}
-                                  </TableCell>
-                                  <TableCell className="font-extrabold text-slate-900">
-                                    {tx.vendor}
-                                  </TableCell>
-                                  <TableCell>
-                                    <span className="font-bold text-slate-800 block">
-                                      {tx.category}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 block">
-                                      {tx.desc}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="font-mono font-black text-emerald-700">
-                                    {displayAmount}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
+                            {progData.disbursementHistory.map((tx: any) => (
+                              <TableRow key={tx.id}>
+                                <TableCell className="font-mono text-slate-500 text-[10px]">
+                                  {formatDate(tx.date)}
+                                </TableCell>
+                                <TableCell className="font-extrabold text-slate-900">
+                                  {tx.vendor}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="font-bold text-slate-800 block">
+                                    {tx.category}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 block">
+                                    {tx.desc}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="font-mono font-black text-emerald-700">
+                                  {formatCurrency(tx.amountIDR || tx.amount || 0)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
                           </TableBody>
                         </Table>
 
