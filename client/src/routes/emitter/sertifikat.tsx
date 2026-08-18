@@ -1,4 +1,4 @@
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   Award,
   ShieldCheck,
@@ -12,8 +12,15 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '../../../lib/formatters';
-import { formatDate } from '../../../lib/dates';
+import { formatCurrency } from '../../lib/formatters';
+import { formatDate } from '../../lib/dates';
+
+export function meta() {
+  return [
+    { title: 'Sertifikat & Proyek | RekaKarbon' },
+    { name: 'description', content: 'Sertifikat SPE-GRK dan Proyek Karbon Industri' },
+  ];
+}
 
 export default function PurchasedCertificatesProjects() {
   const { purchasedCertificates: certs } = useCarbonStore();

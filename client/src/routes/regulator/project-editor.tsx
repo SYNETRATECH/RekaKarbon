@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import type L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useCarbonStore } from '../../../store/useCarbonStore';
-import { sortPolygonCoordinates } from '../../../utils/geodetics';
+import { useCarbonStore } from '../../store/useCarbonStore';
+import { sortPolygonCoordinates } from '../../utils/geodetics';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
-import { ForestProjectItem } from '../../../types';
+import { ForestProjectItem } from '../../types';
 import {
   Select,
   SelectContent,

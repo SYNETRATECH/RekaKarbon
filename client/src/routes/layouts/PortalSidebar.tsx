@@ -106,13 +106,26 @@ export default function PortalSidebar() {
           <SidebarMenu>
             {navItems.map((item) => {
               const IconComponent = item.icon;
-              const targetPath = `/portal/${currentRole}/${item.id}`;
+              const targetPath =
+                item.id === 'compliance' ||
+                item.id === 'forest' ||
+                item.id === 'audit' ||
+                item.id === 'polygon'
+                  ? '/dashboard'
+                  : `/${item.id}`;
               const isDefaultTab =
                 (currentRole === 'auditor' &&
-                  (!activeTab || activeTab === 'anomaly') &&
+                  (!activeTab || activeTab === 'anomaly' || activeTab === 'dashboard') &&
                   item.id === 'audit') ||
-                (currentRole === 'regulator' && !activeTab && item.id === 'forest') ||
-                (currentRole === 'emitter' && !activeTab && item.id === 'compliance');
+                (currentRole === 'regulator' &&
+                  (!activeTab || activeTab === 'dashboard') &&
+                  item.id === 'forest') ||
+                (currentRole === 'emitter' &&
+                  (!activeTab || activeTab === 'dashboard') &&
+                  item.id === 'compliance') ||
+                (currentRole === 'kth' &&
+                  (!activeTab || activeTab === 'dashboard') &&
+                  item.id === 'polygon');
               return (
                 <SidebarMenuItem key={item.id}>
                   <NavLink to={targetPath} end={item.id !== 'compliance' && item.id !== 'forest'}>
@@ -159,7 +172,7 @@ export default function PortalSidebar() {
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              <NavLink to={`/portal/${currentRole}/settings`}>
+              <NavLink to="/settings">
                 <Settings className="w-4 h-4 text-slate-400" />
                 Pengaturan
               </NavLink>

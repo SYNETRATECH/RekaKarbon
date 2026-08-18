@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import { ShieldCheck, Cpu, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

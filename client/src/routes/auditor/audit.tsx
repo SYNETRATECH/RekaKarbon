@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   AlertTriangle,
   TrendingDown,
@@ -21,6 +21,13 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+
+export function meta() {
+  return [
+    { title: 'Verifikasi Audit AI | RekaKarbon' },
+    { name: 'description', content: 'Verifikasi Audit Emisi AI & Anomali' },
+  ];
+}
 
 export default function EmissionsAuditAI() {
   const {

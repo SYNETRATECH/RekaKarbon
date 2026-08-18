@@ -1,4 +1,4 @@
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import { CheckCircle2, AlertTriangle, Info, ShoppingCart } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import {

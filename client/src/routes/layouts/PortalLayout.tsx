@@ -9,22 +9,20 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
-export default function PortalLayout() {
+interface PortalLayoutProps {
+  activeTabId?: string;
+  children?: React.ReactNode;
+}
+
+export default function PortalLayout({ activeTabId, children }: PortalLayoutProps) {
   const { userRole, loginAsRole, userProfile, initializeData, isDataLoaded } = useCarbonStore();
-  const { role: urlRole, tab: urlTab } = useParams();
+  const { tab: urlTab } = useParams();
 
   useEffect(() => {
     if (!isDataLoaded) {
       initializeData();
     }
   }, [isDataLoaded, initializeData]);
-
-  // Ensure userRole matches URL role
-  useEffect(() => {
-    if (urlRole && urlRole !== userRole) {
-      loginAsRole(urlRole, 'hse_director', urlTab);
-    }
-  }, [urlRole, urlTab, userRole, loginAsRole]);
 
   if (!isDataLoaded) {
     return (
@@ -34,8 +32,8 @@ export default function PortalLayout() {
     );
   }
 
-  const activeRole = urlRole || userRole || 'emitter';
-  const activeTab = urlTab || 'dashboard';
+  const activeRole = userRole || 'emitter';
+  const activeTab = activeTabId || urlTab || 'dashboard';
 
   return (
     <SidebarProvider className="flex h-screen w-screen bg-slate-100 overflow-hidden font-sans text-slate-800">
@@ -102,9 +100,7 @@ export default function PortalLayout() {
         </header>
 
         {/* TAB BODY CONTAINER */}
-        <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">
-          <Outlet />
-        </div>
+        <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">{children || <Outlet />}</div>
       </main>
 
       {/* Global Overlays & Audit Modals */}

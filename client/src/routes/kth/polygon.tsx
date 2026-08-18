@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import { Map as MapIcon, Plus, CheckCircle2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+
+export function meta() {
+  return [
+    { title: 'Registrasi Polygon Lahan | RekaKarbon' },
+    { name: 'description', content: 'Registrasi Polygon Lahan Hutan Tani' },
+  ];
+}
 
 export default function LandPolygonMapping() {
   const { kthPolygons } = useCarbonStore();

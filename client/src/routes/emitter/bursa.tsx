@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,6 +13,13 @@ import {
   MapPin,
   Search,
 } from 'lucide-react';
+
+export function meta() {
+  return [
+    { title: 'Bursa Karbon (DEX) | RekaKarbon' },
+    { name: 'description', content: 'Bursa Karbon Decentralized Exchange RekaKarbon' },
+  ];
+}
 
 export default function CarbonDexMarket() {
   const { bursaItems } = useCarbonStore();

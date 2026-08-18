@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   Users,
   UserPlus,
@@ -12,7 +12,7 @@ import {
   Wallet,
   AlertTriangle,
 } from 'lucide-react';
-import { formatCurrency } from '../../../lib/formatters';
+import { formatCurrency } from '../../lib/formatters';
 import { Input } from '@/components/ui/input';
 import {
   Table,

@@ -78,9 +78,9 @@ const REPO_DIR = path.join(SRC, 'repositories');
 const MOCK_DIR = path.join(SRC, 'lib', 'mock');
 
 // View-layer directories (React UI). Anything rendering UI lives here.
-const VIEW_PATTERN = '^src/(components|portal)';
+const VIEW_PATTERN = '^src/(components|routes)';
 // Layers the view is forbidden from reaching into directly.
-const APP_LAYER_PATTERN = '^src/(components|portal|store|repositories)';
+const APP_LAYER_PATTERN = '^src/(components|routes|store|repositories)';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -371,8 +371,8 @@ describe('Architecture — Directory Structure', () => {
       description: 'src/components — Shared UI components (View Layer)',
     },
     {
-      path: path.join(SRC, 'portal'),
-      description: 'src/portal — Portal views & layouts (View Layer)',
+      path: path.join(SRC, 'routes'),
+      description: 'src/routes — Route entry components & portal views (View Layer)',
     },
     {
       path: path.join(SRC, 'repositories'),

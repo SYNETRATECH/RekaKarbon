@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   Upload,
   Camera,

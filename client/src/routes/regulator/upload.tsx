@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   FileUp,
   FileText,
@@ -31,8 +31,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { formatFileSize } from '../../../lib/formatters';
-import { formatDateTime } from '../../../lib/dates';
+import { formatFileSize } from '../../lib/formatters';
+import { formatDateTime } from '../../lib/dates';
 
 export default function RegulatorUploadManagement() {
   const { regulationUploads: docs, addRegulationUpload } = useCarbonStore();

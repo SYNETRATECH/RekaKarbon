@@ -1,4 +1,4 @@
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import { TreePine, Leaf, Globe, MapPin, CheckCircle2, CloudRain } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,13 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+
+export function meta() {
+  return [
+    { title: 'Evaluasi Spasial dMRV | RekaKarbon' },
+    { name: 'description', content: 'Evaluasi Spasial Remote Sensing dMRV' },
+  ];
+}
 
 export default function SpatialMRVEvaluation() {
   const {
