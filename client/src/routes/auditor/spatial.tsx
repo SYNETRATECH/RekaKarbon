@@ -1,5 +1,5 @@
 import { useCarbonStore } from '../../store/useCarbonStore';
-import { TreePine, Leaf, Globe, MapPin, CheckCircle2, CloudRain } from 'lucide-react';
+import { TreePine, Leaf, Globe, MapPin, CheckCircle2, CloudRain, Layers } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -247,27 +247,19 @@ export default function SpatialMRVEvaluation() {
                   }}
                 ></div>
 
-                {/* SVG Polygon Overlay */}
-                <svg className="w-full h-full relative z-10 overflow-visible" viewBox="0 0 200 140">
-                  <polygon
-                    points="40,30 160,20 180,100 90,130 30,90"
-                    fill="rgba(0, 196, 140, 0.25)"
-                    stroke="#00C48C"
-                    strokeWidth="2.5"
-                    strokeDasharray={selectedArea.status === 'drone_required' ? '4,4' : 'none'}
-                  />
-                  <circle cx="100" cy="74" r="4" fill="#00C48C" />
-                  <text
-                    x="100"
-                    y="64"
-                    fill="#FFFFFF"
-                    fontSize="8"
-                    fontWeight="bold"
-                    textAnchor="middle"
-                  >
+                {/* Map Boundary Overlay */}
+                <div className="relative z-10 flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#00C48C] bg-[#00C48C]/10 rounded-xl">
+                  <div className="flex items-center gap-2 text-[#00C48C] mb-1">
+                    <Layers className="w-5 h-5 animate-pulse" />
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <span className="text-white text-xs font-bold tracking-wide">
                     {selectedArea.name.split(' ')[0]}
-                  </text>
-                </svg>
+                  </span>
+                  <span className="text-[10px] text-slate-300 font-mono mt-0.5">
+                    Batas Spasial dMRV
+                  </span>
+                </div>
 
                 {/* Coordinate Badge */}
                 <div className="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur-xs text-white text-[9px] font-mono px-2.5 py-1 rounded-lg border border-slate-700 z-20">

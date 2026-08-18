@@ -1,5 +1,5 @@
 import { useCarbonStore } from '../../store/useCarbonStore';
-import { FileText, Printer } from 'lucide-react';
+import { FileText, Printer, QrCode, FileSignature } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -387,61 +387,7 @@ export default function AuditReportModal() {
             {/* Left: QR Code & Block Verification */}
             <div className="space-y-2 flex flex-col items-center md:items-start text-center md:text-left">
               <div className="p-1 bg-white border border-slate-200 rounded-lg inline-block">
-                <svg className="w-16 h-16 text-slate-800" viewBox="0 0 100 100" fill="currentColor">
-                  <path d="M0,0 h30 v10 h-20 v20 h-10 z" />
-                  <path d="M70,0 h30 v30 h-10 v-20 h-20 z" />
-                  <path d="M0,70 h10 v20 h20 v10 h-30 z" />
-                  <path d="M70,90 v-20 h30 v30 h-30 z" />
-                  <rect
-                    x="5"
-                    y="5"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <rect
-                    x="75"
-                    y="5"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <rect
-                    x="5"
-                    y="75"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <rect x="12" y="12" width="6" height="6" />
-                  <rect x="82" y="12" width="6" height="6" />
-                  <rect x="12" y="82" width="6" height="6" />
-                  <rect x="35" y="15" width="8" height="8" />
-                  <rect x="45" y="25" width="6" height="6" />
-                  <rect x="55" y="10" width="10" height="4" />
-                  <rect x="15" y="45" width="12" height="6" />
-                  <rect
-                    x="40"
-                    y="40"
-                    width="15"
-                    height="15"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  />
-                  <rect x="46" y="46" width="4" height="4" />
-                  <rect x="70" y="45" width="8" height="8" />
-                  <rect x="80" y="55" width="10" height="10" />
-                  <rect x="35" y="70" width="8" height="12" />
-                  <rect x="50" y="80" width="15" height="6" />
-                  <rect x="75" y="80" width="8" height="8" />
-                </svg>
+                <QrCode className="w-16 h-16 text-slate-800" />
               </div>
               <div className="text-[8px] font-mono text-slate-500 leading-tight">
                 <p className="font-bold text-slate-700">VERIFIKASI ON-CHAIN</p>
@@ -486,17 +432,7 @@ export default function AuditReportModal() {
               </span>
 
               <div className="h-10 flex items-center justify-center relative">
-                <svg
-                  className="w-24 h-10 text-blue-600 opacity-80"
-                  viewBox="0 0 100 50"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15,35 Q30,12 45,22 T75,12 T95,25 Q65,42 35,32 M20,22 Q50,18 80,28" />
-                </svg>
+                <FileSignature className="w-10 h-10 text-emerald-700 opacity-90" />
               </div>
 
               <div className="text-[9px] leading-tight font-semibold">
