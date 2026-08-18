@@ -1,13 +1,15 @@
 # Panduan Integrasi Backend (NestJS) dengan Blockchain RekaKarbon
 
-Dokumen ini ditujukan khusus untuk Tim Backend (NestJS) agar dapat menghubungkan aplikasi dengan *Smart Contract* RekaKarbon yang berjalan di jaringan privat Hyperledger Besu.
+Dokumen ini ditujukan khusus untuk Tim Backend (NestJS) agar dapat menghubungkan aplikasi dengan _Smart Contract_ RekaKarbon yang berjalan di jaringan privat Hyperledger Besu.
 
 ---
 
 ## 1. Prasyarat & Instalasi
-Sistem backend bertindak sebagai *Oracle* (yang berhak mencetak sertifikat karbon) dan berinteraksi langsung dengan Blockchain. Kita menggunakan pustaka **Ethers.js (versi 6)**.
+
+Sistem backend bertindak sebagai _Oracle_ (yang berhak mencetak sertifikat karbon) dan berinteraksi langsung dengan Blockchain. Kita menggunakan pustaka **Ethers.js (versi 6)**.
 
 Jalankan perintah ini di root folder proyek NestJS Anda:
+
 ```bash
 npm install ethers
 ```
@@ -15,14 +17,18 @@ npm install ethers
 ---
 
 ## 2. Penyerahan Berkas (Handover)
+
 Mintalah 2 file berikut dari Tim Blockchain, dan letakkan ke dalam folder proyek NestJS Anda (misalnya di `src/blockchain/config/`):
-1. **`deployment-info.json`**: Berisi *Contract Address* dan IP server yang aktif.
-2. **`RekaKarbon.json`**: Berisi *Application Binary Interface (ABI)*. Ambil dari `artifacts/contracts/RekaKarbon.sol/RekaKarbon.json`.
+
+1. **`deployment-info.json`**: Berisi _Contract Address_ dan IP server yang aktif.
+2. **`RekaKarbon.json`**: Berisi _Application Binary Interface (ABI)_. Ambil dari `artifacts/contracts/RekaKarbon.sol/RekaKarbon.json`.
 
 ---
 
 ## 3. Konfigurasi Lingkungan (.env)
+
 Tambahkan variabel berikut ke dalam file `.env` di proyek NestJS Anda:
+
 ```env
 # IP Server Besu (lihat di deployment-info.json)
 RPC_URL=http://<IP_SERVER_BESU>:8545
@@ -38,9 +44,11 @@ PRIVATE_KEY=Dari saya petrus
 ---
 
 ## 4. Implementasi `BlockchainService`
-Buatlah sebuah *service* di NestJS untuk mengelola koneksi ke RPC dan inisiasi *Smart Contract*.
+
+Buatlah sebuah _service_ di NestJS untuk mengelola koneksi ke RPC dan inisiasi _Smart Contract_.
 
 **File: `src/blockchain/blockchain.service.ts`**
+
 ```typescript
 import { Injectable, OnModuleInit, InternalServerErrorException } from '@nestjs/common';
 import { ethers } from 'ethers';
@@ -56,17 +64,17 @@ export class BlockchainService implements OnModuleInit {
     try {
       // 1. Konek ke Jaringan Besu
       this.provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-      
+
       // 2. Konek ke Wallet (Agar bisa menandatangani transaksi Write)
       this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
-      
+
       // 3. Inisialisasi Contract
       this.contract = new ethers.Contract(
         process.env.CONTRACT_ADDRESS,
         RekaKarbonABI.abi, // Menunjuk ke array ABI
-        this.wallet,
+        this.wallet
       );
-      
+
       console.log('✅ [BlockchainService] Berhasil terhubung ke Hyperledger Besu');
     } catch (error) {
       console.error('❌ [BlockchainService] Gagal inisialisasi:', error);
@@ -94,12 +102,12 @@ export class BlockchainService implements OnModuleInit {
       // Panggil fungsi mintOffsetCredit di Smart Contract
       // Set gasPrice: 0 karena kita di dev network Besu
       const tx = await this.contract.mintOffsetCredit(toAddress, amount, coordinates, {
-        gasPrice: 0 
+        gasPrice: 0,
       });
-      
+
       // WAJIB: Tunggu hingga transaksi ditambang ke dalam blok
       const receipt = await tx.wait();
-      
+
       // Mengembalikan Transaction Hash sebagai bukti
       return receipt.hash;
     } catch (error) {
@@ -112,9 +120,11 @@ export class BlockchainService implements OnModuleInit {
 ---
 
 ## 5. Membuat API Endpoint (Controller)
-Gunakan `BlockchainService` di dalam *Controller* agar Frontend bisa mengakses fitur Blockchain melalui HTTP standar.
+
+Gunakan `BlockchainService` di dalam _Controller_ agar Frontend bisa mengakses fitur Blockchain melalui HTTP standar.
 
 **File: `src/blockchain/blockchain.controller.ts`**
+
 ```typescript
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { BlockchainService } from './blockchain.service';
@@ -124,10 +134,7 @@ export class BlockchainController {
   constructor(private readonly blockchainService: BlockchainService) {}
 
   @Get('balance/:address/:tokenId')
-  async getBalance(
-    @Param('address') address: string,
-    @Param('tokenId') tokenId: number
-  ) {
+  async getBalance(@Param('address') address: string, @Param('tokenId') tokenId: number) {
     const balance = await this.blockchainService.getCarbonBalance(address, tokenId);
     return { success: true, balance };
   }
@@ -139,12 +146,12 @@ export class BlockchainController {
       body.amount,
       body.coords
     );
-    
+
     // txHash bisa Anda simpan ke database SQL/MongoDB lokal sebagai log
     return {
       success: true,
       message: 'Sertifikat karbon berhasil diterbitkan di Blockchain!',
-      transactionHash: txHash
+      transactionHash: txHash,
     };
   }
 }
@@ -154,6 +161,6 @@ export class BlockchainController {
 
 ## 6. Tips Tambahan untuk Tim Backend
 
-1. **Penanganan Waktu (Timeout):** Transaksi *blockchain* (*write*) membutuhkan waktu beberapa detik untuk ditambang (`tx.wait()`). Jika transaksi berat, HTTP Request Anda mungkin terkena *timeout*. Pertimbangkan untuk menggunakan *queue* (misal: Redis/BullMQ) jika antrean pengguna tinggi.
-2. **Penyimpanan Transaksi:** *Smart Contract* tidak memiliki *database query* yang fleksibel seperti SQL. Pastikan Anda selalu menyimpan `transactionHash` dan data relevan ke dalam PostgreSQL/MongoDB di backend Anda sebagai catatan sekunder (*indexing*).
-3. **Penanganan Revert:** Jika kontrak menolak transaksi (misal: karena status aset sedang di-*freeze*), `ethers.js` akan melempar error. Tangkap error tersebut dan teruskan pesan aslinya ke Frontend.
+1. **Penanganan Waktu (Timeout):** Transaksi _blockchain_ (_write_) membutuhkan waktu beberapa detik untuk ditambang (`tx.wait()`). Jika transaksi berat, HTTP Request Anda mungkin terkena _timeout_. Pertimbangkan untuk menggunakan _queue_ (misal: Redis/BullMQ) jika antrean pengguna tinggi.
+2. **Penyimpanan Transaksi:** _Smart Contract_ tidak memiliki _database query_ yang fleksibel seperti SQL. Pastikan Anda selalu menyimpan `transactionHash` dan data relevan ke dalam PostgreSQL/MongoDB di backend Anda sebagai catatan sekunder (_indexing_).
+3. **Penanganan Revert:** Jika kontrak menolak transaksi (misal: karena status aset sedang di-_freeze_), `ethers.js` akan melempar error. Tangkap error tersebut dan teruskan pesan aslinya ke Frontend.
