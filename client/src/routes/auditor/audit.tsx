@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import { toast } from '@/hooks/use-toast';
 import {
   AlertTriangle,
   TrendingDown,
@@ -11,6 +12,16 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -57,25 +68,15 @@ export default function EmissionsAuditAI() {
     setIsVerifying(true);
     await verifyAnomalyEmitter(id);
     setIsVerifying(false);
-    setShowNotification(true);
-    setTimeout(() => setShowNotification(false), 4000);
+    toast({
+      variant: 'mint',
+      title: 'Berita Acara Audit Diterbitkan!',
+      description: 'Status anomali emiten telah terverifikasi dan tercatat pada Verichain Ledger.',
+    });
   };
 
   return (
     <div className="flex-1 overflow-y-auto min-h-0 space-y-6 animate-fade-in text-left pr-1 pb-8">
-      {/* Toast Notification */}
-      {showNotification && (
-        <div className="fixed bottom-6 right-6 bg-emerald-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-emerald-700 flex items-center gap-3 z-50 animate-bounce">
-          <CheckCircle2 className="w-5 h-5 text-[#00C48C]" />
-          <div className="text-xs">
-            <p className="font-extrabold">Berita Acara Audit Diterbitkan!</p>
-            <p className="text-[10px] text-emerald-200">
-              Status anomali emiten telah terverifikasi dan tercatat pada Verichain Ledger.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* HEADER SECTION */}
       <div>
         <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase block mb-1">
@@ -313,122 +314,32 @@ export default function EmissionsAuditAI() {
               </h4>
             </div>
 
-            {/* Crisp Custom SVG Bar Chart */}
-            <div className="h-44 relative w-full pt-2">
-              <svg
-                className="w-full h-full overflow-visible"
-                viewBox="0 0 320 140"
-                preserveAspectRatio="none"
-              >
-                {/* Horizontal Grid lines */}
-                <line
-                  x1="25"
-                  y1="10"
-                  x2="310"
-                  y2="10"
-                  stroke="#F1F5F9"
-                  strokeWidth="1"
-                  strokeDasharray="3,3"
-                />
-                <line
-                  x1="25"
-                  y1="40"
-                  x2="310"
-                  y2="40"
-                  stroke="#F1F5F9"
-                  strokeWidth="1"
-                  strokeDasharray="3,3"
-                />
-                <line
-                  x1="25"
-                  y1="70"
-                  x2="310"
-                  y2="70"
-                  stroke="#F1F5F9"
-                  strokeWidth="1"
-                  strokeDasharray="3,3"
-                />
-                <line
-                  x1="25"
-                  y1="100"
-                  x2="310"
-                  y2="100"
-                  stroke="#F1F5F9"
-                  strokeWidth="1"
-                  strokeDasharray="3,3"
-                />
-                <line x1="25" y1="120" x2="310" y2="120" stroke="#CBD5E1" strokeWidth="1" />
-
-                {/* Y-Axis Labels */}
-                <text x="20" y="13" fill="#94A3B8" fontSize="7" fontWeight="bold" textAnchor="end">
-                  600
-                </text>
-                <text x="20" y="43" fill="#94A3B8" fontSize="7" fontWeight="bold" textAnchor="end">
-                  450
-                </text>
-                <text x="20" y="73" fill="#94A3B8" fontSize="7" fontWeight="bold" textAnchor="end">
-                  300
-                </text>
-                <text x="20" y="103" fill="#94A3B8" fontSize="7" fontWeight="bold" textAnchor="end">
-                  150
-                </text>
-                <text x="20" y="123" fill="#94A3B8" fontSize="7" fontWeight="bold" textAnchor="end">
-                  0
-                </text>
-
-                {/* Bars per Company */}
-                <rect x="52" y="104" width="8" height="16" fill="#00C48C" rx="1.5" />
-                <rect x="62" y="36" width="8" height="84" fill="#B91C1C" rx="1.5" />
-                <text
-                  x="61"
-                  y="132"
-                  fill="#64748B"
-                  fontSize="6.5"
-                  fontWeight="600"
-                  textAnchor="middle"
+            {/* Recharts Bar Chart */}
+            <div className="h-48 relative w-full pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { name: 'Semen Nustr.', hemat: 80, deviasi: 420 },
+                    { name: 'PLTU Kalim.', hemat: 0, deviasi: 430 },
+                    { name: 'Petrokimia S.', hemat: 0, deviasi: 120 },
+                    { name: 'Baja Timur', hemat: 0, deviasi: 240 },
+                  ]}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 >
-                  Semen Nusantara
-                </text>
-
-                <rect x="122" y="120" width="8" height="0" fill="#00C48C" rx="1.5" />
-                <rect x="132" y="34" width="8" height="86" fill="#B91C1C" rx="1.5" />
-                <text
-                  x="131"
-                  y="132"
-                  fill="#64748B"
-                  fontSize="6.5"
-                  fontWeight="600"
-                  textAnchor="middle"
-                >
-                  PLTU Kalimantan
-                </text>
-
-                <rect x="192" y="120" width="8" height="0" fill="#00C48C" rx="1.5" />
-                <rect x="202" y="96" width="8" height="24" fill="#B91C1C" rx="1.5" />
-                <text
-                  x="201"
-                  y="132"
-                  fill="#64748B"
-                  fontSize="6.5"
-                  fontWeight="600"
-                  textAnchor="middle"
-                >
-                  Petrokimia Selatan
-                </text>
-
-                <rect x="262" y="120" width="8" height="0" fill="#00C48C" rx="1.5" />
-                <rect x="272" y="72" width="8" height="48" fill="#B91C1C" rx="1.5" />
-                <text
-                  x="271"
-                  y="132"
-                  fill="#64748B"
-                  fontSize="6.5"
-                  fontWeight="600"
-                  textAnchor="middle"
-                >
-                  Baja Timur
-                </text>
-              </svg>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748B' }} />
+                  <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  <Bar dataKey="hemat" name="Penghematan" fill="#00C48C" radius={[3, 3, 0, 0]} />
+                  <Bar
+                    dataKey="deviasi"
+                    name="Deviasi Excess"
+                    fill="#B91C1C"
+                    radius={[3, 3, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Chart Legend */}

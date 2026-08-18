@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation, Outlet } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import PortalSidebar from './PortalSidebar';
-import Modals from '../../components/Modals';
+import LogoutDialog from '../../components/LogoutDialog';
 import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -102,8 +102,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">{children || <Outlet />}</div>
       </main>
 
-      {/* Global Overlays & Audit Modals */}
-      <Modals />
+      {/* Global Overlays & Logout Modal */}
+      <LogoutDialog />
     </SidebarProvider>
   );
 }

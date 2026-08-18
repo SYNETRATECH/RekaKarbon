@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import PublicReportModal from '../../components/modals/PublicReportModal';
 import { CheckCircle2, AlertTriangle, Info, ShoppingCart } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import {
@@ -12,8 +14,8 @@ import {
 } from 'recharts';
 
 export default function ComplianceDashboard() {
-  const { setAdminActiveTab, setIsPublicReportOpen, setPublicReportType, complianceData } =
-    useCarbonStore();
+  const { setAdminActiveTab, complianceData, projects, companies } = useCarbonStore();
+  const [isPublicReportOpen, setIsPublicReportOpen] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const today = new Date();
@@ -156,10 +158,7 @@ export default function ComplianceDashboard() {
                   </p>
                 </div>
                 <button
-                  onClick={() => {
-                    setPublicReportType('corporate');
-                    setIsPublicReportOpen(true);
-                  }}
+                  onClick={() => setIsPublicReportOpen(true)}
                   className="text-[10px] font-extrabold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 mt-2 transition-colors cursor-pointer"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#00C48C]" />
@@ -382,6 +381,13 @@ export default function ComplianceDashboard() {
           </div>
         </div>
       </div>
+
+      <PublicReportModal
+        isOpen={isPublicReportOpen}
+        onClose={() => setIsPublicReportOpen(false)}
+        projects={projects}
+        companies={companies}
+      />
     </div>
   );
 }

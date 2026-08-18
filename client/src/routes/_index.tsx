@@ -5,7 +5,7 @@ import MapCanvas from '../components/MapCanvas';
 import RightDrawer from '../components/RightDrawer';
 import ConservationModule from '../components/ConservationModule';
 import CorporateModule from '../components/CorporateModule';
-import Modals from '../components/Modals';
+import LogoutDialog from '../components/LogoutDialog';
 import { Menu, Globe, Building2, LogIn } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
 import { Button } from '@/components/ui/button';
@@ -169,7 +169,7 @@ export default function LandingPageRoute() {
 
       {/* Overlays & Drawers */}
       <RightDrawer />
-      <Modals />
+      <LogoutDialog />
     </div>
   );
 }

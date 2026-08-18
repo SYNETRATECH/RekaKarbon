@@ -1,5 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import KthFormModal from '../../components/modals/KthFormModal';
+import KthDeleteModal from '../../components/modals/KthDeleteModal';
 import {
   Users,
   UserPlus,
@@ -224,139 +226,21 @@ export default function KthFarmersManagement() {
       </div>
 
       {/* CREATE / EDIT MODAL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg p-6 space-y-4 animate-slide-in">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-base font-black text-slate-900">
-                {editingKTH ? 'Edit Data Kelompok Tani Hutan (KTH)' : 'Pendaftaran KTH Baru'}
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleFormSubmit} className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">
-                  Nama Kelompok Tani Hutan (KTH)
-                </label>
-                <Input
-                  type="text"
-                  required
-                  value={formData.groupName}
-                  onChange={(e) => setFormData({ ...formData, groupName: e.target.value })}
-                  placeholder="Contoh: KTH Wana Lestari Baluran"
-                  className="rounded-xl text-xs"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-600 block mb-1">Nama Ketua Pengurus</label>
-                  <Input
-                    type="text"
-                    required
-                    value={formData.leaderName}
-                    onChange={(e) => setFormData({ ...formData, leaderName: e.target.value })}
-                    placeholder="Contoh: Sutrisno"
-                    className="rounded-xl text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-600 block mb-1">Jumlah Anggota</label>
-                  <Input
-                    type="number"
-                    required
-                    value={formData.memberCount}
-                    onChange={(e) =>
-                      setFormData({ ...formData, memberCount: Number(e.target.value) })
-                    }
-                    className="rounded-xl text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">Wilayah Operasional</label>
-                <Input
-                  type="text"
-                  required
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="Contoh: Situbondo, Jawa Timur"
-                  className="rounded-xl text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">
-                  Nomor Registrasi SK KLHK
-                </label>
-                <Input
-                  type="text"
-                  required
-                  value={formData.registrationNumber}
-                  onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
-                  className="rounded-xl text-xs font-mono"
-                />
-              </div>
-
-              <div className="pt-3 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2.5 rounded-xl bg-primary-gradient text-white font-extrabold shadow-md hover:opacity-95"
-                >
-                  Simpan KTH
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <KthFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        editingKTH={editingKTH}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleFormSubmit}
+      />
 
       {/* DELETE CONFIRMATION MODAL */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-rose-200 shadow-2xl w-full max-w-md p-6 space-y-4 text-center animate-fade-in">
-            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-6 h-6 text-rose-600" />
-            </div>
-            <h3 className="text-base font-black text-slate-900">
-              Konfirmasi Hapus / Nonaktifkan KTH
-            </h3>
-            <p className="text-xs text-slate-500 font-medium">
-              Apakah Anda yakin ingin menghapus data KTH ini? Dompet insentif dan verifikasi KYB
-              kelompok tani akan di-nonaktifkan.
-            </p>
-            <div className="flex justify-center gap-3 pt-2">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50"
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirmId)}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-900/10"
-              >
-                Ya, Hapus KTH
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <KthDeleteModal
+        deleteId={deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

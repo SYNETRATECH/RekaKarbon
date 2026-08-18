@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import { toast } from '@/hooks/use-toast';
 import { ShieldCheck, Cpu, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,6 @@ export default function AuthorizationGate() {
   );
 
   const [isMinting, setIsMinting] = useState(false);
-  const [mintResult, setMintResult] = useState<{ success: boolean; txHash: string } | null>(null);
 
   const handleAuthorize = async () => {
     setIsMinting(true);
@@ -46,37 +46,15 @@ export default function AuthorizationGate() {
       notes: auditNotes,
     });
     setIsMinting(false);
-    setMintResult(res);
+    toast({
+      variant: 'mint',
+      title: 'Minting SPE-GRK Berhasil Disahkan!',
+      description: `Transaksi smart contract telah dikonfirmasi pada Hyperledger Besu ledger. TxHash: ${res.txHash}`,
+    });
   };
 
   return (
     <div className="flex-1 overflow-y-auto min-h-0 space-y-6 animate-fade-in text-left pr-1 pb-8">
-      {/* Toast / Modal Result Notification */}
-      {mintResult && (
-        <div className="fixed bottom-6 right-6 bg-slate-900 text-white p-5 rounded-3xl shadow-2xl border border-emerald-500/50 flex items-start gap-4 z-50 animate-bounce max-w-md">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center shrink-0 font-black">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <div className="space-y-1 text-xs">
-            <h5 className="font-black text-sm text-emerald-400">
-              Minting SPE-GRK Berhasil Disahkan!
-            </h5>
-            <p className="text-[11px] text-slate-300">
-              Transaksi smart contract telah dikonfirmasi pada Hyperledger Besu ledger.
-            </p>
-            <p className="font-mono text-[10px] text-emerald-300 pt-1">
-              TxHash: {mintResult.txHash}
-            </p>
-            <button
-              onClick={() => setMintResult(null)}
-              className="text-[10px] font-bold text-slate-400 hover:text-white underline pt-1 cursor-pointer"
-            >
-              Tutup Notifikasi
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* HEADER SECTION */}
       <div>
         <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase block mb-1">

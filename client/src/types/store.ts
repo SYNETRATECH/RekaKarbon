@@ -61,12 +61,8 @@ export interface CarbonStoreState {
   tileType: 'satellite' | 'topo' | 'street';
 
   // Modals & Popups Visibilities
-  isReforestationOpen: boolean;
-  isFinanceOpen: boolean;
-  selectedStage: any | null;
   isReportModalOpen: boolean;
   selectedReportStage: any | null;
-  selectedTx: any | null;
   lightboxImage: string | null;
 
   // Authentication & Admin Portal States
@@ -117,8 +113,6 @@ export interface CarbonStoreState {
   searchQuery: string;
   isVerichainExplorerOpen: boolean;
   searchedTxData: SearchedTxData | null;
-  isPublicReportOpen: boolean;
-  publicReportType: 'conservation' | 'corporate';
 
   // Setters & Actions
   setActiveModule: (module: 'conservation' | 'corporate') => void;
@@ -135,8 +129,6 @@ export interface CarbonStoreState {
   setSearchQuery: (query: string) => void;
   setIsVerichainExplorerOpen: (isOpen: boolean) => void;
   setSearchedTxData: (data: SearchedTxData | null) => void;
-  setIsPublicReportOpen: (isOpen: boolean) => void;
-  setPublicReportType: (type: 'conservation' | 'corporate') => void;
 
   setActiveIndex: (index: number) => void;
   setSelectedCompanyIndex: (index: number) => void;
@@ -146,12 +138,8 @@ export interface CarbonStoreState {
   setIsDragMode: (isDrag: boolean) => void;
   setTileType: (tile: 'satellite' | 'topo' | 'street') => void;
 
-  setIsReforestationOpen: (isOpen: boolean) => void;
-  setIsFinanceOpen: (isOpen: boolean) => void;
-  setSelectedStage: (stage: any | null) => void;
   setIsReportModalOpen: (isOpen: boolean) => void;
   setSelectedReportStage: (stage: any | null) => void;
-  setSelectedTx: (tx: any | null) => void;
   setLightboxImage: (image: string | null) => void;
 
   searchVerichainHash: (query: string) => void;

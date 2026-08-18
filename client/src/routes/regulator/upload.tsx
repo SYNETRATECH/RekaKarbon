@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import RegulationUploadModal from '../../components/modals/RegulationUploadModal';
 import {
   FileUp,
   FileText,
@@ -326,134 +327,14 @@ export default function RegulatorUploadManagement() {
         </CardContent>
       </Card>
 
-      {/* UPLOAD REGULATION MODAL FORM */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg p-6 space-y-4">
-          <DialogHeader className="border-b border-slate-100 pb-3">
-            <DialogTitle className="text-base font-black text-slate-900">
-              Form Upload Dokumen Regulasi KLHK / DJP
-            </DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleFormSubmit} className="space-y-3 text-xs">
-            {/* File Drag & Drop Box */}
-            <div className="border-2 border-dashed border-emerald-300 bg-emerald-50/50 rounded-2xl p-6 text-center space-y-2">
-              <FileUp className="w-8 h-8 text-emerald-600 mx-auto" />
-              <p className="font-extrabold text-slate-800">
-                Tarik & Lepas Berkas PDF SK / Sertifikat di sini
-              </p>
-              <p className="text-[10px] text-slate-400 font-medium">
-                Format PDF resmi bertanda tangan digital (Maksimal 15 MB)
-              </p>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-600 block mb-1">Judul Dokumen Resmi</label>
-              <Input
-                type="text"
-                required
-                value={formData.documentTitle}
-                onChange={(e) => setFormData({ ...formData, documentTitle: e.target.value })}
-                placeholder="Contoh: SK Penetapan Alokasi Kuota Emisi PTBAE-PU 2026"
-                className="w-full p-2.5 rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">Kategori Dokumen</label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(val) => {
-                    const labelMap: Record<string, string> = {
-                      sk_ptbae: 'SK Kuota PTBAE-PU',
-                      spe_grk: 'Sertifikat SPE-GRK',
-                      stp_djp: 'Surat Tagihan Pajak DJP',
-                      kth_sk: 'SK Pengesahan KTH',
-                    };
-                    setFormData({
-                      ...formData,
-                      category: val,
-                      categoryLabel: labelMap[val] || 'Dokumen Resmi',
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih Kategori" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sk_ptbae">SK Kuota PTBAE-PU</SelectItem>
-                    <SelectItem value="spe_grk">Sertifikat SPE-GRK</SelectItem>
-                    <SelectItem value="stp_djp">Surat Tagihan Pajak DJP</SelectItem>
-                    <SelectItem value="kth_sk">SK Pengesahan KTH</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">Instansi Penerbit</label>
-                <Select
-                  value={formData.agencyIssuer}
-                  onValueChange={(val) => setFormData({ ...formData, agencyIssuer: val })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih Instansi" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="KLHK & DJP">KLHK & DJP Kemenkeu</SelectItem>
-                    <SelectItem value="KLHK">Kementerian LHK RI</SelectItem>
-                    <SelectItem value="DJP">Direktorat Jenderal Pajak</SelectItem>
-                    <SelectItem value="Dishut Prov">Dinas Kehutanan Provinsi</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-600 block mb-1">
-                Entitas / Perusahaan Sasaran
-              </label>
-              <Input
-                type="text"
-                required
-                value={formData.targetEntityName}
-                onChange={(e) => setFormData({ ...formData, targetEntityName: e.target.value })}
-                placeholder="Contoh: PT Semen Nusantara Tuban"
-                className="w-full p-2.5 rounded-xl border-slate-200 bg-slate-50 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-600 block mb-1">Nama Berkas (PDF)</label>
-              <Input
-                type="text"
-                required
-                value={formData.fileName}
-                onChange={(e) => setFormData({ ...formData, fileName: e.target.value })}
-                placeholder="Contoh: SK_KLHK_PTBAE_2026_SEMEN_NUSANTARA.pdf"
-                className="w-full p-2.5 rounded-xl border-slate-200 bg-slate-50 focus:bg-white font-mono"
-              />
-            </div>
-
-            <div className="pt-3 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50"
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                className="px-4 py-2.5 rounded-xl bg-primary-gradient text-white font-extrabold shadow-md hover:opacity-95"
-              >
-                Publikasikan Dokumen
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* REGULATION UPLOAD MODAL */}
+      <RegulationUploadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleFormSubmit}
+      />
     </div>
   );
 }
