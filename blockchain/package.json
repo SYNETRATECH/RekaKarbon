@@ -1,24 +1,20 @@
 {
-  "name": "@rekakarbon/blockchain",
+  "name": "vm_blockhain",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "compile": "hardhat compile",
-    "test": "hardhat test",
-    "typecheck": "tsc --noEmit"
+    "test": "hardhat test"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
     "@openzeppelin/contracts": "5.0.0",
-    "@types/chai": "^4.3.11",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^24.0.0",
     "chai": "^4.4.1",
-    "dotenv": "^16.4.5",
     "ethers": "^6.10.0",
-    "hardhat": "^2.22.8",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "hardhat": "^2.22.8"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
   }
 }
