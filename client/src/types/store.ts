@@ -73,7 +73,6 @@ export interface CarbonStoreState {
   userRole: 'emitter' | 'regulator' | 'auditor' | 'kth' | null;
   subRole: string;
   userProfile: UserProfile;
-  isLoginModalOpen: boolean;
   isLogoutDialogOpen: boolean;
   adminActiveTab: string;
 
@@ -125,7 +124,6 @@ export interface CarbonStoreState {
   setActiveModule: (module: 'conservation' | 'corporate') => void;
   setActiveTab: (tab: 'editor' | 'stats') => void;
   setIsDrawerOpen: (isOpen: boolean) => void;
-  setIsLoginModalOpen: (isOpen: boolean) => void;
   setIsLogoutDialogOpen: (isOpen: boolean) => void;
   setAdminActiveTab: (tab: string) => void;
   setSubRole: (roleKey: string) => void;

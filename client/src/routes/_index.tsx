@@ -5,7 +5,6 @@ import RightDrawer from '../components/RightDrawer';
 import ConservationModule from '../components/ConservationModule';
 import CorporateModule from '../components/CorporateModule';
 import Modals from '../components/Modals';
-import LoginModal from '../components/LoginModal';
 import { Menu, Globe, Building2 } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
 
@@ -126,7 +125,6 @@ export default function LandingPageRoute() {
       {/* Overlays & Drawers */}
       <RightDrawer />
       <Modals />
-      <LoginModal />
     </div>
   );
 }
