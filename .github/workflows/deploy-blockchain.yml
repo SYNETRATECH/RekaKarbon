@@ -42,6 +42,7 @@ jobs:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: |
           sudo apt-get update
           sudo apt-get install -y sshpass
@@ -53,13 +54,19 @@ jobs:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: |
-          sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME@$SERVER_IP" << 'EOF'
+          sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME@$SERVER_IP" << EOF
             set -e
             
             echo "=== Membersihkan kontainer & data lama (jika ada) ==="
             echo "$SERVER_PASSWORD" | sudo -S docker rm -f besu-dev-node 2>/dev/null || true
             echo "$SERVER_PASSWORD" | sudo -S docker volume rm besu_data 2>/dev/null || true
+            
+            echo "=== Menyiapkan Kunci Node (Node Key) ==="
+            echo "$SERVER_PASSWORD" | sudo -S mkdir -p ~/VM_BLOCKHAIN/besu_data
+            echo "$SERVER_PASSWORD" | sudo -S chmod 777 ~/VM_BLOCKHAIN/besu_data
+            echo "$PRIVATE_KEY" > ~/VM_BLOCKHAIN/besu_data/node_key
             
             echo "=== Menjalankan Docker Hyperledger Besu ==="
             echo "$SERVER_PASSWORD" | sudo -S docker run -d \
@@ -67,8 +74,11 @@ jobs:
               --restart always \
               -p 8545:8545 \
               -p 8546:8546 \
+              -v ~/VM_BLOCKHAIN/besu_data:/opt/besu/data \
+              -v ~/VM_BLOCKHAIN/blockchain/besu-config:/config \
               hyperledger/besu:23.4.4 \
-              --network=dev \
+              --genesis-file=/config/genesis.json \
+              --node-private-key-file=/opt/besu/data/node_key \
               --rpc-http-enabled=true \
               --rpc-http-host=0.0.0.0 \
               --rpc-http-cors-origins="*" \
@@ -78,7 +88,7 @@ jobs:
               --host-allowlist="*" \
               --min-gas-price=0 \
               --miner-enabled=true \
-              --miner-coinbase=0x627306090abaB3A6e1400e9345bC60c78a8BEf57
+              --miner-coinbase=0xfBB83F5872C2E4e1f8Fa49584da8DB98B91a1267
             
             echo "=== Menunggu Node Besu siap (max 60 detik) ==="
             for i in $(seq 1 12); do
@@ -99,6 +109,7 @@ jobs:
             echo "$SERVER_PASSWORD" | sudo -S docker run --rm \
               -v ~/VM_BLOCKHAIN:/app \
               -w /app \
+              -e PRIVATE_KEY="$PRIVATE_KEY" \
               --network host \
               node:20 \
               bash -c "npm ci && npx hardhat run scripts/deploy.js --network besu_local"
