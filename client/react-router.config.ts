@@ -4,6 +4,13 @@ export default {
   appDirectory: 'src',
   ssr: false,
   async prerender() {
-    return ['/'];
+    return [
+      '/',
+      '/portal',
+      '/portal/emitter',
+      '/portal/auditor',
+      '/portal/regulator',
+      '/portal/kth',
+    ];
   },
 } satisfies Config;
