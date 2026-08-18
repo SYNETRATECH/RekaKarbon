@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, Outlet } from 'react-router';
+import { useLocation, Outlet } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import PortalSidebar from './PortalSidebar';
 import Modals from '../../components/Modals';
@@ -10,13 +10,12 @@ import { Input } from '@/components/ui/input';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 interface PortalLayoutProps {
-  activeTabId?: string;
   children?: React.ReactNode;
 }
 
-export default function PortalLayout({ activeTabId, children }: PortalLayoutProps) {
-  const { userRole, loginAsRole, userProfile, initializeData, isDataLoaded } = useCarbonStore();
-  const { tab: urlTab } = useParams();
+export default function PortalLayout({ children }: PortalLayoutProps) {
+  const { userRole, userProfile, initializeData, isDataLoaded } = useCarbonStore();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isDataLoaded) {
@@ -33,7 +32,7 @@ export default function PortalLayout({ activeTabId, children }: PortalLayoutProp
   }
 
   const activeRole = userRole || 'emitter';
-  const activeTab = activeTabId || urlTab || 'dashboard';
+  const activeTab = location.pathname.replace(/^\//, '') || 'dashboard';
 
   return (
     <SidebarProvider className="flex h-screen w-screen bg-slate-100 overflow-hidden font-sans text-slate-800">
