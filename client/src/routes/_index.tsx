@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { useCarbonStore } from '../store/useCarbonStore';
 import MapCanvas from '../components/MapCanvas';
 import RightDrawer from '../components/RightDrawer';
 import ConservationModule from '../components/ConservationModule';
 import CorporateModule from '../components/CorporateModule';
 import Modals from '../components/Modals';
-import { Menu, Globe, Building2 } from 'lucide-react';
+import { Menu, Globe, Building2, LogIn } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
+import { Button } from '@/components/ui/button';
 
 export function meta() {
   return [
@@ -16,8 +18,15 @@ export function meta() {
 }
 
 export default function LandingPageRoute() {
-  const { activeModule, companies, setIsDrawerOpen, initializeData, isDataLoaded } =
-    useCarbonStore();
+  const {
+    activeModule,
+    setActiveModule,
+    companies,
+    setIsDrawerOpen,
+    initializeData,
+    isDataLoaded,
+  } = useCarbonStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     initializeData();
@@ -54,33 +63,69 @@ export default function LandingPageRoute() {
           </div>
         </div>
 
-        {/* Action Widgets and Menu Button */}
-        <div className="flex items-center gap-4">
+        {/* Center / Right Action Controls */}
+        <div className="flex items-center gap-3">
           {/* Status Indicator */}
-          <div className="hidden sm:flex bg-primary-tint border border-emerald-100 text-[var(--color-primary)] text-[10px] font-extrabold px-3.5 py-1.5 rounded-full items-center gap-1.5 shadow-2xs">
+          <div className="hidden lg:flex bg-primary-tint border border-emerald-100 text-[var(--color-primary)] text-[10px] font-extrabold px-3 py-1.5 rounded-full items-center gap-1.5 shadow-2xs">
             <span className="w-1.5 h-1.5 bg-[#00C48C] rounded-full animate-pulse"></span>
             Live Mainnet Connection
           </div>
 
           {/* Alert count for unpaid corporate carbon deficits */}
           {activeModule === 'corporate' && unpaidCount > 0 && (
-            <div className="bg-rose-50 border border-rose-150 text-rose-700 text-[10px] font-extrabold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xs">
+            <div className="hidden xl:flex bg-rose-50 border border-rose-150 text-rose-700 text-[10px] font-extrabold px-3 py-1.5 rounded-full items-center gap-1.5 shadow-2xs">
               <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping"></span>
               {unpaidCount} Perusahaan Tertunggak
             </div>
           )}
 
-          <div className="h-6 w-px bg-slate-200"></div>
+          {/* Segmented Module Switcher */}
+          <div className="hidden sm:flex bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+            <button
+              onClick={() => setActiveModule('conservation')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
+                activeModule === 'conservation'
+                  ? 'bg-primary-gradient text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>Peta Konservasi & dMRV</span>
+            </button>
+            <button
+              onClick={() => setActiveModule('corporate')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer ${
+                activeModule === 'corporate'
+                  ? 'bg-primary-gradient text-white shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-rose-500" />
+              <span>Emisi Perusahaan</span>
+            </button>
+          </div>
 
-          {/* Toggle Menu Button */}
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            className="flex items-center gap-2 bg-primary-gradient hover:bg-primary-gradient-dark text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg cursor-pointer active:scale-95"
-            aria-label="Buka Menu"
+          <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+          {/* Direct Portal Login Button */}
+          <Button
+            onClick={() => navigate('/login')}
+            className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
           >
-            <Menu className="w-4 h-4 text-[#00C48C]" />
-            <span className="hidden sm:inline">Menu Kontrol</span>
-          </button>
+            <LogIn className="w-3.5 h-3.5 text-[#00C48C]" />
+            <span className="hidden sm:inline">Masuk</span>
+          </Button>
+
+          {/* Mobile Menu Drawer Toggle */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setIsDrawerOpen(true)}
+            className="sm:hidden rounded-xl"
+            aria-label="Buka Menu Drawer"
+          >
+            <Menu className="w-4 h-4 text-slate-700" />
+          </Button>
         </div>
       </header>
 
