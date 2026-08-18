@@ -50,12 +50,8 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   tileType: 'satellite',
 
   // Modals & Popups Visibilities
-  isReforestationOpen: false,
-  isFinanceOpen: false,
-  selectedStage: null,
   isReportModalOpen: false,
   selectedReportStage: null,
-  selectedTx: null,
   lightboxImage: null,
 
   // Authentication & Admin Portal States
@@ -235,8 +231,6 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   searchQuery: '',
   isVerichainExplorerOpen: false,
   searchedTxData: null,
-  isPublicReportOpen: false,
-  publicReportType: 'conservation',
 
   // Setters & Actions
   setActiveModule: (module) => set({ activeModule: module }),
@@ -283,8 +277,6 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
   setIsVerichainExplorerOpen: (isOpen) => set({ isVerichainExplorerOpen: isOpen }),
   setSearchedTxData: (data) => set({ searchedTxData: data }),
-  setIsPublicReportOpen: (isOpen) => set({ isPublicReportOpen: isOpen }),
-  setPublicReportType: (type) => set({ publicReportType: type }),
 
   setActiveIndex: (index) => {
     const project = get().projects[index];
@@ -302,12 +294,8 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   setIsDragMode: (isDrag) => set({ isDragMode: isDrag }),
   setTileType: (tile) => set({ tileType: tile }),
 
-  setIsReforestationOpen: (isOpen) => set({ isReforestationOpen: isOpen }),
-  setIsFinanceOpen: (isOpen) => set({ isFinanceOpen: isOpen }),
-  setSelectedStage: (stage) => set({ selectedStage: stage }),
   setIsReportModalOpen: (isOpen) => set({ isReportModalOpen: isOpen }),
   setSelectedReportStage: (stage) => set({ selectedReportStage: stage }),
-  setSelectedTx: (tx) => set({ selectedTx: tx }),
   setLightboxImage: (image) => set({ lightboxImage: image }),
 
   // Search Hash / Certificate ID Action

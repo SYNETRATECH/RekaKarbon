@@ -45,8 +45,6 @@ export default function ConservationModule() {
     setActiveIndex,
     setActiveTab,
     setTileType,
-    setSelectedStage,
-    setSelectedTx,
     searchVerichainHash,
   } = useCarbonStore();
 
@@ -291,8 +289,7 @@ export default function ConservationModule() {
                 return (
                   <div
                     key={stage.year}
-                    onClick={() => setSelectedStage({ project: activeProj, stage })}
-                    className="relative group cursor-pointer hover:bg-slate-100/70 p-1.5 -mx-2.5 px-2.5 rounded-lg border border-transparent hover:border-slate-200/50 transition-all"
+                    className="relative group p-1.5 -mx-2.5 px-2.5 rounded-lg border border-transparent transition-all"
                   >
                     {/* Milestone circle */}
                     <span
@@ -591,8 +588,7 @@ export default function ConservationModule() {
                       .map((tx, idx) => (
                         <div
                           key={tx.id || idx}
-                          onClick={() => setSelectedTx({ project: activeProj, tx, index: idx })}
-                          className="bg-white hover:bg-emerald-50/40 p-2.5 rounded-xl border border-slate-200/60 hover:border-emerald-300 space-y-1.5 text-left cursor-pointer transition-all shadow-2xs group"
+                          className="bg-white p-2.5 rounded-xl border border-slate-200/60 space-y-1.5 text-left transition-all shadow-2xs group"
                         >
                           <div className="flex items-center justify-between leading-none">
                             <span className="text-[9px] font-bold text-slate-700">{tx.date}</span>

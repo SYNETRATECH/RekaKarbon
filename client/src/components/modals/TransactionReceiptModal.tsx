@@ -1,4 +1,3 @@
-import { useCarbonStore } from '../../store/useCarbonStore';
 import { FileSpreadsheet, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -10,11 +9,19 @@ import {
   TableCell,
 } from '@/components/ui/table';
 
-export default function TransactionReceiptModal() {
-  const { selectedTx, setSelectedTx, setLightboxImage } = useCarbonStore();
+interface TransactionReceiptModalProps {
+  selectedTx: any | null;
+  onClose: () => void;
+  onPreviewImage?: (imgUrl: string) => void;
+}
 
+export default function TransactionReceiptModal({
+  selectedTx,
+  onClose,
+  onPreviewImage,
+}: TransactionReceiptModalProps) {
   return (
-    <Dialog open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
+    <Dialog open={!!selectedTx} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="p-0 max-w-3xl overflow-hidden border-slate-200 bg-white shadow-2xl gap-0 font-sans">
         <DialogTitle className="sr-only">Bukti Aliran Dana Blockchain</DialogTitle>
         {selectedTx && (
@@ -154,7 +161,7 @@ export default function TransactionReceiptModal() {
                     {selectedTx.tx.proofImages.map((imgUrl: string, i: number) => (
                       <div
                         key={i}
-                        onClick={() => setLightboxImage(imgUrl)}
+                        onClick={() => onPreviewImage?.(imgUrl)}
                         className="relative h-28 rounded-xl overflow-hidden border border-slate-200 shadow-xs group cursor-pointer"
                       >
                         <img

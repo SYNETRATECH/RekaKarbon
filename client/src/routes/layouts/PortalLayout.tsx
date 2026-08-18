@@ -2,12 +2,6 @@ import { useEffect } from 'react';
 import { useLocation, Outlet } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import PortalSidebar from './PortalSidebar';
-import DroneAuditModal from '../../components/modals/DroneAuditModal';
-import AuditReportModal from '../../components/modals/AuditReportModal';
-import TransactionReceiptModal from '../../components/modals/TransactionReceiptModal';
-import LightboxModal from '../../components/modals/LightboxModal';
-import VerichainExplorerModal from '../../components/modals/VerichainExplorerModal';
-import PublicReportModal from '../../components/modals/PublicReportModal';
 import LogoutDialog from '../../components/LogoutDialog';
 import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -108,13 +102,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">{children || <Outlet />}</div>
       </main>
 
-      {/* Global Overlays & Audit Modals */}
-      <DroneAuditModal />
-      <AuditReportModal />
-      <TransactionReceiptModal />
-      <LightboxModal />
-      <VerichainExplorerModal />
-      <PublicReportModal />
+      {/* Global Overlays & Logout Modal */}
       <LogoutDialog />
     </SidebarProvider>
   );

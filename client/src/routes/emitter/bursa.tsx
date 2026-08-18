@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import BursaPurchaseModal from '../../components/modals/BursaPurchaseModal';
 import { Input } from '@/components/ui/input';
 import {
   ShoppingCart,
@@ -329,131 +330,8 @@ export default function CarbonDexMarket() {
         </div>
       </div>
 
-      {/* 7. BURSA PURCHASE & TRANSPARENCY ALLOCATION MODAL */}
-      {selectedBursaToken && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-xl p-6 space-y-6 text-left animate-fade-in max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <div>
-                <h4 className="font-black text-sm text-slate-900">
-                  Pembelian Token: {selectedBursaToken.name}
-                </h4>
-                <span className="text-[10px] text-slate-400 font-bold">
-                  {selectedBursaToken.location}
-                </span>
-              </div>
-              <button
-                onClick={() => setSelectedBursaToken(null)}
-                className="text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Jumlah Pembelian Token (tCO2e):</label>
-                <Input
-                  type="number"
-                  max="2330"
-                  value={buyQuantity}
-                  onChange={(e) => setBuyQuantity(Math.min(2330, Number(e.target.value)))}
-                  className="font-mono text-xs rounded-xl"
-                />
-                <span className="text-[9px] text-rose-600 font-bold block">
-                  Cap Control Aktif: Maksimal 2.330 tCO2e (Sesuai Defisit Aktif)
-                </span>
-              </div>
-
-              {/* PANEL TRANSPARANSI ALOKASI DANA (3% FEE vs 97% PROJECT FUND DIKURS KE 5 POS) */}
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <span className="font-black text-xs text-slate-900 flex items-center gap-1.5">
-                    <PieChart className="w-4 h-4 text-[#00C48C]" />
-                    Rincian Pembagian Transparansi Dana (3% Fee vs 97% Proyek)
-                  </span>
-                  <span className="font-mono font-black text-[#003E29]">
-                    Total: Rp {totalAmountIDR.toLocaleString('id-ID')}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 font-mono text-[10px]">
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-                    <span className="text-slate-400 font-sans block text-[9px] font-bold uppercase">
-                      Platform Fee (3%)
-                    </span>
-                    <span className="font-black text-slate-800">
-                      Rp {platformFeeIDR.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  <div className="bg-emerald-100/60 p-2.5 rounded-xl border border-slate-200">
-                    <span className="text-emerald-800 font-sans block text-[9px] font-bold uppercase">
-                      Dana Proyek Lingkungan (97%)
-                    </span>
-                    <span className="font-black text-emerald-900">
-                      Rp {projectFundIDR.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 5 Pos Lingkungan Breakdown */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-200 text-[10.5px]">
-                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block font-sans">
-                    ALOKASI 5 POS LINGKUNGAN (97% DANA PROYEK):
-                  </span>
-
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-600 font-semibold">
-                      1. Restorasi Penanaman (62%)
-                    </span>
-                    <span className="font-mono font-extrabold text-emerald-800">
-                      Rp {posRestorasi.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-600 font-semibold">
-                      2. Pemeliharaan Tanaman (15%)
-                    </span>
-                    <span className="font-mono font-extrabold text-emerald-800">
-                      Rp {posPemeliharaan.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-600 font-semibold">
-                      3. Monitoring / dMRV Drone (10%)
-                    </span>
-                    <span className="font-mono font-extrabold text-emerald-800">
-                      Rp {posMonitoring.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-600 font-semibold">4. Buffer Pool Risiko (8%)</span>
-                    <span className="font-mono font-extrabold text-amber-700">
-                      Rp {posBufferPool.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-slate-600 font-semibold">
-                      5. NusaCarbon API & Satelit (5%)
-                    </span>
-                    <span className="font-mono font-extrabold text-emerald-800">
-                      Rp {posNusaApi.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setSelectedBursaToken(null)}
-              className="w-full bg-primary-gradient text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md cursor-pointer active:scale-95 flex items-center justify-center gap-2"
-            >
-              <ShoppingCart className="w-4 h-4 text-[#00C48C]" />
-              Konfirmasi & Beli Token Karbon
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 7. MODULAR BURSA PURCHASE & TRANSPARENCY ALLOCATION MODAL */}
+      <BursaPurchaseModal token={selectedBursaToken} onClose={() => setSelectedBursaToken(null)} />
     </div>
   );
 }

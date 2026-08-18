@@ -1,4 +1,3 @@
-import { useCarbonStore } from '../../store/useCarbonStore';
 import { FileText, Printer, FileSpreadsheet, Download, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,10 +9,21 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+import type { Project, Company } from '../../types';
 
-export default function PublicReportModal() {
-  const { projects, companies, isPublicReportOpen, setIsPublicReportOpen } = useCarbonStore();
+interface PublicReportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  projects: Project[];
+  companies: Company[];
+}
 
+export default function PublicReportModal({
+  isOpen,
+  onClose,
+  projects,
+  companies,
+}: PublicReportModalProps) {
   const handleDownloadCSV = () => {
     let csvContent = 'data:text/csv;charset=utf-8,';
     csvContent +=
@@ -64,7 +74,7 @@ export default function PublicReportModal() {
   };
 
   return (
-    <Dialog open={isPublicReportOpen} onOpenChange={setIsPublicReportOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="p-0 max-w-4xl overflow-hidden border-slate-200 bg-white shadow-2xl gap-0">
         <DialogTitle className="sr-only">Pratinjau Laporan Transparansi Publik</DialogTitle>
         <div className="flex flex-col max-h-[92vh]">

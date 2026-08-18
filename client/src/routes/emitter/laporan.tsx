@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
@@ -822,171 +823,16 @@ export default function EmissionReportsSector() {
       </div>
 
       {/* AI CROSS-VARIABLE AUDIT SIMULATION MODAL */}
-      {isAuditModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-xl p-6 sm:p-7 space-y-6 text-left animate-slide-in">
-            {/* Modal Header */}
-            <div className="flex justify-between items-start border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-[#003E29] flex items-center justify-center shrink-0">
-                  <Cpu className="w-5 h-5 text-emerald-600 animate-pulse" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900">
-                    Proses Audit AI Cross-Variable Kepatuhan Industri
-                  </h3>
-                  <span className="text-[11px] text-emerald-700 font-extrabold inline-flex items-center gap-1 mt-0.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    AI dMRV Engine v4.2 • Deteksi Kejujuran Pelaporan
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Audit Progress Steps */}
-            <div className="space-y-3.5 text-xs">
-              {/* Step 1: DJP e-Faktur */}
-              <div
-                className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
-                  auditStep >= 1
-                    ? 'bg-emerald-50/70 border-emerald-200 text-slate-900'
-                    : 'bg-slate-50 border-slate-200 text-slate-400'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {auditStep > 1 ? (
-                    <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                      ✓
-                    </div>
-                  ) : auditStep === 1 ? (
-                    <div className="w-6 h-6 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin shrink-0"></div>
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">
-                      1
-                    </div>
-                  )}
-                  <div>
-                    <h5 className="font-extrabold text-xs">Cross-Check e-Faktur Pajak DJP</h5>
-                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                      No. Faktur: {cat2EFakturDJP} • Pos Utilitas Rp 29.10 Miliar
-                    </p>
-                  </div>
-                </div>
-                {auditStep > 1 && (
-                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                    MATCHED DJP
-                  </span>
-                )}
-              </div>
-
-              {/* Step 2: Physical BBM vs Financial Cost Correlation */}
-              <div
-                className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
-                  auditStep >= 2
-                    ? 'bg-emerald-50/70 border-emerald-200 text-slate-900'
-                    : 'bg-slate-50 border-slate-200 text-slate-400'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {auditStep > 2 ? (
-                    <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                      ✓
-                    </div>
-                  ) : auditStep === 2 ? (
-                    <div className="w-6 h-6 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin shrink-0"></div>
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">
-                      2
-                    </div>
-                  )}
-                  <div>
-                    <h5 className="font-extrabold text-xs">
-                      Analisis Korelasi Fisik BBM vs Keuangan
-                    </h5>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      BBM Mesin Stasioner (4.85M Liter) vs Biaya Solar & Batubara
-                    </p>
-                  </div>
-                </div>
-                {auditStep > 2 && (
-                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                    LOGIC VALID
-                  </span>
-                )}
-              </div>
-
-              {/* Step 3: IPCC Kaidah & Multi-Variable Production */}
-              <div
-                className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
-                  auditStep >= 3
-                    ? 'bg-emerald-50/70 border-emerald-200 text-slate-900'
-                    : 'bg-slate-50 border-slate-200 text-slate-400'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {auditStep > 3 ? (
-                    <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                      ✓
-                    </div>
-                  ) : auditStep === 3 ? (
-                    <div className="w-6 h-6 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin shrink-0"></div>
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">
-                      3
-                    </div>
-                  )}
-                  <div>
-                    <h5 className="font-extrabold text-xs">
-                      Evaluasi Multi-Variabel Produksi & IPCC
-                    </h5>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      Kapasitas 450k Ton Produk vs Jejak Karbon Historis (13.5k tCO2e)
-                    </p>
-                  </div>
-                </div>
-                {auditStep > 3 && (
-                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                    VERIFIED IPCC
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Audit Completion Result Banner */}
-            {auditComplete && (
-              <div className="bg-emerald-500 text-white p-4 rounded-2xl space-y-1.5 animate-slide-in shadow-md">
-                <div className="flex items-center gap-2 font-black text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-200 shrink-0" />
-                  <span>100% HONESTY & COMPLIANCE VERIFIED!</span>
-                </div>
-                <p className="text-xs text-emerald-100 font-medium leading-relaxed">
-                  Hasil analisis AI dMRV mengonfirmasi 100% kejujuran pelaporan emisi dengan tingkat
-                  kepercayaan AI 99.4%. Data terverifikasi resmi terdaftar di Sistem KLHK & On-Chain
-                  Verichain.
-                </p>
-              </div>
-            )}
-
-            {/* Modal Action Footer */}
-            <div className="pt-2 border-t border-slate-100 flex justify-end">
-              <button
-                type="button"
-                disabled={isAuditing}
-                onClick={() => setIsAuditModalOpen(false)}
-                className={`w-full py-3 px-4 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                  isAuditing
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                    : 'bg-primary-gradient hover:opacity-95 text-white shadow-md'
-                }`}
-              >
-                {isAuditing
-                  ? 'Proses Audit AI Sedang Berjalan...'
-                  : 'Selesai & Lihat Laporan Terverifikasi'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LaporanAuditModal
+        isOpen={isAuditModalOpen}
+        onClose={() => setIsAuditModalOpen(false)}
+        auditStep={auditStep}
+        cat2EFakturDJP={cat2EFakturDJP}
+        isAuditPass={true}
+        scoreDJP={100}
+        scoreBBM={98.4}
+        scoreCEMS={99.8}
+      />
 
       <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
         <DialogContent className="sm:max-w-md">

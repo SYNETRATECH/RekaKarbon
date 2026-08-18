@@ -1,14 +1,16 @@
-import { useCarbonStore } from '../../store/useCarbonStore';
 import { Globe, FileText } from 'lucide-react';
 import droneFootageVideo from '../../assets/drone_footage.mp4';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-export default function DroneAuditModal() {
-  const { selectedStage, setSelectedStage, setSelectedReportStage } = useCarbonStore();
+interface DroneAuditModalProps {
+  selectedStage: { project: any; stage: any } | null;
+  onClose: () => void;
+}
 
+export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditModalProps) {
   return (
-    <Dialog open={!!selectedStage} onOpenChange={(open) => !open && setSelectedStage(null)}>
+    <Dialog open={!!selectedStage} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="p-0 max-w-4xl border-slate-200 overflow-hidden text-left gap-0 bg-white shadow-2xl">
         <DialogTitle className="sr-only">dMRV Public Audit Modal</DialogTitle>
         {selectedStage && (
@@ -181,14 +183,9 @@ export default function DroneAuditModal() {
                     </div>
                   </div>
 
-                  {/* Button to open report for specific stage and trigger print directly */}
+                  {/* Button to print audit certificate directly */}
                   <Button
-                    onClick={() => {
-                      setSelectedReportStage(selectedStage.stage);
-                      setTimeout(() => {
-                        window.print();
-                      }, 150);
-                    }}
+                    onClick={() => window.print()}
                     className="w-full bg-primary-gradient hover:opacity-95 text-white text-[10px] font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 mt-4"
                   >
                     <FileText className="w-3.5 h-3.5 text-[#00C48C]" />
