@@ -36,26 +36,25 @@ pnpm preview      # Preview production build
 ```
 client/
 ├── src/
-│   ├── components/           # Shared UI components (ui/, RightDrawer, Modals, MapCanvas, etc.)
-│   ├── portal/               # Role-based portal views
-│   │   ├── layouts/          # PortalSidebar, PortalLayout
-│   │   └── views/
-│   │       ├── emitter/      # CarbonDexMarket, ComplianceDashboard, etc.
-│   │       ├── auditor/      # SpatialMRVEvaluation, EmissionsAuditAI, etc.
-│   │       ├── regulator/    # ForestProjectsManagement, EmitterKYBValidation, etc.
-│   │       └── kth/          # LandPolygonMapping, DigitalWalletHybridLogs
-│   ├── routes/               # React Router v7 routes (file-based)
+│   ├── components/           # Shared UI components (ui/, layout/, modals/, RightDrawer, MapCanvas, etc.)
+│   ├── routes/               # React Router v7 routes (role-isolated route views & pages)
 │   │   ├── _index.tsx        # Landing page
-│   │   ├── portal._index.tsx # Portal entry
-│   │   ├── portal.$role.tsx  # Role layout
-│   │   └── portal.$role.$tab.tsx # Tab views
+│   │   ├── app.tsx           # Main App route
+│   │   ├── login.tsx         # Login view
+│   │   ├── dashboard.tsx     # Overview dashboard
+│   │   ├── settings.tsx      # App settings
+│   │   ├── layouts/          # PortalLayout.tsx, PortalSidebar.tsx
+│   │   ├── kth/              # KTH role routes (polygon.tsx, wallet.tsx)
+│   │   ├── emitter/          # Emitter role routes (bursa.tsx, compliance.tsx, laporan.tsx, sertifikat.tsx)
+│   │   ├── regulator/        # Regulator role routes (projects.tsx, kth.tsx, forest.tsx, upload.tsx, etc.)
+│   │   └── auditor/          # Auditor role routes (spatial.tsx, drone.tsx, audit.tsx, gate.tsx)
 │   ├── store/
-│   │   └── useCarbonStore.ts # Central Zustand store (all state + actions)
+│   │   └── useCarbonStore.ts # Central Zustand store (all global state + actions)
 │   ├── repositories/         # Repository Pattern (Mock + API implementations)
 │   │   ├── *.repository.ts   # Interfaces + implementations per feature
 │   │   └── index.ts          # Barrel export
 │   ├── lib/
-│   │   ├── mock/             # Mock data fixtures (typed with src/types)
+│   │   ├── mock/             # Mock data fixtures (typed with src/types, UUID-like IDs)
 │   │   ├── formatters.ts     # Currency, carbon, area, percent, file size
 │   │   ├── dates.ts          # Date formatting (id-ID, Asia/Jakarta)
 │   │   └── api.ts            # API client (when VITE_USE_MOCK_DATA=false)
@@ -84,10 +83,10 @@ client/
 
 ## 🔑 Critical Patterns (Must Follow)
 
-### 1. Data Flow: View → Store → Repository → Mock/API
+### 1. Data & View Separation: View → Store → Repository → Mock/API
 
 ```
-components/portal/views/**/*.tsx
+routes/<role>/**/*.tsx (or components/**/*.tsx)
     │
     ▼ uses hooks
 store/useCarbonStore.ts  ◄───── select state + actions
@@ -99,12 +98,23 @@ repositories/*.repository.ts  ◄───── implements Repository Interface
     └── Api...Repository   (VITE_USE_MOCK_DATA=false)
     │
     ▼ reads
-lib/mock/*.ts              # Typed fixtures (source of truth for mock)
+lib/mock/*.ts              # Typed fixtures (source of truth for mock, UUID-like IDs)
 ```
 
-**NEVER** import `lib/mock` directly in components.
+- **NEVER** import `lib/mock` directly in View components (`.tsx`/`.jsx`).
+- **Mock data fixtures** MUST follow standard backend API payload rules (e.g. UUID-like strings for entity IDs).
 
-### 2. Naming Conventions
+### 2. State Management Guidelines (Local vs. Zustand Store)
+
+- **Local/Ephemeral State**: Form input fields, tab selection, modal/dialog toggle states specific to a single component or page SHOULD be managed via React local state (`useState`).
+- **Global/Shared State**: Data consumed across multiple components, views, or pages (e.g. project lists, transaction logs, user roles) MUST be stored in the central **Zustand store** (`useCarbonStore.ts`) to avoid _props drilling_.
+
+### 3. UI Component Policy (`shadcn/ui` First)
+
+- **Prioritize shadcn/ui**: Always look in `@/components/ui/` (`Button`, `Input`, `Card`, `Badge`, `Table`, `Dialog`, `Sheet`, `Select`, `Progress`, `Alert`, `Popover`, etc.) before creating new elements.
+- **Reuse & Modify**: If a component already provides what is needed, use it directly or customize it. Building custom HTML components (`<button>`, `<input>`, `<table>`, `<dialog>`) when `shadcn/ui` primitives exist is prohibited.
+
+### 4. Naming Conventions
 
 | Type                    | Convention         | Example                                  |
 | ----------------------- | ------------------ | ---------------------------------------- |
@@ -113,13 +123,13 @@ lib/mock/*.ts              # Typed fixtures (source of truth for mock)
 | Types/Interfaces        | `PascalCase`       | `ForestProjectItem`, `CarbonStoreState`  |
 | Constants/Mock Fixtures | `UPPER_SNAKE_CASE` | `MOCK_BURSA_ITEMS`, `COMPANIES_DATA`     |
 
-### 3. TypeScript Types
+### 5. TypeScript Types
 
-- **All types** in `src/types/` (barrel export via `src/types/index.ts`)
-- **Never** define interfaces inline in mock files or components
-- Mock data **must** be explicitly typed using types from `src/types`
+- **All types** reside in `src/types/` (barrel export via `src/types/index.ts`).
+- **Never** define interfaces inline in mock files or components.
+- Mock data **must** be explicitly typed using types from `src/types`.
 
-### 4. Color & Theme (Tailwind v4 + CSS Variables)
+### 6. Color & Theme (Tailwind v4 + CSS Variables)
 
 | Token                       | Variable                                          | Usage                                       |
 | --------------------------- | ------------------------------------------------- | ------------------------------------------- |
@@ -133,7 +143,7 @@ lib/mock/*.ts              # Typed fixtures (source of truth for mock)
 
 **Do NOT use** hardcoded `#003E29` — use gradient utilities or CSS variable.
 
-### 5. Data Formatting (Raw → UI)
+### 7. Data Formatting (Raw → UI)
 
 | Raw Type            | Formatter                           | Output Example   |
 | ------------------- | ----------------------------------- | ---------------- |
@@ -146,13 +156,13 @@ lib/mock/*.ts              # Typed fixtures (source of truth for mock)
 
 **Rule**: Store raw numbers + ISO dates in types/mock. Format **only** in UI components via `lib/formatters.ts` and `lib/dates.ts`.
 
-### 6. Geodetic Calculations
+### 8. Geodetic Calculations
 
 All spatial area calculations **must** use `src/utils/geodetics.ts` functions. No custom math.
 
-### 7. Error Prevention (High-Risk Actions)
+### 9. Error Prevention (High-Risk Actions)
 
-Buttons for burning/offset, audit modifications, deletions:
+Buttons for burning/offsetting, audit modifications, or deletions:
 
 - Use warning colors (red/orange)
 - Require confirmation modal/dialog
