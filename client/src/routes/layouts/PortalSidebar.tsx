@@ -56,7 +56,7 @@ export default function PortalSidebar() {
   const getNavItems = (): NavItem[] => {
     if (currentRole === 'regulator') {
       return [
-        { id: 'forest', label: 'Dasbor Hutan & Pendanaan', icon: Globe, targetPath: '/dashboard' },
+        { id: 'forest', label: 'Dashboard', icon: Globe, targetPath: '/dashboard' },
         {
           id: 'projects',
           label: 'Manajemen Proyek Kehutanan',
@@ -99,7 +99,7 @@ export default function PortalSidebar() {
       return [
         {
           id: 'compliance',
-          label: 'Dasbor Kepatuhan',
+          label: 'Dashboard',
           icon: LayoutDashboard,
           targetPath: '/dashboard',
         },

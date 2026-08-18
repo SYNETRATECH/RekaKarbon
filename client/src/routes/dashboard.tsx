@@ -9,14 +9,14 @@ const LandPolygonMapping = lazy(() => import('./kth/polygon'));
 
 const ViewLoader = () => (
   <div className="flex h-64 items-center justify-center text-xs font-bold text-slate-400 animate-pulse">
-    Memuat Dasbor...
+    Memuat Dashboard
   </div>
 );
 
 export function meta() {
   return [
-    { title: 'Dasbor | RekaKarbon' },
-    { name: 'description', content: 'Dasbor Utama Platform RekaKarbon' },
+    { title: 'Dashboard | RekaKarbon' },
+    { name: 'description', content: 'Dashboard Utama Platform RekaKarbon' },
   ];
 }
 

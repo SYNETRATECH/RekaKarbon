@@ -42,7 +42,7 @@ export default function ComplianceDashboard() {
       {/* Header Title */}
       <div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-          Dasbor Kepatuhan (Compliance Control Center)
+          Dashboard Kepatuhan (Compliance Control Center)
         </h2>
         <p className="text-xs text-slate-500 font-semibold mt-1">
           Pemantauan status regulasi emisi aktual vs kuota PTBAE-PU dan estimasi biaya karbon
