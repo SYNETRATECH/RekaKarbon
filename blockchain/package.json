@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "typecheck": "echo Skip typecheck for JS",
+    "compile": "hardhat compile"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
