@@ -20,8 +20,8 @@ import {
 
 export function meta() {
   return [
-    { title: 'Dasbor Hutan & Pendanaan | RekaKarbon' },
-    { name: 'description', content: 'Dasbor Hutan Nasional & Pendanaan KLHK' },
+    { title: 'Dashboard | RekaKarbon' },
+    { name: 'description', content: 'Dashboard Hutan Nasional & Pendanaan KLHK' },
   ];
 }
 
@@ -36,7 +36,7 @@ export default function NationalForestDashboard() {
           NATIONAL FOREST & CARBON FUNDING MONITORING
         </span>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
-          Dasbor Status Hutan & Pendanaan Nasional
+          Dashboard Status Hutan & Pendanaan Nasional
         </h2>
         <p className="text-xs text-slate-500 font-semibold mt-1">
           Pengawasan terpadu status tutupan kawasan hutan seluruh wilayah Indonesia, estimasi daya
