@@ -6,11 +6,23 @@ export default {
   async prerender() {
     return [
       '/',
+      '/dashboard',
       '/portal',
-      '/portal/emitter',
-      '/portal/auditor',
-      '/portal/regulator',
-      '/portal/kth',
+      '/bursa',
+      '/laporan',
+      '/sertifikat',
+      '/forest',
+      '/projects',
+      '/kth',
+      '/transactions',
+      '/upload',
+      '/audit',
+      '/spatial',
+      '/drone',
+      '/gate',
+      '/polygon',
+      '/wallet',
+      '/settings',
     ];
   },
 } satisfies Config;

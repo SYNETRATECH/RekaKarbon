@@ -1,9 +1,9 @@
 import { redirect } from 'react-router';
 
 export function clientLoader() {
-  return redirect('/portal/emitter');
+  return redirect('/dashboard');
 }
 
-export default function PortalIndexRoute() {
+export default function PortalAliasRoute() {
   return null;
 }

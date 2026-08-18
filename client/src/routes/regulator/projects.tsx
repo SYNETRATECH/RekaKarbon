@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   TreePine,
   Edit2,
@@ -18,7 +18,7 @@ import {
   Wallet,
   Building2,
 } from 'lucide-react';
-import { formatCurrency, formatFileSize, parseNumeric } from '../../../lib/formatters';
+import { formatCurrency, formatFileSize, parseNumeric } from '../../lib/formatters';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,13 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+
+export function meta() {
+  return [
+    { title: 'Manajemen Proyek Kehutanan | RekaKarbon' },
+    { name: 'description', content: 'Manajemen Proyek Kehutanan Regulasi KLHK' },
+  ];
+}
 
 export default function ForestProjectsManagement() {
   const {

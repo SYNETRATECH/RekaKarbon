@@ -1,4 +1,4 @@
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   Globe,
   Trees as TreeIcon,
@@ -8,7 +8,7 @@ import {
   BarChart3,
   CheckCircle2,
 } from 'lucide-react';
-import { formatArea, formatCarbon, formatCurrency } from '../../../lib/formatters';
+import { formatArea, formatCarbon, formatCurrency } from '../../lib/formatters';
 import {
   Table,
   TableHeader,
@@ -17,6 +17,13 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+
+export function meta() {
+  return [
+    { title: 'Dasbor Hutan & Pendanaan | RekaKarbon' },
+    { name: 'description', content: 'Dasbor Hutan Nasional & Pendanaan KLHK' },
+  ];
+}
 
 export default function NationalForestDashboard() {
   const { nationalForestRegions: regions } = useCarbonStore();
@@ -184,26 +191,34 @@ export default function NationalForestDashboard() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {regions.map((reg) => (
-              <TableRow key={reg.id}>
-                <TableCell className="font-black text-slate-900">{reg.regionName}</TableCell>
-                <TableCell className="text-slate-600 font-bold">
-                  {formatArea(reg.areaHectares)}
-                </TableCell>
-                <TableCell className="font-black text-emerald-600">
-                  {formatCarbon(reg.carbonSequestrationTCO2e)}
-                </TableCell>
-                <TableCell className="font-black text-slate-900">
-                  {formatCurrency(reg.fundingDisbursedIDR)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg text-[10px] font-extrabold inline-flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Terverifikasi Satelit KLHK
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))}
+            {regions.map(
+              (reg: {
+                id: string;
+                regionName: string;
+                areaHectares: number;
+                carbonSequestrationTCO2e: number;
+                fundingDisbursedIDR: number;
+              }) => (
+                <TableRow key={reg.id}>
+                  <TableCell className="font-black text-slate-900">{reg.regionName}</TableCell>
+                  <TableCell className="text-slate-600 font-bold">
+                    {formatArea(reg.areaHectares)}
+                  </TableCell>
+                  <TableCell className="font-black text-emerald-600">
+                    {formatCarbon(reg.carbonSequestrationTCO2e)}
+                  </TableCell>
+                  <TableCell className="font-black text-slate-900">
+                    {formatCurrency(reg.fundingDisbursedIDR)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg text-[10px] font-extrabold inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      Terverifikasi Satelit KLHK
+                    </span>
+                  </TableCell>
+                </TableRow>
+              )
+            )}
           </TableBody>
         </Table>
       </div>

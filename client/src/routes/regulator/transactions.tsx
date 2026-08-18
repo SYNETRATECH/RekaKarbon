@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
@@ -41,8 +41,8 @@ import {
   FileSpreadsheet,
   Package,
 } from 'lucide-react';
-import { formatCurrency } from '../../../lib/formatters';
-import { formatDateTime } from '../../../lib/dates';
+import { formatCurrency } from '../../lib/formatters';
+import { formatDateTime } from '../../lib/dates';
 
 export default function KthTransactionsMonitoring() {
   const {

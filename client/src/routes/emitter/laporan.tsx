@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { useCarbonStore } from '../../../store/useCarbonStore';
+import { useCarbonStore } from '../../store/useCarbonStore';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
@@ -46,6 +46,14 @@ import {
   ChevronRight,
   ArrowLeft,
 } from 'lucide-react';
+
+export function meta() {
+  return [
+    { title: 'Laporan Emisi & Sektor | RekaKarbon' },
+    { name: 'description', content: 'Laporan Emisi Karbon Per Sektor Industri' },
+  ];
+}
+
 export default function EmissionReportsSector() {
   const { emissionReports: reports } = useCarbonStore();
 

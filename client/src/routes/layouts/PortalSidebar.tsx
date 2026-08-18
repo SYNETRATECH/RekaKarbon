@@ -1,4 +1,4 @@
-import { useParams, NavLink } from 'react-router';
+import { useLocation, NavLink } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import {
   LayoutDashboard,
@@ -36,15 +36,17 @@ interface NavItem {
   id: string;
   label: string;
   icon: LucideIcon;
+  targetPath: string;
   badge?: string;
   badgeBg?: string;
 }
 
 export default function PortalSidebar() {
   const { userRole, setIsLogoutDialogOpen } = useCarbonStore();
-  const { role: urlRole, tab: activeTab } = useParams();
+  const location = useLocation();
+  const currentPath = location.pathname;
 
-  const currentRole = urlRole || userRole || 'emitter';
+  const currentRole = userRole || 'emitter';
 
   const handleLogout = () => {
     setIsLogoutDialogOpen(true);
@@ -54,31 +56,61 @@ export default function PortalSidebar() {
   const getNavItems = (): NavItem[] => {
     if (currentRole === 'regulator') {
       return [
-        { id: 'forest', label: 'Dasbor Hutan & Pendanaan', icon: Globe },
-        { id: 'projects', label: 'Manajemen Proyek Kehutanan', icon: FolderPlus },
-        { id: 'kth', label: 'Manajemen Kelompok Tani (KTH)', icon: Users },
-        { id: 'transactions', label: 'Monitoring Transaksi Tani', icon: Coins },
-        { id: 'upload', label: 'Upload Regulasi & Kuota', icon: FileUp },
+        { id: 'forest', label: 'Dasbor Hutan & Pendanaan', icon: Globe, targetPath: '/dashboard' },
+        {
+          id: 'projects',
+          label: 'Manajemen Proyek Kehutanan',
+          icon: FolderPlus,
+          targetPath: '/projects',
+        },
+        { id: 'kth', label: 'Manajemen Kelompok Tani (KTH)', icon: Users, targetPath: '/kth' },
+        {
+          id: 'transactions',
+          label: 'Monitoring Transaksi Tani',
+          icon: Coins,
+          targetPath: '/transactions',
+        },
+        { id: 'upload', label: 'Upload Regulasi & Kuota', icon: FileUp, targetPath: '/upload' },
       ];
     } else if (currentRole === 'auditor') {
       return [
-        { id: 'audit', label: 'Verifikasi Audit AI', icon: Activity },
-        { id: 'spatial', label: 'Evaluasi Spasial dMRV', icon: Globe },
-        { id: 'drone', label: 'Drone Mapping Controller', icon: Camera },
-        { id: 'gate', label: 'Gerbang Otorisasi', icon: ShieldCheck },
+        { id: 'audit', label: 'Verifikasi Audit AI', icon: Activity, targetPath: '/dashboard' },
+        { id: 'spatial', label: 'Evaluasi Spasial dMRV', icon: Globe, targetPath: '/spatial' },
+        { id: 'drone', label: 'Drone Mapping Controller', icon: Camera, targetPath: '/drone' },
+        { id: 'gate', label: 'Gerbang Otorisasi', icon: ShieldCheck, targetPath: '/gate' },
       ];
     } else if (currentRole === 'kth') {
       return [
-        { id: 'polygon', label: 'Registrasi Polygon Lahan', icon: MapIcon },
-        { id: 'wallet', label: 'Dompet Insentif & Log Hibrida', icon: Wallet },
+        {
+          id: 'polygon',
+          label: 'Registrasi Polygon Lahan',
+          icon: MapIcon,
+          targetPath: '/dashboard',
+        },
+        {
+          id: 'wallet',
+          label: 'Dompet Insentif & Log Hibrida',
+          icon: Wallet,
+          targetPath: '/wallet',
+        },
       ];
     } else {
       // Default: Emitter / Pelaku Usaha
       return [
-        { id: 'compliance', label: 'Dasbor Kepatuhan', icon: LayoutDashboard },
-        { id: 'bursa', label: 'Bursa Karbon (DEX)', icon: ArrowLeftRight },
-        { id: 'laporan', label: 'Laporan Emisi & Sektor', icon: FileUp },
-        { id: 'sertifikat', label: 'Sertifikat & Proyek Karbon', icon: Award },
+        {
+          id: 'compliance',
+          label: 'Dasbor Kepatuhan',
+          icon: LayoutDashboard,
+          targetPath: '/dashboard',
+        },
+        { id: 'bursa', label: 'Bursa Karbon (DEX)', icon: ArrowLeftRight, targetPath: '/bursa' },
+        { id: 'laporan', label: 'Laporan Emisi & Sektor', icon: FileUp, targetPath: '/laporan' },
+        {
+          id: 'sertifikat',
+          label: 'Sertifikat & Proyek Karbon',
+          icon: Award,
+          targetPath: '/sertifikat',
+        },
       ];
     }
   };
@@ -106,37 +138,26 @@ export default function PortalSidebar() {
           <SidebarMenu>
             {navItems.map((item) => {
               const IconComponent = item.icon;
-              const targetPath = `/portal/${currentRole}/${item.id}`;
-              const isDefaultTab =
-                (currentRole === 'auditor' &&
-                  (!activeTab || activeTab === 'anomaly') &&
-                  item.id === 'audit') ||
-                (currentRole === 'regulator' && !activeTab && item.id === 'forest') ||
-                (currentRole === 'emitter' && !activeTab && item.id === 'compliance');
+              const isActive = currentPath === item.targetPath;
               return (
                 <SidebarMenuItem key={item.id}>
-                  <NavLink to={targetPath} end={item.id !== 'compliance' && item.id !== 'forest'}>
-                    {({ isActive }) => {
-                      const active = isActive || isDefaultTab;
-                      return (
-                        <SidebarMenuButton isActive={active}>
-                          <div className="flex items-center gap-3 text-left min-w-0 flex-1">
-                            <IconComponent
-                              className={`w-5 h-5 shrink-0 ${active ? 'text-[#00C48C]' : 'text-slate-400'}`}
-                            />
-                            <span className="text-left leading-snug truncate">{item.label}</span>
-                          </div>
-                          {item.badge && (
-                            <Badge
-                              variant="secondary"
-                              className={`shrink-0 text-[10px] font-black border-none ${item.badgeBg || 'bg-amber-500 text-white'}`}
-                            >
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </SidebarMenuButton>
-                      );
-                    }}
+                  <NavLink to={item.targetPath}>
+                    <SidebarMenuButton isActive={isActive}>
+                      <div className="flex items-center gap-3 text-left min-w-0 flex-1">
+                        <IconComponent
+                          className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#00C48C]' : 'text-slate-400'}`}
+                        />
+                        <span className="text-left leading-snug truncate">{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <Badge
+                          variant="secondary"
+                          className={`shrink-0 text-[10px] font-black border-none ${item.badgeBg || 'bg-amber-500 text-white'}`}
+                        >
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </SidebarMenuButton>
                   </NavLink>
                 </SidebarMenuItem>
               );
@@ -152,14 +173,14 @@ export default function PortalSidebar() {
             </span>
             <Button
               asChild
-              variant={activeTab === 'settings' ? 'default' : 'ghost'}
+              variant={currentPath === '/settings' ? 'default' : 'ghost'}
               className={`w-full justify-start gap-3.5 px-4 py-2.5 rounded-xl text-xs font-extrabold text-left cursor-pointer ${
-                activeTab === 'settings'
+                currentPath === '/settings'
                   ? 'bg-primary-gradient text-white'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              <NavLink to={`/portal/${currentRole}/settings`}>
+              <NavLink to="/settings">
                 <Settings className="w-4 h-4 text-slate-400" />
                 Pengaturan
               </NavLink>

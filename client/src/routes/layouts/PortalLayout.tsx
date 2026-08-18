@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, Outlet } from 'react-router';
+import { useLocation, Outlet } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import PortalSidebar from './PortalSidebar';
 import Modals from '../../components/Modals';
@@ -9,22 +9,19 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
-export default function PortalLayout() {
-  const { userRole, loginAsRole, userProfile, initializeData, isDataLoaded } = useCarbonStore();
-  const { role: urlRole, tab: urlTab } = useParams();
+interface PortalLayoutProps {
+  children?: React.ReactNode;
+}
+
+export default function PortalLayout({ children }: PortalLayoutProps) {
+  const { userRole, userProfile, initializeData, isDataLoaded } = useCarbonStore();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isDataLoaded) {
       initializeData();
     }
   }, [isDataLoaded, initializeData]);
-
-  // Ensure userRole matches URL role
-  useEffect(() => {
-    if (urlRole && urlRole !== userRole) {
-      loginAsRole(urlRole, 'hse_director', urlTab);
-    }
-  }, [urlRole, urlTab, userRole, loginAsRole]);
 
   if (!isDataLoaded) {
     return (
@@ -34,8 +31,8 @@ export default function PortalLayout() {
     );
   }
 
-  const activeRole = urlRole || userRole || 'emitter';
-  const activeTab = urlTab || 'dashboard';
+  const activeRole = userRole || 'emitter';
+  const activeTab = location.pathname.replace(/^\//, '') || 'dashboard';
 
   return (
     <SidebarProvider className="flex h-screen w-screen bg-slate-100 overflow-hidden font-sans text-slate-800">
@@ -102,9 +99,7 @@ export default function PortalLayout() {
         </header>
 
         {/* TAB BODY CONTAINER */}
-        <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">
-          <Outlet />
-        </div>
+        <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">{children || <Outlet />}</div>
       </main>
 
       {/* Global Overlays & Audit Modals */}

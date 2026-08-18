@@ -132,6 +132,7 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   initializeData: async () => {
     if (get().isDataLoaded) return;
     const [
+      currentUser,
       projects,
       companies,
       multiSig,
@@ -158,6 +159,7 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
       txs,
       uploads,
     ] = await Promise.all([
+      authRepository.getCurrentUser(),
       projectRepository.getProjects(),
       companyRepository.getCompanies(),
       governanceRepository.getMultiSigRequests(),
@@ -185,7 +187,19 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
       regulatorRepository.getRegulationUploads(),
     ]);
 
+    const initialRole = currentUser?.role || get().userRole;
+    const initialProfile = currentUser
+      ? {
+          name: currentUser.name,
+          roleTitle: currentUser.roleTitle,
+          agency: currentUser.agency,
+          avatar: currentUser.avatar,
+        }
+      : get().userProfile;
+
     set({
+      userRole: initialRole as any,
+      userProfile: initialProfile,
       projects,
       companies,
       multiSigRequests: multiSig,

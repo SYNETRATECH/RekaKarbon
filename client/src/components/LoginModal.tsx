@@ -60,13 +60,13 @@ export default function LoginModal() {
       password: passwordInput,
     });
     setIsLoginModalOpen(false);
-    navigate(`/portal/${selectedRole}`);
+    navigate('/dashboard');
   };
 
   const handleBypassLogin = async () => {
     await loginAsRole(selectedRole);
     setIsLoginModalOpen(false);
-    navigate(`/portal/${selectedRole}`);
+    navigate('/dashboard');
   };
 
   return (
