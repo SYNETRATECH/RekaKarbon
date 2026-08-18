@@ -5,7 +5,13 @@ import MapCanvas from '../components/MapCanvas';
 import RightDrawer from '../components/RightDrawer';
 import ConservationModule from '../components/ConservationModule';
 import CorporateModule from '../components/CorporateModule';
-import Modals from '../components/Modals';
+import DroneAuditModal from '../components/modals/DroneAuditModal';
+import AuditReportModal from '../components/modals/AuditReportModal';
+import TransactionReceiptModal from '../components/modals/TransactionReceiptModal';
+import LightboxModal from '../components/modals/LightboxModal';
+import VerichainExplorerModal from '../components/modals/VerichainExplorerModal';
+import PublicReportModal from '../components/modals/PublicReportModal';
+import LogoutDialog from '../components/LogoutDialog';
 import { Menu, Globe, Building2, LogIn } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
 import { Button } from '@/components/ui/button';
@@ -169,7 +175,13 @@ export default function LandingPageRoute() {
 
       {/* Overlays & Drawers */}
       <RightDrawer />
-      <Modals />
+      <DroneAuditModal />
+      <AuditReportModal />
+      <TransactionReceiptModal />
+      <LightboxModal />
+      <VerichainExplorerModal />
+      <PublicReportModal />
+      <LogoutDialog />
     </div>
   );
 }
