@@ -7,6 +7,7 @@ import {
   isRouteErrorResponse,
   useRouteError,
 } from 'react-router';
+import { Toaster } from '@/components/ui/toaster';
 import brandIcon from './assets/icon.png';
 import './styles/index.css';
 
@@ -28,6 +29,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body className="bg-slate-50 text-slate-800 antialiased min-h-screen">
         {children}
+        <Toaster />
         <ScrollRestoration />
         <Scripts />
       </body>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import { toast } from '@/hooks/use-toast';
 import {
   AlertTriangle,
   TrendingDown,
@@ -67,25 +68,15 @@ export default function EmissionsAuditAI() {
     setIsVerifying(true);
     await verifyAnomalyEmitter(id);
     setIsVerifying(false);
-    setShowNotification(true);
-    setTimeout(() => setShowNotification(false), 4000);
+    toast({
+      variant: 'mint',
+      title: 'Berita Acara Audit Diterbitkan!',
+      description: 'Status anomali emiten telah terverifikasi dan tercatat pada Verichain Ledger.',
+    });
   };
 
   return (
     <div className="flex-1 overflow-y-auto min-h-0 space-y-6 animate-fade-in text-left pr-1 pb-8">
-      {/* Toast Notification */}
-      {showNotification && (
-        <div className="fixed bottom-6 right-6 bg-emerald-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-emerald-700 flex items-center gap-3 z-50 animate-bounce">
-          <CheckCircle2 className="w-5 h-5 text-[#00C48C]" />
-          <div className="text-xs">
-            <p className="font-extrabold">Berita Acara Audit Diterbitkan!</p>
-            <p className="text-[10px] text-emerald-200">
-              Status anomali emiten telah terverifikasi dan tercatat pada Verichain Ledger.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* HEADER SECTION */}
       <div>
         <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase block mb-1">
