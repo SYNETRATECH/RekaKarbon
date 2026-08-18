@@ -67,7 +67,6 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
     agency: 'PT Semen Nusantara Tuban',
     avatar: 'BS',
   },
-  isLoginModalOpen: false,
   adminActiveTab: 'dashboard',
 
   // Feature Specific Mock Data
@@ -243,7 +242,6 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   setActiveModule: (module) => set({ activeModule: module }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setIsDrawerOpen: (isOpen) => set({ isDrawerOpen: isOpen }),
-  setIsLoginModalOpen: (isOpen) => set({ isLoginModalOpen: isOpen }),
   isLogoutDialogOpen: false,
   setIsLogoutDialogOpen: (isOpen) => set({ isLogoutDialogOpen: isOpen }),
   setAdminActiveTab: (tab) => set({ adminActiveTab: tab }),
@@ -264,7 +262,6 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
         agency: res.user.agency,
         avatar: res.user.avatar,
       },
-      isLoginModalOpen: false,
       isDrawerOpen: false,
       adminActiveTab: customTab || defaultTab,
     });

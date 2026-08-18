@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export default function RightDrawer() {
-  const { activeModule, setActiveModule, isDrawerOpen, setIsDrawerOpen, setIsLoginModalOpen } =
-    useCarbonStore();
+  const { activeModule, setActiveModule, isDrawerOpen, setIsDrawerOpen } = useCarbonStore();
   const navigate = useNavigate();
 
   return (
@@ -107,7 +106,7 @@ export default function RightDrawer() {
                 className="w-full flex items-center justify-between px-4 py-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md border border-slate-800"
                 onClick={() => {
                   setIsDrawerOpen(false);
-                  setIsLoginModalOpen(true);
+                  navigate('/login');
                 }}
               >
                 <div className="flex items-center gap-3 text-left">
