@@ -1,20 +1,5 @@
-import {
-  mockAiAnomalyLogs,
-  mockAnomalySummary,
-  mockEnergyCorrelationData,
-  mockSpatialSummary,
-  mockConservationAreas,
-  mockDroneArchive,
-  mockDroneSchedules,
-  mockCertificationPreview,
-  mockDroneScans,
-  mockKthPolygons,
-  mockKthLogs,
-} from '../lib/mock/audit';
 import { api } from '../lib/api';
 import type { AnomalySummary, EnergyCorrelationItem } from '../types';
-
-const useMock = import.meta.env.VITE_USE_MOCK_DATA !== 'false';
 
 export interface AuditRepository {
   getAiAnomalyLogs(): Promise<any[]>;
@@ -32,56 +17,7 @@ export interface AuditRepository {
   getKthLogs(): Promise<any[]>;
 }
 
-class MockAuditRepository implements AuditRepository {
-  async getAiAnomalyLogs() {
-    return mockAiAnomalyLogs;
-  }
-  async getAnomalySummary() {
-    return mockAnomalySummary;
-  }
-  async getEnergyCorrelationData() {
-    return mockEnergyCorrelationData;
-  }
-  async verifyAnomalyRecord(id: string) {
-    const item = mockAiAnomalyLogs.find((l) => l.id === id);
-    if (item) {
-      item.auditStatus = 'verified';
-    }
-    return { success: true, id };
-  }
-  async getSpatialSummary() {
-    return mockSpatialSummary;
-  }
-  async getConservationAreas() {
-    return mockConservationAreas;
-  }
-  async getDroneArchive() {
-    return mockDroneArchive;
-  }
-  async getDroneSchedules() {
-    return mockDroneSchedules;
-  }
-  async getCertificationPreview() {
-    return mockCertificationPreview;
-  }
-  async authorizeMintingCredit(_data: any) {
-    return {
-      success: true,
-      txHash: `0x7f9a${Math.floor(Math.random() * 89999 + 10000)}...besu`,
-    };
-  }
-  async getDroneScans() {
-    return mockDroneScans;
-  }
-  async getKthPolygons() {
-    return mockKthPolygons;
-  }
-  async getKthLogs() {
-    return mockKthLogs;
-  }
-}
-
-class ApiAuditRepository implements AuditRepository {
+export class ApiAuditRepository implements AuditRepository {
   async getAiAnomalyLogs() {
     return api.get<any[]>('/audit/anomaly-logs');
   }
@@ -123,6 +59,7 @@ class ApiAuditRepository implements AuditRepository {
   }
 }
 
-export const auditRepository: AuditRepository = useMock
-  ? new MockAuditRepository()
-  : new ApiAuditRepository();
+export const auditRepository: AuditRepository =
+  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
+    ? new (await import('./audit.mock.repository')).MockAuditRepository()
+    : new ApiAuditRepository();
