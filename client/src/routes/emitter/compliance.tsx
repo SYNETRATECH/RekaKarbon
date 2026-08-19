@@ -14,6 +14,13 @@ import {
   Tooltip,
 } from 'recharts';
 
+export function meta() {
+  return [
+    { title: 'Kepatuhan & Batas Emisi | RekaKarbon' },
+    { name: 'description', content: 'Kepatuhan & Batas Emisi Industri RekaKarbon' },
+  ];
+}
+
 export default function ComplianceDashboard() {
   const { setAdminActiveTab, complianceData, projects, companies } = useCarbonStore();
   const [isPublicReportOpen, setIsPublicReportOpen] = useState(false);

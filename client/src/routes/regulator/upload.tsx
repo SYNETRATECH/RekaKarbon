@@ -17,13 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Table,
   TableBody,
   TableCell,
@@ -31,9 +24,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatFileSize } from '../../lib/formatters';
 import { formatDateTime } from '../../lib/dates';
+
+export function meta() {
+  return [
+    { title: 'Unggah Regulasi & Kebijakan | RekaKarbon' },
+    { name: 'description', content: 'Unggah Regulasi & Kebijakan KLHK RekaKarbon' },
+  ];
+}
 
 export default function RegulatorUploadManagement() {
   const { regulationUploads: docs, addRegulationUpload } = useCarbonStore();
@@ -122,12 +121,6 @@ export default function RegulatorUploadManagement() {
       {/* HEADER TITLE & ACTION BUTTON */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <Badge
-            variant="outline"
-            className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 border-slate-200"
-          >
-            REGULATOR PUBLICATION HUB
-          </Badge>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
             Upload Regulasi & Penetapan Kuota Karbon
           </h2>

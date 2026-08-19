@@ -25,6 +25,13 @@ import {
   TableCell,
 } from '@/components/ui/table';
 
+export function meta() {
+  return [
+    { title: 'Manajemen Kelompok Tani Hutan (KTH) | RekaKarbon' },
+    { name: 'description', content: 'Manajemen Kelompok Tani Hutan RekaKarbon' },
+  ];
+}
+
 export default function KthFarmersManagement() {
   const { kthGroups: groups, addKTHGroup, updateKTHGroup, deleteKTHGroup } = useCarbonStore();
 
@@ -107,9 +114,6 @@ export default function KthFarmersManagement() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <span className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-md border border-slate-200">
-            FARMERS COMMUNITY & KYB MANAGEMENT
-          </span>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
             Manajemen Kelompok Tani Hutan (KTH)
           </h2>

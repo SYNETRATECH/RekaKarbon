@@ -27,6 +27,13 @@ const TILE_URLS: {
 
 type MapType = 'satellite' | 'topo' | 'street';
 
+export function meta() {
+  return [
+    { title: 'Form Editor Proyek | RekaKarbon' },
+    { name: 'description', content: 'Form Pendaftaran / Edit Proyek Kehutanan RekaKarbon' },
+  ];
+}
+
 export default function ProjectEditorPage() {
   const {
     editingProjectData,

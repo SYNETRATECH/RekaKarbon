@@ -3,14 +3,7 @@ import { useCarbonStore } from '../../store/useCarbonStore';
 import TxReviewModal from '../../components/modals/TxReviewModal';
 import TxDetailModal from '../../components/modals/TxDetailModal';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import DownloadNoticeModal from '../../components/modals/DownloadNoticeModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -45,6 +38,13 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../../lib/formatters';
 import { formatDateTime } from '../../lib/dates';
+
+export function meta() {
+  return [
+    { title: 'Monitoring Transaksi & Insentif | RekaKarbon' },
+    { name: 'description', content: 'Monitoring Transaksi & Insentif KTH RekaKarbon' },
+  ];
+}
 
 export default function KthTransactionsMonitoring() {
   const {
@@ -185,9 +185,6 @@ export default function KthTransactionsMonitoring() {
     <div className="space-y-8 animate-fade-in text-left">
       {/* Header */}
       <div>
-        <span className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-md border border-slate-200">
-          FARMERS INCENTIVE TRANSACTIONS MONITORING
-        </span>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
           Monitoring Transaksi & Insentif Tani
         </h2>
@@ -599,28 +596,11 @@ export default function KthTransactionsMonitoring() {
         </div>
       )}
 
-      <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-900">
-              <FileText className="w-5 h-5 text-emerald-600" />
-              <span>Pengunduhan Bukti Transfer Resmi</span>
-            </DialogTitle>
-            <DialogDescription className="text-slate-600">
-              Berkas <span className="font-mono font-bold text-slate-900">{downloadNotice}</span>{' '}
-              sedang diunduh dan diproses dari repository publik RekaKarbon.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              onClick={() => setDownloadNotice(null)}
-              className="w-full bg-primary-gradient text-white font-extrabold"
-            >
-              Tutup & Lanjutkan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DownloadNoticeModal
+        fileName={downloadNotice}
+        onClose={() => setDownloadNotice(null)}
+        title="Pengunduhan Bukti Transfer Resmi"
+      />
     </div>
   );
 }

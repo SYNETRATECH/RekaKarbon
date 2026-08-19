@@ -14,6 +14,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
+export function meta() {
+  return [
+    { title: 'Audit Drone & Geotag | RekaKarbon' },
+    { name: 'description', content: 'Audit Drone & Geotag dMRV RekaKarbon' },
+  ];
+}
+
 export default function DroneMappingController() {
   const { droneArchive, droneSchedules } = useCarbonStore();
 

@@ -3,6 +3,7 @@ import { useCarbonStore } from '../../store/useCarbonStore';
 import { toast } from '@/hooks/use-toast';
 import { ShieldCheck, Cpu, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,13 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
+
+export function meta() {
+  return [
+    { title: 'Gerbang Otorisasi | RekaKarbon' },
+    { name: 'description', content: 'Gerbang Otorisasi Penerbitan Kredit Karbon RekaKarbon' },
+  ];
+}
 
 export default function AuthorizationGate() {
   const { certificationPreview, conservationAreas, authorizeMintOffsetCredit } = useCarbonStore();
@@ -246,12 +254,7 @@ export default function AuthorizationGate() {
               <span className="text-slate-600 font-extrabold">Tingkat Kepastian</span>
               <span className="font-black text-emerald-700">Sangat Tinggi</span>
             </div>
-            <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#00C48C] rounded-full transition-all duration-500"
-                style={{ width: `${confidenceScore}%` }}
-              ></div>
-            </div>
+            <Progress value={confidenceScore} className="h-2.5" />
           </div>
 
           {/* Big Authorize Button */}

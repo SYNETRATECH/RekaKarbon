@@ -35,6 +35,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 
 export function meta() {
   return [
@@ -170,9 +171,6 @@ export default function ForestProjectsManagement() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <span className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-md border border-slate-200">
-            FORESTRY PROJECTS MANAGEMENT & MONITORING
-          </span>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
             Manajemen & Monitoring Proyek Kehutanan
           </h2>
@@ -261,12 +259,7 @@ export default function ForestProjectsManagement() {
                           {progressData.pct}%
                         </span>
                       </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-1">
-                        <div
-                          className="bg-primary-gradient h-full transition-all duration-500 rounded-full"
-                          style={{ width: `${progressData.pct}%` }}
-                        />
-                      </div>
+                      <Progress value={progressData.pct} className="mt-1" />
                     </div>
                   </TableCell>
                   <TableCell className="font-mono font-black text-slate-900">

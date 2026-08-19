@@ -3,16 +3,8 @@ import { formatFileSize } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
+import DownloadNoticeModal from '../../components/modals/DownloadNoticeModal';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -840,28 +832,7 @@ export default function EmissionReportsSector() {
         scoreCEMS={99.8}
       />
 
-      <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-900">
-              <FileText className="w-5 h-5 text-emerald-600" />
-              <span>Pengunduhan Berkas Resmi</span>
-            </DialogTitle>
-            <DialogDescription className="text-slate-600">
-              Berkas <span className="font-mono font-bold text-slate-900">{downloadNotice}</span>{' '}
-              sedang diunduh dan diproses dari repository publik RekaKarbon.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              onClick={() => setDownloadNotice(null)}
-              className="w-full bg-primary-gradient text-white font-extrabold"
-            >
-              Tutup & Lanjutkan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DownloadNoticeModal fileName={downloadNotice} onClose={() => setDownloadNotice(null)} />
     </div>
   );
 }
