@@ -2,7 +2,7 @@ import type { MockUser } from '../../types';
 
 export const mockUsers: Record<string, MockUser> = {
   emitter: {
-    id: 'USR-EMITTER-01',
+    id: 'c0a80001-0001-4000-8000-000000000001',
     email: 'admin@semennusantara.co.id',
     password: 'password123',
     name: 'Ir. Budi Santoso',
@@ -14,7 +14,7 @@ export const mockUsers: Record<string, MockUser> = {
     token: 'mock-jwt-vch-emitter-token-99412',
   },
   regulator: {
-    id: 'USR-REGULATOR-01',
+    id: 'c0a80001-0001-4000-8000-000000000002',
     email: '198204122008011004@klhk.go.id',
     password: 'password123',
     name: 'Dr. Ir. Ahmad Fauzi',
@@ -26,7 +26,7 @@ export const mockUsers: Record<string, MockUser> = {
     token: 'mock-jwt-vch-regulator-token-7721',
   },
   auditor: {
-    id: 'USR-AUDITOR-01',
+    id: 'c0a80001-0001-4000-8000-000000000003',
     email: 'auditor.rian@sucofindo.co.id',
     password: 'password123',
     name: 'Auditor LVV',
@@ -38,7 +38,7 @@ export const mockUsers: Record<string, MockUser> = {
     token: 'mock-jwt-vch-auditor-token-44819',
   },
   kth: {
-    id: 'USR-KTH-01',
+    id: 'c0a80001-0001-4000-8000-000000000004',
     email: 'sutrisno@kthbaluran.org',
     password: 'password123',
     name: 'Sutrisno',

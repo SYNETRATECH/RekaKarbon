@@ -2,7 +2,7 @@ import type { BursaItem } from '../../types';
 
 export const MOCK_BURSA_ITEMS: BursaItem[] = [
   {
-    id: 'MK',
+    id: 'f1a2b3c4-0020-4000-8000-000000000001',
     name: 'Mangrove Kutai',
     verified: true,
     category: 'mangrove',
@@ -14,7 +14,7 @@ export const MOCK_BURSA_ITEMS: BursaItem[] = [
     supplyPercent: 84,
   },
   {
-    id: 'KP',
+    id: 'f1a2b3c4-0020-4000-8000-000000000002',
     name: 'Kayan Mentarang',
     verified: false,
     category: 'hutan',
@@ -26,7 +26,7 @@ export const MOCK_BURSA_ITEMS: BursaItem[] = [
     supplyPercent: 68,
   },
   {
-    id: 'BL',
+    id: 'f1a2b3c4-0020-4000-8000-000000000003',
     name: 'Baluran',
     verified: true,
     category: 'hutan',
@@ -38,7 +38,7 @@ export const MOCK_BURSA_ITEMS: BursaItem[] = [
     supplyPercent: 77,
   },
   {
-    id: 'WK',
+    id: 'f1a2b3c4-0020-4000-8000-000000000004',
     name: 'Way Kambas',
     verified: true,
     category: 'hutan',
@@ -50,7 +50,7 @@ export const MOCK_BURSA_ITEMS: BursaItem[] = [
     supplyPercent: 73,
   },
   {
-    id: 'AP',
+    id: 'f1a2b3c4-0020-4000-8000-000000000005',
     name: 'Alas Purwo',
     verified: true,
     category: 'hutan',
@@ -62,7 +62,7 @@ export const MOCK_BURSA_ITEMS: BursaItem[] = [
     supplyPercent: 30,
   },
   {
-    id: 'LB',
+    id: 'f1a2b3c4-0020-4000-8000-000000000006',
     name: 'Lahan Basah Berbak',
     verified: true,
     category: 'gambut',

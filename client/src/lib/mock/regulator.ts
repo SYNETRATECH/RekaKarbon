@@ -8,7 +8,7 @@ import type {
 
 export const NATIONAL_FOREST_REGIONS: NationalForestRegion[] = [
   {
-    id: 'REG-KALIMANTAN',
+    id: 'e1f2a3b4-0040-4000-8000-000000000001',
     regionName: 'Kalimantan (Hutan Tropis & Gambut)',
     areaHectares: 5800000000,
     carbonSequestrationTCO2e: 68200000,
@@ -16,7 +16,7 @@ export const NATIONAL_FOREST_REGIONS: NationalForestRegion[] = [
     forestHealthPercent: 96.4,
   },
   {
-    id: 'REG-PAPUA',
+    id: 'e1f2a3b4-0040-4000-8000-000000000002',
     regionName: 'Papua & Maluku (Hutan Primer)',
     areaHectares: 4100000000,
     carbonSequestrationTCO2e: 52100000,
@@ -24,7 +24,7 @@ export const NATIONAL_FOREST_REGIONS: NationalForestRegion[] = [
     forestHealthPercent: 98.1,
   },
   {
-    id: 'REG-SUMATRA',
+    id: 'e1f2a3b4-0040-4000-8000-000000000003',
     regionName: 'Sumatra (Konservasi & Mangrove)',
     areaHectares: 1600000000,
     carbonSequestrationTCO2e: 18400000,
@@ -32,7 +32,7 @@ export const NATIONAL_FOREST_REGIONS: NationalForestRegion[] = [
     forestHealthPercent: 91.8,
   },
   {
-    id: 'REG-JAWA',
+    id: 'e1f2a3b4-0040-4000-8000-000000000004',
     regionName: 'Jawa & Nusa Tenggara (Reforestri Agro)',
     areaHectares: 900000,
     carbonSequestrationTCO2e: 9800000,
@@ -43,7 +43,7 @@ export const NATIONAL_FOREST_REGIONS: NationalForestRegion[] = [
 
 export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
   {
-    id: 'PRJ-REG-001',
+    id: 'f1a2b3c4-0041-4000-8000-000000000001',
     projectName: 'Restorasi Mangrove Hutan Lindung Tuban',
     category: 'mangrove',
     categoryLabel: 'Mangrove & Blue Carbon',
@@ -307,7 +307,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
     },
   },
   {
-    id: 'PRJ-REG-002',
+    id: 'f1a2b3c4-0041-4000-8000-000000000002',
     projectName: 'Konservasi Hutan Hujan Kayan Mentarang',
     category: 'hutan_hujan',
     categoryLabel: 'Hutan Hujan Tropis',
@@ -328,7 +328,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
     budgetReportFileSize: 8493465,
   },
   {
-    id: 'PRJ-REG-003',
+    id: 'f1a2b3c4-0041-4000-8000-000000000003',
     projectName: 'Agroforestri Bambu & Biomassa Batu',
     category: 'reforestri',
     categoryLabel: 'Agroforestri & Reboisasi',
@@ -349,7 +349,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
     budgetReportFileSize: 3040870,
   },
   {
-    id: 'PRJ-REG-004',
+    id: 'f1a2b3c4-0041-4000-8000-000000000004',
     projectName: 'Restorasi Lahan Gambut Berbak',
     category: 'gambut',
     categoryLabel: 'Lahan Gambut Basah',
@@ -373,7 +373,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
 
 export const INITIAL_KTH_GROUPS: KTHGroupItem[] = [
   {
-    id: 'KTH-001',
+    id: 'a1b2c3d4-0042-4000-8000-000000000001',
     groupName: 'KTH Wana Lestari Baluran',
     leaderName: 'Sutrisno',
     memberCount: 48,
@@ -384,7 +384,7 @@ export const INITIAL_KTH_GROUPS: KTHGroupItem[] = [
     walletAddress: '0x8f2a948571029485710294857102948571029485',
   },
   {
-    id: 'KTH-002',
+    id: 'a1b2c3d4-0042-4000-8000-000000000002',
     groupName: 'KTH Mangrove Tuban Mandiri',
     leaderName: 'H. Mohammad Yasin',
     memberCount: 62,
@@ -395,7 +395,7 @@ export const INITIAL_KTH_GROUPS: KTHGroupItem[] = [
     walletAddress: '0x3c91029485710294857102948571029485710294',
   },
   {
-    id: 'KTH-003',
+    id: 'a1b2c3d4-0042-4000-8000-000000000003',
     groupName: 'KTH Dayak Mentarang',
     leaderName: 'Paulinus Bua',
     memberCount: 110,
@@ -406,7 +406,7 @@ export const INITIAL_KTH_GROUPS: KTHGroupItem[] = [
     walletAddress: '0x5e10294857102948571029485710294857102948',
   },
   {
-    id: 'KTH-004',
+    id: 'a1b2c3d4-0042-4000-8000-000000000004',
     groupName: 'KTH Gambut Berbak Asri',
     leaderName: 'Bambang Supriyanto',
     memberCount: 35,
@@ -420,7 +420,7 @@ export const INITIAL_KTH_GROUPS: KTHGroupItem[] = [
 
 export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
   {
-    id: 'TX-KTH-2026-0891',
+    id: 'b1c2d3e4-0043-4000-8000-000000000001',
     txHash: '0x8a1c94857102948571029485710294857102948571029485',
     date: '2026-02-14T14:32:00.000Z',
     kthName: 'KTH Mangrove Tuban Mandiri',
@@ -461,7 +461,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     ],
   },
   {
-    id: 'TX-KTH-2026-0842',
+    id: 'b1c2d3e4-0043-4000-8000-000000000002',
     txHash: '0x4b9102948571029485710294857102948571029485710294',
     date: '2026-02-10T10:15:00.000Z',
     kthName: 'KTH Wana Lestari Baluran',
@@ -495,7 +495,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     ],
   },
   {
-    id: 'TX-KTH-2026-0799',
+    id: 'b1c2d3e4-0043-4000-8000-000000000003',
     txHash: '0x2e8571029485710294857102948571029485710294857102',
     date: '2026-02-02T09:45:00.000Z',
     kthName: 'KTH Dayak Mentarang',
@@ -529,7 +529,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     ],
   },
   {
-    id: 'TX-KTH-2026-0711',
+    id: 'b1c2d3e4-0043-4000-8000-000000000004',
     txHash: '0x991029485710294857102948571029485710294857102948',
     date: '2026-01-25T16:20:00.000Z',
     kthName: 'KTH Gambut Berbak Asri',
@@ -564,7 +564,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     ],
   },
   {
-    id: 'TX-KTH-2026-0650',
+    id: 'b1c2d3e4-0043-4000-8000-000000000005',
     txHash: '0x3f9102948571029485710294857102948571029485710291',
     date: '2026-01-18T11:45:00.000Z',
     kthName: 'KTH Bina Wana Baluran',
@@ -599,7 +599,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     ],
   },
   {
-    id: 'TX-KTH-2026-0610',
+    id: 'b1c2d3e4-0043-4000-8000-000000000006',
     txHash: '0x7c9102948571029485710294857102948571029485710288',
     date: '2026-01-12T14:10:00.000Z',
     kthName: 'KTH Mangrove Tuban Mandiri',
@@ -618,7 +618,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     ],
   },
   {
-    id: 'TX-KTH-2026-0580',
+    id: 'b1c2d3e4-0043-4000-8000-000000000007',
     txHash: '0x1d9102948571029485710294857102948571029485710277',
     date: '2026-01-05T09:30:00.000Z',
     kthName: 'KTH Dayak Mentarang',
@@ -644,7 +644,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
 
 export const INITIAL_REGULATION_UPLOADS: RegulationDocumentUploadItem[] = [
   {
-    id: 'DOC-REG-2026-001',
+    id: 'c1d2e3f4-0044-4000-8000-000000000001',
     documentTitle: 'SK Penetapan Alokasi Kuota Emisi PTBAE-PU 2026',
     category: 'sk_ptbae',
     categoryLabel: 'SK Kuota PTBAE-PU',
@@ -657,7 +657,7 @@ export const INITIAL_REGULATION_UPLOADS: RegulationDocumentUploadItem[] = [
     status: 'published',
   },
   {
-    id: 'DOC-REG-2026-002',
+    id: 'c1d2e3f4-0044-4000-8000-000000000002',
     documentTitle: 'Sertifikat Spektrum Karbon SPE-GRK Restorasi Mangrove',
     category: 'spe_grk',
     categoryLabel: 'Sertifikat SPE-GRK',
@@ -670,7 +670,7 @@ export const INITIAL_REGULATION_UPLOADS: RegulationDocumentUploadItem[] = [
     status: 'published',
   },
   {
-    id: 'DOC-REG-2026-003',
+    id: 'c1d2e3f4-0044-4000-8000-000000000003',
     documentTitle: 'Surat Tagihan Pajak Karbon & Sanksi Defisit Emisi FY2025',
     category: 'stp_djp',
     categoryLabel: 'Surat Tagihan Pajak DJP',
@@ -683,7 +683,7 @@ export const INITIAL_REGULATION_UPLOADS: RegulationDocumentUploadItem[] = [
     status: 'published',
   },
   {
-    id: 'DOC-REG-2026-004',
+    id: 'c1d2e3f4-0044-4000-8000-000000000004',
     documentTitle: 'SK Pengesahan Registrasi Kelompok Tani Hutan (SK KTH)',
     category: 'kth_sk',
     categoryLabel: 'SK Pengesahan KTH',
