@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLocation, Outlet } from 'react-router';
+import { useLocation, Outlet, Link } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import PortalSidebar from './PortalSidebar';
 import LogoutDialog from '../../components/LogoutDialog';
@@ -81,7 +81,10 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
             <div className="h-6 w-px bg-slate-200"></div>
 
             {/* Profile Dropdown */}
-            <div className="flex items-center gap-3 cursor-pointer group">
+            <Link
+              to="/profile"
+              className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-opacity"
+            >
               <div className="w-9 h-9 rounded-full bg-[#033C2E] text-white font-black text-xs flex items-center justify-center shadow-2xs">
                 {userProfile?.avatar || 'LV'}
               </div>
@@ -94,7 +97,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
                 </span>
               </div>
               <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-            </div>
+            </Link>
           </div>
         </header>
 
