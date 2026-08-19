@@ -2,7 +2,7 @@ export interface AnnualChartPoint {
   year: string;
   historis?: number;
   proyeksi?: number;
-  label: string;
+  label?: string;
 }
 
 export interface ComplianceData {
@@ -17,6 +17,6 @@ export interface ComplianceData {
   djpReportStatus: string;
   annualProductionVolume: number;
   carbonPricePerTon: number;
-  totalEstimatedCostIDR: string;
+  totalEstimatedCostIDR: number;
   annualHistory: AnnualChartPoint[];
 }

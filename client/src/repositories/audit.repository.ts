@@ -45,7 +45,7 @@ class MockAuditRepository implements AuditRepository {
   async verifyAnomalyRecord(id: string) {
     const item = mockAiAnomalyLogs.find((l) => l.id === id);
     if (item) {
-      item.auditStatus = 'Verified';
+      item.auditStatus = 'verified';
     }
     return { success: true, id };
   }

@@ -1,6 +1,7 @@
 import { FileText, Printer, FileSpreadsheet, Download, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { formatArea, formatCarbon } from '@/lib/formatters';
 import {
   Table,
   TableHeader,
@@ -33,7 +34,7 @@ export default function PublicReportModal({
       const buyers = p.tokenBuyers
         ? p.tokenBuyers.map((b: any) => `${b.companyName} (${b.tCO2e} tCO2e)`).join('; ')
         : 'Belum ada';
-      csvContent += `Proyek Kehutanan,"${p.name}","${p.region}","${p.area}","${p.carbon}","${p.reforestationStatus}","${buyers}","${p.tokenBuyers?.[0]?.speCertificateId || '-'}"\n`;
+      csvContent += `Proyek Kehutanan,"${p.name}","${p.region}","${formatArea(p.rawAreaVal || p.area)}","${formatCarbon(p.rawCarbonVal || p.carbon)}","${p.reforestationStatus}","${buyers}","${p.tokenBuyers?.[0]?.speCertificateId || '-'}"\n`;
     });
 
     companies.forEach((c) => {
@@ -215,9 +216,11 @@ export default function PublicReportModal({
                     <TableRow key={p.id}>
                       <TableCell className="font-extrabold text-slate-900">{p.name}</TableCell>
                       <TableCell className="text-slate-500">{p.region}</TableCell>
-                      <TableCell className="font-mono">{p.area}</TableCell>
+                      <TableCell className="font-mono">
+                        {formatArea(p.rawAreaVal || p.area)}
+                      </TableCell>
                       <TableCell className="font-mono font-bold text-emerald-800">
-                        {p.carbon}
+                        {formatCarbon(p.rawCarbonVal || p.carbon)}
                       </TableCell>
                       <TableCell>
                         <span className="bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded font-bold text-[9px]">

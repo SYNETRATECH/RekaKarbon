@@ -186,19 +186,19 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
           items: [
             {
               name: 'Insentif Tanam & Pemeliharaan KTH (24 Anggota)',
-              qty: '24 Orang',
+              qty: 24,
               priceIDR: 20000000,
               totalIDR: 480000000,
             },
             {
               name: 'Pengadaan Pupuk Bio-Fertilizer Organik',
-              qty: '400 Karung',
+              qty: 400,
               priceIDR: 250000,
               totalIDR: 100000000,
             },
             {
               name: 'Operasional Alat Penyiangan & Parang Gulma',
-              qty: '24 Paket',
+              qty: 24,
               priceIDR: 2916666,
               totalIDR: 70000000,
             },
@@ -222,19 +222,19 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
           items: [
             {
               name: 'Sewa Drone VTOL LiDAR Multiterrain (5 Hari)',
-              qty: '5 Hari',
+              qty: 5,
               priceIDR: 100000000,
               totalIDR: 500000000,
             },
             {
               name: 'Jasa Pengolahan Citra dMRV & Model Canopy Height (CHM)',
-              qty: '1 Paket',
+              qty: 1,
               priceIDR: 200000000,
               totalIDR: 200000000,
             },
             {
               name: 'Honor Pilot Drone Sertifikasi FASI & Surveyor GIS',
-              qty: '5 Orang',
+              qty: 5,
               priceIDR: 30000000,
               totalIDR: 150000000,
             },
@@ -258,13 +258,13 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
           items: [
             {
               name: 'Bibit Mangrove Rhizophora Mucronata >40cm',
-              qty: '40.000 Batang',
+              qty: 40000,
               priceIDR: 10000,
               totalIDR: 400000000,
             },
             {
               name: 'Polybag & Bambu Ajir Penyangga',
-              qty: '40.000 Set',
+              qty: 40000,
               priceIDR: 1250,
               totalIDR: 50000000,
             },
@@ -287,13 +287,13 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
           items: [
             {
               name: 'Konstruksi Pemecah Gelombang Bambu (Alat Pemecah Ombak)',
-              qty: '1.200 Meter',
+              qty: 1200,
               priceIDR: 500000,
               totalIDR: 600000000,
             },
             {
               name: 'Pembersihan Alur Sedimen Pasang Surut & Trash Trap',
-              qty: '1 Paket',
+              qty: 1,
               priceIDR: 250000000,
               totalIDR: 250000000,
             },
@@ -431,25 +431,25 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     items: [
       {
         name: 'Honor Insentif Tanam & Pemeliharaan KTH Mangrove (62 Anggota)',
-        qty: '62 Orang',
+        qty: 62,
         price: 4000000,
         total: 248000000,
       },
       {
         name: 'Pengadaan Bibit Rhizophora & Avicennia Kualitas Super',
-        qty: '15.000 Batang',
+        qty: 15000,
         price: 8000,
         total: 120000000,
       },
       {
         name: 'Sewa Speedboat & Peralatan Penanaman Zona Pasang Surut',
-        qty: '4 Paket',
+        qty: 4,
         price: 12000000,
         total: 48000000,
       },
       {
         name: 'Pengadaan Pupuk Hayati & Mesh Pelindung Ombak',
-        qty: '1 Paket',
+        qty: 1,
         price: 34000000,
         total: 34000000,
       },
@@ -472,19 +472,19 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     items: [
       {
         name: 'Honor Insentif Patroli & Penyiangan Savana KTH Baluran (48 Anggota)',
-        qty: '48 Orang',
+        qty: 48,
         price: 4000000,
         total: 192000000,
       },
       {
         name: 'Pengadaan Bibit Pohon Kayu Putih & Acacia Nilotica',
-        qty: '10.000 Batang',
+        qty: 10000,
         price: 8000,
         total: 80000000,
       },
       {
         name: 'Operasional Peralatan Penyiangan & Mesin Pemotong Gulma',
-        qty: '6 Set',
+        qty: 6,
         price: 8000000,
         total: 48000000,
       },
@@ -506,19 +506,19 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     items: [
       {
         name: 'Insentif Pemeliharaan Hutan Hujan Tropis KTH Mentarang (110 Anggota)',
-        qty: '110 Orang',
+        qty: 110,
         price: 5000000,
         total: 550000000,
       },
       {
         name: 'Pengadaan Bibit Meranti & Ulin Lokal Sertifikasi dMRV',
-        qty: '30.000 Batang',
+        qty: 30000,
         price: 10000,
         total: 300000000,
       },
       {
         name: 'Logistik Patroli Jalur Sungai & GPS Tracking Unit',
-        qty: '1 Paket',
+        qty: 1,
         price: 100000000,
         total: 100000000,
       },
@@ -540,19 +540,19 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     items: [
       {
         name: 'Honor Insentif Pembasahan & Pemeliharaan Sekat Kanal (35 Anggota)',
-        qty: '35 Orang',
+        qty: 35,
         price: 3000000,
         total: 105000000,
       },
       {
         name: 'Pengadaan Kantong Tanah & Bahan Pelapis Sekat Kanal Gambut',
-        qty: '1 Paket',
+        qty: 1,
         price: 45000000,
         total: 45000000,
       },
       {
         name: 'Pemeliharaan Piezometer & Pemantauan Muka Air Gambut (TMA)',
-        qty: '10 Titik',
+        qty: 10,
         price: 3000000,
         total: 30000000,
       },
@@ -575,19 +575,19 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     items: [
       {
         name: 'Insentif Tanam & Pemeliharaan Tahap 4 KTH (15 Anggota)',
-        qty: '15 Orang',
+        qty: 15,
         price: 10000000,
         total: 150000000,
       },
       {
         name: 'Pengadaan Pupuk Kompos Organik Bio-Fertilizer (Tambahan)',
-        qty: '200 Karung',
+        qty: 200,
         price: 350000,
         total: 70000000,
       },
       {
         name: 'Operasional Mesin Pemangkasan & Pompa Air Savana',
-        qty: '6 Set',
+        qty: 6,
         price: 10000000,
         total: 60000000,
       },
@@ -610,11 +610,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     items: [
       {
         name: 'Insentif Pembibitan Rhizophora Tahap 2',
-        qty: '40 Orang',
+        qty: 40,
         price: 3500000,
         total: 140000000,
       },
-      { name: 'Pengadaan Bambu Penahan Ombak', qty: '500 Batang', price: 140000, total: 70000000 },
+      { name: 'Pengadaan Bambu Penahan Ombak', qty: 500, price: 140000, total: 70000000 },
     ],
   },
   {
@@ -631,7 +631,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     items: [
       {
         name: 'Pengadaan Bibit Meranti & Peralatan Patroli Hutan',
-        qty: '1 Paket',
+        qty: 1,
         price: 120000000,
         total: 120000000,
       },

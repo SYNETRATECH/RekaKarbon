@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatArea, formatCarbon } from '@/lib/formatters';
 import { useCarbonStore } from '../store/useCarbonStore';
 import NDVIGauge from './NDVIGauge';
 import { calculateGeodetics } from '../utils/geodetics';
@@ -654,7 +655,7 @@ export default function ConservationModule() {
                     <div>
                       <span className="text-[8px] font-bold block text-slate-400">AREA</span>
                       <span className={`font-black ${isActive ? 'text-white' : 'text-slate-800'}`}>
-                        {proj.area}
+                        {formatArea(proj.rawAreaVal || proj.area)}
                       </span>
                     </div>
                     <div>
@@ -664,7 +665,7 @@ export default function ConservationModule() {
                       <span
                         className={`font-black ${isActive ? 'text-emerald-305' : 'text-emerald-700'}`}
                       >
-                        {proj.carbon}
+                        {formatCarbon(proj.rawCarbonVal || proj.carbon)}
                       </span>
                     </div>
                   </div>

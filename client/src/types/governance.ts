@@ -6,7 +6,7 @@ export interface MultiSigRequest {
   volumeTCO2e?: number;
   signersCount: number;
   requiredSigners: number;
-  status: 'pending' | 'approved' | 'rejected' | string;
+  status: 'pending' | 'approved' | 'rejected';
   date: string;
 }
 

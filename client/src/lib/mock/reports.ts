@@ -6,8 +6,8 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
     year: 2026,
     title: 'Laporan Emisi Karbon Tahunan FY 2026 - PT Semen Nusantara Tuban',
     fileName: 'Laporan_Emisi_Semen_Nusantara_FY2026.pdf',
-    fileSize: '4.8 MB',
-    uploadDate: '10 Jan 2026',
+    fileSizeBytes: 5033165,
+    uploadDate: '2026-01-10',
     status: 'verified',
     totalEmissionsTCO2e: 14830,
     sectors: [
@@ -54,8 +54,8 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
     year: 2025,
     title: 'Laporan Audit Emisi dMRV FY 2025 - PT Semen Nusantara Tuban',
     fileName: 'Laporan_Emisi_Semen_Nusantara_FY2025.pdf',
-    fileSize: '3.9 MB',
-    uploadDate: '15 Des 2025',
+    fileSizeBytes: 4089446,
+    uploadDate: '2025-12-15',
     status: 'verified',
     totalEmissionsTCO2e: 13500,
     sectors: [

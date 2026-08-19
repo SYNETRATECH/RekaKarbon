@@ -7,9 +7,9 @@ export const PROJECTS_DATA: Project[] = [
     region: 'Jawa Timur',
     center: [-7.8385, 114.3725],
     zoom: 12,
-    area: '25.0K Ha',
+    area: 25000,
     rawAreaVal: 25000,
-    carbon: '1.24M tCO2e',
+    carbon: 1240000,
     rawCarbonVal: 1240000,
     ndvi: 0.78,
     evi: 0.61,
@@ -116,7 +116,7 @@ export const PROJECTS_DATA: Project[] = [
     disbursementHistory: [
       {
         id: 'tx-baluran-01',
-        date: '14 Jul 2025',
+        date: '2025-07-14',
         amount: 45000000,
         category: 'Pemeliharaan',
         desc: 'Insentif bulanan KTH (Kelompok Tani Hutan) Baluran',
@@ -126,19 +126,19 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Insentif Tanam & Pemeliharaan KTH (15 Anggota)',
-            qty: '15 Orang',
+            qty: 15,
             price: 2000000,
             total: 30000000,
           },
           {
             name: 'Pengadaan Pupuk Kompos Organik Bio-Fertilizer',
-            qty: '30 Karung',
+            qty: 30,
             price: 300000,
             total: 9000000,
           },
           {
             name: 'Operasional Alat Penyiangan & Pemangkasan',
-            qty: '6 Paket',
+            qty: 6,
             price: 1000000,
             total: 6000000,
           },
@@ -151,7 +151,7 @@ export const PROJECTS_DATA: Project[] = [
       },
       {
         id: 'tx-baluran-02',
-        date: '28 Jun 2025',
+        date: '2025-06-28',
         amount: 85000000,
         category: 'Monitoring',
         desc: 'Sewa UAV & pemindaian orthophoto udara dMRV',
@@ -161,19 +161,19 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Sewa Drone VTOL LiDAR Multiterrain (3 Hari)',
-            qty: '3 Hari',
+            qty: 3,
             price: 20000000,
             total: 60000000,
           },
           {
             name: 'Jasa Pengolahan Citra dMRV & Model CHM',
-            qty: '1 Paket',
+            qty: 1,
             price: 15000000,
             total: 15000000,
           },
           {
             name: 'Honor Pilot Drone Sertifikasi FASI & Surveyor',
-            qty: '2 Orang',
+            qty: 2,
             price: 5000000,
             total: 10000000,
           },
@@ -185,7 +185,7 @@ export const PROJECTS_DATA: Project[] = [
       },
       {
         id: 'tx-baluran-03',
-        date: '10 Mei 2025',
+        date: '2025-05-10',
         amount: 150000000,
         category: 'Restorasi',
         desc: 'Pengadaan bibit tambahan & alat tanam KTH',
@@ -195,19 +195,22 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Pengadaan Bibit Pohon Kayu Putih & Acacia Nilotica',
-            qty: '15.000 Batang',
+            qty: 15000,
+            unit: 'Batang',
             price: 8000,
             total: 120000000,
           },
           {
             name: 'Polybag Kualitas Super & Media Tanam Humus',
-            qty: '15.000 Set',
+            qty: 15000,
+            unit: 'Set',
             price: 1000,
             total: 15000000,
           },
           {
             name: 'Biaya Distribusi Logistik Truk ke Savana Baluran',
-            qty: '3 Armada',
+            qty: 3,
+            unit: 'Truk',
             price: 5000000,
             total: 15000000,
           },
@@ -229,7 +232,7 @@ export const PROJECTS_DATA: Project[] = [
         tCO2e: 50000,
         amountIDR: 13000000000,
         pricePerTon: 260000,
-        purchaseDate: '10 Jul 2025',
+        purchaseDate: '2025-07-10',
         speCertificateId: 'SPE-BALURAN-2025-001',
         txHash: '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d',
         blockNumber: '#184410',
@@ -244,7 +247,7 @@ export const PROJECTS_DATA: Project[] = [
         tCO2e: 20000,
         amountIDR: 5200000000,
         pricePerTon: 260000,
-        purchaseDate: '05 Jul 2025',
+        purchaseDate: '2025-07-05',
         speCertificateId: 'SPE-BALURAN-2025-002',
         txHash: '0x4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a',
         blockNumber: '#184102',
@@ -259,9 +262,9 @@ export const PROJECTS_DATA: Project[] = [
     region: 'Aceh',
     center: [3.7915, 97.4326],
     zoom: 10,
-    area: '792.7K Ha',
+    area: 792700,
     rawAreaVal: 792700,
-    carbon: '42.50M tCO2e',
+    carbon: 42500000,
     rawCarbonVal: 42500000,
     ndvi: 0.84,
     evi: 0.72,
@@ -367,7 +370,7 @@ export const PROJECTS_DATA: Project[] = [
     disbursementHistory: [
       {
         id: 'tx-leuser-01',
-        date: '10 Jul 2025',
+        date: '2025-07-10',
         amount: 120000000,
         category: 'Monitoring',
         desc: 'Audit citra LiDAR udara kawasan penyangga Ketambe',
@@ -377,13 +380,13 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Pemindaian Sensor Udara LiDAR Ketambe',
-            qty: '1 Kawasan',
+            qty: 1,
             price: 90000000,
             total: 90000000,
           },
           {
             name: 'Validasi Lapangan Tim dMRV & Polhut',
-            qty: '10 Personil',
+            qty: 10,
             price: 3000000,
             total: 30000000,
           },
@@ -395,7 +398,7 @@ export const PROJECTS_DATA: Project[] = [
       },
       {
         id: 'tx-leuser-02',
-        date: '22 Jun 2025',
+        date: '2025-06-22',
         amount: 65000000,
         category: 'Pemeliharaan',
         desc: 'Insentif patroli polisi hutan & KTH Leuser',
@@ -405,13 +408,13 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Insentif Tim Patroli Restorasi Hutan Hujan',
-            qty: '20 Anggota',
+            qty: 20,
             price: 2500000,
             total: 50000000,
           },
           {
             name: 'Peralatan Penyiangan & Kompos Hayati',
-            qty: '1 Paket',
+            qty: 1,
             price: 15000000,
             total: 15000000,
           },
@@ -422,7 +425,7 @@ export const PROJECTS_DATA: Project[] = [
       },
       {
         id: 'tx-leuser-03',
-        date: '15 Apr 2025',
+        date: '2025-04-15',
         amount: 350000000,
         category: 'Restorasi',
         desc: 'Pengadaan 100.000 bibit tanaman hutan hujan tropis',
@@ -432,13 +435,13 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Pengadaan Bibit Pohon Damar & Meranti',
-            qty: '100.000 Batang',
+            qty: 100000,
             price: 3000,
             total: 300000000,
           },
           {
             name: 'Biaya Pengangkutan & Logistik Jalur Sungai',
-            qty: '1 Paket',
+            qty: 1,
             price: 50000000,
             total: 50000000,
           },
@@ -460,7 +463,7 @@ export const PROJECTS_DATA: Project[] = [
         tCO2e: 50000,
         amountIDR: 15500000000,
         pricePerTon: 310000,
-        purchaseDate: '15 Jul 2025',
+        purchaseDate: '2025-07-15',
         speCertificateId: 'SPE-LEUSER-2025-001',
         txHash: '0x1f2e3d4c5b6a7f8e9d0c1b2a3f4e5d6c',
         blockNumber: '#184950',
@@ -475,7 +478,7 @@ export const PROJECTS_DATA: Project[] = [
         tCO2e: 30000,
         amountIDR: 9300000000,
         pricePerTon: 310000,
-        purchaseDate: '12 Jul 2025',
+        purchaseDate: '2025-07-12',
         speCertificateId: 'SPE-LEUSER-2025-002',
         txHash: '0x8e7f6d5c4b3a2f1e0d9c8b7a6f5e4d3c',
         blockNumber: '#184710',
@@ -490,9 +493,9 @@ export const PROJECTS_DATA: Project[] = [
     region: 'Riau',
     center: [0.7215, 102.6321],
     zoom: 11,
-    area: '120.4K Ha',
+    area: 120400,
     rawAreaVal: 120400,
-    carbon: '18.22M tCO2e',
+    carbon: 18220000,
     rawCarbonVal: 18220000,
     ndvi: 0.67,
     evi: 0.52,
@@ -581,7 +584,7 @@ export const PROJECTS_DATA: Project[] = [
     disbursementHistory: [
       {
         id: 'tx-riau-01',
-        date: '12 Jul 2025',
+        date: '2025-07-12',
         amount: 95000000,
         category: 'Restorasi',
         desc: 'Konstruksi sekat kanal tambahan zona Bengkalis',
@@ -591,13 +594,13 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Pembangunan 4 Unit Sekat Kanal Kayu Kompak',
-            qty: '4 Unit',
+            qty: 4,
             price: 18000000,
             total: 72000000,
           },
           {
             name: 'Bahan Pelapis & Kantong Tanah Pembendung',
-            qty: '1 Paket',
+            qty: 1,
             price: 23000000,
             total: 23000000,
           },
@@ -609,7 +612,7 @@ export const PROJECTS_DATA: Project[] = [
       },
       {
         id: 'tx-riau-02',
-        date: '18 Jun 2025',
+        date: '2025-06-18',
         amount: 40000000,
         category: 'Pemeliharaan',
         desc: 'Operasional pemantauan tinggi muka air (TMA) gambut',
@@ -619,7 +622,7 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Pemeliharaan Piezometer & Pemantauan TMA',
-            qty: '10 Titik',
+            qty: 10,
             price: 4000000,
             total: 40000000,
           },
@@ -630,7 +633,7 @@ export const PROJECTS_DATA: Project[] = [
       },
       {
         id: 'tx-riau-03',
-        date: '02 Mei 2025',
+        date: '2025-05-02',
         amount: 110000000,
         category: 'NusaCarbon API',
         desc: 'Langganan platform sensor satelit radar penilai kelembapan',
@@ -640,7 +643,7 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Integrasi Datastream Satelit Synthetic Aperture Radar (SAR)',
-            qty: '1 Lisensi',
+            qty: 1,
             price: 110000000,
             total: 110000000,
           },
@@ -661,7 +664,7 @@ export const PROJECTS_DATA: Project[] = [
         tCO2e: 15000,
         amountIDR: 4500000000,
         pricePerTon: 300000,
-        purchaseDate: '28 Jun 2025',
+        purchaseDate: '2025-06-28',
         speCertificateId: 'SPE-RIAU-2025-001',
         txHash: '0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d',
         blockNumber: '#183600',
@@ -676,9 +679,9 @@ export const PROJECTS_DATA: Project[] = [
     region: 'Kalimantan Timur',
     center: [0.4851, 117.2912],
     zoom: 11,
-    area: '198.6K Ha',
+    area: 198600,
     rawAreaVal: 198600,
-    carbon: '14.85M tCO2e',
+    carbon: 14850000,
     rawCarbonVal: 14850000,
     ndvi: 0.81,
     evi: 0.66,
@@ -784,7 +787,7 @@ export const PROJECTS_DATA: Project[] = [
     disbursementHistory: [
       {
         id: 'tx-kutai-01',
-        date: '05 Jul 2025',
+        date: '2025-07-05',
         amount: 70000000,
         category: 'Monitoring',
         desc: 'Sewa UAV ortofoto Sangkima Kutai Timur',
@@ -794,7 +797,7 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Survei Pemetaan Udara dMRV Zona Sangkima',
-            qty: '1 Paket',
+            qty: 1,
             price: 70000000,
             total: 70000000,
           },
@@ -805,7 +808,7 @@ export const PROJECTS_DATA: Project[] = [
       },
       {
         id: 'tx-kutai-02',
-        date: '15 Jun 2025',
+        date: '2025-06-15',
         amount: 35000000,
         category: 'Pemeliharaan',
         desc: 'Pemeliharaan rutin bibit pohon Ulin & pencegahan hama',
@@ -815,7 +818,7 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Upah Penyiangan Gulma & Pemupukan Ulin',
-            qty: '10 Orang',
+            qty: 10,
             price: 3500000,
             total: 35000000,
           },
@@ -826,7 +829,7 @@ export const PROJECTS_DATA: Project[] = [
       },
       {
         id: 'tx-kutai-03',
-        date: '08 Apr 2025',
+        date: '2025-04-08',
         amount: 220000000,
         category: 'Restorasi',
         desc: 'Pengadaan tanah humus & media tanam rehabilitasi tambang',
@@ -836,13 +839,13 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Pengadaan Tanah Subur Humus Rawa',
-            qty: '100 Truk',
+            qty: 100,
             price: 1800000,
             total: 180000000,
           },
           {
             name: 'Pengadaan 5.000 Bibit Pohon Meranti Merah',
-            qty: '5.000 Pohon',
+            qty: 5000,
             price: 8000,
             total: 40000000,
           },
@@ -864,7 +867,7 @@ export const PROJECTS_DATA: Project[] = [
         tCO2e: 25000,
         amountIDR: 7000000000,
         pricePerTon: 280000,
-        purchaseDate: '20 Jun 2025',
+        purchaseDate: '2025-06-20',
         speCertificateId: 'SPE-KUTAI-2025-001',
         txHash: '0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f',
         blockNumber: '#182800',
@@ -879,9 +882,9 @@ export const PROJECTS_DATA: Project[] = [
     region: 'Sulawesi Utara',
     center: [1.3912, 124.8912],
     zoom: 11,
-    area: '45.2K Ha',
+    area: 45200,
     rawAreaVal: 45200,
-    carbon: '3.12M tCO2e',
+    carbon: 3120000,
     rawCarbonVal: 3120000,
     ndvi: 0.72,
     evi: 0.58,
@@ -970,7 +973,7 @@ export const PROJECTS_DATA: Project[] = [
     disbursementHistory: [
       {
         id: 'tx-sulut-01',
-        date: '08 Jul 2025',
+        date: '2025-07-08',
         amount: 30000000,
         category: 'Monitoring',
         desc: 'Survey lapangan & pemetaan sensor GPS Bitung',
@@ -980,7 +983,7 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Survei Pemetaan GPS & Ortofoto Lapangan',
-            qty: '1 Paket',
+            qty: 1,
             price: 30000000,
             total: 30000000,
           },
@@ -991,23 +994,21 @@ export const PROJECTS_DATA: Project[] = [
       },
       {
         id: 'tx-sulut-02',
-        date: '20 Jun 2025',
+        date: '2025-06-20',
         amount: 18000000,
         category: 'Pemeliharaan',
         desc: 'Pengadaan pupuk kompos Kelompok Tani Dua Saudara',
         txHash: '0x6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a',
         blockNumber: '#183000',
         vendor: 'KTH Lestari Dua Saudara Bitung',
-        items: [
-          { name: 'Pupuk Kompos Organik Bitung', qty: '60 Karung', price: 300000, total: 18000000 },
-        ],
+        items: [{ name: 'Pupuk Kompos Organik Bitung', qty: 60, price: 300000, total: 18000000 }],
         proofImages: [
           'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
         ],
       },
       {
         id: 'tx-sulut-03',
-        date: '12 Mei 2025',
+        date: '2025-05-12',
         amount: 90000000,
         category: 'Restorasi',
         desc: 'Pembelian bibit pohon pelindung kemiri & kopi hutan',
@@ -1017,7 +1018,7 @@ export const PROJECTS_DATA: Project[] = [
         items: [
           {
             name: 'Bibit Tanaman Agroforestri Kemiri Hutan',
-            qty: '10.000 Pohon',
+            qty: 10000,
             price: 9000,
             total: 90000000,
           },
@@ -1038,7 +1039,7 @@ export const PROJECTS_DATA: Project[] = [
         tCO2e: 10000,
         amountIDR: 3100000000,
         pricePerTon: 310000,
-        purchaseDate: '05 Jul 2025',
+        purchaseDate: '2025-07-05',
         speCertificateId: 'SPE-SULUT-2025-001',
         txHash: '0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b',
         blockNumber: '#184150',

@@ -118,7 +118,9 @@ export default function EmissionsAuditAI() {
               Rata-rata Deviasi Emisi
             </span>
             <h3 className="text-3xl font-black text-amber-500 leading-none">
-              {summary?.rataDeviasiEmisi ?? '0%'}
+              {typeof summary?.rataDeviasiEmisi === 'number'
+                ? `+${summary.rataDeviasiEmisi}%`
+                : (summary?.rataDeviasiEmisi ?? '0%')}
             </h3>
             <span className="text-[11px] font-medium text-slate-400 block pt-0.5">
               {summary?.descDeviasi ?? ''}
@@ -248,17 +250,19 @@ export default function EmissionsAuditAI() {
 
                     {/* Δ Listrik */}
                     <TableCell className="py-3.5 px-3 text-right font-black text-rose-500">
-                      {log.deltaElectricity}
+                      {typeof log.deltaElectricity === 'number'
+                        ? `+${log.deltaElectricity}%`
+                        : log.deltaElectricity}
                     </TableCell>
 
                     {/* Δ Batubara */}
                     <TableCell className="py-3.5 px-3 text-right font-black text-rose-500">
-                      {log.deltaCoal}
+                      {typeof log.deltaCoal === 'number' ? `+${log.deltaCoal}%` : log.deltaCoal}
                     </TableCell>
 
                     {/* Δ Gas */}
                     <TableCell className="py-3.5 px-3 text-right font-black text-rose-500">
-                      {log.deltaGas}
+                      {typeof log.deltaGas === 'number' ? `+${log.deltaGas}%` : log.deltaGas}
                     </TableCell>
 
                     {/* e-Faktur */}
@@ -278,9 +282,9 @@ export default function EmissionsAuditAI() {
                     <TableCell className="py-3.5 px-3 text-center">
                       <Badge
                         variant={
-                          log.priority === 'KRITIS'
+                          log.priority === 'critical' || log.priority === 'KRITIS'
                             ? 'destructive'
-                            : log.priority === 'TINGGI'
+                            : log.priority === 'high' || log.priority === 'TINGGI'
                               ? 'warning'
                               : 'secondary'
                         }

@@ -36,7 +36,8 @@ export interface ForestProjectTokenBuyer {
 
 export interface ForestProjectDisbursementItem {
   name: string;
-  qty: string;
+  qty: number;
+  unit?: string;
   priceIDR: number;
   totalIDR: number;
 }
@@ -78,7 +79,7 @@ export interface ForestProjectItem {
   assignedKTH: string;
   dMRVStatus: 'verified' | 'pending_inspection' | 'revision';
   budgetReportFileName?: string;
-  budgetReportFileSize?: number | string;
+  budgetReportFileSize?: number;
   polygonCoords?: Array<{ lat: number; lng: number }> | Array<[number, number]>;
   progressDetail?: ForestProjectProgressDetail;
 }
@@ -103,20 +104,12 @@ export interface KTHTransactionItem {
   projectName: string;
   volumeTCO2e: number;
   amountIDR: number;
-  status:
-    | 'completed'
-    | 'processing'
-    | 'awaiting_farmer'
-    | 'awaiting_proof'
-    | 'flagged'
-    | 'failed'
-    | 'Verified'
-    | 'Pending'
-    | 'Flagged';
+  status: 'completed' | 'processing' | 'awaiting_farmer' | 'awaiting_proof' | 'flagged' | 'failed';
   issueNote?: string;
   items?: {
     name: string;
-    qty: string;
+    qty: number;
+    unit?: string;
     price: number;
     total: number;
   }[];
@@ -130,7 +123,7 @@ export interface RegulationDocumentUploadItem {
   categoryLabel: string;
   agencyIssuer: 'KLHK' | 'DJP' | 'KLHK & DJP';
   fileName: string;
-  fileSize: number | string;
+  fileSize: number;
   uploadDate: string;
   signatoryPerson: string;
   targetEntityName: string; // e.g. "PT Semen Nusantara Tuban" or "Nasional"

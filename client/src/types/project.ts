@@ -7,7 +7,7 @@ export interface ReforestationStage {
   year: number;
   title: string;
   milestone: string;
-  status: 'completed' | 'ongoing' | 'upcoming' | string;
+  status: 'completed' | 'ongoing' | 'upcoming';
   canopyDensity: number;
   gsd: number;
   kthName: string;
@@ -22,7 +22,8 @@ export interface ReforestationStage {
 
 export interface DisbursementItemDetail {
   name: string;
-  qty: string;
+  qty: number;
+  unit?: string;
   price: number;
   total: number;
 }
@@ -63,9 +64,9 @@ export interface Project {
   region: string;
   center: [number, number];
   zoom: number;
-  area: string | number;
+  area: number;
   rawAreaVal: number;
-  carbon: string | number;
+  carbon: number;
   rawCarbonVal: number;
   ndvi: number;
   evi: number;

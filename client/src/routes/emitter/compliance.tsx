@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/formatters';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import PublicReportModal from '../../components/modals/PublicReportModal';
 import { CheckCircle2, AlertTriangle, Info, ShoppingCart } from 'lucide-react';
@@ -302,7 +303,11 @@ export default function ComplianceDashboard() {
             <span className="text-[9px] font-bold text-slate-400 uppercase block">
               Total Estimasi Biaya
             </span>
-            <p className="text-base font-black text-rose-600 mt-1">{data.totalEstimatedCostIDR}</p>
+            <p className="text-base font-black text-rose-600 mt-1">
+              {typeof data.totalEstimatedCostIDR === 'number'
+                ? formatCurrency(data.totalEstimatedCostIDR)
+                : data.totalEstimatedCostIDR}
+            </p>
           </div>
         </div>
 

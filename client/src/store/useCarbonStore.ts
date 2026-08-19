@@ -111,7 +111,8 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   // Action for KTH Transactions Status Update
   updateKTHTransactionStatus: (
     id: string,
-    status: 'Verified' | 'Pending' | 'Flagged',
+    status:
+      'completed' | 'processing' | 'awaiting_farmer' | 'awaiting_proof' | 'flagged' | 'failed',
     issueNote?: string
   ) =>
     set((state) => ({

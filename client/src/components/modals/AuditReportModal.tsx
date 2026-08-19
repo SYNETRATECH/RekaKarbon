@@ -1,4 +1,5 @@
 import { useCarbonStore } from '../../store/useCarbonStore';
+import { formatArea, formatCarbon } from '@/lib/formatters';
 import { FileText, Printer } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -128,14 +129,16 @@ export default function AuditReportModal() {
                         <span className="text-slate-400 text-[9px] block font-normal">
                           Luas Terverifikasi GIS
                         </span>
-                        <span className="text-xs font-black text-slate-900">{activeProj.area}</span>
+                        <span className="text-xs font-black text-slate-900">
+                          {formatArea(activeProj.rawAreaVal || activeProj.area)}
+                        </span>
                       </div>
                       <div>
                         <span className="text-slate-400 text-[9px] block font-normal">
                           Total Cadangan CO2
                         </span>
                         <span className="text-xs font-black text-slate-900 font-mono">
-                          {activeProj.carbon}
+                          {formatCarbon(activeProj.rawCarbonVal || activeProj.carbon)}
                         </span>
                       </div>
                     </>

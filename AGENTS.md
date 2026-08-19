@@ -11,6 +11,7 @@ For specific sub-project guidelines, agents MUST read and follow the dedicated g
 - 🎨 **Frontend / Client (`client/`)**: See [client/AGENTS.md](client/AGENTS.md) for React, Tailwind CSS v4, Zustand, shadcn/ui, and repository pattern standards.
 - ⚙️ **Backend / Server (`server/`)**: See [server/AGENTS.md](server/AGENTS.md) for server architecture, API rules, database migration, and backend standards.
 - ⛓️ **Blockchain / Smart Contracts (`blockchain/`)**: See [blockchain/AGENTS.md](blockchain/AGENTS.md) for smart contract development, Besu network configuration, and EVM standards.
+- 📐 **API Design & Specification**: See [.agents/skills/api-design-standards/SKILL.md](.agents/skills/api-design-standards/SKILL.md) and [api-design-guideline.md](api-design-guideline.md) for REST API conventions, JSON representations, and client-server contract standards.
 
 ---
 

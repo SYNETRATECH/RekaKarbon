@@ -8,13 +8,13 @@ export interface Company {
   emissionCap: number;
   actualEmission: number;
   carbonDeficit: number;
-  paymentStatus: 'unpaid' | 'paid' | string;
+  paymentStatus: 'unpaid' | 'paid';
   offsetCostIDR: number;
   auditDate: string;
   paymentDeadline?: string;
   paymentDate?: string;
   stackSensors: string;
-  complianceRating: string;
+  complianceRating: 'non_compliant' | 'warning' | 'compliant';
   recommendedPartner: string;
   picAuditor: string;
   description: string;
