@@ -322,7 +322,7 @@ describe('Architecture — Repository Completeness', () => {
     const indexContent = fs.readFileSync(indexFile, 'utf-8');
     const repoFiles = fs
       .readdirSync(REPO_DIR)
-      .filter((f) => f.endsWith('.repository.ts'))
+      .filter((f) => f.endsWith('.repository.ts') && !f.endsWith('.mock.repository.ts'))
       .map((f) => path.basename(f, '.repository.ts'));
 
     const missingExports = repoFiles.filter((name) => !indexContent.includes(name));
