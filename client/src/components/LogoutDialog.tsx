@@ -26,7 +26,7 @@ export default function LogoutDialog() {
       <DialogContent className="max-w-md p-6 text-left border-slate-200 gap-4">
         <DialogHeader className="space-y-1.5">
           <DialogTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-            <LogOut className="w-4 h-4 text-rose-500" />
+            <LogOut className="w-4 h-4 text-status-danger-fg" />
             Konfirmasi Logout
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500">

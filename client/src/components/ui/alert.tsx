@@ -10,7 +10,8 @@ const alertVariants = cva(
         default: 'bg-slate-50 border-slate-200 text-slate-900 [&>svg]:text-slate-600',
         mint: 'bg-emerald-50/80 border-emerald-200 text-emerald-950 [&>svg]:text-emerald-600',
         warning: 'bg-amber-50/80 border-amber-200 text-amber-950 [&>svg]:text-amber-600',
-        destructive: 'bg-rose-50/80 border-rose-200 text-rose-950 [&>svg]:text-rose-600',
+        destructive:
+          'bg-status-danger-bg/80 border-status-danger-border text-status-danger-fg [&>svg]:text-status-danger-fg',
       },
     },
     defaultVariants: {

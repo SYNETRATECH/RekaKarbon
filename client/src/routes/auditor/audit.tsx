@@ -99,14 +99,14 @@ export default function EmissionsAuditAI() {
             <span className="text-xs font-semibold text-slate-500 block">
               Emiten Terdeteksi Anomali
             </span>
-            <h3 className="text-3xl font-black text-rose-500 leading-none">
+            <h3 className="text-3xl font-black text-status-danger-fg leading-none">
               {summary?.emitenTerdeteksiAnomali ?? 0}
             </h3>
             <span className="text-[11px] font-medium text-slate-400 block pt-0.5">
               Dari {summary?.totalEmitenAktif ?? 0} emiten aktif
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-status-danger-bg border border-status-danger-border text-status-danger-fg flex items-center justify-center shrink-0">
             <AlertTriangle className="w-6 h-6" />
           </div>
         </Card>
@@ -249,19 +249,19 @@ export default function EmissionsAuditAI() {
                     </TableCell>
 
                     {/* Δ Listrik */}
-                    <TableCell className="py-3.5 px-3 text-right font-black text-rose-500">
+                    <TableCell className="py-3.5 px-3 text-right font-black text-status-danger-fg">
                       {typeof log.deltaElectricity === 'number'
                         ? `+${log.deltaElectricity}%`
                         : log.deltaElectricity}
                     </TableCell>
 
                     {/* Δ Batubara */}
-                    <TableCell className="py-3.5 px-3 text-right font-black text-rose-500">
+                    <TableCell className="py-3.5 px-3 text-right font-black text-status-danger-fg">
                       {typeof log.deltaCoal === 'number' ? `+${log.deltaCoal}%` : log.deltaCoal}
                     </TableCell>
 
                     {/* Δ Gas */}
-                    <TableCell className="py-3.5 px-3 text-right font-black text-rose-500">
+                    <TableCell className="py-3.5 px-3 text-right font-black text-status-danger-fg">
                       {typeof log.deltaGas === 'number' ? `+${log.deltaGas}%` : log.deltaGas}
                     </TableCell>
 
@@ -388,14 +388,14 @@ export default function EmissionsAuditAI() {
                 <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2 text-xs">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-slate-500 font-semibold">Skor Anomali:</span>
-                    <span className="font-black text-rose-600">
+                    <span className="font-black text-status-danger-fg">
                       {selectedLog.anomalyScore} (Tinggi)
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-slate-500 font-semibold">Status e-Faktur:</span>
                     <span
-                      className={`font-black ${selectedLog.eFakturMatch ? 'text-emerald-600' : 'text-rose-600'}`}
+                      className={`font-black ${selectedLog.eFakturMatch ? 'text-emerald-600' : 'text-status-danger-fg'}`}
                     >
                       {selectedLog.eFakturMatch ? 'Sesuai Utilitas' : 'Divergensi Terdeteksi'}
                     </span>

@@ -83,10 +83,10 @@ export default function CarbonDexMarket() {
 
       {/* 2. TOP ALERT BOX (WARNING BANNER) */}
       <Alert variant="destructive">
-        <AlertTriangle className="w-4 h-4 text-rose-600" />
+        <AlertTriangle className="w-4 h-4 text-status-danger-fg" />
         <div>
-          <AlertTitle className="text-rose-900">Defisit aktif: 2.330 tCO2e</AlertTitle>
-          <AlertDescription className="text-rose-700">
+          <AlertTitle className="text-status-danger-fg">Defisit aktif: 2.330 tCO2e</AlertTitle>
+          <AlertDescription className="text-status-danger-fg/90">
             Beli minimal 2330 tCO2e sebelum 31 Des 2025 untuk menghindari denda Rp 1.51 M.
           </AlertDescription>
         </div>
@@ -285,7 +285,7 @@ export default function CarbonDexMarket() {
                   <TableCell className="p-4 align-middle">
                     <span
                       className={`font-mono font-bold text-xs flex items-center gap-1 ${
-                        item.change24h >= 0 ? 'text-emerald-600' : 'text-rose-500'
+                        item.change24h >= 0 ? 'text-emerald-600' : 'text-status-danger-fg'
                       }`}
                     >
                       {item.change24h >= 0 ? (

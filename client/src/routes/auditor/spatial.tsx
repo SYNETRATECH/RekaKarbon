@@ -184,7 +184,7 @@ export default function SpatialMRVEvaluation() {
                       <span
                         className={
                           parseInt(area.cloudCover) > 50
-                            ? 'text-rose-600 font-black'
+                            ? 'text-status-danger-fg font-black'
                             : 'text-slate-600'
                         }
                       >
@@ -274,7 +274,7 @@ export default function SpatialMRVEvaluation() {
                   <div>
                     <span className="text-slate-400 font-semibold block">Tutupan Awan:</span>
                     <span
-                      className={`font-black ${parseInt(selectedArea.cloudCover) > 50 ? 'text-rose-600' : 'text-slate-700'}`}
+                      className={`font-black ${parseInt(selectedArea.cloudCover) > 50 ? 'text-status-danger-fg' : 'text-slate-700'}`}
                     >
                       {selectedArea.cloudCover}
                     </span>

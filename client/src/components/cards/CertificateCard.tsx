@@ -72,7 +72,7 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
             <div className="flex justify-between items-baseline">
               <span className="text-xs text-slate-400 font-bold">Volume Karbon</span>
-              <span className="text-lg font-black text-rose-500">
+              <span className="text-lg font-black text-status-danger-fg">
                 {cert.purchasedVolumeTCO2e.toLocaleString('id-ID')} tCO2e
               </span>
             </div>
