@@ -129,7 +129,10 @@ lib/mock/*.ts              # Typed fixtures (source of truth for mock, UUID-like
 - **Never** define interfaces inline in mock files or components.
 - Mock data **must** be explicitly typed using types from `src/types`.
 
-### 6. Color & Theme (Tailwind v4 + CSS Variables)
+### 6. Color & Theme (Tailwind v4 + CSS Variables + Design Tokens)
+
+> [!IMPORTANT]
+> All UI styling, layout spacing, color tokens, elevation, and typography scales MUST adhere to the **Ecological Precision** design system defined in [DESIGN.md](DESIGN.md).
 
 | Token                       | Variable                                          | Usage                                       |
 | --------------------------- | ------------------------------------------------- | ------------------------------------------- |
@@ -141,7 +144,9 @@ lib/mock/*.ts              # Typed fixtures (source of truth for mock, UUID-like
 | Background                  | `#F8FAFC` (`bg-slate-50`)                         | Page canvas                                 |
 | Card/White                  | `#FFFFFF` (`bg-white`)                            | Cards, containers                           |
 
-**Do NOT use** hardcoded `#003E29` — use gradient utilities or CSS variable.
+**Do NOT use** hardcoded `#003E29` — use gradient utilities or CSS variable. Refer to [DESIGN.md](DESIGN.md) for full color token definitions (`surface`, `primary-container`, `on-surface`, etc.).
+
+---
 
 ### 7. Data Formatting (Raw → UI)
 
