@@ -1,7 +1,4 @@
-import { mockMultiSigRequests, mockKybQueue, mockDjpLogs } from '../lib/mock/governance';
 import { api } from '../lib/api';
-
-const useMock = import.meta.env.VITE_USE_MOCK_DATA !== 'false';
 
 export interface GovernanceRepository {
   getMultiSigRequests(): Promise<any[]>;
@@ -9,19 +6,7 @@ export interface GovernanceRepository {
   getDjpLogs(): Promise<any[]>;
 }
 
-class MockGovernanceRepository implements GovernanceRepository {
-  async getMultiSigRequests() {
-    return mockMultiSigRequests;
-  }
-  async getKybQueue() {
-    return mockKybQueue;
-  }
-  async getDjpLogs() {
-    return mockDjpLogs;
-  }
-}
-
-class ApiGovernanceRepository implements GovernanceRepository {
+export class ApiGovernanceRepository implements GovernanceRepository {
   async getMultiSigRequests() {
     return api.get<any[]>('/governance/multi-sig');
   }
@@ -33,6 +18,7 @@ class ApiGovernanceRepository implements GovernanceRepository {
   }
 }
 
-export const governanceRepository: GovernanceRepository = useMock
-  ? new MockGovernanceRepository()
-  : new ApiGovernanceRepository();
+export const governanceRepository: GovernanceRepository =
+  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
+    ? new (await import('./governance.mock.repository')).MockGovernanceRepository()
+    : new ApiGovernanceRepository();

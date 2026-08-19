@@ -14,6 +14,13 @@ import {
   Tooltip,
 } from 'recharts';
 
+export function meta() {
+  return [
+    { title: 'Kepatuhan & Batas Emisi | RekaKarbon' },
+    { name: 'description', content: 'Kepatuhan & Batas Emisi Industri RekaKarbon' },
+  ];
+}
+
 export default function ComplianceDashboard() {
   const { setAdminActiveTab, complianceData, projects, companies } = useCarbonStore();
   const [isPublicReportOpen, setIsPublicReportOpen] = useState(false);
@@ -74,8 +81,8 @@ export default function ComplianceDashboard() {
             </span>
           </div>
           {hasDeficit ? (
-            <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-4.5 h-4.5 text-rose-500" />
+            <div className="w-8 h-8 rounded-full bg-status-danger-bg flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4.5 h-4.5 text-status-danger-fg" />
             </div>
           ) : (
             <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
@@ -92,21 +99,21 @@ export default function ComplianceDashboard() {
             </span>
             <div className="flex items-baseline gap-1.5">
               <h3
-                className={`text-3xl font-black ${hasDeficit ? 'text-rose-500' : 'text-emerald-600'}`}
+                className={`text-3xl font-black ${hasDeficit ? 'text-status-danger-fg' : 'text-emerald-600'}`}
               >
                 {hasDeficit ? data.carbonDeficit.toLocaleString('id-ID') : '0'}
               </h3>
               <span className="text-xs font-extrabold text-slate-500">tCO2e</span>
             </div>
             <span
-              className={`text-[11px] font-bold block ${hasDeficit ? 'text-rose-400' : 'text-emerald-500'}`}
+              className={`text-[11px] font-bold block ${hasDeficit ? 'text-status-danger-fg' : 'text-emerald-500'}`}
             >
               {hasDeficit ? 'perlu pelunasan offset' : 'kuota mencukupi / patuh'}
             </span>
           </div>
           {hasDeficit ? (
-            <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-4.5 h-4.5 text-rose-500" />
+            <div className="w-8 h-8 rounded-full bg-status-danger-bg flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4.5 h-4.5 text-status-danger-fg" />
             </div>
           ) : (
             <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
@@ -153,7 +160,7 @@ export default function ComplianceDashboard() {
                   <span className="text-[10px] font-bold text-slate-400 block uppercase">
                     Total Emisi Aktual
                   </span>
-                  <p className="text-2xl font-black text-rose-500 mt-1">
+                  <p className="text-2xl font-black text-status-danger-fg mt-1">
                     {data.actualEmissions.toLocaleString('id-ID')}{' '}
                     <span className="text-xs font-bold text-slate-500">tCO2e</span>
                   </p>
@@ -197,7 +204,7 @@ export default function ComplianceDashboard() {
                 style={{ width: '81.4%' }}
               ></div>
               <div
-                className="absolute right-0 top-0 bottom-0 bg-rose-500 rounded-r-full"
+                className="absolute right-0 top-0 bottom-0 bg-status-danger-fg rounded-r-full"
                 style={{ width: '18.6%' }}
               ></div>
             </div>
@@ -217,8 +224,8 @@ export default function ComplianceDashboard() {
 
               {/* Status Badge inline with space-between */}
               {hasDeficit ? (
-                <span className="bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 shadow-2xs shrink-0">
-                  <AlertTriangle className="w-4 h-4 text-rose-600" />
+                <span className="bg-status-danger-bg text-status-danger-fg border border-status-danger-border px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 shadow-2xs shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-status-danger-fg" />
                   TIDAK PATUH
                 </span>
               ) : (
@@ -251,14 +258,16 @@ export default function ComplianceDashboard() {
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-slate-400 font-semibold">Status Pelaporan DJP</span>
-                <span className="text-rose-500 font-black text-right">{data.djpReportStatus}</span>
+                <span className="text-status-danger-fg font-black text-right">
+                  {data.djpReportStatus}
+                </span>
               </div>
             </div>
 
             {hasDeficit && (
               <button
                 onClick={() => setAdminActiveTab('bursa')}
-                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-rose-900/10 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
+                className="w-full bg-status-danger-fg hover:opacity-90 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-status-danger-border/10 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
               >
                 <ShoppingCart className="w-4 h-4 text-white" />
                 Bayar Defisit Karbon (Bursa DEX)
@@ -303,7 +312,7 @@ export default function ComplianceDashboard() {
             <span className="text-[9px] font-bold text-slate-400 uppercase block">
               Total Estimasi Biaya
             </span>
-            <p className="text-base font-black text-rose-600 mt-1">
+            <p className="text-base font-black text-status-danger-fg mt-1">
               {typeof data.totalEstimatedCostIDR === 'number'
                 ? formatCurrency(data.totalEstimatedCostIDR)
                 : data.totalEstimatedCostIDR}
@@ -315,7 +324,7 @@ export default function ComplianceDashboard() {
         <div className="w-full border border-slate-200 rounded-2xl p-5 bg-white space-y-3">
           <div className="flex justify-between items-center text-xs font-bold text-slate-500 pb-2 border-b border-slate-100">
             <span className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+              <span className="w-3 h-3 rounded-full bg-status-danger-fg inline-block"></span>
               Historis Biaya Karbon (2022-2026)
             </span>
             <span className="flex items-center gap-2">
@@ -350,7 +359,7 @@ export default function ComplianceDashboard() {
                       return (
                         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-lg text-xs space-y-1 border border-slate-800">
                           <p className="font-extrabold text-slate-300">Tahun {label}</p>
-                          <p className="font-black text-rose-400 text-sm">Rp {val} M</p>
+                          <p className="font-black text-status-danger-fg text-sm">Rp {val} M</p>
                           <p className="text-[10px] text-slate-400 font-semibold">
                             {data.label || 'Estimasi Biaya'}
                           </p>
@@ -363,10 +372,10 @@ export default function ComplianceDashboard() {
                 <Line
                   type="monotone"
                   dataKey="historis"
-                  stroke="#EF4444"
+                  stroke="#9f1239"
                   strokeWidth={3}
-                  dot={{ r: 5, fill: '#EF4444', strokeWidth: 2, stroke: '#FFFFFF' }}
-                  activeDot={{ r: 7, fill: '#EF4444', stroke: '#FFFFFF', strokeWidth: 2 }}
+                  dot={{ r: 5, fill: '#9f1239', strokeWidth: 2, stroke: '#FFFFFF' }}
+                  activeDot={{ r: 7, fill: '#9f1239', stroke: '#FFFFFF', strokeWidth: 2 }}
                   name="Historis (Rp M)"
                   connectNulls
                 />

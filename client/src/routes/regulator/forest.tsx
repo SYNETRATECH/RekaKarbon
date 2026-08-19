@@ -32,9 +32,6 @@ export default function NationalForestDashboard() {
     <div className="space-y-8 animate-fade-in text-left">
       {/* Header */}
       <div>
-        <span className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-md border border-slate-200">
-          NATIONAL FOREST & CARBON FUNDING MONITORING
-        </span>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
           Dashboard Status Hutan & Pendanaan Nasional
         </h2>

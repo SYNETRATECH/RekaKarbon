@@ -34,6 +34,7 @@ export default [
 
     // Settings
     route('settings', 'routes/settings.tsx'),
+    route('profile', 'routes/profile.tsx'),
   ]),
 
   // Catch-all 404 page

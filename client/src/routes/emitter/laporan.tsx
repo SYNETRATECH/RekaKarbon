@@ -3,16 +3,8 @@ import { formatFileSize } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
+import DownloadNoticeModal from '../../components/modals/DownloadNoticeModal';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -113,7 +105,7 @@ export default function EmissionReportsSector() {
   };
 
   const getSectorIcon = (scope: string) => {
-    if (scope.includes('Scope 1')) return <Factory className="w-5 h-5 text-rose-500" />;
+    if (scope.includes('Scope 1')) return <Factory className="w-5 h-5 text-status-danger-fg" />;
     if (scope.includes('Scope 2')) return <Zap className="w-5 h-5 text-amber-500" />;
     if (scope.includes('Scope 3')) return <Truck className="w-5 h-5 text-blue-500" />;
     return <Building2 className="w-5 h-5 text-emerald-500" />;
@@ -651,7 +643,7 @@ export default function EmissionReportsSector() {
             <span className="text-[10px] font-bold text-slate-400 uppercase block">
               Total Jejak Emisi Terverifikasi
             </span>
-            <p className="text-3xl font-black text-rose-500 mt-1">
+            <p className="text-3xl font-black text-status-danger-fg mt-1">
               {activeReport.totalEmissionsTCO2e.toLocaleString('id-ID')}{' '}
               <span className="text-xs font-extrabold text-slate-500">tCO2e</span>
             </p>
@@ -692,7 +684,7 @@ export default function EmissionReportsSector() {
           </span>
           <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200">
             <div
-              className="h-full bg-rose-500"
+              className="h-full bg-status-danger-fg"
               style={{ width: '55.6%' }}
               title="Scope 1: 55.6%"
             ></div>
@@ -803,7 +795,7 @@ export default function EmissionReportsSector() {
                     typeof rep.fileSizeBytes === 'number' ? rep.fileSizeBytes : rep.fileSize
                   )}
                 </TableCell>
-                <TableCell className="font-black text-rose-500 font-mono">
+                <TableCell className="font-black text-status-danger-fg font-mono">
                   {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO2e
                 </TableCell>
                 <TableCell>
@@ -840,28 +832,7 @@ export default function EmissionReportsSector() {
         scoreCEMS={99.8}
       />
 
-      <Dialog open={!!downloadNotice} onOpenChange={(open) => !open && setDownloadNotice(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-900">
-              <FileText className="w-5 h-5 text-emerald-600" />
-              <span>Pengunduhan Berkas Resmi</span>
-            </DialogTitle>
-            <DialogDescription className="text-slate-600">
-              Berkas <span className="font-mono font-bold text-slate-900">{downloadNotice}</span>{' '}
-              sedang diunduh dan diproses dari repository publik RekaKarbon.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              onClick={() => setDownloadNotice(null)}
-              className="w-full bg-primary-gradient text-white font-extrabold"
-            >
-              Tutup & Lanjutkan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DownloadNoticeModal fileName={downloadNotice} onClose={() => setDownloadNotice(null)} />
     </div>
   );
 }

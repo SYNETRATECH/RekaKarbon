@@ -11,6 +11,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 
 export function meta() {
   return [
@@ -156,12 +157,7 @@ export default function SpatialMRVEvaluation() {
                     {/* NDVI Bar & Score */}
                     <TableCell className="py-3.5 px-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-12 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#00C48C] rounded-full"
-                            style={{ width: `${(area.ndvi / 1) * 100}%` }}
-                          ></div>
-                        </div>
+                        <Progress value={(area.ndvi / 1) * 100} className="w-12 h-2" />
                         <span className="font-mono text-xs font-black text-slate-800">
                           {area.ndvi}
                         </span>
@@ -171,12 +167,7 @@ export default function SpatialMRVEvaluation() {
                     {/* EVI Bar & Score */}
                     <TableCell className="py-3.5 px-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-12 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-emerald-400 rounded-full"
-                            style={{ width: `${(area.evi / 1) * 100}%` }}
-                          ></div>
-                        </div>
+                        <Progress value={(area.evi / 1) * 100} className="w-12 h-2" />
                         <span className="font-mono text-xs font-black text-slate-800">
                           {area.evi}
                         </span>
@@ -193,7 +184,7 @@ export default function SpatialMRVEvaluation() {
                       <span
                         className={
                           parseInt(area.cloudCover) > 50
-                            ? 'text-rose-600 font-black'
+                            ? 'text-status-danger-fg font-black'
                             : 'text-slate-600'
                         }
                       >
@@ -283,7 +274,7 @@ export default function SpatialMRVEvaluation() {
                   <div>
                     <span className="text-slate-400 font-semibold block">Tutupan Awan:</span>
                     <span
-                      className={`font-black ${parseInt(selectedArea.cloudCover) > 50 ? 'text-rose-600' : 'text-slate-700'}`}
+                      className={`font-black ${parseInt(selectedArea.cloudCover) > 50 ? 'text-status-danger-fg' : 'text-slate-700'}`}
                     >
                       {selectedArea.cloudCover}
                     </span>

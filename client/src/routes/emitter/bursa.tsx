@@ -4,6 +4,14 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import BursaPurchaseModal from '../../components/modals/BursaPurchaseModal';
 import { Input } from '@/components/ui/input';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   ShoppingCart,
   AlertTriangle,
   PieChart,
@@ -75,10 +83,10 @@ export default function CarbonDexMarket() {
 
       {/* 2. TOP ALERT BOX (WARNING BANNER) */}
       <Alert variant="destructive">
-        <AlertTriangle className="w-4 h-4 text-rose-600" />
+        <AlertTriangle className="w-4 h-4 text-status-danger-fg" />
         <div>
-          <AlertTitle className="text-rose-900">Defisit aktif: 2.330 tCO2e</AlertTitle>
-          <AlertDescription className="text-rose-700">
+          <AlertTitle className="text-status-danger-fg">Defisit aktif: 2.330 tCO2e</AlertTitle>
+          <AlertDescription className="text-status-danger-fg/90">
             Beli minimal 2330 tCO2e sebelum 31 Des 2025 untuk menghindari denda Rp 1.51 M.
           </AlertDescription>
         </div>
@@ -197,127 +205,147 @@ export default function CarbonDexMarket() {
         </div>
 
         {/* 5. TABLE / LIST CONTAINER */}
-        <div className="flex-1 flex flex-col min-h-0 space-y-2">
-          {/* Table Header Labels with Bottom Border */}
-          <div className="shrink-0 grid grid-cols-12 gap-4 px-4 py-2.5 text-[9.5px] font-bold uppercase text-slate-400 tracking-wider border-b border-slate-200 mb-1">
-            <div className="col-span-4">TOKEN / KAWASAN</div>
-            <div className="col-span-3 text-left">HARGA / FRAKSI</div>
-            <div className="col-span-2 text-left">24J</div>
-            <div className="col-span-2 text-left">PASOKAN</div>
-            <div className="col-span-1 text-right"></div>
-          </div>
-
-          {/* Table Item Cards (Dynamic Height Scrollable List Only) */}
-          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5 scrollbar-thin">
-            {sortedItems.map((item: any) => (
-              <div
-                key={item.id}
-                className="grid grid-cols-12 gap-4 p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 hover:bg-slate-50 hover:border-slate-300 transition-all items-center"
-              >
-                {/* Column 1: Token & Kawasan */}
-                <div className="col-span-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 border border-slate-300">
-                    {item.id}
-                  </div>
-                  <div className="space-y-1 text-left">
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="font-extrabold text-xs text-slate-900 leading-none">
-                        {item.name}
-                      </h4>
-                      {item.verified && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#00C48C] shrink-0" />
-                      )}
+        <div className="flex-1 flex flex-col min-h-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-b border-slate-200">
+                <TableHead className="w-[35%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
+                  TOKEN / KAWASAN
+                </TableHead>
+                <TableHead className="w-[25%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
+                  HARGA / FRAKSI
+                </TableHead>
+                <TableHead className="w-[15%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
+                  24J
+                </TableHead>
+                <TableHead className="w-[20%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
+                  PASOKAN
+                </TableHead>
+                <TableHead className="w-[5%] h-10 px-4" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedItems.map((item: any) => (
+                <TableRow key={item.id} className="border-b border-slate-100 hover:bg-slate-50/50">
+                  {/* Column 1: Token & Kawasan */}
+                  <TableCell className="p-4 align-middle">
+                    <div className="flex items-center gap-3">
+                      <div
+                        title={`Token ID: ${item.id}`}
+                        className="w-10 h-10 rounded-2xl bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 border border-slate-300 select-none cursor-help"
+                      >
+                        {item.name
+                          ? item.name
+                              .split(' ')
+                              .map((word: string) => word[0])
+                              .join('')
+                              .slice(0, 2)
+                              .toUpperCase()
+                          : 'TK'}
+                      </div>
+                      <div className="space-y-1 text-left">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-extrabold text-xs text-slate-900 leading-none">
+                            {item.name}
+                          </h4>
+                          {item.verified && (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#00C48C] shrink-0" />
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                          {item.location}
+                        </span>
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-md font-bold text-[8.5px] mt-0.5 ${
+                            item.category === 'mangrove'
+                              ? 'bg-sky-50 text-sky-700 border border-sky-100'
+                              : item.category === 'gambut'
+                                ? 'bg-amber-50 text-amber-800 border border-amber-100'
+                                : 'bg-emerald-50 text-emerald-800 border border-emerald-100'
+                          }`}
+                        >
+                          🍃 {item.categoryLabel}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                      {item.location}
+                  </TableCell>
+
+                  {/* Column 2: Harga / Fraksi */}
+                  <TableCell className="p-4 align-middle">
+                    <p className="font-mono font-black text-sm text-slate-900 leading-none">
+                      Rp {item.priceFraction.toLocaleString('id-ID')}
+                    </p>
+                    <span className="text-[9px] text-slate-400 font-medium block mt-1">
+                      per 0.1 tCO2e
                     </span>
+                  </TableCell>
+
+                  {/* Column 3: 24J Change */}
+                  <TableCell className="p-4 align-middle">
                     <span
-                      className={`inline-block px-2 py-0.5 rounded-md font-bold text-[8.5px] mt-0.5 ${
-                        item.category === 'mangrove'
-                          ? 'bg-sky-50 text-sky-700 border border-sky-100'
-                          : item.category === 'gambut'
-                            ? 'bg-amber-50 text-amber-800 border border-amber-100'
-                            : 'bg-emerald-50 text-emerald-800 border border-emerald-100'
+                      className={`font-mono font-bold text-xs flex items-center gap-1 ${
+                        item.change24h >= 0 ? 'text-emerald-600' : 'text-status-danger-fg'
                       }`}
                     >
-                      🍃 {item.categoryLabel}
+                      {item.change24h >= 0 ? (
+                        <>
+                          <TrendingUp className="w-3.5 h-3.5" />+{item.change24h}%
+                        </>
+                      ) : (
+                        <>
+                          <TrendingDown className="w-3.5 h-3.5" />
+                          {item.change24h}%
+                        </>
+                      )}
                     </span>
-                  </div>
-                </div>
+                  </TableCell>
 
-                {/* Column 2: Harga / Fraksi */}
-                <div className="col-span-3 text-left">
-                  <p className="font-mono font-black text-sm text-slate-900 leading-none">
-                    Rp {item.priceFraction.toLocaleString('id-ID')}
-                  </p>
-                  <span className="text-[9px] text-slate-400 font-medium block mt-1">
-                    per 0.1 tCO2e
-                  </span>
-                </div>
+                  {/* Column 4: Pasokan */}
+                  <TableCell className="p-4 align-middle">
+                    <div className="space-y-1 max-w-[200px]">
+                      <div className="flex items-center justify-between text-[9px] font-bold">
+                        <span className="text-slate-800 font-black">
+                          {item.supplyFractions.toLocaleString('id-ID')} fraksi
+                        </span>
+                        <span
+                          className={
+                            item.supplyPercent <= 30
+                              ? 'text-amber-600 font-extrabold'
+                              : 'text-[#00C48C] font-extrabold'
+                          }
+                        >
+                          {item.supplyPercent}%
+                        </span>
+                      </div>
+                      <div className="text-[8.5px] text-slate-400 font-semibold leading-none">
+                        Pasokan tersisa
+                      </div>
+                      <div className="w-full bg-slate-200/80 h-2 rounded-full overflow-hidden border border-slate-200">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            item.supplyPercent <= 30 ? 'bg-amber-500' : 'bg-[#00C48C]'
+                          }`}
+                          style={{ width: `${item.supplyPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </TableCell>
 
-                {/* Column 3: 24J Change */}
-                <div className="col-span-2 text-left">
-                  <span
-                    className={`font-mono font-bold text-xs flex items-center gap-1 ${
-                      item.change24h >= 0 ? 'text-emerald-600' : 'text-rose-500'
-                    }`}
-                  >
-                    {item.change24h >= 0 ? (
-                      <>
-                        <TrendingUp className="w-3.5 h-3.5" />+{item.change24h}%
-                      </>
-                    ) : (
-                      <>
-                        <TrendingDown className="w-3.5 h-3.5" />
-                        {item.change24h}%
-                      </>
-                    )}
-                  </span>
-                </div>
-
-                {/* Column 4: Pasokan */}
-                <div className="col-span-2 text-left space-y-1">
-                  <div className="flex items-center justify-between text-[9px] font-bold">
-                    <span className="text-slate-800 font-black">
-                      {item.supplyFractions.toLocaleString('id-ID')} fraksi
-                    </span>
-                    <span
-                      className={
-                        item.supplyPercent <= 30
-                          ? 'text-amber-600 font-extrabold'
-                          : 'text-[#00C48C] font-extrabold'
-                      }
+                  {/* Column 5: Action Beli Button */}
+                  <TableCell className="p-4 align-middle text-right">
+                    <button
+                      onClick={() => setSelectedBursaToken(item)}
+                      className="bg-primary-gradient hover:opacity-95 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ml-auto"
                     >
-                      {item.supplyPercent}%
-                    </span>
-                  </div>
-                  <div className="text-[8.5px] text-slate-400 font-semibold leading-none">
-                    Pasokan tersisa
-                  </div>
-                  <div className="w-full bg-slate-200/80 h-2 rounded-full overflow-hidden border border-slate-200">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        item.supplyPercent <= 30 ? 'bg-amber-500' : 'bg-[#00C48C]'
-                      }`}
-                      style={{ width: `${item.supplyPercent}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Column 5: Action Beli Button */}
-                <div className="col-span-1 text-right">
-                  <button
-                    onClick={() => setSelectedBursaToken(item)}
-                    className="bg-primary-gradient hover:opacity-95 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ml-auto"
-                  >
-                    <ShoppingCart className="w-3.5 h-3.5 text-[#00C48C]" />
-                    Beli
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                      <ShoppingCart className="w-3.5 h-3.5 text-[#00C48C]" />
+                      Beli
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
 
         {/* 6. FOOTER NOTE */}

@@ -45,6 +45,7 @@
   --color-status-warning-fg: #92400e;
   --color-status-danger-bg: #fff1f2;
   --color-status-danger-fg: #9f1239;
+  --color-status-danger-border: #fecdd3;
 
   /* Shadcn custom properties */
   --background: 0 0% 100%;

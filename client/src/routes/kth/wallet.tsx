@@ -4,14 +4,14 @@ import { Wallet, Upload, CheckCircle2, FileImage } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import LogNoticeModal from '../../components/modals/LogNoticeModal';
+
+export function meta() {
+  return [
+    { title: 'Dompet Insentif & Log | RekaKarbon' },
+    { name: 'description', content: 'Dompet Insentif Kelompok Tani Hutan RekaKarbon' },
+  ];
+}
 
 export default function DigitalWalletHybridLogs() {
   const { kthLogs } = useCarbonStore();
@@ -93,27 +93,7 @@ export default function DigitalWalletHybridLogs() {
         </Card>
       </div>
 
-      <Dialog open={showNotice} onOpenChange={setShowNotice}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-900">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Log Hibrida Tercatat</span>
-            </DialogTitle>
-            <DialogDescription className="text-slate-600">
-              Unggahan foto geotag / scan drone berhasil dicatat ke Log Hibrida Reboisasi!
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              onClick={() => setShowNotice(false)}
-              className="w-full bg-primary-gradient text-white font-extrabold"
-            >
-              Tutup & Lanjutkan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LogNoticeModal isOpen={showNotice} onClose={() => setShowNotice(false)} />
     </div>
   );
 }
