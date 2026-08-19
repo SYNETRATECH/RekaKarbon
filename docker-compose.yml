@@ -1,0 +1,32 @@
+services:
+  rekakarbon-db:
+    image: postgres:18-alpine
+    ports:
+      - '${DB_PORT}:5432'
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    volumes:
+      - rekakarbon_pgdata:/var/lib/postgresql/data
+
+  rekakarbon-backend:
+    image: ${BACKEND_IMAGE:-rekakarbon-backend:latest}
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - '8080:8080'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
+    depends_on:
+      db:
+        condition: service_started
+
+volumes:
+  rekakarbon_pgdata:
