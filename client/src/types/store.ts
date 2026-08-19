@@ -102,7 +102,8 @@ export interface CarbonStoreState {
 
   updateKTHTransactionStatus: (
     id: string,
-    status: 'Verified' | 'Pending' | 'Flagged',
+    status:
+      'completed' | 'processing' | 'awaiting_farmer' | 'awaiting_proof' | 'flagged' | 'failed',
     issueNote?: string
   ) => void;
 

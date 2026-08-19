@@ -14,7 +14,7 @@ export interface PurchasedCertificate {
   // Real-time project condition metrics (like Landing Page)
   projectCondition: {
     canopyDensityPercent: number; // Kerapatan Kanopi CHM %
-    carbonSequestrationRate: number | string; // 2.4 (tCO2e/ha/tahun)
+    carbonSequestrationRate: number; // 2.4 (tCO2e/ha/tahun)
     kthIncentiveDisbursed: number; // 450000000
     droneAuditStatus: string; // "Terverifikasi AI (99.8%)"
     lastSpatialAuditDate: string;

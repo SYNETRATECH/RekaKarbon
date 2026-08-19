@@ -1,4 +1,5 @@
 import { FileSpreadsheet, Eye } from 'lucide-react';
+import { formatCurrency, formatQuantity } from '@/lib/formatters';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Table,
@@ -112,13 +113,13 @@ export default function TransactionReceiptModal({
                         <TableRow key={i}>
                           <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
                           <TableCell className="text-center font-mono font-semibold text-slate-600">
-                            {item.qty}
+                            {formatQuantity(item.qty, item.unit)}
                           </TableCell>
                           <TableCell className="text-right font-mono text-slate-600">
-                            Rp {item.price.toLocaleString('id-ID')}
+                            {formatCurrency(item.price)}
                           </TableCell>
                           <TableCell className="text-right font-mono font-bold text-emerald-800">
-                            Rp {item.total.toLocaleString('id-ID')}
+                            {formatCurrency(item.total)}
                           </TableCell>
                         </TableRow>
                       ))
@@ -131,10 +132,10 @@ export default function TransactionReceiptModal({
                           1 Paket
                         </TableCell>
                         <TableCell className="text-right font-mono text-slate-600">
-                          Rp {selectedTx.tx.amount.toLocaleString('id-ID')}
+                          {formatCurrency(selectedTx.tx.amount)}
                         </TableCell>
                         <TableCell className="text-right font-mono font-bold text-emerald-800">
-                          Rp {selectedTx.tx.amount.toLocaleString('id-ID')}
+                          {formatCurrency(selectedTx.tx.amount)}
                         </TableCell>
                       </TableRow>
                     )}

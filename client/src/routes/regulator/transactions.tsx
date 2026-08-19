@@ -149,7 +149,7 @@ export default function KthTransactionsMonitoring() {
   // Stage 1 (processing) -> Stage 2 (awaiting_farmer)
   const handleApproveDisbursement = (tx: any) => {
     if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, 'Pending');
+      updateKTHTransactionStatus(tx.id, 'awaiting_farmer');
     }
     setReviewingTx(null);
     setHoldNotice(false);
@@ -163,7 +163,7 @@ export default function KthTransactionsMonitoring() {
       flagNoteInput.trim() ||
       'Terdeteksi ketidaksesuaian laporan nota / foto bukti belanja oleh regulator.';
     if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, 'Flagged', note);
+      updateKTHTransactionStatus(tx.id, 'flagged', note);
     }
     setReviewingTx(null);
     setVerifyingProofTx(null);
@@ -173,9 +173,9 @@ export default function KthTransactionsMonitoring() {
 
   // Stage 3 (awaiting_proof) -> Stage 5 (completed)
   const handleConfirmProof = (tx: any) => {
-    const updatedTx = { ...tx, status: 'Verified' };
+    const updatedTx = { ...tx, status: 'completed' };
     if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, 'Verified');
+      updateKTHTransactionStatus(tx.id, 'completed');
     }
     setVerifyingProofTx(null);
     setSelectedTxReceipt(updatedTx);

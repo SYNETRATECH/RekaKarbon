@@ -202,5 +202,6 @@ Enforces: **View layer cannot import `lib/mock` directly**. Data must flow throu
 - Frontend design spec: [AGENTS/rekakarbon-frontend-agent-spec.md](AGENTS/rekakarbon-frontend-agent-spec.md)
 - Mock/Repository Pattern Skill: [.agents/skills/mock-repository-pattern/SKILL.md](../.agents/skills/mock-repository-pattern/SKILL.md)
 - Data Formatting Skill: [.agents/skills/data-formatting-standards/SKILL.md](../.agents/skills/data-formatting-standards/SKILL.md)
+- API Design Standards Skill: [.agents/skills/api-design-standards/SKILL.md](../.agents/skills/api-design-standards/SKILL.md)
 - React Component Architecture Skill: [.agents/skills/react-component-architecture/SKILL.md](../.agents/skills/react-component-architecture/SKILL.md)
 - React Performance Skill: [.agents/skills/react-performance/SKILL.md](../.agents/skills/react-performance/SKILL.md)

@@ -12,7 +12,7 @@ export const COMPLIANCE_DATA: ComplianceData = {
   djpReportStatus: 'Draft e-Faktur Belum Terbit',
   annualProductionVolume: 125678,
   carbonPricePerTon: 650000,
-  totalEstimatedCostIDR: 'Rp 1.51 M',
+  totalEstimatedCostIDR: 1514500000,
   annualHistory: [
     { year: '2022', historis: 0.45, label: 'Rp 0.45 M (Historis)' },
     { year: '2023', historis: 0.82, label: 'Rp 0.82 M (Historis)' },

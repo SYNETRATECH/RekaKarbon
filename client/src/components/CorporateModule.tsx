@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatCarbon } from '@/lib/formatters';
 import { useCarbonStore } from '../store/useCarbonStore';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -154,9 +155,7 @@ export default function CorporateModule() {
                     <span
                       className={`font-mono font-black ${isUnpaid ? (isSelected ? 'text-rose-400' : 'text-rose-600') : isSelected ? 'text-slate-300' : 'text-slate-700'}`}
                     >
-                      {comp.carbonDeficit > 0
-                        ? `${(comp.carbonDeficit / 1000).toLocaleString('id-ID')}k tCO2e`
-                        : '0 tCO2e'}
+                      {formatCarbon(comp.carbonDeficit)}
                     </span>
                   </div>
                   <div

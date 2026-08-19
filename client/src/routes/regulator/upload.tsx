@@ -96,7 +96,10 @@ export default function RegulatorUploadManagement() {
       signatoryPerson: formData.signatoryPerson || 'Pejabat Pengawasan KLHK',
       status: 'published' as any,
       fileName: formData.fileName || 'Dokumen_Regulasi.pdf',
-      fileSize: formData.fileSize || 4500000,
+      fileSize:
+        typeof formData.fileSize === 'number'
+          ? formData.fileSize
+          : Number(formData.fileSize) || 4500000,
     };
 
     addRegulationUpload(newDoc);

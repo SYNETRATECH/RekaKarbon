@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatCurrency, formatCarbon } from '@/lib/formatters';
 import { PieChart, ShoppingCart } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -49,7 +50,7 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
               className="font-mono text-xs rounded-xl"
             />
             <span className="text-[9px] text-rose-600 font-bold block">
-              Cap Control Aktif: Maksimal 2.330 tCO2e (Sesuai Defisit Aktif)
+              Cap Control Aktif: Maksimal {formatCarbon(2330)} (Sesuai Defisit Aktif)
             </span>
           </div>
 
@@ -61,7 +62,7 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
                 Rincian Pembagian Transparansi Dana (3% Fee vs 97% Proyek)
               </span>
               <span className="font-mono font-black text-[#003E29]">
-                Total: Rp {totalAmountIDR.toLocaleString('id-ID')}
+                Total: {formatCurrency(totalAmountIDR)}
               </span>
             </div>
 
@@ -70,16 +71,14 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
                 <span className="text-slate-400 font-sans block text-[9px] font-bold uppercase">
                   Platform Fee (3%)
                 </span>
-                <span className="font-black text-slate-800">
-                  Rp {platformFeeIDR.toLocaleString('id-ID')}
-                </span>
+                <span className="font-black text-slate-800">{formatCurrency(platformFeeIDR)}</span>
               </div>
               <div className="bg-emerald-100/60 p-2.5 rounded-xl border border-slate-200">
                 <span className="text-emerald-800 font-sans block text-[9px] font-bold uppercase">
                   Dana Proyek Lingkungan (97%)
                 </span>
                 <span className="font-black text-emerald-900">
-                  Rp {projectFundIDR.toLocaleString('id-ID')}
+                  {formatCurrency(projectFundIDR)}
                 </span>
               </div>
             </div>
@@ -93,13 +92,13 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
               <div className="flex justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-600 font-semibold">1. Restorasi Penanaman (62%)</span>
                 <span className="font-mono font-extrabold text-emerald-800">
-                  Rp {posRestorasi.toLocaleString('id-ID')}
+                  {formatCurrency(posRestorasi)}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-600 font-semibold">2. Pemeliharaan Tanaman (15%)</span>
                 <span className="font-mono font-extrabold text-emerald-800">
-                  Rp {posPemeliharaan.toLocaleString('id-ID')}
+                  {formatCurrency(posPemeliharaan)}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-100">
@@ -107,13 +106,13 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
                   3. Monitoring / dMRV Drone (10%)
                 </span>
                 <span className="font-mono font-extrabold text-emerald-800">
-                  Rp {posMonitoring.toLocaleString('id-ID')}
+                  {formatCurrency(posMonitoring)}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-100">
                 <span className="text-slate-600 font-semibold">4. Buffer Pool Risiko (8%)</span>
                 <span className="font-mono font-extrabold text-amber-700">
-                  Rp {posBufferPool.toLocaleString('id-ID')}
+                  {formatCurrency(posBufferPool)}
                 </span>
               </div>
               <div className="flex justify-between py-1">
@@ -121,7 +120,7 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
                   5. NusaCarbon API & Satelit (5%)
                 </span>
                 <span className="font-mono font-extrabold text-emerald-800">
-                  Rp {posNusaApi.toLocaleString('id-ID')}
+                  {formatCurrency(posNusaApi)}
                 </span>
               </div>
             </div>

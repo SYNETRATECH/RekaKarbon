@@ -85,3 +85,14 @@ export function formatFileSize(bytesOrStr: number | string | null | undefined): 
 
   return `${formatNumber(num, 0, 2)} ${sizes[i]}`;
 }
+
+/**
+ * Formats generic line-item quantities with optional unit of measurement.
+ * Example: (400, "Karung") -> "400 Karung"
+ * Example: (40000, "Batang") -> "40.000 Batang"
+ */
+export function formatQuantity(qty: number | string | null | undefined, unit?: string): string {
+  const num = parseNumeric(qty);
+  const formattedNum = formatNumber(num, 0, 0);
+  return unit ? `${formattedNum} ${unit}` : formattedNum;
+}

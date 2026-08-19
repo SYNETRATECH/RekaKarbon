@@ -1,4 +1,6 @@
 import { useState, FormEvent } from 'react';
+import { formatFileSize } from '@/lib/formatters';
+import { formatDate } from '@/lib/dates';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -793,9 +795,13 @@ export default function EmissionReportsSector() {
                   <span>{rep.title}</span>
                 </TableCell>
                 <TableCell className="font-mono font-bold text-slate-700">{rep.year}</TableCell>
-                <TableCell className="text-slate-500 font-medium">{rep.uploadDate}</TableCell>
+                <TableCell className="text-slate-500 font-medium">
+                  {formatDate(rep.uploadDate)}
+                </TableCell>
                 <TableCell className="text-slate-500 font-mono text-[11px]">
-                  {rep.fileSize}
+                  {formatFileSize(
+                    typeof rep.fileSizeBytes === 'number' ? rep.fileSizeBytes : rep.fileSize
+                  )}
                 </TableCell>
                 <TableCell className="font-black text-rose-500 font-mono">
                   {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO2e

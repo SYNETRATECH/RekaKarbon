@@ -1,7 +1,7 @@
 export interface AnomalySummary {
   emitenTerdeteksiAnomali: number;
   totalEmitenAktif: number;
-  rataDeviasiEmisi: string;
+  rataDeviasiEmisi: number;
   descDeviasi: string;
   eFakturTidakCocok: number;
   descEFaktur: string;
@@ -18,15 +18,15 @@ export interface AiAnomalyLog {
   company: string;
   sector: string;
   anomalyScore: number;
-  deltaElectricity: string;
-  deltaCoal: string;
-  deltaGas: string;
+  deltaElectricity: number;
+  deltaCoal: number;
+  deltaGas: number;
   eFakturMatch: boolean;
-  priority: 'KRITIS' | 'TINGGI' | 'SEDANG' | 'RENDAH' | string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
   reportedEmission: number;
   estimatedEmission: number;
   desc: string;
-  auditStatus: string;
+  auditStatus: 'pending' | 'verified' | 'rejected';
 }
 
 export interface SpatialSummary {

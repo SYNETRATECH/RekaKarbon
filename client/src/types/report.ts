@@ -13,7 +13,7 @@ export interface EmissionReport {
   year: number;
   title: string;
   fileName: string;
-  fileSize: string;
+  fileSizeBytes: number;
   uploadDate: string;
   status: 'verified' | 'audit_in_progress' | 'draft';
   totalEmissionsTCO2e: number;
