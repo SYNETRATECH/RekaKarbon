@@ -26,6 +26,10 @@ This skill defines essential rules and workflows for AI agents designing, specif
    - Field names should make units clear when applicable (`areaHectares`, `fundingBudgetIDR`, `durationSeconds`, `fileSizeBytes`, `carbonSequestrationTCO2e`).
    - For line items with variable physical units, include an explicit `unit?: string` property (e.g. `{ qty: 400, unit: "Karung" }`).
 
+4. **Primary Key UUID Standard vs Business Reference Numbers**:
+   - **Primary Technical Entity Key (`id`)**: MUST use standard **UUIDv4 / UUIDv7** strings (e.g. `"550e8400-e29b-41d4-a716-446655440000"`). NEVER use human-readable slugs or sequential integers as primary database keys.
+   - **Business Reference Numbers**: Human-readable domain codes (e.g. `speCertificateId: "SPE-BALURAN-2025-001"`, `npwp: "01.234.567.8-012.000"`, `stpDocId: "STP-DJP-2026-001"`) MUST be preserved as secondary business attributes rather than entity primary keys.
+
 ---
 
 ## 🏗️ Standard API Response & Error Schemas

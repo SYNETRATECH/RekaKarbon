@@ -2,7 +2,7 @@ import type { Project } from '../../types';
 
 export const PROJECTS_DATA: Project[] = [
   {
-    id: 'tn-baluran',
+    id: 'b2c3d4e5-0002-4000-8000-000000000001',
     name: 'TN Baluran',
     region: 'Jawa Timur',
     center: [-7.8385, 114.3725],
@@ -225,8 +225,8 @@ export const PROJECTS_DATA: Project[] = [
     // Verified Public Token Buyers & Offset Ledger
     tokenBuyers: [
       {
-        id: 'tb-baluran-01',
-        companyId: 'semen-tuban',
+        id: 'd4e5f6a7-0004-4000-8000-000000000001',
+        companyId: 'a1b2c3d4-0001-4000-8000-000000000002',
         companyName: 'PT Semen Nusantara Tuban',
         sector: 'Industri Semen & Manufaktur',
         tCO2e: 50000,
@@ -257,7 +257,7 @@ export const PROJECTS_DATA: Project[] = [
     ],
   },
   {
-    id: 'tn-gunung-leuser',
+    id: 'b2c3d4e5-0002-4000-8000-000000000002',
     name: 'TN Gunung Leuser',
     region: 'Aceh',
     center: [3.7915, 97.4326],
@@ -488,7 +488,7 @@ export const PROJECTS_DATA: Project[] = [
     ],
   },
   {
-    id: 'restorasi-gambut-riau',
+    id: 'b2c3d4e5-0002-4000-8000-000000000003',
     name: 'Restorasi Gambut Riau',
     region: 'Riau',
     center: [0.7215, 102.6321],
@@ -674,7 +674,7 @@ export const PROJECTS_DATA: Project[] = [
     ],
   },
   {
-    id: 'tn-kutai',
+    id: 'b2c3d4e5-0002-4000-8000-000000000004',
     name: 'TN Kutai',
     region: 'Kalimantan Timur',
     center: [0.4851, 117.2912],
@@ -877,7 +877,7 @@ export const PROJECTS_DATA: Project[] = [
     ],
   },
   {
-    id: 'sabuk-hijau-sulsel',
+    id: 'b2c3d4e5-0002-4000-8000-000000000005',
     name: 'Sabuk Hijau Sulawesi Utara',
     region: 'Sulawesi Utara',
     center: [1.3912, 124.8912],

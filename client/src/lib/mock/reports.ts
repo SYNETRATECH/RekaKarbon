@@ -2,7 +2,7 @@ import type { EmissionReport } from '../../types';
 
 export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
   {
-    id: 'REP-2026-001',
+    id: 'c3d4e5f6-0003-4000-8000-000000000001',
     year: 2026,
     title: 'Laporan Emisi Karbon Tahunan FY 2026 - PT Semen Nusantara Tuban',
     fileName: 'Laporan_Emisi_Semen_Nusantara_FY2026.pdf',
@@ -12,7 +12,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
     totalEmissionsTCO2e: 14830,
     sectors: [
       {
-        id: 'SEC-01',
+        id: 'c3d4e5f6-0003-4000-8000-000000000011',
         name: 'Sektor Energi & Pembakaran Langsung',
         scope: 'Scope 1',
         emissionsTCO2e: 8240,
@@ -21,7 +21,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
         color: '#EF4444', // Rose
       },
       {
-        id: 'SEC-02',
+        id: 'c3d4e5f6-0003-4000-8000-000000000012',
         name: 'Sektor Pembelian Listrik Jaringan',
         scope: 'Scope 2',
         emissionsTCO2e: 4120,
@@ -30,7 +30,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
         color: '#F59E0B', // Amber
       },
       {
-        id: 'SEC-03',
+        id: 'c3d4e5f6-0003-4000-8000-000000000013',
         name: 'Sektor Transportasi & Logistik Armada',
         scope: 'Scope 3',
         emissionsTCO2e: 1620,
@@ -39,7 +39,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
         color: '#3B82F6', // Blue
       },
       {
-        id: 'SEC-04',
+        id: 'c3d4e5f6-0003-4000-8000-000000000014',
         name: 'Sektor Proses Industri & Kalsinasi',
         scope: 'Proses Industri',
         emissionsTCO2e: 850,
@@ -50,7 +50,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
     ],
   },
   {
-    id: 'REP-2025-002',
+    id: 'c3d4e5f6-0003-4000-8000-000000000002',
     year: 2025,
     title: 'Laporan Audit Emisi dMRV FY 2025 - PT Semen Nusantara Tuban',
     fileName: 'Laporan_Emisi_Semen_Nusantara_FY2025.pdf',
@@ -60,7 +60,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
     totalEmissionsTCO2e: 13500,
     sectors: [
       {
-        id: 'SEC-01-2025',
+        id: 'c3d4e5f6-0003-4000-8000-000000000021',
         name: 'Sektor Energi & Pembakaran Langsung',
         scope: 'Scope 1',
         emissionsTCO2e: 7420,
@@ -69,7 +69,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
         color: '#EF4444',
       },
       {
-        id: 'SEC-02-2025',
+        id: 'c3d4e5f6-0003-4000-8000-000000000022',
         name: 'Sektor Pembelian Listrik Jaringan',
         scope: 'Scope 2',
         emissionsTCO2e: 3780,
@@ -78,7 +78,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
         color: '#F59E0B',
       },
       {
-        id: 'SEC-03-2025',
+        id: 'c3d4e5f6-0003-4000-8000-000000000023',
         name: 'Sektor Transportasi & Logistik',
         scope: 'Scope 3',
         emissionsTCO2e: 1485,
@@ -87,7 +87,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
         color: '#3B82F6',
       },
       {
-        id: 'SEC-04-2025',
+        id: 'c3d4e5f6-0003-4000-8000-000000000024',
         name: 'Sektor Proses Industri',
         scope: 'Proses Industri',
         emissionsTCO2e: 815,

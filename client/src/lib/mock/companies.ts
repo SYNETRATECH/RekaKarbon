@@ -2,7 +2,7 @@ import type { Company } from '../../types';
 
 export const COMPANIES_DATA: Company[] = [
   {
-    id: 'pltu-suralaya',
+    id: 'a1b2c3d4-0001-4000-8000-000000000001',
     name: 'PLTU Suralaya (Unit 1-8)',
     sector: 'Pembangkit Listrik (PLTU Batubara)',
     region: 'Cilegon, Banten',
@@ -23,7 +23,7 @@ export const COMPANIES_DATA: Company[] = [
       'Pembakaran batubara melebihi kuota ambang batas Kementerian LHK. Belum melakukan alokasi pembelian kredit karbon SPE-GRK.',
   },
   {
-    id: 'semen-tuban',
+    id: 'a1b2c3d4-0001-4000-8000-000000000002',
     name: 'PT Semen Nusantara Tuban',
     sector: 'Industri Semen & Manufaktur',
     region: 'Tuban, Jawa Timur',
@@ -44,7 +44,7 @@ export const COMPANIES_DATA: Company[] = [
       'Proses pemanasan klinker batu kapur menghasilkan emisi CO2 tinggi. Belum menyelesaikan penebusan offset kuota 2025.',
   },
   {
-    id: 'smelter-morowali',
+    id: 'a1b2c3d4-0001-4000-8000-000000000003',
     name: 'PT Nickel Smelter Morowali',
     sector: 'Pengolahan Mineral & Smelter',
     region: 'Morowali, Sulawesi Tengah',
@@ -65,7 +65,7 @@ export const COMPANIES_DATA: Company[] = [
       'Pengoperasian captive power plant batubara skala besar. Tunggakan penyerahan dokumen penebusan kuota karbon.',
   },
   {
-    id: 'pupuk-palembang',
+    id: 'a1b2c3d4-0001-4000-8000-000000000004',
     name: 'PT Pupuk Sriwidjaja Palembang',
     sector: 'Petrokimia & Pupuk',
     region: 'Palembang, Sumatera Selatan',
@@ -86,7 +86,7 @@ export const COMPANIES_DATA: Company[] = [
       'Emisi gas buang reaksi sintesis amonia. Menunggu penetapan mekanisme retribusi offset karbon regional.',
   },
   {
-    id: 'smelter-bontang',
+    id: 'a1b2c3d4-0001-4000-8000-000000000005',
     name: 'PT Smelter Alumunium Bontang',
     sector: 'Metalurgi & Pengolahan Logam',
     region: 'Bontang, Kalimantan Timur',
@@ -107,7 +107,7 @@ export const COMPANIES_DATA: Company[] = [
       'Kelebihan beban emisi potline peleburan. Dalam proses verifikasi pra-syarat pembelian token SPE-GRK.',
   },
   {
-    id: 'bio-kertas-karawang',
+    id: 'a1b2c3d4-0001-4000-8000-000000000006',
     name: 'PT Bio Kertas Karawang',
     sector: 'Pulp & Paper',
     region: 'Karawang, Jawa Barat',
@@ -128,7 +128,7 @@ export const COMPANIES_DATA: Company[] = [
       'Memenuhi kuota karbon nasional. Telah melunasi pembalasan offset karbon dengan pendanaan proyek reboisasi Aceh.',
   },
   {
-    id: 'tekstil-maju-bandung',
+    id: 'a1b2c3d4-0001-4000-8000-000000000007',
     name: 'PT Tekstil Maju Bandung',
     sector: 'Manufaktur Tekstil',
     region: 'Bandung, Jawa Barat',
