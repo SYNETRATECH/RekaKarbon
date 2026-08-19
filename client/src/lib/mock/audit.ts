@@ -11,7 +11,7 @@ export const mockAnomalySummary: AnomalySummary = {
 
 export const mockAiAnomalyLogs: AiAnomalyLog[] = [
   {
-    id: 'IND-001',
+    id: 'd4e5f6a7-0004-4000-8000-000000000001',
     company: 'PT Semen Nusantara Jaya',
     sector: 'Industri Semen',
     anomalyScore: 0.94,
@@ -26,7 +26,7 @@ export const mockAiAnomalyLogs: AiAnomalyLog[] = [
     auditStatus: 'pending',
   },
   {
-    id: 'IND-002',
+    id: 'd4e5f6a7-0004-4000-8000-000000000002',
     company: 'PT Pembangkit Kalimantan',
     sector: 'Energi & Utilitas',
     anomalyScore: 0.89,
@@ -41,7 +41,7 @@ export const mockAiAnomalyLogs: AiAnomalyLog[] = [
     auditStatus: 'pending',
   },
   {
-    id: 'IND-003',
+    id: 'd4e5f6a7-0004-4000-8000-000000000003',
     company: 'PT Petrokimia Selatan',
     sector: 'Petrokimia',
     anomalyScore: 0.85,
@@ -56,7 +56,7 @@ export const mockAiAnomalyLogs: AiAnomalyLog[] = [
     auditStatus: 'pending',
   },
   {
-    id: 'IND-004',
+    id: 'd4e5f6a7-0004-4000-8000-000000000004',
     company: 'PT Baja Timur Indonesia',
     sector: 'Industri Baja',
     anomalyScore: 0.81,
@@ -71,7 +71,7 @@ export const mockAiAnomalyLogs: AiAnomalyLog[] = [
     auditStatus: 'pending',
   },
   {
-    id: 'IND-005',
+    id: 'd4e5f6a7-0004-4000-8000-000000000005',
     company: 'PT Palm Agro Resources',
     sector: 'Perkebunan & Agro',
     anomalyScore: 0.76,
@@ -106,7 +106,7 @@ export const mockSpatialSummary = {
 
 export const mockConservationAreas = [
   {
-    id: 'AREA-BALURAN',
+    id: 'a1b2c3d4-0010-4000-8000-000000000001',
     name: 'Hutan Konservasi Baluran',
     location: 'Banyuwangi, Jawa Timur',
     areaHectares: 25000,
@@ -124,7 +124,7 @@ export const mockConservationAreas = [
     ],
   },
   {
-    id: 'AREA-KATINGAN',
+    id: 'a1b2c3d4-0010-4000-8000-000000000002',
     name: 'Restorasi Gambut Katingan',
     location: 'Katingan, Kalimantan Tengah',
     areaHectares: 142000,
@@ -142,7 +142,7 @@ export const mockConservationAreas = [
     ],
   },
   {
-    id: 'AREA-LEUSER',
+    id: 'a1b2c3d4-0010-4000-8000-000000000003',
     name: 'Hutan Lindung Leuser',
     location: 'Aceh, Sumatera',
     areaHectares: 88500,
@@ -160,7 +160,7 @@ export const mockConservationAreas = [
     ],
   },
   {
-    id: 'AREA-BERAU',
+    id: 'a1b2c3d4-0010-4000-8000-000000000004',
     name: 'Mangrove Pesisir Berau',
     location: 'Berau, Kalimantan Timur',
     areaHectares: 31200,
@@ -242,14 +242,14 @@ export const mockCertificationPreview = {
 
 export const mockDroneScans = [
   {
-    id: 'CHM-BL-01',
+    id: 'd1e2f3a4-0011-4000-8000-000000000001',
     location: 'TN Baluran Sector A',
     avgHeightMeters: 1.85,
     status: 'passed',
     date: '2026-08-10',
   },
   {
-    id: 'CHM-GL-02',
+    id: 'd1e2f3a4-0011-4000-8000-000000000002',
     location: 'TN Gunung Leuser Zone B',
     avgHeightMeters: 2.1,
     status: 'passed',
@@ -259,7 +259,7 @@ export const mockDroneScans = [
 
 export const mockKthPolygons = [
   {
-    id: 'POL-01',
+    id: 'e1f2a3b4-0012-4000-8000-000000000001',
     name: 'Petak Hutan Tani Baluran Timur',
     areaHectares: 120,
     estimatedCO2e: 4500,
@@ -269,14 +269,14 @@ export const mockKthPolygons = [
 
 export const mockKthLogs = [
   {
-    id: 'LOG-101',
+    id: 'f1a2b3c4-0013-4000-8000-000000000001',
     date: '2026-08-01',
     type: 'Foto Geotag',
     desc: 'Penanaman 500 bibit mangrove zona pesisir',
     verified: true,
   },
   {
-    id: 'LOG-102',
+    id: 'f1a2b3c4-0013-4000-8000-000000000002',
     date: '2026-08-10',
     type: 'Scan Drone Triwulanan',
     desc: 'Pemindaian CHM kanopi pohon tahun I',

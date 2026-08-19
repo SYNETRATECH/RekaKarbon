@@ -2,7 +2,7 @@ import type { PurchasedCertificate } from '../../types';
 
 export const MOCK_PURCHASED_CERTIFICATES: PurchasedCertificate[] = [
   {
-    id: 'CERT-REKA-2026-00491',
+    id: 'f1e2d3c4-0006-4000-8000-000000000001',
     certificateNumber: 'SPE-GRK-00192-REKA-2026',
     projectName: 'Restorasi Mangrove Hutan Lindung Tuban & CHM Spasial',
     projectCategory: 'Konservasi Pesisir & Blue Carbon',
@@ -23,7 +23,7 @@ export const MOCK_PURCHASED_CERTIFICATES: PurchasedCertificate[] = [
     },
   },
   {
-    id: 'CERT-REKA-2026-00388',
+    id: 'f1e2d3c4-0006-4000-8000-000000000002',
     certificateNumber: 'SPE-GRK-00144-REKA-2026',
     projectName: 'Agroforestri Bambu & Pembengkakan Biomassa Batu',
     projectCategory: 'Reforestri & Penyerap Karbon Darat',
@@ -44,7 +44,7 @@ export const MOCK_PURCHASED_CERTIFICATES: PurchasedCertificate[] = [
     },
   },
   {
-    id: 'CERT-REKA-2025-00104',
+    id: 'f1e2d3c4-0006-4000-8000-000000000003',
     certificateNumber: 'SPE-GRK-00088-REKA-2025',
     projectName: 'Reboisasi Hutan Lindung Gunung Wilis Kediri',
     projectCategory: 'Restorasi Ekosistem Gunung',
