@@ -11,19 +11,12 @@ import {
   CheckCircle2,
   Clock,
   MapPin,
-  X,
-  ShieldCheck,
   Search,
   Activity,
   FileText,
-  Download,
-  Users,
   Eye,
-  Wallet,
-  Building2,
 } from 'lucide-react';
-import { formatCurrency, formatFileSize, parseNumeric } from '../../lib/formatters';
-import { formatDate } from '../../lib/dates';
+import { formatCurrency, parseNumeric } from '../../lib/formatters';
 import {
   Dialog,
   DialogContent,
@@ -63,7 +56,6 @@ export default function ForestProjectsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const [selectedProgressProject, setSelectedProgressProject] = useState<any>(null);
-  const [blockchainSubTab, setBlockchainSubTab] = useState<'buyers' | 'vendors'>('buyers');
 
   const openCreatePage = () => {
     setEditingProjectData(null);
@@ -137,7 +129,7 @@ export default function ForestProjectsManagement() {
   };
 
   // Trigger Drone Video Audit Modal (Landing Page)
-  const handleOpenLandingDroneModal = (prj: any, stageObj: any = null) => {
+  const _handleOpenLandingDroneModal = (prj: any, stageObj: any = null) => {
     const matchedLandingProj = landingProjects?.find(
       (p: any) =>
         p.name.toLowerCase().includes(prj.projectName.toLowerCase()) ||

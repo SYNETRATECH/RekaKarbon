@@ -1,5 +1,6 @@
 {
-  "client/**/*.{js,jsx,ts,tsx}": ["pnpm --filter ./client lint --fix", "prettier --write"],
-  "server/**/*.ts": ["pnpm --filter ./server exec eslint --fix", "prettier --write"],
-  "**/*.{json,css,md}": ["prettier --write"]
+  "client/**/*.{js,jsx,ts,tsx}": ["oxlint --fix", "prettier --write"],
+  "server/**/*.ts": ["eslint --fix", "prettier --write"],
+  "blockchain/**/*.{js,ts,sol}": ["prettier --write"],
+  "*.{json,md,yml,yaml}": ["prettier --write"]
 }
