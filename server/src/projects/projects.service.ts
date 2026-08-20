@@ -2,19 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { Project } from '../types/project';
 import { ForestProjectItem, NationalForestRegion } from '../types/regulator';
 import {
-  PROJECTS_DATA,
-  NATIONAL_FOREST_REGIONS,
-  INITIAL_FOREST_PROJECTS,
+  MOCK_PROJECTS_DATA,
+  MOCK_NATIONAL_FOREST_REGIONS,
+  MOCK_FOREST_PROJECTS,
 } from './projects.mock';
 
 @Injectable()
 export class ProjectsService {
-  private readonly projects: Project[] = [...PROJECTS_DATA];
+  private readonly projects: Project[] = [...MOCK_PROJECTS_DATA];
   private readonly forestRegions: NationalForestRegion[] = [
-    ...NATIONAL_FOREST_REGIONS,
+    ...MOCK_NATIONAL_FOREST_REGIONS,
   ];
   private readonly forestProjects: ForestProjectItem[] = [
-    ...INITIAL_FOREST_PROJECTS,
+    ...MOCK_FOREST_PROJECTS,
   ];
 
   findProjects(): Promise<Project[]> {

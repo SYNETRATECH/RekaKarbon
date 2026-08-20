@@ -1,0 +1,121 @@
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { AuditService } from './audit.service';
+import { AuthorizeMintingDto } from './dto';
+
+@ApiTags('Audit & dMRV Verification')
+@Controller('audit')
+export class AuditController {
+  constructor(private readonly auditService: AuditService) {}
+
+  @ApiOperation({
+    summary: 'Retrieve AI anomaly detection logs across emitters',
+  })
+  @ApiResponse({ status: 200, description: 'AI anomaly logs retrieved.' })
+  @Get('anomaly-logs')
+  async getAiAnomalyLogs() {
+    const data = await this.auditService.getAiAnomalyLogs();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve aggregate summary of emitter anomalies' })
+  @ApiResponse({ status: 200, description: 'Anomaly summary retrieved.' })
+  @Get('anomaly-summary')
+  async getAnomalySummary() {
+    const data = await this.auditService.getAnomalySummary();
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Retrieve energy vs reported emission correlation data',
+  })
+  @ApiResponse({ status: 200, description: 'Energy correlation retrieved.' })
+  @Get('energy-correlation')
+  async getEnergyCorrelation() {
+    const data = await this.auditService.getEnergyCorrelation();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Mark an anomaly record as verified' })
+  @ApiParam({ name: 'id', description: 'Anomaly record ID' })
+  @ApiResponse({ status: 200, description: 'Record verified successfully.' })
+  @Post('verify/:id')
+  async verifyAnomalyRecord(@Param('id') id: string) {
+    const result = await this.auditService.verifyAnomalyRecord(id);
+    return { success: true, data: result };
+  }
+
+  @ApiOperation({ summary: 'Retrieve spatial satellite area summary' })
+  @ApiResponse({ status: 200, description: 'Spatial summary retrieved.' })
+  @Get('spatial-summary')
+  async getSpatialSummary() {
+    const data = await this.auditService.getSpatialSummary();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve conservation areas monitored by dMRV' })
+  @ApiResponse({ status: 200, description: 'Conservation areas retrieved.' })
+  @Get('conservation-areas')
+  async getConservationAreas() {
+    const data = await this.auditService.getConservationAreas();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve drone survey archive layers' })
+  @ApiResponse({ status: 200, description: 'Drone archive retrieved.' })
+  @Get('drone-archive')
+  async getDroneArchive() {
+    const data = await this.auditService.getDroneArchive();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve scheduled drone flyover timeline' })
+  @ApiResponse({ status: 200, description: 'Drone schedules retrieved.' })
+  @Get('drone-schedules')
+  async getDroneSchedules() {
+    const data = await this.auditService.getDroneSchedules();
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Retrieve preview certificate details before minting',
+  })
+  @ApiResponse({ status: 200, description: 'Certification preview retrieved.' })
+  @Get('certification-preview')
+  async getCertificationPreview() {
+    const data = await this.auditService.getCertificationPreview();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Authorize on-chain carbon credit minting' })
+  @ApiResponse({ status: 200, description: 'Credit minting authorized.' })
+  @Post('authorize-minting')
+  async authorizeMintingCredit(@Body() data: AuthorizeMintingDto) {
+    const result = await this.auditService.authorizeMintingCredit(data);
+    return { success: true, data: result };
+  }
+
+  @ApiOperation({ summary: 'Retrieve drone LiDAR/optical scan entries' })
+  @ApiResponse({ status: 200, description: 'Drone scans retrieved.' })
+  @Get('drone-scans')
+  async getDroneScans() {
+    const data = await this.auditService.getDroneScans();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve KTH forest polygons' })
+  @ApiResponse({ status: 200, description: 'KTH polygons retrieved.' })
+  @Get('kth-polygons')
+  async getKthPolygons() {
+    const data = await this.auditService.getKthPolygons();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve KTH verification and field logs' })
+  @ApiResponse({ status: 200, description: 'KTH logs retrieved.' })
+  @Get('kth-logs')
+  async getKthLogs() {
+    const data = await this.auditService.getKthLogs();
+    return { success: true, data };
+  }
+}

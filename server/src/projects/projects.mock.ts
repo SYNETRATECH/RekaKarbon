@@ -1,7 +1,7 @@
 import { Project } from '../types/project';
 import { ForestProjectItem, NationalForestRegion } from '../types/regulator';
 
-export const NATIONAL_FOREST_REGIONS: NationalForestRegion[] = [
+export const MOCK_NATIONAL_FOREST_REGIONS: NationalForestRegion[] = [
   {
     id: 'e1f2a3b4-0040-4000-8000-000000000001',
     regionName: 'Kalimantan (Hutan Tropis & Gambut)',
@@ -36,7 +36,7 @@ export const NATIONAL_FOREST_REGIONS: NationalForestRegion[] = [
   },
 ];
 
-export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
+export const MOCK_FOREST_PROJECTS: ForestProjectItem[] = [
   {
     id: 'f1a2b3c4-0041-4000-8000-000000000001',
     projectName: 'Restorasi Mangrove Hutan Lindung Tuban',
@@ -139,7 +139,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
   },
 ];
 
-export const PROJECTS_DATA: Project[] = [
+export const MOCK_PROJECTS_DATA: Project[] = [
   {
     id: 'b2c3d4e5-0002-4000-8000-000000000001',
     name: 'TN Baluran',
