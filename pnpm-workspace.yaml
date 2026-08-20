@@ -4,6 +4,7 @@ packages:
   - 'blockchain'
 allowBuilds:
   '@prisma/engines': true
+  bcrypt: true
   esbuild: true
   keccak: true
   prisma: true
