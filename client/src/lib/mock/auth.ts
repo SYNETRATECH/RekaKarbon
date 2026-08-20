@@ -10,7 +10,6 @@ export const mockUsers: Record<string, MockUser> = {
     roleTitle: 'HSE Director',
     agency: 'PT Semen Nusantara Tuban',
     avatar: 'BS',
-    verichainKey: 'VCH-CORP-99412',
     token: 'mock-jwt-vch-emitter-token-99412',
   },
   regulator: {
@@ -22,7 +21,6 @@ export const mockUsers: Record<string, MockUser> = {
     roleTitle: 'Direktur Pengawasan KLHK & DJP',
     agency: 'KLHK & Kemenkeu RI',
     avatar: 'AF',
-    verichainKey: 'VCH-GOV-ID-7721',
     token: 'mock-jwt-vch-regulator-token-7721',
   },
   auditor: {
@@ -34,7 +32,6 @@ export const mockUsers: Record<string, MockUser> = {
     roleTitle: 'Verifikator Independen',
     agency: 'PT Sucofindo / Mutu Agung',
     avatar: 'LV',
-    verichainKey: 'VCH-AUDIT-44819',
     token: 'mock-jwt-vch-auditor-token-44819',
   },
   kth: {
@@ -46,7 +43,6 @@ export const mockUsers: Record<string, MockUser> = {
     roleTitle: 'Ketua Kelompok Tani Hutan',
     agency: 'KTH Wana Lestari Baluran',
     avatar: 'ST',
-    verichainKey: 'VCH-KTH-33109',
     token: 'mock-jwt-vch-kth-token-33109',
   },
 };
