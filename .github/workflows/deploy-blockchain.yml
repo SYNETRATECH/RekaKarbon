@@ -38,36 +38,36 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🚚 Transfer Files via SCP
-        env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
-          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sshpass
-          sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME@$SERVER_IP" "mkdir -p ~/VM_BLOCKHAIN"
-          sshpass -p "$SERVER_PASSWORD" scp -o StrictHostKeyChecking=no -r ./blockchain/* "$SERVER_USERNAME@$SERVER_IP:~/VM_BLOCKHAIN"
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: 'blockchain'
+          target: '~/VM_BLOCKHAIN'
 
       - name: 🚀 Execute Deployment on Server
+        uses: appleboy/ssh-action@master
         env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-        run: |
-          sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME@$SERVER_IP" << EOF
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          envs: SERVER_PASSWORD,PRIVATE_KEY
+          script: |
             set -e
-            
+
             echo "=== Membersihkan kontainer & data lama (jika ada) ==="
             echo "$SERVER_PASSWORD" | sudo -S docker rm -f besu-dev-node 2>/dev/null || true
             echo "$SERVER_PASSWORD" | sudo -S docker volume rm besu_data 2>/dev/null || true
-            
+
             echo "=== Menyiapkan Kunci Node (Node Key) ==="
             echo "$SERVER_PASSWORD" | sudo -S mkdir -p ~/VM_BLOCKHAIN/besu_data
             echo "$SERVER_PASSWORD" | sudo -S chmod 777 ~/VM_BLOCKHAIN/besu_data
             echo "$PRIVATE_KEY" > ~/VM_BLOCKHAIN/besu_data/node_key
-            
+
             echo "=== Menjalankan Docker Hyperledger Besu ==="
             echo "$SERVER_PASSWORD" | sudo -S docker run -d \
               --name besu-dev-node \
@@ -89,28 +89,7 @@ jobs:
               --min-gas-price=0 \
               --miner-enabled=true \
               --miner-coinbase=0xfBB83F5872C2E4e1f8Fa49584da8DB98B91a1267
-            
-            echo "=== Menunggu Node Besu siap (max 60 detik) ==="
-            for i in $(seq 1 12); do
-              if curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:8545 > /dev/null 2>&1; then
-                echo "✅ Node Besu sudah merespon pada percobaan ke-$i!"
-                break
-              fi
-              echo "Percobaan ke-$i: Besu belum siap, menunggu 5 detik..."
-              sleep 5
-              if [ $i -eq 12 ]; then
-              --node-private-key-file=/opt/besu/data/node_key \
-              --rpc-http-enabled=true \
-              --rpc-http-host=0.0.0.0 \
-              --rpc-http-cors-origins="*" \
-              --rpc-http-api=ETH,NET,WEB3,DEBUG,MINER,TXPOOL \
-              --rpc-ws-enabled=true \
-              --rpc-ws-host=0.0.0.0 \
-              --host-allowlist="*" \
-              --min-gas-price=0 \
-              --miner-enabled=true \
-              --miner-coinbase=0xfBB83F5872C2E4e1f8Fa49584da8DB98B91a1267
-            
+
             echo "=== Menunggu Node Besu siap (max 60 detik) ==="
             for i in $(seq 1 12); do
               if curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:8545 > /dev/null 2>&1; then
@@ -125,15 +104,14 @@ jobs:
                 exit 1
               fi
             done
-            
+
             echo "=== Menginstall dependensi & Deploy Smart Contract ==="
             echo "$SERVER_PASSWORD" | sudo -S docker run --rm \
-              -v ~/VM_BLOCKHAIN:/app \
+              -v ~/VM_BLOCKHAIN/blockchain:/app \
               -w /app \
               -e PRIVATE_KEY="$PRIVATE_KEY" \
               --network host \
               node:20 \
               bash -c "npm ci && npx hardhat run scripts/deploy.ts --network besu_local"
-            
+
             echo "✅ DEPLOYMENT SERVER SELESAI!"
-          EOF
