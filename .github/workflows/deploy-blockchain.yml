@@ -99,6 +99,27 @@ jobs:
               echo "Percobaan ke-$i: Besu belum siap, menunggu 5 detik..."
               sleep 5
               if [ $i -eq 12 ]; then
+              --node-private-key-file=/opt/besu/data/node_key \
+              --rpc-http-enabled=true \
+              --rpc-http-host=0.0.0.0 \
+              --rpc-http-cors-origins="*" \
+              --rpc-http-api=ETH,NET,WEB3,DEBUG,MINER,TXPOOL \
+              --rpc-ws-enabled=true \
+              --rpc-ws-host=0.0.0.0 \
+              --host-allowlist="*" \
+              --min-gas-price=0 \
+              --miner-enabled=true \
+              --miner-coinbase=0xfBB83F5872C2E4e1f8Fa49584da8DB98B91a1267
+            
+            echo "=== Menunggu Node Besu siap (max 60 detik) ==="
+            for i in $(seq 1 12); do
+              if curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:8545 > /dev/null 2>&1; then
+                echo "✅ Node Besu sudah merespon pada percobaan ke-$i!"
+                break
+              fi
+              echo "Percobaan ke-$i: Besu belum siap, menunggu 5 detik..."
+              sleep 5
+              if [ $i -eq 12 ]; then
                 echo "❌ Besu gagal menyala setelah 60 detik. Menampilkan log:"
                 echo "$SERVER_PASSWORD" | sudo -S docker logs --tail 30 besu-dev-node
                 exit 1
@@ -112,7 +133,7 @@ jobs:
               -e PRIVATE_KEY="$PRIVATE_KEY" \
               --network host \
               node:20 \
-              bash -c "npm ci && npx hardhat run scripts/deploy.js --network besu_local"
+              bash -c "npm ci && npx hardhat run scripts/deploy.ts --network besu_local"
             
             echo "✅ DEPLOYMENT SERVER SELESAI!"
           EOF
