@@ -1,6 +1,7 @@
+import { HardhatUserConfig } from 'hardhat/config';
 import '@nomicfoundation/hardhat-ethers';
-/** @type import('hardhat/config').HardhatUserConfig */
 import dotenv from 'dotenv';
+
 dotenv.config();
 
 // Mengambil private key dari .env
@@ -13,7 +14,7 @@ if (!PRIVATE_KEY) {
   process.exit(1);
 }
 
-export default {
+const config: HardhatUserConfig = {
   solidity: {
     version: '0.8.24', // Versi solidity yang stabil dan disupport openzeppelin
     settings: {
@@ -33,3 +34,5 @@ export default {
     },
   },
 };
+
+export default config;
