@@ -7,7 +7,6 @@ export interface MockUser {
   roleTitle: string;
   agency: string;
   avatar: string;
-  verichainKey: string;
   token: string;
 }
 
@@ -15,7 +14,6 @@ export interface AuthCredentials {
   identity?: string;
   email?: string;
   password?: string;
-  verichainKey?: string;
   role?: string;
 }
 

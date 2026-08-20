@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useCarbonStore } from '../store/useCarbonStore';
-import { Mail, Lock, Key, ShieldCheck, ArrowLeft, UserCheck, UserPlus } from 'lucide-react';
+import { Mail, Lock, ShieldCheck, ArrowLeft, UserCheck, UserPlus } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,6 @@ export default function LoginRoute() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [emailInput, setEmailInput] = useState('admin@semennusantara.co.id');
   const [passwordInput, setPasswordInput] = useState('••••••••••••');
-  const [verichainKeyInput, setVerichainKeyInput] = useState('VCH-CORP-99412');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -166,25 +165,6 @@ export default function LoginRoute() {
                   onChange={(e) => setPasswordInput(e.target.value)}
                   className="pl-10 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:bg-white"
                   required
-                />
-              </div>
-            </div>
-
-            {/* Security Key */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                Verichain Token Otoritas (Opsional)
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 z-10">
-                  <Key className="w-4 h-4 text-[#00C48C]" />
-                </span>
-                <Input
-                  type="text"
-                  placeholder="VCH-CORP-XXXXX"
-                  value={verichainKeyInput}
-                  onChange={(e) => setVerichainKeyInput(e.target.value)}
-                  className="pl-10 bg-slate-50/50 border-slate-200 text-emerald-800 font-mono text-xs font-bold focus:bg-white"
                 />
               </div>
             </div>
