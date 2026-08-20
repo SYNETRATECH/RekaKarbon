@@ -99,3 +99,67 @@ export interface ForestProjectItem {
   eviScore: number;
   progressDetail: ForestProjectProgressDetail;
 }
+
+export interface KTHMember {
+  id: string;
+  name: string;
+  role: string;
+  plantedTrees: number;
+  allocatedLandHa: number;
+  incentiveReceivedIDR: number;
+  bankAccount: string;
+}
+
+export interface KTHGroupItem {
+  id: string;
+  kthName: string;
+  region: string;
+  leaderName: string;
+  membersCount: number;
+  members: KTHMember[];
+  assignedAreaHectares: number;
+  targetTrees: number;
+  plantedTrees: number;
+  totalIncentiveReceivedIDR: number;
+  walletAddress: string;
+}
+
+export interface KTHTransactionItem {
+  id: string;
+  txHash: string;
+  date: string;
+  kthName: string;
+  projectName: string;
+  volumeTCO2e: number;
+  amountIDR: number;
+  status:
+    | 'completed'
+    | 'processing'
+    | 'awaiting_farmer'
+    | 'awaiting_proof'
+    | 'flagged'
+    | 'failed';
+  issueNote?: string;
+  items?: {
+    name: string;
+    qty: number;
+    unit?: string;
+    price: number;
+    total: number;
+  }[];
+  proofImages?: string[];
+}
+
+export interface RegulationDocumentUploadItem {
+  id: string;
+  documentTitle: string;
+  category: 'sk_ptbae' | 'spe_grk' | 'stp_djp' | 'kth_sk';
+  categoryLabel: string;
+  agencyIssuer: 'KLHK' | 'DJP' | 'KLHK & DJP';
+  fileName: string;
+  fileSize: number;
+  uploadDate: string;
+  signatoryPerson: string;
+  targetEntityName: string;
+  status: 'published' | 'verifying' | 'archived';
+}
