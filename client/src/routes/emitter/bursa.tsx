@@ -209,24 +209,32 @@ export default function CarbonDexMarket() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b border-slate-200">
-                <TableHead className="w-[35%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
+                <TableHead className="w-[6%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-3 text-center">
+                  NO.
+                </TableHead>
+                <TableHead className="w-[32%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
                   TOKEN / KAWASAN
                 </TableHead>
-                <TableHead className="w-[25%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
+                <TableHead className="w-[24%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
                   HARGA / FRAKSI
                 </TableHead>
                 <TableHead className="w-[15%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
                   24J
                 </TableHead>
-                <TableHead className="w-[20%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
+                <TableHead className="w-[18%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
                   PASOKAN
                 </TableHead>
                 <TableHead className="w-[5%] h-10 px-4" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedItems.map((item: any) => (
+              {sortedItems.map((item: any, index: number) => (
                 <TableRow key={item.id} className="border-b border-slate-100 hover:bg-slate-50/50">
+                  {/* Column 0: No. */}
+                  <TableCell className="p-4 align-middle text-center font-mono font-bold text-slate-400 text-xs">
+                    {index + 1}
+                  </TableCell>
+
                   {/* Column 1: Token & Kawasan */}
                   <TableCell className="p-4 align-middle">
                     <div className="flex items-center gap-3">

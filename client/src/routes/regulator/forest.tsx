@@ -180,6 +180,7 @@ export default function NationalForestDashboard() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Wilayah Hutan</TableHead>
               <TableHead>Luas Kawasan</TableHead>
               <TableHead>Kapasitas Serapan</TableHead>
@@ -189,14 +190,20 @@ export default function NationalForestDashboard() {
           </TableHeader>
           <TableBody>
             {regions.map(
-              (reg: {
-                id: string;
-                regionName: string;
-                areaHectares: number;
-                carbonSequestrationTCO2e: number;
-                fundingDisbursedIDR: number;
-              }) => (
+              (
+                reg: {
+                  id: string;
+                  regionName: string;
+                  areaHectares: number;
+                  carbonSequestrationTCO2e: number;
+                  fundingDisbursedIDR: number;
+                },
+                index: number
+              ) => (
                 <TableRow key={reg.id}>
+                  <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                    {index + 1}
+                  </TableCell>
                   <TableCell className="font-black text-slate-900">{reg.regionName}</TableCell>
                   <TableCell className="text-slate-600 font-bold">
                     {formatArea(reg.areaHectares)}

@@ -120,6 +120,7 @@ export default function SpatialMRVEvaluation() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="py-3 px-3 text-center w-12">No.</TableHead>
                 <TableHead className="py-3 px-3">Kawasan</TableHead>
                 <TableHead className="py-3 px-3 text-right">Luas (ha)</TableHead>
                 <TableHead className="py-3 px-3">NDVI</TableHead>
@@ -130,7 +131,7 @@ export default function SpatialMRVEvaluation() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {areas.map((area: any) => {
+              {areas.map((area: any, index: number) => {
                 const isSelected = selectedArea?.id === area.id;
 
                 return (
@@ -141,6 +142,11 @@ export default function SpatialMRVEvaluation() {
                       isSelected ? 'bg-emerald-50/40 border-l-4 border-l-[#033C2E]' : ''
                     }`}
                   >
+                    {/* No. */}
+                    <TableCell className="py-3.5 px-3 text-center font-mono font-bold text-slate-500 text-xs">
+                      {index + 1}
+                    </TableCell>
+
                     {/* Kawasan Name & Location */}
                     <TableCell className="py-3.5 px-3">
                       <p className="font-black text-slate-900 leading-tight">{area.name}</p>

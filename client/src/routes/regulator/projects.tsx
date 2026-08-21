@@ -212,6 +212,7 @@ export default function ForestProjectsManagement() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Kode ID</TableHead>
               <TableHead>Nama Proyek Kehutanan</TableHead>
               <TableHead>Kategori Hutan</TableHead>
@@ -223,10 +224,13 @@ export default function ForestProjectsManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProjects.map((prj: any) => {
+            {filteredProjects.map((prj: any, index: number) => {
               const progressData = getProjectProgressData(prj);
               return (
                 <TableRow key={prj.id}>
+                  <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                    {index + 1}
+                  </TableCell>
                   <TableCell className="font-mono font-black text-slate-900">{prj.id}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

@@ -196,6 +196,7 @@ export default function EmissionsAuditAI() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="py-3 px-3 text-center w-12">No.</TableHead>
                 <TableHead className="py-3 px-3">Nama Pabrik</TableHead>
                 <TableHead className="py-3 px-3">Sektor</TableHead>
                 <TableHead className="py-3 px-3 text-center">Skor Anomali</TableHead>
@@ -207,7 +208,7 @@ export default function EmissionsAuditAI() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredLogs.map((log: any) => {
+              {filteredLogs.map((log: any, index: number) => {
                 const isSelected = selectedAnomalyId === log.id;
 
                 let scoreBadgeVariant: 'destructive' | 'warning' | 'secondary' = 'destructive';
@@ -225,6 +226,11 @@ export default function EmissionsAuditAI() {
                       isSelected ? 'bg-emerald-50/40 border-l-4 border-l-[#033C2E] font-medium' : ''
                     }`}
                   >
+                    {/* No. */}
+                    <TableCell className="py-3.5 px-3 text-center font-mono font-bold text-slate-500 text-xs">
+                      {index + 1}
+                    </TableCell>
+
                     {/* Nama Pabrik & ID */}
                     <TableCell className="py-3.5 px-3">
                       <p className="font-black text-slate-900 leading-tight">{log.company}</p>

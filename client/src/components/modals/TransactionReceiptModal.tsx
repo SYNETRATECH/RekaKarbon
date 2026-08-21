@@ -101,6 +101,7 @@ export default function TransactionReceiptModal({
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12 text-center">No.</TableHead>
                       <TableHead>Nama Barang / Deskripsi Jasa</TableHead>
                       <TableHead className="text-center">Volume</TableHead>
                       <TableHead className="text-right">Harga Satuan</TableHead>
@@ -111,6 +112,9 @@ export default function TransactionReceiptModal({
                     {selectedTx.tx.items ? (
                       selectedTx.tx.items.map((item: any, i: number) => (
                         <TableRow key={i}>
+                          <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                            {i + 1}
+                          </TableCell>
                           <TableCell className="font-medium text-slate-800">{item.name}</TableCell>
                           <TableCell className="text-center font-mono font-semibold text-slate-600">
                             {formatQuantity(item.qty, item.unit)}
@@ -125,6 +129,9 @@ export default function TransactionReceiptModal({
                       ))
                     ) : (
                       <TableRow>
+                        <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                          1
+                        </TableCell>
                         <TableCell className="font-medium text-slate-800">
                           {selectedTx.tx.desc}
                         </TableCell>

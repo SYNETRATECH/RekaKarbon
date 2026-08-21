@@ -770,6 +770,7 @@ export default function EmissionReportsSector() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Judul Berkas Laporan</TableHead>
               <TableHead>Tahun</TableHead>
               <TableHead>Tanggal Unggah</TableHead>
@@ -780,8 +781,11 @@ export default function EmissionReportsSector() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reports.map((rep: any) => (
+            {reports.map((rep: any, index: number) => (
               <TableRow key={rep.id}>
+                <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="font-extrabold text-slate-900 flex items-center gap-2.5">
                   <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>{rep.title}</span>

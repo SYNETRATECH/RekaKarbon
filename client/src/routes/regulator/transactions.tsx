@@ -433,6 +433,7 @@ export default function KthTransactionsMonitoring() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>TxHash Blockchain</TableHead>
               <TableHead>Tanggal Transaksi</TableHead>
               <TableHead>KTH Penerima Insentif</TableHead>
@@ -443,8 +444,11 @@ export default function KthTransactionsMonitoring() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTxs.map((tx: any) => (
+            {filteredTxs.map((tx: any, index: number) => (
               <TableRow key={tx.id}>
+                <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="font-mono text-[11px]">
                   <div className="flex items-center gap-1.5 text-slate-700">
                     <span className="font-bold">

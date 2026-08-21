@@ -203,6 +203,7 @@ export default function PublicReportModal({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12 text-center">No.</TableHead>
                     <TableHead>Nama Kawasan Hutan</TableHead>
                     <TableHead>Wilayah</TableHead>
                     <TableHead>Luas Area</TableHead>
@@ -212,8 +213,11 @@ export default function PublicReportModal({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {projects.map((p) => (
+                  {projects.map((p, index) => (
                     <TableRow key={p.id}>
+                      <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                        {index + 1}
+                      </TableCell>
                       <TableCell className="font-extrabold text-slate-900">{p.name}</TableCell>
                       <TableCell className="text-slate-500">{p.region}</TableCell>
                       <TableCell className="font-mono">
