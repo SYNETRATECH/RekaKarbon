@@ -38,9 +38,6 @@ export default function SpatialMRVEvaluation() {
     <div className="flex-1 overflow-y-auto min-h-0 space-y-6 animate-fade-in text-left pr-1 pb-8">
       {/* HEADER SECTION */}
       <div>
-        <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase block mb-1">
-          LVV — DMRV KEHUTANAN
-        </span>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
           Evaluasi Spasial Carbon Stock
         </h2>
