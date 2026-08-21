@@ -152,8 +152,8 @@ export default function ProjectEditorPage() {
   useEffect(() => {
     if (!LModule || mapInstanceRef.current || !mapRef.current) return;
 
-    const initialCenter: [number, number] = coordinates.length > 0 ? coordinates[0] : [-2.5, 118.0];
-    const initialZoom = coordinates.length > 0 ? 13 : 5;
+    const initialCenter: [number, number] = coordinates.length > 0 ? coordinates[0] : [-7.5, 110.0];
+    const initialZoom = coordinates.length > 0 ? 13 : 7;
 
     const initMap = LModule.map(mapRef.current, {
       center: initialCenter,
@@ -166,6 +166,12 @@ export default function ProjectEditorPage() {
     const tileLayer = LModule.tileLayer(TILE_URLS[activeTileType], {
       attribution: 'Map Tiles',
     }).addTo(initMap);
+
+    // Allow user to click on the map to add polygon vertices
+    initMap.on('click', (e: any) => {
+      const { lat, lng } = e.latlng;
+      setCoordinates((prev) => [...prev, [Number(lat.toFixed(6)), Number(lng.toFixed(6))]]);
+    });
 
     mapInstanceRef.current = initMap;
     tileLayerRef.current = tileLayer;
@@ -268,7 +274,7 @@ export default function ProjectEditorPage() {
 
   // Add Point
   const handleAddPoint = () => {
-    const last = coordinates[coordinates.length - 1] || [-6.89, 112.05];
+    const last = coordinates[coordinates.length - 1] || [-7.5, 110.0];
     setCoordinates((prev) => [
       ...prev,
       [Number((last[0] + 0.005).toFixed(6)), Number((last[1] + 0.005).toFixed(6))],
@@ -299,7 +305,7 @@ export default function ProjectEditorPage() {
             Number((coordinates.reduce((s, c) => s + c[0], 0) / coordinates.length).toFixed(6)),
             Number((coordinates.reduce((s, c) => s + c[1], 0) / coordinates.length).toFixed(6)),
           ]
-        : [-6.89, 112.05];
+        : [-7.5, 110.0];
 
     const payload: ForestProjectItem = {
       id: isEditing ? editingProjectData.id : `PRJ-REG-${Date.now()}`,
