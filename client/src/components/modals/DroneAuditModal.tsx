@@ -2,29 +2,42 @@ import { Globe, FileText } from 'lucide-react';
 import droneFootageVideo from '../../assets/drone_footage.mp4';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { formatCurrency, formatCarbon } from '@/lib/formatters';
 
 interface DroneAuditModalProps {
   selectedStage: { project: any; stage: any } | null;
   onClose: () => void;
+  onOpenReport?: (stage: any) => void;
 }
 
-export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditModalProps) {
+export default function DroneAuditModal({
+  selectedStage,
+  onClose,
+  onOpenReport,
+}: DroneAuditModalProps) {
   return (
     <Dialog open={!!selectedStage} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="p-0 max-w-4xl border-slate-200 overflow-hidden text-left gap-0 bg-white shadow-2xl">
-        <DialogTitle className="sr-only">dMRV Public Audit Modal</DialogTitle>
+      <DialogContent className="p-0 max-w-4xl border-slate-200 overflow-hidden text-left gap-0 bg-white shadow-2xl rounded-3xl">
+        <DialogTitle className="sr-only">dMRV Drone Public Audit Modal</DialogTitle>
         {selectedStage && (
           <div className="flex flex-col max-h-[90vh]">
             {/* Modal Header */}
-            <div className="h-14 bg-slate-50 border-b border-slate-200/60 px-6 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Globe
-                  className="w-4 h-4 text-emerald-600 animate-spin"
-                  style={{ animationDuration: '6s' }}
-                />
-                <span className="text-xs font-black text-slate-800 tracking-wide uppercase">
-                  dMRV Public Audit: {selectedStage.project.name}
-                </span>
+            <div className="h-14 bg-white border-b border-slate-100 px-6 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                  <Globe
+                    className="w-4 h-4 text-emerald-700 animate-spin"
+                    style={{ animationDuration: '6s' }}
+                  />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-xs text-slate-900 leading-none">
+                    dMRV Public Audit: {selectedStage.project.name}
+                  </h3>
+                  <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
+                    Tahap: {selectedStage.stage.title} ({selectedStage.stage.year})
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -59,7 +72,7 @@ export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditMo
                   </div>
 
                   {/* Progress Indicator */}
-                  <div className="bg-white border border-slate-200/60 p-4 rounded-2xl space-y-3">
+                  <div className="bg-white border border-slate-200/60 p-4 rounded-2xl space-y-3 shadow-2xs">
                     <div className="flex justify-between items-center text-xs">
                       <span className="font-semibold text-slate-500">Kerapatan Kanopi</span>
                       <span className="font-black text-emerald-700 font-mono">
@@ -81,13 +94,13 @@ export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditMo
                         <span className="text-[9px] text-slate-400 font-bold">In Preparation</span>
                       </div>
                     )}
-                    <p className="text-[9px] text-slate-450 leading-normal">
+                    <p className="text-[9px] text-slate-500 leading-normal">
                       Persentase tutupan kanopi vegetasi di zona koordinat proyek.
                     </p>
                   </div>
 
                   {/* Statistik Pohon Tahap Ini */}
-                  <div className="bg-white border border-slate-200/60 p-4 rounded-2xl space-y-2 text-left">
+                  <div className="bg-white border border-slate-200/60 p-4 rounded-2xl space-y-2 text-left shadow-2xs">
                     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">
                       STATISTIK POHON TAHAP INI
                     </span>
@@ -116,7 +129,7 @@ export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditMo
                     </span>
 
                     <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                      <div className="bg-white border border-slate-200/50 p-2.5 rounded-xl">
+                      <div className="bg-white border border-slate-200/50 p-2.5 rounded-xl shadow-2xs">
                         <span className="text-[8px] text-slate-400 font-semibold block">
                           Tinggi Kanopi
                         </span>
@@ -126,7 +139,7 @@ export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditMo
                             : 'N/A'}
                         </span>
                       </div>
-                      <div className="bg-white border border-slate-200/50 p-2.5 rounded-xl">
+                      <div className="bg-white border border-slate-200/50 p-2.5 rounded-xl shadow-2xs">
                         <span className="text-[8px] text-slate-400 font-semibold block">
                           Resolusi Drone
                         </span>
@@ -143,7 +156,7 @@ export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditMo
                       AUDIT BLOCKCHAIN & INSENTIF WARGA
                     </span>
 
-                    <div className="bg-white border border-slate-200/60 p-3.5 rounded-2xl space-y-3 font-sans">
+                    <div className="bg-white border border-slate-200/60 p-3.5 rounded-2xl space-y-3 font-sans shadow-2xs">
                       <div>
                         <span className="text-[8px] text-slate-400 font-bold uppercase block leading-none">
                           Kelompok Tani Penerima
@@ -159,9 +172,9 @@ export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditMo
                         </span>
                         <div className="text-right">
                           <span className="font-mono font-black text-emerald-800 text-xs block leading-none">
-                            Rp {selectedStage.stage.farmerIncentive.toLocaleString('id-ID')}
+                            {formatCurrency(selectedStage.stage.farmerIncentive)}
                           </span>
-                          <span className="text-[8px] bg-[#E6F9F4] text-emerald-800 border border-emerald-100 font-bold px-1.5 py-0.2 rounded mt-1 inline-block">
+                          <span className="text-[8px] bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold px-1.5 py-0.2 rounded mt-1 inline-block">
                             {selectedStage.stage.incentiveStatus}
                           </span>
                         </div>
@@ -173,9 +186,9 @@ export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditMo
                         </span>
                         <div className="text-right">
                           <span className="font-mono font-black text-slate-800 text-xs block leading-none">
-                            +{selectedStage.stage.speCreditMinted.toLocaleString('id-ID')} tCO₂e
+                            +{formatCarbon(selectedStage.stage.speCreditMinted)}
                           </span>
-                          <span className="text-[8px] bg-slate-105 text-slate-600 border border-slate-200 font-bold px-1.5 py-0.2 rounded mt-1 inline-block">
+                          <span className="text-[8px] bg-slate-100 text-slate-600 border border-slate-200 font-bold px-1.5 py-0.2 rounded mt-1 inline-block">
                             {selectedStage.stage.speStatus}
                           </span>
                         </div>
@@ -183,9 +196,15 @@ export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditMo
                     </div>
                   </div>
 
-                  {/* Button to print audit certificate directly */}
+                  {/* Button to view audit report letterhead */}
                   <Button
-                    onClick={() => window.print()}
+                    onClick={() => {
+                      if (onOpenReport) {
+                        onOpenReport(selectedStage.stage);
+                      } else {
+                        window.print();
+                      }
+                    }}
                     className="w-full bg-primary-gradient hover:opacity-95 text-white text-[10px] font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 mt-4"
                   >
                     <FileText className="w-3.5 h-3.5 text-[#00C48C]" />
