@@ -13,6 +13,11 @@ import { BursaModule } from './bursa/bursa.module';
 import { AuditModule } from './audit/audit.module';
 import { RegulatorModule } from './regulator/regulator.module';
 import { GovernanceModule } from './governance/governance.module';
+import { HealthModule } from './health/health.module';
+import { StorageModule } from './storage/storage.module';
+import { TelemetryModule } from './telemetry/telemetry.module';
+import { DjpModule } from './integrations/djp/djp.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -29,6 +34,11 @@ import { GovernanceModule } from './governance/governance.module';
     AuditModule,
     RegulatorModule,
     GovernanceModule,
+    HealthModule,
+    StorageModule,
+    TelemetryModule,
+    DjpModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [],
