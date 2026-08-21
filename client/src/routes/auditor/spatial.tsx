@@ -125,7 +125,7 @@ export default function SpatialMRVEvaluation() {
                 <TableHead className="py-3 px-3 text-right">Luas (ha)</TableHead>
                 <TableHead className="py-3 px-3">NDVI</TableHead>
                 <TableHead className="py-3 px-3">EVI</TableHead>
-                <TableHead className="py-3 px-3 text-right">Kredit (tCO2e)</TableHead>
+                <TableHead className="py-3 px-3 text-right">Kredit (tCO₂e)</TableHead>
                 <TableHead className="py-3 px-3 text-center">Awan</TableHead>
                 <TableHead className="py-3 px-3 text-center">Status</TableHead>
               </TableRow>

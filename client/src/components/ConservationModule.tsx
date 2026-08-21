@@ -126,7 +126,7 @@ export default function ConservationModule() {
             </div>
             <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl text-left">
               <span className="text-[9px] font-semibold text-slate-400 block mb-0.5">
-                Cadangan CO2
+                Cadangan CO₂
               </span>
               <span className="text-xs font-extrabold text-slate-900">{estimatedCarbon}</span>
             </div>
@@ -500,7 +500,7 @@ export default function ConservationModule() {
                                 </span>
                               </div>
                               <span className="bg-emerald-100 text-emerald-900 text-[8px] font-black px-2 py-0.5 rounded-full shrink-0">
-                                {tb.tCO2e.toLocaleString('id-ID')} tCO2e
+                                {tb.tCO2e.toLocaleString('id-ID')} tCO₂e
                               </span>
                             </div>
 
@@ -660,7 +660,7 @@ export default function ConservationModule() {
                     </div>
                     <div>
                       <span className="text-[8px] font-bold block text-slate-400">
-                        CADANGAN CO2
+                        CADANGAN CO₂
                       </span>
                       <span
                         className={`font-black ${isActive ? 'text-emerald-305' : 'text-emerald-700'}`}

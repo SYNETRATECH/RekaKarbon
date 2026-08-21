@@ -173,7 +173,7 @@ export default function DroneAuditModal({ selectedStage, onClose }: DroneAuditMo
                         </span>
                         <div className="text-right">
                           <span className="font-mono font-black text-slate-800 text-xs block leading-none">
-                            +{selectedStage.stage.speCreditMinted.toLocaleString('id-ID')} tCO2e
+                            +{selectedStage.stage.speCreditMinted.toLocaleString('id-ID')} tCO₂e
                           </span>
                           <span className="text-[8px] bg-slate-105 text-slate-600 border border-slate-200 font-bold px-1.5 py-0.2 rounded mt-1 inline-block">
                             {selectedStage.stage.speStatus}

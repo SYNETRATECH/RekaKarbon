@@ -84,8 +84,8 @@ export default function VerichainExplorerModal() {
                     </span>
                     <p className="font-mono font-black text-emerald-700 text-xs">
                       {searchedTxData.item.tCO2e
-                        ? `${searchedTxData.item.tCO2e.toLocaleString('id-ID')} tCO2e`
-                        : '12.500 tCO2e'}
+                        ? `${searchedTxData.item.tCO2e.toLocaleString('id-ID')} tCO₂e`
+                        : '12.500 tCO₂e'}
                     </p>
                     <span className="font-mono text-[10px] text-slate-600 font-bold block">
                       Rp{' '}

@@ -140,7 +140,7 @@ export default function ForestProjectsManagement() {
       name: prj.projectName,
       region: prj.location,
       area: '15.0K Ha',
-      carbon: `${(prj.targetSequestrationTCO2e / 1000).toFixed(1)}K tCO2e`,
+      carbon: `${(prj.targetSequestrationTCO2e / 1000).toFixed(1)}K tCO₂e`,
       plantedTrees: 124000,
       targetTrees: 150000,
       canopyHeight: 1.85,
@@ -257,7 +257,7 @@ export default function ForestProjectsManagement() {
                       <div className="flex justify-between items-baseline gap-2">
                         <span className="font-black text-emerald-600 block">
                           {prj.actualSequestrationTCO2e.toLocaleString('id-ID')} /{' '}
-                          {prj.targetSequestrationTCO2e.toLocaleString('id-ID')} tCO2e
+                          {prj.targetSequestrationTCO2e.toLocaleString('id-ID')} tCO₂e
                         </span>
                         <span className="text-[10px] font-extrabold text-emerald-700">
                           {progressData.pct}%

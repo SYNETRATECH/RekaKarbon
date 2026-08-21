@@ -73,7 +73,7 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
             <div className="flex justify-between items-baseline">
               <span className="text-xs text-slate-400 font-bold">Volume Karbon</span>
               <span className="text-lg font-black text-status-danger-fg">
-                {cert.purchasedVolumeTCO2e.toLocaleString('id-ID')} tCO2e
+                {cert.purchasedVolumeTCO2e.toLocaleString('id-ID')} tCO₂e
               </span>
             </div>
             <div className="flex justify-between items-baseline">
@@ -134,7 +134,7 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
                 Laju Penyerapan
               </span>
               <span className="text-sm font-black text-blue-900 block mt-1">
-                +{cert.projectCondition.carbonSequestrationRate} tCO2e/ha/thn
+                +{cert.projectCondition.carbonSequestrationRate} tCO₂e/ha/tahun
               </span>
               <span className="text-[9px] font-semibold text-blue-600 block mt-0.5">
                 Biomassa Tinggi

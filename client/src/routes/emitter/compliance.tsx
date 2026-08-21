@@ -74,10 +74,10 @@ export default function ComplianceDashboard() {
               >
                 {data.emissionIntensity}
               </h3>
-              <span className="text-xs font-extrabold text-slate-500">tCO2e/ton</span>
+              <span className="text-xs font-extrabold text-slate-500">tCO₂e/ton</span>
             </div>
             <span className="text-[11px] font-bold text-slate-400 block">
-              standar industri: {data.emissionIntensityStandard} tCO2e/ton
+              standar industri: {data.emissionIntensityStandard} tCO₂e/ton
             </span>
           </div>
           {hasDeficit ? (
@@ -103,7 +103,7 @@ export default function ComplianceDashboard() {
               >
                 {hasDeficit ? data.carbonDeficit.toLocaleString('id-ID') : '0'}
               </h3>
-              <span className="text-xs font-extrabold text-slate-500">tCO2e</span>
+              <span className="text-xs font-extrabold text-slate-500">tCO₂e</span>
             </div>
             <span
               className={`text-[11px] font-bold block ${hasDeficit ? 'text-status-danger-fg' : 'text-emerald-500'}`}
@@ -162,7 +162,7 @@ export default function ComplianceDashboard() {
                   </span>
                   <p className="text-2xl font-black text-status-danger-fg mt-1">
                     {data.actualEmissions.toLocaleString('id-ID')}{' '}
-                    <span className="text-xs font-bold text-slate-500">tCO2e</span>
+                    <span className="text-xs font-bold text-slate-500">tCO₂e</span>
                   </p>
                 </div>
                 <button
@@ -181,7 +181,7 @@ export default function ComplianceDashboard() {
                   </span>
                   <p className="text-2xl font-black text-slate-800 mt-1">
                     {data.quotaPTBAE.toLocaleString('id-ID')}{' '}
-                    <span className="text-xs font-bold text-slate-500">tCO2e</span>
+                    <span className="text-xs font-bold text-slate-500">tCO₂e</span>
                   </p>
                 </div>
                 <div className="text-[10px] font-semibold text-slate-500 flex items-center gap-1 mt-2">
@@ -195,8 +195,8 @@ export default function ComplianceDashboard() {
           {/* Progress Bar with Symmetrical Border Separator */}
           <div className="space-y-2 pt-4 border-t border-slate-200/80">
             <div className="flex justify-between text-[10px] font-extrabold text-slate-400">
-              <span>0 tCO2e</span>
-              <span>Kuota: {data.quotaPTBAE.toLocaleString('id-ID')} tCO2e</span>
+              <span>0 tCO₂e</span>
+              <span>Kuota: {data.quotaPTBAE.toLocaleString('id-ID')} tCO₂e</span>
             </div>
             <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200">
               <div

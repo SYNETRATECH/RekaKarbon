@@ -135,7 +135,7 @@ export default function AuditReportModal() {
                       </div>
                       <div>
                         <span className="text-slate-400 text-[9px] block font-normal">
-                          Total Cadangan CO2
+                          Total Cadangan CO₂
                         </span>
                         <span className="text-xs font-black text-slate-900 font-mono">
                           {formatCarbon(activeProj.rawCarbonVal || activeProj.carbon)}
@@ -231,7 +231,7 @@ export default function AuditReportModal() {
                           </TableCell>
                           <TableCell>Sertifikasi SPE-GRK Terbit</TableCell>
                           <TableCell className="font-mono font-bold text-emerald-700">
-                            +{selectedReportStage.speCreditMinted.toLocaleString('id-ID')} tCO2e
+                            +{selectedReportStage.speCreditMinted.toLocaleString('id-ID')} tCO₂e
                           </TableCell>
                           <TableCell>
                             <span

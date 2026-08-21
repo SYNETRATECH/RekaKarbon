@@ -9,7 +9,7 @@ describe('calculateGeodetics', () => {
 
     expect(result.areaVal).toBe('Min. 3 Titik');
     expect(result.perimeterVal).toBe('Min. 3 Titik');
-    expect(result.estimatedCarbon).toBe('0 tCO2e');
+    expect(result.estimatedCarbon).toBe('0 tCO₂e');
   });
 
   it('returns placeholder strings for empty or missing coordinates', () => {
@@ -57,8 +57,8 @@ describe('calculateGeodetics', () => {
     expect(result.perimeterVal).toBe('4.00 Km');
   });
 
-  it('reports carbon stock proportional to area (194.2 tCO2e per hectare)', () => {
-    // 100 Ha → 100 * 194.2 = 19,420 tCO2e → (19420/1000).toFixed(1) = "19.4K tCO2e".
+  it('reports carbon stock proportional to area (194.2 tCO₂e per hectare)', () => {
+    // 100 Ha → 100 * 194.2 = 19,420 tCO₂e → (19420/1000).toFixed(1) = "19.4K tCO₂e".
     const d = 1000 / 111132;
     const eq: [number, number] = [0, 0];
     const square = [
@@ -70,14 +70,14 @@ describe('calculateGeodetics', () => {
 
     const result = calculateGeodetics(square, eq);
 
-    expect(result.estimatedCarbon.endsWith('K tCO2e')).toBe(true);
-    const carbonK = parseFloat(result.estimatedCarbon.replace('K tCO2e', ''));
+    expect(result.estimatedCarbon.endsWith('K tCO₂e')).toBe(true);
+    const carbonK = parseFloat(result.estimatedCarbon.replace('K tCO₂e', ''));
     expect(carbonK).toBeGreaterThan(18);
     expect(carbonK).toBeLessThan(21);
   });
 
-  it('switches to M tCO2e formatting for very large areas', () => {
-    // A huge square (~1000km per side) to exceed 1,000,000 tCO2e.
+  it('switches to M tCO₂e formatting for very large areas', () => {
+    // A huge square (~1000km per side) to exceed 1,000,000 tCO₂e.
     const d = 9; // ~9 degrees ≈ 1000km
     const big = [
       { lat: 0, lng: 0 },
@@ -88,7 +88,7 @@ describe('calculateGeodetics', () => {
 
     const result = calculateGeodetics(big, [0, 0]);
 
-    expect(result.estimatedCarbon.endsWith('M tCO2e')).toBe(true);
+    expect(result.estimatedCarbon.endsWith('M tCO₂e')).toBe(true);
   });
 
   it('area is orientation-independent (clockwise vs counter-clockwise)', () => {

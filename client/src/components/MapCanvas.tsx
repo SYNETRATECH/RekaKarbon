@@ -259,7 +259,7 @@ export default function MapCanvas() {
               <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
                 <span style="color: #64748b;">Defisit Karbon:</span>
                 <span style="font-weight: bold; color: ${isUnpaid ? '#e11d48' : '#0f172a'}; font-family: monospace;">
-                  ${comp.carbonDeficit > 0 ? (comp.carbonDeficit / 1000).toLocaleString('id-ID') + 'k tCO2e' : '0 tCO2e'}
+                  ${comp.carbonDeficit > 0 ? (comp.carbonDeficit / 1000).toLocaleString('id-ID') + 'k tCO₂e' : '0 tCO₂e'}
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 6px;">

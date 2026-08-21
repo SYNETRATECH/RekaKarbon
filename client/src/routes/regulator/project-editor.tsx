@@ -362,7 +362,7 @@ export default function ProjectEditorPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-extrabold text-slate-700 block mb-1">
-                  Target Karbon (tCO2e)
+                  Target Karbon (tCO₂e)
                 </label>
                 <Input
                   type="number"

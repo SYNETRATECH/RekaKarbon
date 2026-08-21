@@ -218,7 +218,7 @@ export default function AuthorizationGate() {
               <span className="text-slate-400 font-medium">Kredit SPE-GRK</span>
               <span className="font-black text-emerald-700">
                 {currentProjectData
-                  ? `${currentProjectData.carbonCredit.toLocaleString('id-ID')} tCO2e`
+                  ? `${currentProjectData.carbonCredit.toLocaleString('id-ID')} tCO₂e`
                   : preview.carbonCreditSPE}
               </span>
             </div>

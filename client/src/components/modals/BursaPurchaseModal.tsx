@@ -41,7 +41,7 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
 
         <div className="space-y-4 text-xs">
           <div className="space-y-1">
-            <label className="font-bold text-slate-700">Jumlah Pembelian Token (tCO2e):</label>
+            <label className="font-bold text-slate-700">Jumlah Pembelian Token (tCO₂e):</label>
             <Input
               type="number"
               max="2330"

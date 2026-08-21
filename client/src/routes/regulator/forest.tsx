@@ -69,7 +69,7 @@ export default function NationalForestDashboard() {
               Total Daya Serap
             </span>
             <h3 className="text-2xl font-black text-emerald-600">
-              148.5 <span className="text-xs font-bold text-slate-500">M tCO2e</span>
+              148.5 <span className="text-xs font-bold text-slate-500">M tCO₂e</span>
             </h3>
             <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
               Kapasitas Nyata

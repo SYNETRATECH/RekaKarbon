@@ -53,7 +53,7 @@ export function calculateGeodetics(
     return {
       areaVal: 'Min. 3 Titik',
       perimeterVal: 'Min. 3 Titik',
-      estimatedCarbon: '0 tCO2e',
+      estimatedCarbon: '0 tCO₂e',
     };
   }
 
@@ -98,9 +98,9 @@ export function calculateGeodetics(
   const totalCarbonVal = areaHectares * 194.2;
   let estimatedCarbon = '';
   if (totalCarbonVal >= 1000000) {
-    estimatedCarbon = (totalCarbonVal / 1000000).toFixed(2) + 'M tCO2e';
+    estimatedCarbon = (totalCarbonVal / 1000000).toFixed(2) + 'M tCO₂e';
   } else {
-    estimatedCarbon = (totalCarbonVal / 1000).toFixed(1) + 'K tCO2e';
+    estimatedCarbon = (totalCarbonVal / 1000).toFixed(1) + 'K tCO₂e';
   }
 
   return { areaVal, perimeterVal, estimatedCarbon };

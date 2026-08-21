@@ -40,10 +40,10 @@ export function formatCurrency(value: number | string | null | undefined): strin
 }
 
 /**
- * Formats carbon sequestration tonnage (tCO2e).
- * Example: 48200 -> "48.200 tCO2e"
+ * Formats carbon sequestration tonnage (tCO₂e).
+ * Example: 48200 -> "48.200 tCO₂e"
  */
-export function formatCarbon(value: number | string | null | undefined, unit = 'tCO2e'): string {
+export function formatCarbon(value: number | string | null | undefined, unit = 'tCO₂e'): string {
   const num = parseNumeric(value);
   return `${formatNumber(num, 0, 1)} ${unit}`;
 }

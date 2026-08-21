@@ -32,13 +32,13 @@ export default function PublicReportModal({
 
     projects.forEach((p) => {
       const buyers = p.tokenBuyers
-        ? p.tokenBuyers.map((b: any) => `${b.companyName} (${b.tCO2e} tCO2e)`).join('; ')
+        ? p.tokenBuyers.map((b: any) => `${b.companyName} (${b.tCO2e} tCO₂e)`).join('; ')
         : 'Belum ada';
       csvContent += `Proyek Kehutanan,"${p.name}","${p.region}","${formatArea(p.rawAreaVal || p.area)}","${formatCarbon(p.rawCarbonVal || p.carbon)}","${p.reforestationStatus}","${buyers}","${p.tokenBuyers?.[0]?.speCertificateId || '-'}"\n`;
     });
 
     companies.forEach((c) => {
-      csvContent += `Industri Emisi,"${c.name}","${c.sector}","Emisi ${c.actualEmission} tCO2e","Defisit ${c.carbonDeficit} tCO2e","${c.complianceRating}","Partner: ${c.recommendedPartner}","Deadline: ${c.paymentDeadline}"\n`;
+      csvContent += `Industri Emisi,"${c.name}","${c.sector}","Emisi ${c.actualEmission} tCO₂e","Defisit ${c.carbonDeficit} tCO₂e","${c.complianceRating}","Partner: ${c.recommendedPartner}","Deadline: ${c.paymentDeadline}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -176,7 +176,7 @@ export default function PublicReportModal({
                   <span className="text-[8px] font-bold text-slate-400 uppercase block">
                     Cadangan Karbon Hutan
                   </span>
-                  <span className="text-sm font-black text-emerald-800">79.71M tCO2e</span>
+                  <span className="text-sm font-black text-emerald-800">79.71M tCO₂e</span>
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-slate-200">
                   <span className="text-[8px] font-bold text-slate-400 uppercase block">
@@ -190,7 +190,7 @@ export default function PublicReportModal({
                   <span className="text-[8px] font-bold text-slate-400 uppercase block">
                     Total Defisit Emisi
                   </span>
-                  <span className="text-sm font-black text-rose-600">6.47M tCO2e</span>
+                  <span className="text-sm font-black text-rose-600">6.47M tCO₂e</span>
                 </div>
               </div>
             </div>
@@ -237,7 +237,7 @@ export default function PublicReportModal({
                             {p.tokenBuyers.map((tb: any) => (
                               <div key={tb.id} className="font-mono text-[9px] text-slate-800">
                                 <span className="font-bold text-slate-900">{tb.companyName}</span> (
-                                {tb.tCO2e.toLocaleString('id-ID')} tCO2e)
+                                {tb.tCO2e.toLocaleString('id-ID')} tCO₂e)
                                 <span className="text-slate-400 block text-[8px]">
                                   SPE: {tb.speCertificateId}
                                 </span>

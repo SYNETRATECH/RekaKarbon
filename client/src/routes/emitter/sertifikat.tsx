@@ -64,7 +64,7 @@ export default function PurchasedCertificatesProjects() {
             </span>
             <h3 className="text-2xl font-black text-emerald-600">
               {totalVolume.toLocaleString('id-ID')}{' '}
-              <span className="text-xs font-bold text-slate-500">tCO2e</span>
+              <span className="text-xs font-bold text-slate-500">tCO₂e</span>
             </h3>
             <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
               Offseting Aktif

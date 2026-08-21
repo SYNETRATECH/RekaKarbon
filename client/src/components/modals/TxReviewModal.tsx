@@ -119,7 +119,7 @@ export default function TxReviewModal({ tx, onClose, onApprove, onFlag }: TxRevi
               <div>
                 <span className="text-[10px] text-slate-400 font-bold block">Kredit SPE-GRK</span>
                 <span className="font-black text-slate-900 text-sm font-mono mt-0.5 block">
-                  {tx.tCO2e ? `${tx.tCO2e.toLocaleString('id-ID')} tCO2e` : '1.250 tCO2e'}
+                  {tx.tCO2e ? `${tx.tCO2e.toLocaleString('id-ID')} tCO₂e` : '1.250 tCO₂e'}
                 </span>
               </div>
             </div>

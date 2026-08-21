@@ -172,7 +172,7 @@ export default function LaporanAuditModal({
             </div>
             <p className="text-[11px] font-medium leading-relaxed">
               {isAuditPass
-                ? 'Seluruh variabel laporan emisi (4.850 tCO2e) konsisten 100% dengan transaksi e-Faktur Pajak DJP dan sensor CEMS cerobong pabrik.'
+                ? 'Seluruh variabel laporan emisi (4.850 tCO₂e) konsisten 100% dengan transaksi e-Faktur Pajak DJP dan sensor CEMS cerobong pabrik.'
                 : 'Terdapat deviasi antara konsumsi BBM dengan beban laporan. Tim auditor KLHK direkomendasikan melakukan verifikasi fisik.'}
             </p>
           </div>

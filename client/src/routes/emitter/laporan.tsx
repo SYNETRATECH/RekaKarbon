@@ -554,7 +554,7 @@ export default function EmissionReportsSector() {
                       className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
-                      tCO2e / Tahun
+                      tCO₂e / Tahun
                     </span>
                   </div>
                 </div>
@@ -645,7 +645,7 @@ export default function EmissionReportsSector() {
             </span>
             <p className="text-3xl font-black text-status-danger-fg mt-1">
               {activeReport.totalEmissionsTCO2e.toLocaleString('id-ID')}{' '}
-              <span className="text-xs font-extrabold text-slate-500">tCO2e</span>
+              <span className="text-xs font-extrabold text-slate-500">tCO₂e</span>
             </p>
             <span className="text-[10px] font-bold text-slate-400 mt-1 block">
               Tahun Kepatuhan {selectedYear}
@@ -669,7 +669,7 @@ export default function EmissionReportsSector() {
               Intensitas Emisi Per Ton Produk
             </span>
             <p className="text-xl font-black text-slate-900 mt-1">
-              0,0329 <span className="text-xs font-bold text-slate-500">tCO2e / Ton Produk</span>
+              0,0329 <span className="text-xs font-bold text-slate-500">tCO₂e / Ton Produk</span>
             </p>
             <span className="text-[10px] font-extrabold text-blue-600 mt-1 block">
               Kapasitas Riil: 450.000 Ton / Tahun
@@ -800,7 +800,7 @@ export default function EmissionReportsSector() {
                   )}
                 </TableCell>
                 <TableCell className="font-black text-status-danger-fg font-mono">
-                  {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO2e
+                  {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO₂e
                 </TableCell>
                 <TableCell>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">

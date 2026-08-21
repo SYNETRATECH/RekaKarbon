@@ -39,8 +39,8 @@ import {
 formatCurrency(200000000); // "Rp 200.000.000"
 formatCurrency(45000); // "Rp 45.000"
 
-// 2. Tonase Serapan Karbon (tCO2e)
-formatCarbon(48200); // "48.200 tCO2e"
+// 2. Tonase Serapan Karbon (tCO₂e)
+formatCarbon(48200); // "48.200 tCO₂e"
 
 // 3. Luas Area Spasial (Hektar)
 formatArea(2450); // "2.450 ha"
