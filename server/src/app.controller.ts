@@ -4,16 +4,18 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 @ApiTags('App')
 @Controller()
 export class AppController {
-  constructor() {}
-
-  @ApiOperation({ summary: 'App health check' })
-  @Get('api/health')
-  getHealth() {
+  @ApiOperation({
+    summary: 'API root information and documentation entrypoint',
+  })
+  @Get()
+  getRoot() {
     return {
-      status: 'ok',
-      service: 'RekaKarbon API',
+      service: 'RekaKarbon Core Backend API',
       version: '1.0.0',
-      docs: '/api',
+      description:
+        'Indonesia National Carbon Registry, DEX Marketplace, and dMRV Platform.',
+      documentation: '/api/docs',
+      health: '/health',
       timestamp: new Date().toISOString(),
     };
   }

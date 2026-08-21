@@ -9,3 +9,7 @@ export * from './certificate';
 export * from './bursa';
 export * from './audit';
 export * from './governance';
+export * from './storage';
+export * from './telemetry';
+export * from './tax';
+export * from './notification';

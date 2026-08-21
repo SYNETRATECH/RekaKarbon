@@ -14,13 +14,13 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return app health', () => {
-      const result = appController.getHealth();
+    it('should return app info', () => {
+      const result = appController.getRoot();
       expect(result).toMatchObject({
-        status: 'ok',
-        service: 'RekaKarbon API',
+        service: 'RekaKarbon Core Backend API',
         version: '1.0.0',
-        docs: '/api',
+        documentation: '/api/docs',
+        health: '/health',
       });
       expect(typeof result.timestamp).toBe('string');
     });
