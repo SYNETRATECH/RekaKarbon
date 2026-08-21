@@ -374,7 +374,7 @@ export default function MapCanvas() {
       ></div>
 
       {/* Legend overlay inside map bottom-left */}
-      <div className="absolute bottom-4 left-4 z-[400] bg-white border border-slate-200 p-2.5 rounded-xl shadow-md text-[10px] font-bold space-y-1.5 text-left">
+      <div className="absolute bottom-4 left-4 z-10 bg-white border border-slate-200 p-2.5 rounded-xl shadow-md text-[10px] font-bold space-y-1.5 text-left">
         {activeModule === 'conservation' ? (
           <>
             <div className="flex items-center gap-1.5">
@@ -397,7 +397,7 @@ export default function MapCanvas() {
       </div>
 
       {/* GIS Tag label overlay top-left */}
-      <div className="absolute top-16 left-4 z-[400] bg-white/95 backdrop-blur-xs border border-slate-200 px-3 py-1.5 rounded-xl shadow-md text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">
+      <div className="absolute top-16 left-4 z-10 bg-white/95 backdrop-blur-xs border border-slate-200 px-3 py-1.5 rounded-xl shadow-md text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">
         {activeModule === 'conservation' ? 'PETA GIS NUSACARBON API' : 'PETA SENSOR CEROBONG CEMS'}
       </div>
     </div>
