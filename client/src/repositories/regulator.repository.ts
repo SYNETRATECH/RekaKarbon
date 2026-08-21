@@ -4,6 +4,7 @@ import type {
   KTHGroupItem,
   KTHTransactionItem,
   RegulationDocumentUploadItem,
+  Project,
 } from '../types';
 import { api } from '../lib/api';
 
@@ -13,6 +14,7 @@ export interface RegulatorRepository {
   getKTHGroups(): Promise<KTHGroupItem[]>;
   getKTHTransactions(): Promise<KTHTransactionItem[]>;
   getRegulationUploads(): Promise<RegulationDocumentUploadItem[]>;
+  searchVerichainLedger(query: string, projects: Project[], fallbackProject: Project): Promise<any>;
 }
 
 export class ApiRegulatorRepository implements RegulatorRepository {
@@ -30,6 +32,13 @@ export class ApiRegulatorRepository implements RegulatorRepository {
   }
   async getRegulationUploads(): Promise<RegulationDocumentUploadItem[]> {
     return api.get<RegulationDocumentUploadItem[]>('/regulator/regulation-uploads');
+  }
+  async searchVerichainLedger(
+    query: string,
+    projects: Project[],
+    fallbackProject: Project
+  ): Promise<any> {
+    return api.post<any>('/regulator/search', { query });
   }
 }
 

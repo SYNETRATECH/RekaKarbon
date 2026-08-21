@@ -163,25 +163,25 @@ export default function ConservationModule() {
   if (!activeProj) return null;
 
   return (
-    <div className="w-full md:w-96 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col overflow-hidden shrink-0 h-auto md:h-full">
+    <div className="w-full h-full flex flex-col overflow-hidden bg-transparent text-slate-800">
       {/* Tabs Switch Header */}
-      <div className="flex border-b border-slate-200 shrink-0 text-xs font-extrabold">
+      <div className="flex border-b border-slate-200/50 shrink-0 text-xs font-extrabold mx-4 mt-2">
         <button
           onClick={() => setActiveTab('editor')}
-          className={`flex-1 py-3.5 text-center border-b-2 transition-all cursor-pointer ${
+          className={`flex-1 py-3 text-center border-b-2 transition-all cursor-pointer ${
             activeTab === 'editor'
-              ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-slate-50/50'
-              : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50/20'
+              ? 'border-emerald-500 text-emerald-700'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
           Detail & Geometri
         </button>
         <button
           onClick={() => setActiveTab('stats')}
-          className={`flex-1 py-3.5 text-center border-b-2 transition-all cursor-pointer ${
+          className={`flex-1 py-3 text-center border-b-2 transition-all cursor-pointer ${
             activeTab === 'stats'
-              ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-slate-50/50'
-              : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50/20'
+              ? 'border-emerald-500 text-emerald-700'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
           Daftar Proyek
@@ -219,20 +219,20 @@ export default function ConservationModule() {
 
           {/* Selected Project Quick Metrics */}
           <div className="grid grid-cols-2 gap-3 shrink-0 font-sans">
-            <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl text-left">
-              <span className="text-[9px] font-semibold text-slate-400 block mb-0.5">
+            <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl text-left shadow-xs">
+              <span className="text-[9px] font-semibold text-slate-500 block mb-0.5">
                 Luas Area
               </span>
               <span className="text-xs font-extrabold text-slate-900">{areaVal}</span>
             </div>
-            <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl text-left">
-              <span className="text-[9px] font-semibold text-slate-400 block mb-0.5">
+            <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl text-left shadow-xs">
+              <span className="text-[9px] font-semibold text-slate-500 block mb-0.5">
                 Cadangan CO₂
               </span>
               <span className="text-xs font-extrabold text-slate-900">{estimatedCarbon}</span>
             </div>
-            <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl text-left">
-              <span className="text-[9px] font-semibold text-slate-400 block mb-0.5">
+            <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl text-left shadow-xs">
+              <span className="text-[9px] font-semibold text-slate-500 block mb-0.5">
                 Pohon Ditanam
               </span>
               <span className="text-xs font-extrabold text-slate-900">
@@ -243,8 +243,8 @@ export default function ConservationModule() {
                 {activeProj.targetTrees ? `${(activeProj.targetTrees / 1000).toFixed(0)}K` : 'N/A'}
               </span>
             </div>
-            <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl text-left">
-              <span className="text-[9px] font-semibold text-slate-400 block mb-0.5">
+            <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl text-left shadow-xs">
+              <span className="text-[9px] font-semibold text-slate-500 block mb-0.5">
                 Harga Token SPE-GRK
               </span>
               <span className="text-xs font-extrabold text-emerald-700">
@@ -751,44 +751,50 @@ export default function ConservationModule() {
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-left">
             SEMUA PROYEK
           </span>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {projects.map((proj, idx) => {
               const isActive = idx === activeIndex;
               return (
                 <div
                   key={proj.id}
                   onClick={() => setActiveIndex(idx)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 text-left ${
+                  className={`p-4 rounded-[20px] border transition-all cursor-pointer space-y-2 text-left shadow-sm hover:shadow-md ${
                     isActive
-                      ? 'bg-primary-gradient text-white border-transparent shadow-md'
-                      : 'bg-white border-slate-200 hover:border-slate-350'
+                      ? 'bg-primary-gradient text-white border-transparent'
+                      : 'bg-white border-slate-200/80 hover:border-emerald-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <h4
-                      className={`font-extrabold text-xs ${isActive ? 'text-white' : 'text-slate-900'}`}
+                      className={`font-extrabold text-sm ${isActive ? 'text-white' : 'text-slate-900'}`}
                     >
                       {proj.name}
                     </h4>
                     <span
-                      className={`text-[8px] font-bold ${isActive ? 'text-emerald-350' : 'text-slate-400'}`}
+                      className={`text-[9px] font-bold ${isActive ? 'text-emerald-200' : 'text-slate-500'}`}
                     >
                       {proj.region}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-[9px]">
+                  <div className="grid grid-cols-2 gap-2 text-[10px] mt-2">
                     <div>
-                      <span className="text-[8px] font-bold block text-slate-400">AREA</span>
+                      <span
+                        className={`text-[8px] font-bold block mb-0.5 ${isActive ? 'text-emerald-200' : 'text-slate-500'}`}
+                      >
+                        AREA
+                      </span>
                       <span className={`font-black ${isActive ? 'text-white' : 'text-slate-800'}`}>
                         {formatArea(proj.rawAreaVal || proj.area)}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[8px] font-bold block text-slate-400">
+                      <span
+                        className={`text-[8px] font-bold block mb-0.5 ${isActive ? 'text-emerald-200' : 'text-slate-500'}`}
+                      >
                         CADANGAN CO₂
                       </span>
                       <span
-                        className={`font-black ${isActive ? 'text-emerald-305' : 'text-emerald-700'}`}
+                        className={`font-black ${isActive ? 'text-emerald-100' : 'text-emerald-700'}`}
                       >
                         {formatCarbon(proj.rawCarbonVal || proj.carbon)}
                       </span>

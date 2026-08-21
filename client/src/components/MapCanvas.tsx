@@ -347,34 +347,38 @@ export default function MapCanvas() {
   };
 
   return (
-    <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden flex flex-col relative">
-      {/* Map Bar Controls */}
-      <div className="h-12 bg-slate-50 border-b border-slate-200 px-6 flex items-center justify-between shrink-0">
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-          <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-          GIS Map Canvas
-        </span>
-
-        {/* Focus Button */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleFocusBounds}
-            className="bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
+    <div className="w-full h-full relative bg-transparent">
+      {/* Tombol Focus Area Melayang (Bawah Tengah) */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[400]">
+        <button
+          onClick={handleFocusBounds}
+          className="bg-white/80 backdrop-blur border border-white/60 hover:bg-white text-slate-800 px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-black/5 flex items-center gap-2 transition-all cursor-pointer active:scale-95"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            Focus Area
-          </button>
-        </div>
+            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+            <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          Focus Area
+        </button>
       </div>
 
       {/* Leaflet Node */}
-      <div
-        ref={mapRef}
-        className="flex-grow z-0 w-full h-full"
-        style={{ height: '100%', minHeight: '100%' }}
-      ></div>
+      <div ref={mapRef} className="z-0 w-full h-full"></div>
 
-      {/* Legend overlay inside map bottom-left */}
-      <div className="absolute bottom-4 left-4 z-10 bg-white border border-slate-200 p-2.5 rounded-xl shadow-md text-[10px] font-bold space-y-1.5 text-left">
+      {/* Legend overlay inside map (Bottom Left, sedikit lebih tinggi agar tidak terpotong) */}
+      <div className="absolute bottom-8 left-6 z-[400] bg-white/80 backdrop-blur-md border border-white/60 p-3.5 rounded-2xl shadow-xl text-[11px] font-bold space-y-2 text-left pointer-events-auto">
         {activeModule === 'conservation' ? (
           <>
             <div className="flex items-center gap-1.5">
@@ -394,11 +398,6 @@ export default function MapCanvas() {
             </div>
           </>
         )}
-      </div>
-
-      {/* GIS Tag label overlay top-left */}
-      <div className="absolute top-16 left-4 z-10 bg-white/95 backdrop-blur-xs border border-slate-200 px-3 py-1.5 rounded-xl shadow-md text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">
-        {activeModule === 'conservation' ? 'PETA GIS NUSACARBON API' : 'PETA SENSOR CEROBONG CEMS'}
       </div>
     </div>
   );

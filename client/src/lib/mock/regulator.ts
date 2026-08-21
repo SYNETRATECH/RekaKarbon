@@ -211,11 +211,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
               totalIDR: 70000000,
             },
           ],
-          proofImages: [
-            'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop',
-          ],
+          proofImages: ['/proofs/image-1.png', '/proofs/nota_pembelian.svg', '/proofs/image-3.png'],
         },
         {
           id: 'tx-02',
@@ -248,9 +244,9 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
             },
           ],
           proofImages: [
-            'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=600&auto=format&fit=crop',
+            '/proofs/nota_pembelian.svg',
+            '/proofs/image-5.png',
+            '/proofs/nota_pembelian.svg',
           ],
         },
         {
@@ -277,10 +273,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
               totalIDR: 50000000,
             },
           ],
-          proofImages: [
-            'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-          ],
+          proofImages: ['/proofs/image-7.png', '/proofs/nota_pembelian.svg'],
         },
         {
           id: 'tx-04',
@@ -306,10 +299,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
               totalIDR: 250000000,
             },
           ],
-          proofImages: [
-            'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop',
-          ],
+          proofImages: ['/proofs/image-9.png', '/proofs/nota_pembelian.svg'],
         },
       ],
     },
@@ -462,11 +452,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 34000000,
       },
     ],
-    proofImages: [
-      'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop',
-    ],
+    proofImages: ['/proofs/image-11.png', '/proofs/nota_pembelian.svg', '/proofs/image-13.png'],
   },
   {
     id: 'b1c2d3e4-0043-4000-8000-000000000002',
@@ -497,10 +483,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 48000000,
       },
     ],
-    proofImages: [
-      'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop',
-    ],
+    proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-2.png'],
   },
   {
     id: 'b1c2d3e4-0043-4000-8000-000000000003',
@@ -531,10 +514,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 100000000,
       },
     ],
-    proofImages: [
-      'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-    ],
+    proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-4.png'],
   },
   {
     id: 'b1c2d3e4-0043-4000-8000-000000000004',
@@ -566,9 +546,9 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
       },
     ],
     proofImages: [
-      'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop',
+      '/proofs/nota_pembelian.svg',
+      '/proofs/image-6.png',
+      '/proofs/nota_pembelian.svg',
     ],
   },
   {
@@ -600,11 +580,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 60000000,
       },
     ],
-    proofImages: [
-      'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop',
-    ],
+    proofImages: ['/proofs/image-8.png', '/proofs/nota_pembelian.svg', '/proofs/image-10.png'],
   },
   {
     id: 'b1c2d3e4-0043-4000-8000-000000000006',
@@ -644,9 +620,7 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 120000000,
       },
     ],
-    proofImages: [
-      'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop',
-    ],
+    proofImages: ['/proofs/nota_pembelian.svg'],
   },
 ];
 

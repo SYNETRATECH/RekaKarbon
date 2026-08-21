@@ -127,6 +127,55 @@ export default function LoginRoute() {
             </div>
           )}
 
+          {/* Dummy Autofill Quick Actions */}
+          <div className="space-y-2 pb-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Quick Login (Demo)
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailInput('admin@semennusantara.co.id');
+                  setPasswordInput('password123');
+                }}
+                className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+              >
+                Emitter
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailInput('198204122008011004@klhk.go.id');
+                  setPasswordInput('password123');
+                }}
+                className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+              >
+                Regulator
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailInput('auditor.rian@sucofindo.co.id');
+                  setPasswordInput('password123');
+                }}
+                className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+              >
+                Auditor
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailInput('sutrisno@kthbaluran.org');
+                  setPasswordInput('password123');
+                }}
+                className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+              >
+                KTH
+              </button>
+            </div>
+          </div>
+
           {/* Credentials Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email / Corporate ID */}
