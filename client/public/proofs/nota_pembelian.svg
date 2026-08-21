@@ -4,33 +4,33 @@
   
   <!-- Header -->
   <text x="200" y="70" font-family="monospace" font-size="20" font-weight="bold" fill="#1e293b" text-anchor="middle">FAKTUR PEMBELIAN</text>
-  <text x="200" y="90" font-family="monospace" font-size="12" fill="#64748b" text-anchor="middle">TOKO TANI MAKMUR</text>
+  <text x="200" y="90" font-family="monospace" font-size="12" fill="#64748b" text-anchor="middle">BURSA KARBON INDONESIA</text>
   <line x1="70" y1="110" x2="330" y2="110" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4,4" />
   
   <!-- Info -->
-  <text x="70" y="135" font-family="monospace" font-size="11" fill="#475569">No   : INV-2026/04/12</text>
+  <text x="70" y="135" font-family="monospace" font-size="11" fill="#475569">No   : TRX-IDXCarbon-089</text>
   <text x="70" y="155" font-family="monospace" font-size="11" fill="#475569">Tgl  : 14 Jul 2026</text>
-  <text x="70" y="175" font-family="monospace" font-size="11" fill="#475569">Kasir: Aisyah</text>
+  <text x="70" y="175" font-family="monospace" font-size="11" fill="#475569">Kasir: Sistem Otomatis</text>
   <line x1="70" y1="195" x2="330" y2="195" stroke="#cbd5e1" stroke-width="1" />
   
   <!-- Items -->
   <text x="70" y="220" font-family="monospace" font-size="12" font-weight="bold" fill="#334155">Items</text>
   <text x="280" y="220" font-family="monospace" font-size="12" font-weight="bold" fill="#334155">Total</text>
   
-  <text x="70" y="245" font-family="monospace" font-size="11" fill="#475569">Bibit Pohon Jati (x1000)</text>
-  <text x="330" y="245" font-family="monospace" font-size="11" fill="#475569" text-anchor="end">Rp 45.000K</text>
+  <text x="70" y="245" font-family="monospace" font-size="11" fill="#475569">SPE-GRK Unit (125 tCO2e)</text>
+  <text x="330" y="245" font-family="monospace" font-size="11" fill="#475569" text-anchor="end">Rp 32.500K</text>
   
-  <text x="70" y="270" font-family="monospace" font-size="11" fill="#475569">Pupuk Kompos (x500kg)</text>
-  <text x="330" y="270" font-family="monospace" font-size="11" fill="#475569" text-anchor="end">Rp 15.000K</text>
+  <text x="70" y="270" font-family="monospace" font-size="11" fill="#475569">Biaya Sertifikasi SRN</text>
+  <text x="330" y="270" font-family="monospace" font-size="11" fill="#475569" text-anchor="end">Rp 2.500K</text>
   
   <line x1="70" y1="295" x2="330" y2="295" stroke="#cbd5e1" stroke-width="1" />
   
   <!-- Total -->
   <text x="70" y="325" font-family="monospace" font-size="14" font-weight="bold" fill="#1e293b">TOTAL</text>
-  <text x="330" y="325" font-family="monospace" font-size="14" font-weight="bold" fill="#1e293b" text-anchor="end">Rp 60.000K</text>
+  <text x="330" y="325" font-family="monospace" font-size="14" font-weight="bold" fill="#1e293b" text-anchor="end">Rp 35.000K</text>
   
   <!-- Footer -->
-  <text x="200" y="375" font-family="monospace" font-size="12" fill="#64748b" text-anchor="middle">Terima kasih atas pembelian Anda!</text>
+  <text x="200" y="375" font-family="monospace" font-size="12" fill="#64748b" text-anchor="middle">Bukti Transaksi Karbon Sah</text>
   
   <!-- Barcode dummy -->
   <rect x="90" y="405" width="4" height="30" fill="#334155" />
