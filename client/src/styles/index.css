@@ -39,6 +39,10 @@
 
   /* RekaKarbon Theme Tokens */
   --color-tech-mint: #00c48c;
+  --color-primary-container: #10b981;
+  --color-on-primary-container: #00422b;
+  --color-surface-container: #e5eeff;
+  --color-surface-alt: #f8fafc;
   --color-status-success-bg: #ecfdf5;
   --color-status-success-fg: #065f46;
   --color-status-warning-bg: #fffbeb;

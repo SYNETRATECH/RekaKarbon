@@ -300,83 +300,25 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   setLightboxImage: (image) => set({ lightboxImage: image }),
 
   // Search Hash / Certificate ID Action
-  searchVerichainHash: (query) => {
+  searchVerichainHash: async (query) => {
     if (!query || !query.trim()) return;
     const q = query.trim().toLowerCase();
     const state = get();
 
-    let foundItem: any = null;
-    let foundType: 'vendor' | 'tokenBuyer' = 'vendor';
-    let foundProject: Project | null = null;
+    // We pass the global projects state down to the mock repository so it can simulate DB lookup,
+    // and provide a fallbackProject in case it generates a random dummy mock.
+    const fallbackProject = state.projects[state.activeIndex] || state.projects[0];
 
-    for (const project of state.projects) {
-      // Check token buyers
-      if (project.tokenBuyers) {
-        const buyer = project.tokenBuyers.find(
-          (tb) =>
-            tb.txHash.toLowerCase().includes(q) ||
-            tb.speCertificateId.toLowerCase().includes(q) ||
-            tb.companyName.toLowerCase().includes(q) ||
-            tb.id.toLowerCase().includes(q)
-        );
-        if (buyer) {
-          foundItem = buyer;
-          foundType = 'tokenBuyer';
-          foundProject = project;
-          break;
-        }
-      }
+    const result = await regulatorRepository.searchVerichainLedger(
+      q,
+      state.projects,
+      fallbackProject
+    );
 
-      // Check disbursement vendor history
-      if (project.disbursementHistory) {
-        const tx = project.disbursementHistory.find(
-          (d) =>
-            d.txHash.toLowerCase().includes(q) ||
-            d.id.toLowerCase().includes(q) ||
-            (d.vendor && d.vendor.toLowerCase().includes(q))
-        );
-        if (tx) {
-          foundItem = tx;
-          foundType = 'vendor';
-          foundProject = project;
-          break;
-        }
-      }
-    }
-
-    if (foundItem && foundProject) {
-      set({
-        searchedTxData: { item: foundItem, type: foundType, project: foundProject },
-        isVerichainExplorerOpen: true,
-      });
-    } else {
-      // Fallback: Create dynamic verified record for any typed query/hash
-      const fallbackProject = state.projects[state.activeIndex] || state.projects[0];
-      set({
-        searchedTxData: {
-          item: {
-            txHash: q.startsWith('0x') ? q : `0x${q.slice(0, 30)}...`,
-            blockNumber: `#184${Math.floor(Math.random() * 900 + 100)}`,
-            companyName: `Verichain Verified Query (${q})`,
-            sector: 'Audit Transparansi Karbon',
-            tCO2e: 12500,
-            amountIDR: 3250000000,
-            purchaseDate: new Date().toLocaleDateString('id-ID', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            }),
-            speCertificateId: `SPE-KLHK-${Math.floor(Math.random() * 8999 + 1000)}`,
-            verificationStatus: 'Terverifikasi (KLHK On-Chain)',
-            auditor: 'Sistem AI dMRV & Verichain Ledger',
-            desc: 'Pencarian Hash Transaksi Publik Terverifikasi On-Chain',
-          },
-          type: 'tokenBuyer',
-          project: fallbackProject,
-        },
-        isVerichainExplorerOpen: true,
-      });
-    }
+    set({
+      searchedTxData: result,
+      isVerichainExplorerOpen: true,
+    });
   },
 
   // Actions

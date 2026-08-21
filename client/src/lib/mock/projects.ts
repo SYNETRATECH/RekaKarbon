@@ -143,11 +143,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 6000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/image-1.png', '/proofs/nota_pembelian.svg', '/proofs/image-3.png'],
       },
       {
         id: 'tx-baluran-02',
@@ -178,10 +174,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 10000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-5.png'],
       },
       {
         id: 'tx-baluran-03',
@@ -215,10 +208,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 15000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-7.png'],
       },
     ],
 
@@ -391,10 +381,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 30000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-9.png'],
       },
       {
         id: 'tx-leuser-02',
@@ -419,9 +406,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 15000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/nota_pembelian.svg'],
       },
       {
         id: 'tx-leuser-03',
@@ -446,10 +431,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 50000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/image-11.png', '/proofs/nota_pembelian.svg'],
       },
     ],
 
@@ -605,10 +587,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 23000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/image-13.png', '/proofs/nota_pembelian.svg'],
       },
       {
         id: 'tx-riau-02',
@@ -627,9 +606,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 40000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/image-2.png'],
       },
       {
         id: 'tx-riau-03',
@@ -648,9 +625,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 110000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/nota_pembelian.svg'],
       },
     ],
 
@@ -802,9 +777,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 70000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/image-4.png'],
       },
       {
         id: 'tx-kutai-02',
@@ -823,9 +796,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 35000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/nota_pembelian.svg'],
       },
       {
         id: 'tx-kutai-03',
@@ -850,10 +821,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 40000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop',
-          'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/image-6.png', '/proofs/nota_pembelian.svg'],
       },
     ],
 
@@ -988,9 +956,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 30000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/image-8.png'],
       },
       {
         id: 'tx-sulut-02',
@@ -1002,9 +968,7 @@ export const PROJECTS_DATA: Project[] = [
         blockNumber: '#183000',
         vendor: 'KTH Lestari Dua Saudara Bitung',
         items: [{ name: 'Pupuk Kompos Organik Bitung', qty: 60, price: 300000, total: 18000000 }],
-        proofImages: [
-          'https://images.unsplash.com/photo-1592417817098-8f3d6eb147fc?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/nota_pembelian.svg'],
       },
       {
         id: 'tx-sulut-03',
@@ -1023,9 +987,7 @@ export const PROJECTS_DATA: Project[] = [
             total: 90000000,
           },
         ],
-        proofImages: [
-          'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=600&auto=format&fit=crop',
-        ],
+        proofImages: ['/proofs/image-10.png'],
       },
     ],
 
