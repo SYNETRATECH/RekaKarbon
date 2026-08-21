@@ -6,29 +6,45 @@ export interface GeodeticResult {
   estimatedCarbon: string;
 }
 
+function extractPoint(c: any): [number, number] {
+  if (!c) return [0, 0];
+  if (Array.isArray(c)) {
+    const lat = typeof c[0] === 'number' && !isNaN(c[0]) ? c[0] : 0;
+    const lng = typeof c[1] === 'number' && !isNaN(c[1]) ? c[1] : 0;
+    return [lat, lng];
+  }
+  if (typeof c === 'object') {
+    const lat = typeof c.lat === 'number' && !isNaN(c.lat) ? c.lat : 0;
+    const lng = typeof c.lng === 'number' && !isNaN(c.lng) ? c.lng : 0;
+    return [lat, lng];
+  }
+  return [0, 0];
+}
+
 /**
  * Sorts polygon coordinates in polar angle order around centroid to form a clean perimeter boundary without self-intersections.
  */
 export function sortPolygonCoordinates<T extends CoordPoint>(coords: T[]): T[] {
   if (!coords || coords.length < 3) return coords;
 
+  const validCoords = coords.filter((c) => Boolean(c));
+  if (validCoords.length < 3) return coords;
+
   const cLat =
-    coords.reduce((sum, c) => {
-      const lat = Array.isArray(c) ? c[0] : (c.lat ?? 0);
+    validCoords.reduce((sum, c) => {
+      const [lat] = extractPoint(c);
       return sum + lat;
-    }, 0) / coords.length;
+    }, 0) / validCoords.length;
 
   const cLng =
-    coords.reduce((sum, c) => {
-      const lng = Array.isArray(c) ? c[1] : (c.lng ?? 0);
+    validCoords.reduce((sum, c) => {
+      const [, lng] = extractPoint(c);
       return sum + lng;
-    }, 0) / coords.length;
+    }, 0) / validCoords.length;
 
-  return [...coords].sort((a, b) => {
-    const latA = Array.isArray(a) ? a[0] : (a.lat ?? 0);
-    const lngA = Array.isArray(a) ? a[1] : (a.lng ?? 0);
-    const latB = Array.isArray(b) ? b[0] : (b.lat ?? 0);
-    const lngB = Array.isArray(b) ? b[1] : (b.lng ?? 0);
+  return [...validCoords].sort((a, b) => {
+    const [latA, lngA] = extractPoint(a);
+    const [latB, lngB] = extractPoint(b);
 
     const angleA = Math.atan2(latA - cLat, lngA - cLng);
     const angleB = Math.atan2(latB - cLat, lngB - cLng);
@@ -64,8 +80,7 @@ export function calculateGeodetics(
   const lngMetersPerDegree = 111132 * Math.cos(latRad);
 
   const projected = sortedCoords.map((c) => {
-    const lat = Array.isArray(c) ? c[0] : (c.lat ?? 0);
-    const lng = Array.isArray(c) ? c[1] : (c.lng ?? 0);
+    const [lat, lng] = extractPoint(c);
     return {
       x: (lng - center[1]) * lngMetersPerDegree,
       y: (lat - latMid) * latMetersPerDegree,

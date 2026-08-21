@@ -133,9 +133,15 @@ export default function MapCanvas() {
         const coords = proj.coordinates;
         if (!coords || coords.length === 0) return;
 
-        const latLngs: [number, number][] = coords.map((c: any) =>
-          Array.isArray(c) ? [c[0], c[1]] : [c.lat, c.lng]
-        );
+        const latLngs: [number, number][] = coords
+          .map((c: any) => {
+            if (!c) return [0, 0] as [number, number];
+            if (Array.isArray(c)) return [c[0], c[1]] as [number, number];
+            if (typeof c === 'object' && c !== null) return [c.lat, c.lng] as [number, number];
+            return [0, 0] as [number, number];
+          })
+          .filter((pt) => pt[0] !== 0 && pt[1] !== 0);
+        if (latLngs.length < 3) return;
         const polygon = LModule.polygon(latLngs, {
           color: isActive ? '#059669' : '#94a3b8',
           fillColor: isActive ? '#10b981' : '#cbd5e1',
@@ -321,10 +327,17 @@ export default function MapCanvas() {
   const handleFocusBounds = () => {
     if (!LModule || !mapInstanceRef.current) return;
     if (activeModule === 'conservation' && activeCoords && activeCoords.length > 0) {
-      const latLngs: [number, number][] = activeCoords.map((c: any) =>
-        Array.isArray(c) ? [c[0], c[1]] : [c.lat, c.lng]
-      );
-      mapInstanceRef.current.fitBounds(LModule.latLngBounds(latLngs), { padding: [40, 40] });
+      const latLngs: [number, number][] = activeCoords
+        .map((c: any) => {
+          if (!c) return [0, 0] as [number, number];
+          if (Array.isArray(c)) return [c[0], c[1]] as [number, number];
+          if (typeof c === 'object' && c !== null) return [c.lat, c.lng] as [number, number];
+          return [0, 0] as [number, number];
+        })
+        .filter((pt) => pt[0] !== 0 && pt[1] !== 0);
+      if (latLngs.length > 0) {
+        mapInstanceRef.current.fitBounds(LModule.latLngBounds(latLngs), { padding: [40, 40] });
+      }
     } else if (activeModule === 'corporate') {
       const selectedComp = companies[selectedCompanyIndex];
       if (selectedComp) {

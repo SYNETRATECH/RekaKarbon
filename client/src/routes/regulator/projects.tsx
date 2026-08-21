@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import ProjectProgressModal from '../../components/modals/ProjectProgressModal';
 import DroneAuditModal from '../../components/modals/DroneAuditModal';
@@ -45,11 +46,11 @@ export function meta() {
 }
 
 export default function ForestProjectsManagement() {
+  const navigate = useNavigate();
   const {
     forestProjects: projects,
     projects: landingProjects,
     setEditingProjectData,
-    setAdminActiveTab,
   } = useCarbonStore();
 
   const [selectedStage, setSelectedStage] = useState<any>(null);
@@ -60,12 +61,12 @@ export default function ForestProjectsManagement() {
 
   const openCreatePage = () => {
     setEditingProjectData(null);
-    setAdminActiveTab('project-editor');
+    navigate('/project-editor');
   };
 
   const openEditPage = (prj: any) => {
     setEditingProjectData(prj);
-    setAdminActiveTab('project-editor');
+    navigate('/project-editor');
   };
 
   const filteredProjects = projects.filter(
