@@ -352,9 +352,7 @@ export default function AuditReportModal() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-sans">
-                      Status Penyaluran Insentif:
-                    </span>
+                    <span className="text-slate-500 font-sans">Status Penyaluran Insentif:</span>
                     <span className="font-bold text-slate-900 font-sans">
                       {selectedReportStage.incentiveStatus}
                     </span>
@@ -405,9 +403,7 @@ export default function AuditReportModal() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-sans">
-                      Buffer Pool Darurat (8%):
-                    </span>
+                    <span className="text-slate-500 font-sans">Buffer Pool Darurat (8%):</span>
                     <span className="font-bold text-slate-700">
                       {formatCurrency(activeProj.totalBudget * 0.08)}
                     </span>
@@ -430,11 +426,7 @@ export default function AuditReportModal() {
             {/* Left: QR Code & Block Verification */}
             <div className="space-y-2 flex flex-col items-center md:items-start text-center md:text-left">
               <div className="p-1 bg-white border border-slate-200/80 rounded-xl inline-block shadow-2xs">
-                <svg
-                  className="w-16 h-16 text-slate-800"
-                  viewBox="0 0 100 100"
-                  fill="currentColor"
-                >
+                <svg className="w-16 h-16 text-slate-800" viewBox="0 0 100 100" fill="currentColor">
                   <path d="M0,0 h30 v10 h-20 v20 h-10 z" />
                   <path d="M70,0 h30 v30 h-10 v-20 h-20 z" />
                   <path d="M0,70 h10 v20 h20 v10 h-30 z" />
@@ -548,9 +540,7 @@ export default function AuditReportModal() {
 
               <div className="text-[9px] leading-tight font-semibold">
                 <p className="font-bold text-slate-800">Sutrisno, S.Hut., M.Si.</p>
-                <p className="text-slate-400 text-[8px] font-medium">
-                  Kepala Balai Taman Nasional
-                </p>
+                <p className="text-slate-400 text-[8px] font-medium">Kepala Balai Taman Nasional</p>
               </div>
             </div>
           </div>
