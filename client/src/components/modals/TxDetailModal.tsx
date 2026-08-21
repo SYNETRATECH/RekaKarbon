@@ -18,8 +18,14 @@ export default function TxDetailModal({
 }: TxDetailModalProps) {
   if (!tx) return null;
 
-  const rawAmount = typeof tx.amountIDR === 'number' ? tx.amountIDR : typeof tx.amount === 'number' ? tx.amount : 0;
-  const formattedAmount = rawAmount > 0 ? formatCurrency(rawAmount) : (typeof tx.amountIDR === 'string' ? tx.amountIDR : 'Rp 0');
+  const rawAmount =
+    typeof tx.amountIDR === 'number' ? tx.amountIDR : typeof tx.amount === 'number' ? tx.amount : 0;
+  const formattedAmount =
+    rawAmount > 0
+      ? formatCurrency(rawAmount)
+      : typeof tx.amountIDR === 'string'
+        ? tx.amountIDR
+        : 'Rp 0';
 
   const handleDownload = () => {
     const filename = `BUKTI_TRANSFER_${tx.id}.pdf`;
@@ -40,12 +46,8 @@ export default function TxDetailModal({
               <Receipt className="w-4 h-4 text-emerald-700" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-slate-900">
-                Bukti Transfer Insentif KTH
-              </h3>
-              <span className="text-[10px] text-slate-400 font-mono">
-                ID: {tx.id}
-              </span>
+              <h3 className="font-extrabold text-sm text-slate-900">Bukti Transfer Insentif KTH</h3>
+              <span className="text-[10px] text-slate-400 font-mono">ID: {tx.id}</span>
             </div>
           </div>
         </div>
@@ -67,7 +69,9 @@ export default function TxDetailModal({
           <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2 text-xs">
             <div className="flex justify-between items-center">
               <span className="text-slate-400 font-semibold">Penerima Insentif:</span>
-              <span className="font-extrabold text-slate-900">{tx.kthName || tx.farmerName || tx.kthGroup}</span>
+              <span className="font-extrabold text-slate-900">
+                {tx.kthName || tx.farmerName || tx.kthGroup}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-400 font-semibold">Proyek Kehutanan:</span>

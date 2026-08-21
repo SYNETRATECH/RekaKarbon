@@ -4,15 +4,7 @@ import type L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import { sortPolygonCoordinates } from '../../utils/geodetics';
-import {
-  Save,
-  Plus,
-  Trash2,
-  UploadCloud,
-  FileText,
-  FileSpreadsheet,
-  X,
-} from 'lucide-react';
+import { Save, Plus, Trash2, UploadCloud, FileText, FileSpreadsheet, X } from 'lucide-react';
 import { ForestProjectItem } from '../../types';
 import { parseNumeric, formatFileSize } from '../../lib/formatters';
 import {
@@ -56,14 +48,24 @@ function normalizePolygonCoordinates(project: ForestProjectItem | null): [number
   if (!project) return [];
 
   // 1. If polygonCoords is present
-  if (project.polygonCoords && Array.isArray(project.polygonCoords) && project.polygonCoords.length > 0) {
+  if (
+    project.polygonCoords &&
+    Array.isArray(project.polygonCoords) &&
+    project.polygonCoords.length > 0
+  ) {
     const valid = project.polygonCoords
       .map((c: any) => {
         if (Array.isArray(c)) {
-          return [typeof c[0] === 'number' ? c[0] : 0, typeof c[1] === 'number' ? c[1] : 0] as [number, number];
+          return [typeof c[0] === 'number' ? c[0] : 0, typeof c[1] === 'number' ? c[1] : 0] as [
+            number,
+            number,
+          ];
         }
         if (typeof c === 'object' && c !== null) {
-          return [typeof c.lat === 'number' ? c.lat : 0, typeof c.lng === 'number' ? c.lng : 0] as [number, number];
+          return [typeof c.lat === 'number' ? c.lat : 0, typeof c.lng === 'number' ? c.lng : 0] as [
+            number,
+            number,
+          ];
         }
         return [0, 0] as [number, number];
       })
@@ -72,10 +74,7 @@ function normalizePolygonCoordinates(project: ForestProjectItem | null): [number
   }
 
   // 2. If coordinates is an array of coordinate arrays [[lat, lng], [lat, lng], ...]
-  if (
-    Array.isArray(project.coordinates) &&
-    Array.isArray(project.coordinates[0])
-  ) {
+  if (Array.isArray(project.coordinates) && Array.isArray(project.coordinates[0])) {
     return (project.coordinates as any).map((c: any) => [c[0], c[1]]);
   }
 
@@ -101,12 +100,8 @@ function normalizePolygonCoordinates(project: ForestProjectItem | null): [number
 
 export default function ProjectEditorPage() {
   const navigate = useNavigate();
-  const {
-    editingProjectData,
-    setEditingProjectData,
-    addForestProject,
-    updateForestProject,
-  } = useCarbonStore();
+  const { editingProjectData, setEditingProjectData, addForestProject, updateForestProject } =
+    useCarbonStore();
 
   const isEditing = Boolean(editingProjectData && editingProjectData.id);
 
@@ -157,8 +152,7 @@ export default function ProjectEditorPage() {
   useEffect(() => {
     if (!LModule || mapInstanceRef.current || !mapRef.current) return;
 
-    const initialCenter: [number, number] =
-      coordinates.length > 0 ? coordinates[0] : [-2.5, 118.0];
+    const initialCenter: [number, number] = coordinates.length > 0 ? coordinates[0] : [-2.5, 118.0];
     const initialZoom = coordinates.length > 0 ? 13 : 5;
 
     const initMap = LModule.map(mapRef.current, {
@@ -302,12 +296,8 @@ export default function ProjectEditorPage() {
     const centerPoint: [number, number] =
       coordinates.length > 0
         ? [
-            Number(
-              (coordinates.reduce((s, c) => s + c[0], 0) / coordinates.length).toFixed(6)
-            ),
-            Number(
-              (coordinates.reduce((s, c) => s + c[1], 0) / coordinates.length).toFixed(6)
-            ),
+            Number((coordinates.reduce((s, c) => s + c[0], 0) / coordinates.length).toFixed(6)),
+            Number((coordinates.reduce((s, c) => s + c[1], 0) / coordinates.length).toFixed(6)),
           ]
         : [-6.89, 112.05];
 

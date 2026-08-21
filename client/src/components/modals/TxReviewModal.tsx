@@ -41,11 +41,7 @@ export default function TxReviewModal({
   const isAwaitingProof = tx.status === 'awaiting_proof';
 
   const rawAmount =
-    typeof tx.amountIDR === 'number'
-      ? tx.amountIDR
-      : typeof tx.amount === 'number'
-        ? tx.amount
-        : 0;
+    typeof tx.amountIDR === 'number' ? tx.amountIDR : typeof tx.amount === 'number' ? tx.amount : 0;
   const formattedAmount =
     rawAmount > 0
       ? formatCurrency(rawAmount)
@@ -180,7 +176,10 @@ export default function TxReviewModal({
                 <span>CATATAN TRANSAKSI BERMASALAH (KLHK)</span>
               </div>
               <p className="text-xs text-rose-800 font-semibold leading-relaxed pl-6">
-                "{tx.issueNote || 'Terdeteksi ketidaksesuaian laporan nota / foto bukti belanja oleh regulator.'}"
+                "
+                {tx.issueNote ||
+                  'Terdeteksi ketidaksesuaian laporan nota / foto bukti belanja oleh regulator.'}
+                "
               </p>
             </div>
           )}
@@ -192,16 +191,18 @@ export default function TxReviewModal({
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <span className="text-slate-400 font-semibold block">Kelompok Tani Hutan (KTH):</span>
+                <span className="text-slate-400 font-semibold block">
+                  Kelompok Tani Hutan (KTH):
+                </span>
                 <span className="font-extrabold text-slate-900 text-sm">
                   {tx.kthName || tx.farmerName || tx.kthGroup}
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 font-semibold block">Nominal Insentif Diajukan:</span>
-                <span className="font-black text-emerald-700 text-base">
-                  {formattedAmount}
+                <span className="text-slate-400 font-semibold block">
+                  Nominal Insentif Diajukan:
                 </span>
+                <span className="font-black text-emerald-700 text-base">{formattedAmount}</span>
               </div>
               <div>
                 <span className="text-slate-400 font-semibold block">Proyek Kehutanan Acuan:</span>
@@ -209,7 +210,9 @@ export default function TxReviewModal({
               </div>
               <div>
                 <span className="text-slate-400 font-semibold block">Waktu Pengajuan:</span>
-                <span className="font-mono text-slate-700 font-bold">{formatDateTime(tx.date)}</span>
+                <span className="font-mono text-slate-700 font-bold">
+                  {formatDateTime(tx.date)}
+                </span>
               </div>
             </div>
             <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-[11px]">
@@ -238,9 +241,7 @@ export default function TxReviewModal({
                 <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
                   Survival Rate
                 </span>
-                <p className="text-base font-black text-emerald-800 mt-0.5">
-                  {survivalPct}%
-                </p>
+                <p className="text-base font-black text-emerald-800 mt-0.5">{survivalPct}%</p>
                 <span className="text-[9px] font-bold text-emerald-600 block mt-0.5">
                   {projectDetails.reforestationStatus || 'Sangat Baik'}
                 </span>

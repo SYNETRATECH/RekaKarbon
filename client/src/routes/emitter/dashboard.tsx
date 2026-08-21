@@ -359,7 +359,9 @@ export default function EmitterDashboard() {
                       return (
                         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-lg text-xs space-y-1 border border-slate-800">
                           <p className="font-extrabold text-slate-300">Tahun {label}</p>
-                          <p className="font-black text-status-danger-fg text-sm">Rp {val} Miliar</p>
+                          <p className="font-black text-status-danger-fg text-sm">
+                            Rp {val} Miliar
+                          </p>
                           <p className="text-[10px] text-slate-400 font-semibold">
                             {data.label || 'Estimasi Biaya'}
                           </p>

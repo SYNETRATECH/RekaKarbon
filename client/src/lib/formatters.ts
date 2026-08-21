@@ -140,4 +140,3 @@ export function formatScale(value: number | string | null | undefined, suffix = 
   }
   return suffix ? `${formatted} ${suffix}` : formatted;
 }
-

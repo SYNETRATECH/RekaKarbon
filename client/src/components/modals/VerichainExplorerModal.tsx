@@ -133,9 +133,7 @@ export default function VerichainExplorerModal({
                 </span>
               </div>
               <div className="flex justify-between items-center text-[10px]">
-                <span className="font-semibold text-slate-500">
-                  Auditor Lembaga Independen:
-                </span>
+                <span className="font-semibold text-slate-500">Auditor Lembaga Independen:</span>
                 <span className="font-bold text-slate-800">
                   {txData.item.auditor || 'Sucofindo / KLHK Verichain System'}
                 </span>
@@ -151,8 +149,8 @@ export default function VerichainExplorerModal({
                 Sertifikat Digital Terautentikasi
               </div>
               <p className="text-[10px] text-slate-600 font-medium leading-relaxed">
-                Data transaksi ini terdaftar permanen dalam Verichain Ledger RekaKarbon dan
-                tidak dapat diubah oleh pihak manapun.
+                Data transaksi ini terdaftar permanen dalam Verichain Ledger RekaKarbon dan tidak
+                dapat diubah oleh pihak manapun.
               </p>
             </div>
             <div className="w-14 h-14 bg-white p-1.5 rounded-xl border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs">

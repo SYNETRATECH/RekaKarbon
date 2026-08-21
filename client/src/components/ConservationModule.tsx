@@ -35,7 +35,9 @@ export default function ConservationModule() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedExplorerTx, setSelectedExplorerTx] = useState<any | null>(null);
   const [selectedDisbursementTx, setSelectedDisbursementTx] = useState<any | null>(null);
-  const [selectedDroneStage, setSelectedDroneStage] = useState<{ project: any; stage: any } | null>(null);
+  const [selectedDroneStage, setSelectedDroneStage] = useState<{ project: any; stage: any } | null>(
+    null
+  );
 
   // Debounce search effect (250ms delay)
   useEffect(() => {

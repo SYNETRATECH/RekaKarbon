@@ -8,7 +8,14 @@ import {
   BarChart3,
   CheckCircle2,
 } from 'lucide-react';
-import { formatArea, formatCarbon, formatCurrency, formatCompactCurrency, formatScale, formatPercent } from '../../lib/formatters';
+import {
+  formatArea,
+  formatCarbon,
+  formatCurrency,
+  formatCompactCurrency,
+  formatScale,
+  formatPercent,
+} from '../../lib/formatters';
 import {
   Table,
   TableHeader,
@@ -65,9 +72,7 @@ export default function RegulatorDashboard() {
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Total Kawasan Hutan
             </span>
-            <h3 className="text-2xl font-black text-slate-900">
-              {formatScale(totalAreaHa, 'ha')}
-            </h3>
+            <h3 className="text-2xl font-black text-slate-900">{formatScale(totalAreaHa, 'ha')}</h3>
             <span className="text-[10px] font-bold text-emerald-600 block mt-0.5">
               Seluruh Indonesia
             </span>

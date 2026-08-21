@@ -62,8 +62,8 @@ export default function TransactionReceiptModal({
                 {formatCurrency(selectedTx.tx.amount)}
               </h3>
               <p className="text-[10px] text-slate-500 font-medium">
-                Kategori: <strong className="text-slate-700">{selectedTx.tx.category}</strong> · Tanggal:{' '}
-                <strong className="text-slate-700">{selectedTx.tx.date}</strong>
+                Kategori: <strong className="text-slate-700">{selectedTx.tx.category}</strong> ·
+                Tanggal: <strong className="text-slate-700">{selectedTx.tx.date}</strong>
               </p>
             </div>
             <div className="text-right space-y-1">
