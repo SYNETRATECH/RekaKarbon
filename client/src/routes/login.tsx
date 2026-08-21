@@ -18,8 +18,8 @@ export default function LoginRoute() {
   const navigate = useNavigate();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [emailInput, setEmailInput] = useState('admin@semennusantara.co.id');
-  const [passwordInput, setPasswordInput] = useState('••••••••••••');
+  const [emailInput, setEmailInput] = useState();
+  const [passwordInput, setPasswordInput] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
