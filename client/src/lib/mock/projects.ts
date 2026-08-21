@@ -143,7 +143,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 6000000,
           },
         ],
-        proofImages: ['/proofs/image-1.png', '/proofs/nota_pembelian.svg', '/proofs/image-3.png'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-baluran-02',
@@ -174,7 +178,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 10000000,
           },
         ],
-        proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-5.png'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-baluran-03',
@@ -208,7 +216,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 15000000,
           },
         ],
-        proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-7.png'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
     ],
 
@@ -381,7 +393,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 30000000,
           },
         ],
-        proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-9.png'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-leuser-02',
@@ -406,7 +422,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 15000000,
           },
         ],
-        proofImages: ['/proofs/nota_pembelian.svg'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-leuser-03',
@@ -431,7 +451,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 50000000,
           },
         ],
-        proofImages: ['/proofs/image-11.png', '/proofs/nota_pembelian.svg'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
     ],
 
@@ -587,7 +611,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 23000000,
           },
         ],
-        proofImages: ['/proofs/image-13.png', '/proofs/nota_pembelian.svg'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-riau-02',
@@ -606,7 +634,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 40000000,
           },
         ],
-        proofImages: ['/proofs/image-2.png'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-riau-03',
@@ -625,7 +657,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 110000000,
           },
         ],
-        proofImages: ['/proofs/nota_pembelian.svg'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
     ],
 
@@ -777,7 +813,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 70000000,
           },
         ],
-        proofImages: ['/proofs/image-4.png'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-kutai-02',
@@ -796,7 +836,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 35000000,
           },
         ],
-        proofImages: ['/proofs/nota_pembelian.svg'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-kutai-03',
@@ -821,7 +865,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 40000000,
           },
         ],
-        proofImages: ['/proofs/image-6.png', '/proofs/nota_pembelian.svg'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
     ],
 
@@ -956,7 +1004,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 30000000,
           },
         ],
-        proofImages: ['/proofs/image-8.png'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-sulut-02',
@@ -968,7 +1020,11 @@ export const PROJECTS_DATA: Project[] = [
         blockNumber: '#183000',
         vendor: 'KTH Lestari Dua Saudara Bitung',
         items: [{ name: 'Pupuk Kompos Organik Bitung', qty: 60, price: 300000, total: 18000000 }],
-        proofImages: ['/proofs/nota_pembelian.svg'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
       {
         id: 'tx-sulut-03',
@@ -987,7 +1043,11 @@ export const PROJECTS_DATA: Project[] = [
             total: 90000000,
           },
         ],
-        proofImages: ['/proofs/image-10.png'],
+        proofImages: [
+          '/proofs/nota_pembelian.svg',
+          '/proofs/bukti_transfer.svg',
+          '/proofs/sertifikat_spe.svg',
+        ],
       },
     ],
 

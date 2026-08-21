@@ -211,7 +211,11 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
               totalIDR: 70000000,
             },
           ],
-          proofImages: ['/proofs/image-1.png', '/proofs/nota_pembelian.svg', '/proofs/image-3.png'],
+          proofImages: [
+            '/proofs/nota_pembelian.svg',
+            '/proofs/bukti_transfer.svg',
+            '/proofs/sertifikat_spe.svg',
+          ],
         },
         {
           id: 'tx-02',
@@ -245,8 +249,8 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
           ],
           proofImages: [
             '/proofs/nota_pembelian.svg',
-            '/proofs/image-5.png',
-            '/proofs/nota_pembelian.svg',
+            '/proofs/bukti_transfer.svg',
+            '/proofs/sertifikat_spe.svg',
           ],
         },
         {
@@ -273,7 +277,11 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
               totalIDR: 50000000,
             },
           ],
-          proofImages: ['/proofs/image-7.png', '/proofs/nota_pembelian.svg'],
+          proofImages: [
+            '/proofs/nota_pembelian.svg',
+            '/proofs/bukti_transfer.svg',
+            '/proofs/sertifikat_spe.svg',
+          ],
         },
         {
           id: 'tx-04',
@@ -299,7 +307,11 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
               totalIDR: 250000000,
             },
           ],
-          proofImages: ['/proofs/image-9.png', '/proofs/nota_pembelian.svg'],
+          proofImages: [
+            '/proofs/nota_pembelian.svg',
+            '/proofs/bukti_transfer.svg',
+            '/proofs/sertifikat_spe.svg',
+          ],
         },
       ],
     },
@@ -452,7 +464,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 34000000,
       },
     ],
-    proofImages: ['/proofs/image-11.png', '/proofs/nota_pembelian.svg', '/proofs/image-13.png'],
+    proofImages: [
+      '/proofs/nota_pembelian.svg',
+      '/proofs/bukti_transfer.svg',
+      '/proofs/sertifikat_spe.svg',
+    ],
   },
   {
     id: 'b1c2d3e4-0043-4000-8000-000000000002',
@@ -483,7 +499,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 48000000,
       },
     ],
-    proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-2.png'],
+    proofImages: [
+      '/proofs/nota_pembelian.svg',
+      '/proofs/bukti_transfer.svg',
+      '/proofs/sertifikat_spe.svg',
+    ],
   },
   {
     id: 'b1c2d3e4-0043-4000-8000-000000000003',
@@ -514,7 +534,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 100000000,
       },
     ],
-    proofImages: ['/proofs/nota_pembelian.svg', '/proofs/image-4.png'],
+    proofImages: [
+      '/proofs/nota_pembelian.svg',
+      '/proofs/bukti_transfer.svg',
+      '/proofs/sertifikat_spe.svg',
+    ],
   },
   {
     id: 'b1c2d3e4-0043-4000-8000-000000000004',
@@ -547,8 +571,8 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
     ],
     proofImages: [
       '/proofs/nota_pembelian.svg',
-      '/proofs/image-6.png',
-      '/proofs/nota_pembelian.svg',
+      '/proofs/bukti_transfer.svg',
+      '/proofs/sertifikat_spe.svg',
     ],
   },
   {
@@ -580,7 +604,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 60000000,
       },
     ],
-    proofImages: ['/proofs/image-8.png', '/proofs/nota_pembelian.svg', '/proofs/image-10.png'],
+    proofImages: [
+      '/proofs/nota_pembelian.svg',
+      '/proofs/bukti_transfer.svg',
+      '/proofs/sertifikat_spe.svg',
+    ],
   },
   {
     id: 'b1c2d3e4-0043-4000-8000-000000000006',
@@ -620,7 +648,11 @@ export const MOCK_KTH_TRANSACTIONS: KTHTransactionItem[] = [
         total: 120000000,
       },
     ],
-    proofImages: ['/proofs/nota_pembelian.svg'],
+    proofImages: [
+      '/proofs/nota_pembelian.svg',
+      '/proofs/bukti_transfer.svg',
+      '/proofs/sertifikat_spe.svg',
+    ],
   },
 ];
 
