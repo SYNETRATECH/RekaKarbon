@@ -40,7 +40,7 @@ export function meta() {
   ];
 }
 
-export default function EmissionsAuditAI() {
+export default function AuditorDashboard() {
   const {
     aiAnomalyLogs,
     anomalySummary,

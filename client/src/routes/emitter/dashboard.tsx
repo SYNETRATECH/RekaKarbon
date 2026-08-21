@@ -21,7 +21,7 @@ export function meta() {
   ];
 }
 
-export default function ComplianceDashboard() {
+export default function EmitterDashboard() {
   const { setAdminActiveTab, complianceData, projects, companies } = useCarbonStore();
   const [isPublicReportOpen, setIsPublicReportOpen] = useState(false);
 

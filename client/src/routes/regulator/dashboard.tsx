@@ -25,7 +25,7 @@ export function meta() {
   ];
 }
 
-export default function NationalForestDashboard() {
+export default function RegulatorDashboard() {
   const { nationalForestRegions: regions } = useCarbonStore();
 
   const totalAreaHa = regions.reduce((acc: number, r: any) => acc + (r.areaHectares || 0), 0);

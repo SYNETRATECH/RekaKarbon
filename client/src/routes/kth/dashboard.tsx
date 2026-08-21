@@ -13,7 +13,7 @@ export function meta() {
   ];
 }
 
-export default function LandPolygonMapping() {
+export default function KTHDashboard() {
   const { kthPolygons } = useCarbonStore();
   const [newLandName, setNewLandName] = useState('');
   const [newAreaHa, setNewAreaHa] = useState(50);

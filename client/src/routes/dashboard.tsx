@@ -1,11 +1,10 @@
 import { lazy, Suspense } from 'react';
-import PortalLayout from './layouts/PortalLayout';
 import { useCarbonStore } from '../store/useCarbonStore';
 
-const ComplianceDashboard = lazy(() => import('./emitter/compliance'));
-const NationalForestDashboard = lazy(() => import('./regulator/forest'));
-const EmissionsAuditAI = lazy(() => import('./auditor/audit'));
-const LandPolygonMapping = lazy(() => import('./kth/polygon'));
+const EmitterDashboard = lazy(() => import('./emitter/dashboard'));
+const RegulatorDashboard = lazy(() => import('./regulator/dashboard'));
+const AuditorDashboard = lazy(() => import('./auditor/dashboard'));
+const KTHDashboard = lazy(() => import('./kth/dashboard'));
 
 const ViewLoader = () => (
   <div className="flex h-64 items-center justify-center text-xs font-bold text-slate-400 animate-pulse">
@@ -27,14 +26,14 @@ export default function DashboardRoute() {
   const renderDashboardView = () => {
     switch (currentRole) {
       case 'regulator':
-        return <NationalForestDashboard />;
+        return <RegulatorDashboard />;
       case 'auditor':
-        return <EmissionsAuditAI />;
+        return <AuditorDashboard />;
       case 'kth':
-        return <LandPolygonMapping />;
+        return <KTHDashboard />;
       case 'emitter':
       default:
-        return <ComplianceDashboard />;
+        return <EmitterDashboard />;
     }
   };
 
