@@ -47,7 +47,7 @@ export default function KthFarmersManagement() {
     memberCount: 30,
     location: '',
     registrationNumber: '',
-    totalIncentiveReceivedIDR: 'Rp 0 Juta',
+    totalIncentiveReceivedIDR: 0,
     walletAddress: '0x8f2a948571029485710294857102948571029485',
   });
 
@@ -59,7 +59,7 @@ export default function KthFarmersManagement() {
       memberCount: 30,
       location: '',
       registrationNumber: `SK.LHK-${Math.floor(1000 + Math.random() * 9000)}/KTH/2026`,
-      totalIncentiveReceivedIDR: 'Rp 250 Juta',
+      totalIncentiveReceivedIDR: 0,
       walletAddress:
         '0x' +
         Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),

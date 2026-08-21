@@ -112,7 +112,7 @@ export default function LandPolygonMapping() {
                 <div>
                   <h5 className="font-extrabold text-slate-900">{poly.name}</h5>
                   <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
-                    Luas: {poly.areaHectares} Ha · Estimasi: {poly.estimatedCO2e} tCO₂e
+                    Luas: {poly.areaHectares} ha · Estimasi: {poly.estimatedCO2e} tCO₂e
                   </span>
                 </div>
                 <Badge variant="default" className="text-[10px] px-3 py-1">

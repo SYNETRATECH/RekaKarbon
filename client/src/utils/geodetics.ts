@@ -91,8 +91,8 @@ export function calculateGeodetics(
   const perimeterKm = perimeterSum / 1000;
 
   // Format outputs
-  const areaVal = (areaHectares / 1000).toFixed(1) + 'K Ha';
-  const perimeterVal = perimeterKm.toFixed(2) + ' Km';
+  const areaVal = (areaHectares / 1000).toFixed(1) + 'k ha';
+  const perimeterVal = perimeterKm.toFixed(2) + ' km';
 
   // Estimate Carbon stock: 194.2 Ton CO2e per hectare
   const totalCarbonVal = areaHectares * 194.2;

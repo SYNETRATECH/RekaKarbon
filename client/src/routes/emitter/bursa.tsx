@@ -87,7 +87,7 @@ export default function CarbonDexMarket() {
         <div>
           <AlertTitle className="text-status-danger-fg">Defisit aktif: 2.330 tCO₂e</AlertTitle>
           <AlertDescription className="text-status-danger-fg/90">
-            Beli minimal 2.330 tCO₂e sebelum 31 Des 2025 untuk menghindari denda Rp 1.51 M.
+            Beli minimal 2.330 tCO₂e sebelum 31 Des 2025 untuk menghindari denda Rp 1,51 Miliar.
           </AlertDescription>
         </div>
       </Alert>
@@ -219,7 +219,7 @@ export default function CarbonDexMarket() {
                   HARGA / FRAKSI
                 </TableHead>
                 <TableHead className="w-[15%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
-                  24J
+                  24 JAM
                 </TableHead>
                 <TableHead className="w-[18%] text-[9.5px] font-bold uppercase text-slate-400 tracking-wider h-10 px-4">
                   PASOKAN
@@ -285,7 +285,7 @@ export default function CarbonDexMarket() {
                       Rp {item.priceFraction.toLocaleString('id-ID')}
                     </p>
                     <span className="text-[9px] text-slate-400 font-medium block mt-1">
-                      per 0.1 tCO₂e
+                      per 0,1 tCO₂e
                     </span>
                   </TableCell>
 

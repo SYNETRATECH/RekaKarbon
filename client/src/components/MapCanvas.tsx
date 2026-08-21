@@ -259,13 +259,13 @@ export default function MapCanvas() {
               <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
                 <span style="color: #64748b;">Defisit Karbon:</span>
                 <span style="font-weight: bold; color: ${isUnpaid ? '#e11d48' : '#0f172a'}; font-family: monospace;">
-                  ${comp.carbonDeficit > 0 ? (comp.carbonDeficit / 1000).toLocaleString('id-ID') + 'k tCO₂e' : '0 tCO₂e'}
+                  ${comp.carbonDeficit > 0 ? (comp.carbonDeficit / 1000).toLocaleString('id-ID') + ' ribu tCO₂e' : '0 tCO₂e'}
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 6px;">
                 <span style="color: #64748b;">Tagihan Offset:</span>
                 <span style="font-weight: bold; color: #059669; font-family: monospace;">
-                  ${comp.offsetCostIDR > 0 ? 'Rp ' + (comp.offsetCostIDR / 1000000000).toFixed(1) + ' M' : 'Rp 0'}
+                  ${comp.offsetCostIDR > 0 ? 'Rp ' + (comp.offsetCostIDR / 1000000000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' Miliar' : 'Rp 0'}
                 </span>
               </div>
 

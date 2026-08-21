@@ -1,6 +1,6 @@
 import { Award, Download, ExternalLink, MapPin, Sparkles, Layers } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, formatCompactCurrency } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 
 interface CertificateCardProps {
@@ -145,8 +145,11 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
               <span className="text-[9px] font-extrabold text-amber-700 uppercase block">
                 Insentif KTH
               </span>
-              <span className="text-sm font-black text-amber-900 block mt-1">
-                {formatCurrency(cert.projectCondition.kthIncentiveDisbursed)}
+              <span
+                className="text-sm font-black text-amber-900 block mt-1 cursor-default"
+                title={formatCurrency(cert.projectCondition.kthIncentiveDisbursed)}
+              >
+                {formatCompactCurrency(cert.projectCondition.kthIncentiveDisbursed)}
               </span>
               <span className="text-[9px] font-semibold text-amber-600 block mt-0.5">
                 Disalurkan 100%

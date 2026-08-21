@@ -460,7 +460,7 @@ export default function ConservationModule() {
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Cari pembeli, sektor, atau Tx Hash..."
+                      placeholder="Cari pembeli, sektor, atau TxHash..."
                       className="pl-8 pr-14 h-8 text-[10px] rounded-xl"
                     />
                     <button
@@ -564,7 +564,7 @@ export default function ConservationModule() {
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Cari vendor, kategori, atau Tx Hash..."
+                      placeholder="Cari vendor, kategori, atau TxHash..."
                       className="pl-8 pr-14 h-8 text-[10px] rounded-xl"
                     />
                     <button

@@ -139,7 +139,7 @@ export default function ForestProjectsManagement() {
       id: prj.id,
       name: prj.projectName,
       region: prj.location,
-      area: '15.0K Ha',
+      area: '15.000 ha',
       carbon: `${(prj.targetSequestrationTCO2e / 1000).toFixed(1)}K tCO₂e`,
       plantedTrees: 124000,
       targetTrees: 150000,

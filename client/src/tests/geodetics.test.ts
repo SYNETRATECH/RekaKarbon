@@ -31,8 +31,8 @@ describe('calculateGeodetics', () => {
 
     const result = calculateGeodetics(square, eq);
 
-    // Perimeter: 4 x 100m = 400m = 0.40 Km.
-    expect(result.perimeterVal).toBe('0.40 Km');
+    // Perimeter: 4 x 100m = 400m = 0.40 km.
+    expect(result.perimeterVal).toBe('0.40 km');
   });
 
   it('computes area accurately for a 1km square (~100 hectares)', () => {
@@ -48,13 +48,13 @@ describe('calculateGeodetics', () => {
 
     const result = calculateGeodetics(square, eq);
 
-    // Area is reported in thousands of Ha: 100 Ha → (100/1000).toFixed(1) = "0.1K Ha".
-    const areaHa = parseFloat(result.areaVal.replace('K Ha', '')) * 1000;
+    // Area is reported in thousands of Ha: 100 Ha → (100/1000).toFixed(1) = "0.1k ha".
+    const areaHa = parseFloat(result.areaVal.replace('k ha', '')) * 1000;
     expect(areaHa).toBeGreaterThan(95);
     expect(areaHa).toBeLessThan(105);
 
-    // Perimeter: 4 x 1km = 4.00 Km.
-    expect(result.perimeterVal).toBe('4.00 Km');
+    // Perimeter: 4 x 1km = 4.00 km.
+    expect(result.perimeterVal).toBe('4.00 km');
   });
 
   it('reports carbon stock proportional to area (194.2 tCO₂e per hectare)', () => {
@@ -103,5 +103,69 @@ describe('calculateGeodetics', () => {
     const ccw = [...cw].reverse();
 
     expect(calculateGeodetics(ccw, eq).areaVal).toBe(calculateGeodetics(cw, eq).areaVal);
+  });
+});
+
+import {
+  formatCurrency,
+  formatCompactCurrency,
+  formatCarbon,
+  formatScale,
+  formatPercent,
+  formatFileSize,
+} from '../lib/formatters';
+
+describe('Formatters Unit Tests', () => {
+  describe('formatCompactCurrency', () => {
+    it('formats billions into Miliar', () => {
+      expect(formatCompactCurrency(42800000000)).toBe('Rp 42,8 Miliar');
+      expect(formatCompactCurrency(8120000000)).toBe('Rp 8,12 Miliar');
+      expect(formatCompactCurrency(1000000000)).toBe('Rp 1 Miliar');
+    });
+
+    it('formats millions into Juta', () => {
+      expect(formatCompactCurrency(650000000)).toBe('Rp 650 Juta');
+      expect(formatCompactCurrency(145000000)).toBe('Rp 145 Juta');
+      expect(formatCompactCurrency(1500000)).toBe('Rp 1,5 Juta');
+    });
+
+    it('formats trillions into Triliun', () => {
+      expect(formatCompactCurrency(2500000000000)).toBe('Rp 2,5 Triliun');
+    });
+
+    it('falls back to standard formatCurrency for values < 1 Million', () => {
+      expect(formatCompactCurrency(450000)).toBe('Rp 450.000');
+      expect(formatCompactCurrency(0)).toBe('Rp 0');
+      expect(formatCompactCurrency(null)).toBe('Rp 0');
+    });
+  });
+
+  describe('formatCarbon', () => {
+    it('formats tCO₂e correctly', () => {
+      expect(formatCarbon(14830)).toBe('14.830 tCO₂e');
+      expect(formatCarbon(12400)).toBe('12.400 tCO₂e');
+    });
+  });
+
+  describe('formatScale', () => {
+    it('scales large numbers correctly with Indonesian scale suffixes', () => {
+      expect(formatScale(12400000, 'ha')).toBe('12,4 Juta ha');
+      expect(formatScale(148500000, 'tCO₂e')).toBe('148,5 Juta tCO₂e');
+      expect(formatScale(8120000000)).toBe('8,12 Miliar');
+    });
+  });
+
+  describe('formatPercent', () => {
+    it('formats percentages with Indonesian decimal comma', () => {
+      expect(formatPercent(94.2)).toBe('94,2%');
+      expect(formatPercent(87.55)).toBe('87,6%');
+    });
+  });
+
+  describe('formatFileSize', () => {
+    it('formats bytes into KB / MB', () => {
+      expect(formatFileSize(1048576)).toBe('1 MB');
+      expect(formatFileSize(5033165)).toBe('4,8 MB');
+    });
   });
 });

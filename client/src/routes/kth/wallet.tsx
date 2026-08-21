@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import { formatCurrency } from '../../lib/formatters';
 import { Wallet, Upload, CheckCircle2, FileImage } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,8 +15,13 @@ export function meta() {
 }
 
 export default function DigitalWalletHybridLogs() {
-  const { kthLogs } = useCarbonStore();
+  const { kthLogs, kthTransactions } = useCarbonStore();
   const [showNotice, setShowNotice] = useState(false);
+
+  const totalDisbursedIDR =
+    kthTransactions
+      ?.filter((tx: any) => tx.status === 'completed')
+      .reduce((acc: number, tx: any) => acc + (tx.amountIDR || 0), 0) || 145000000;
 
   const handleUploadLog = () => {
     setShowNotice(true);
@@ -41,7 +47,9 @@ export default function DigitalWalletHybridLogs() {
               <Wallet className="w-4 h-4 text-[#00C48C]" />
               DOMPET DIGITAL INSENTIF PENANAMAN KTH
             </span>
-            <h3 className="text-3xl font-black font-mono text-white">Rp 145.000.000</h3>
+            <h3 className="text-3xl font-black font-mono text-white">
+              {formatCurrency(totalDisbursedIDR)}
+            </h3>
             <p className="text-xs text-slate-400 font-medium">
               Aliran Dana Otomatis dari Smart Contract DEX (Pos Restorasi 62% & Pemeliharaan 15%)
             </p>

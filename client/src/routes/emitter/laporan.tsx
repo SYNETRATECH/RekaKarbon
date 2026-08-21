@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { formatFileSize } from '@/lib/formatters';
+import { formatFileSize, formatPercent } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
@@ -116,9 +116,6 @@ export default function EmissionReportsSector() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <span className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-md border border-slate-200">
-            EMISSIONS AUDIT & SECTORAL REPORTING
-          </span>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
             Pelaporan & Audit Otomatis Emisi Industri
           </h2>
@@ -683,26 +680,17 @@ export default function EmissionReportsSector() {
             Proporsi Alokasi Emisi per Sektor Industri
           </span>
           <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200">
-            <div
-              className="h-full bg-status-danger-fg"
-              style={{ width: '55.6%' }}
-              title="Scope 1: 55.6%"
-            ></div>
-            <div
-              className="h-full bg-amber-500"
-              style={{ width: '27.8%' }}
-              title="Scope 2: 27.8%"
-            ></div>
-            <div
-              className="h-full bg-blue-500"
-              style={{ width: '10.9%' }}
-              title="Scope 3: 10.9%"
-            ></div>
-            <div
-              className="h-full bg-emerald-500"
-              style={{ width: '5.7%' }}
-              title="Proses Industri: 5.7%"
-            ></div>
+            {activeReport.sectors?.map((sector: any) => (
+              <div
+                key={sector.id}
+                className="h-full transition-all"
+                style={{
+                  width: `${sector.percentage}%`,
+                  backgroundColor: sector.color || '#10B981',
+                }}
+                title={`${sector.name || sector.scope}: ${formatPercent(sector.percentage)}`}
+              />
+            ))}
           </div>
         </div>
       </div>

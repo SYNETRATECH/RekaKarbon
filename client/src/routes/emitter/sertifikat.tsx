@@ -1,7 +1,7 @@
 import { useCarbonStore } from '../../store/useCarbonStore';
+import { formatCurrency, formatCompactCurrency } from '../../lib/formatters';
 import { Award, ShieldCheck, TreePine, Coins } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import CertificateCard from '../../components/cards/CertificateCard';
 
 export function meta() {
@@ -15,17 +15,21 @@ export default function PurchasedCertificatesProjects() {
   const { purchasedCertificates: certs } = useCarbonStore();
 
   const totalVolume = certs.reduce((acc: number, c: any) => acc + c.purchasedVolumeTCO2e, 0);
+  const totalValueIDR = certs.reduce(
+    (acc: number, c: any) =>
+      acc + (c.totalPaidIDR || c.purchasedVolumeTCO2e * c.pricePerTonIDR || 0),
+    0
+  );
+  const avgPricePerTon = certs.length
+    ? Math.round(
+        certs.reduce((acc: number, c: any) => acc + (c.pricePerTonIDR || 0), 0) / certs.length
+      )
+    : 0;
 
   return (
     <div className="space-y-8 animate-fade-in text-left">
       {/* Header */}
       <div>
-        <Badge
-          variant="outline"
-          className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 border-slate-200"
-        >
-          CARBON CERTIFICATES & ASSETS
-        </Badge>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
           Sertifikat & Kondisi Proyek Karbon (Real-Time)
         </h2>
@@ -80,9 +84,14 @@ export default function PurchasedCertificatesProjects() {
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Total Nilai Sertifikat
             </span>
-            <h3 className="text-2xl font-black text-slate-800">Rp 8.12 M</h3>
+            <h3
+              className="text-2xl font-black text-slate-800 cursor-default"
+              title={formatCurrency(totalValueIDR)}
+            >
+              {formatCompactCurrency(totalValueIDR)}
+            </h3>
             <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
-              Harga Acuan Rp 650rb/ton
+              Harga Rata-rata {formatCurrency(avgPricePerTon)}/ton
             </span>
           </div>
         </Card>

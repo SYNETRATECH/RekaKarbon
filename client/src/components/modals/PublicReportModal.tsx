@@ -1,7 +1,7 @@
 import { FileText, Printer, FileSpreadsheet, Download, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { formatArea, formatCarbon } from '@/lib/formatters';
+import { formatArea, formatCarbon, formatScale } from '@/lib/formatters';
 import {
   Table,
   TableHeader,
@@ -25,6 +25,14 @@ export default function PublicReportModal({
   projects,
   companies,
 }: PublicReportModalProps) {
+  const totalCarbonStock = projects.reduce(
+    (acc, p) => acc + (p.rawCarbonVal || (typeof p.carbon === 'number' ? p.carbon : 0)),
+    0
+  );
+  const totalDeficit = companies.reduce(
+    (acc, c) => acc + (typeof c.carbonDeficit === 'number' ? c.carbonDeficit : 0),
+    0
+  );
   const handleDownloadCSV = () => {
     let csvContent = 'data:text/csv;charset=utf-8,';
     csvContent +=
@@ -176,7 +184,9 @@ export default function PublicReportModal({
                   <span className="text-[8px] font-bold text-slate-400 uppercase block">
                     Cadangan Karbon Hutan
                   </span>
-                  <span className="text-sm font-black text-emerald-800">79.71M tCO₂e</span>
+                  <span className="text-sm font-black text-emerald-800">
+                    {formatScale(totalCarbonStock, 'tCO₂e')}
+                  </span>
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-slate-200">
                   <span className="text-[8px] font-bold text-slate-400 uppercase block">
@@ -190,7 +200,9 @@ export default function PublicReportModal({
                   <span className="text-[8px] font-bold text-slate-400 uppercase block">
                     Total Defisit Emisi
                   </span>
-                  <span className="text-sm font-black text-rose-600">6.47M tCO₂e</span>
+                  <span className="text-sm font-black text-rose-600">
+                    {formatScale(totalDeficit, 'tCO₂e')}
+                  </span>
                 </div>
               </div>
             </div>
