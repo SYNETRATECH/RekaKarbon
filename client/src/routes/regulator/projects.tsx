@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import ProjectProgressModal from '../../components/modals/ProjectProgressModal';
 import DroneAuditModal from '../../components/modals/DroneAuditModal';
@@ -45,11 +46,11 @@ export function meta() {
 }
 
 export default function ForestProjectsManagement() {
+  const navigate = useNavigate();
   const {
     forestProjects: projects,
     projects: landingProjects,
     setEditingProjectData,
-    setAdminActiveTab,
   } = useCarbonStore();
 
   const [selectedStage, setSelectedStage] = useState<any>(null);
@@ -60,12 +61,12 @@ export default function ForestProjectsManagement() {
 
   const openCreatePage = () => {
     setEditingProjectData(null);
-    setAdminActiveTab('project-editor');
+    navigate('/project-editor');
   };
 
   const openEditPage = (prj: any) => {
     setEditingProjectData(prj);
-    setAdminActiveTab('project-editor');
+    navigate('/project-editor');
   };
 
   const filteredProjects = projects.filter(
@@ -139,8 +140,8 @@ export default function ForestProjectsManagement() {
       id: prj.id,
       name: prj.projectName,
       region: prj.location,
-      area: '15.0K Ha',
-      carbon: `${(prj.targetSequestrationTCO2e / 1000).toFixed(1)}K tCO2e`,
+      area: '15.000 ha',
+      carbon: `${(prj.targetSequestrationTCO2e / 1000).toFixed(1)}K tCO₂e`,
       plantedTrees: 124000,
       targetTrees: 150000,
       canopyHeight: 1.85,
@@ -212,6 +213,7 @@ export default function ForestProjectsManagement() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Kode ID</TableHead>
               <TableHead>Nama Proyek Kehutanan</TableHead>
               <TableHead>Kategori Hutan</TableHead>
@@ -223,10 +225,13 @@ export default function ForestProjectsManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProjects.map((prj: any) => {
+            {filteredProjects.map((prj: any, index: number) => {
               const progressData = getProjectProgressData(prj);
               return (
                 <TableRow key={prj.id}>
+                  <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                    {index + 1}
+                  </TableCell>
                   <TableCell className="font-mono font-black text-slate-900">{prj.id}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -253,7 +258,7 @@ export default function ForestProjectsManagement() {
                       <div className="flex justify-between items-baseline gap-2">
                         <span className="font-black text-emerald-600 block">
                           {prj.actualSequestrationTCO2e.toLocaleString('id-ID')} /{' '}
-                          {prj.targetSequestrationTCO2e.toLocaleString('id-ID')} tCO2e
+                          {prj.targetSequestrationTCO2e.toLocaleString('id-ID')} tCO₂e
                         </span>
                         <span className="text-[10px] font-extrabold text-emerald-700">
                           {progressData.pct}%

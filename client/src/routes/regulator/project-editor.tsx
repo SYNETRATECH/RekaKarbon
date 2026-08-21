@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate, Link } from 'react-router';
 import type L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import { sortPolygonCoordinates } from '../../utils/geodetics';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { Save, Plus, Trash2, UploadCloud, FileText, FileSpreadsheet, X } from 'lucide-react';
 import { ForestProjectItem } from '../../types';
+import { parseNumeric, formatFileSize } from '../../lib/formatters';
 import {
   Select,
   SelectContent,
@@ -13,6 +15,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 const TILE_URLS: {
   satellite: string;
@@ -34,39 +44,89 @@ export function meta() {
   ];
 }
 
+function normalizePolygonCoordinates(project: ForestProjectItem | null): [number, number][] {
+  if (!project) return [];
+
+  // 1. If polygonCoords is present
+  if (
+    project.polygonCoords &&
+    Array.isArray(project.polygonCoords) &&
+    project.polygonCoords.length > 0
+  ) {
+    const valid = project.polygonCoords
+      .map((c: any) => {
+        if (Array.isArray(c)) {
+          return [typeof c[0] === 'number' ? c[0] : 0, typeof c[1] === 'number' ? c[1] : 0] as [
+            number,
+            number,
+          ];
+        }
+        if (typeof c === 'object' && c !== null) {
+          return [typeof c.lat === 'number' ? c.lat : 0, typeof c.lng === 'number' ? c.lng : 0] as [
+            number,
+            number,
+          ];
+        }
+        return [0, 0] as [number, number];
+      })
+      .filter((pt) => pt[0] !== 0 && pt[1] !== 0);
+    if (valid.length > 0) return valid;
+  }
+
+  // 2. If coordinates is an array of coordinate arrays [[lat, lng], [lat, lng], ...]
+  if (Array.isArray(project.coordinates) && Array.isArray(project.coordinates[0])) {
+    return (project.coordinates as any).map((c: any) => [c[0], c[1]]);
+  }
+
+  // 3. If coordinates is a single center point [lat, lng]
+  if (
+    Array.isArray(project.coordinates) &&
+    project.coordinates.length === 2 &&
+    typeof project.coordinates[0] === 'number' &&
+    typeof project.coordinates[1] === 'number'
+  ) {
+    const lat = project.coordinates[0];
+    const lng = project.coordinates[1];
+    return [
+      [Number((lat + 0.003).toFixed(6)), Number((lng - 0.003).toFixed(6))],
+      [Number((lat + 0.003).toFixed(6)), Number((lng + 0.003).toFixed(6))],
+      [Number((lat - 0.003).toFixed(6)), Number((lng + 0.003).toFixed(6))],
+      [Number((lat - 0.003).toFixed(6)), Number((lng - 0.003).toFixed(6))],
+    ];
+  }
+
+  return [];
+}
+
 export default function ProjectEditorPage() {
-  const {
-    editingProjectData,
-    setEditingProjectData,
-    addForestProject,
-    updateForestProject,
-    setAdminActiveTab,
-  } = useCarbonStore();
+  const navigate = useNavigate();
+  const { editingProjectData, setEditingProjectData, addForestProject, updateForestProject } =
+    useCarbonStore();
 
   const isEditing = Boolean(editingProjectData && editingProjectData.id);
 
-  // Form State
+  // Form State (Clean empty values if creating new project)
   const [formData, setFormData] = useState({
     projectName: editingProjectData?.projectName || '',
     category: editingProjectData?.category || 'mangrove',
     categoryLabel: editingProjectData?.categoryLabel || 'Mangrove & Blue Carbon',
-    location: editingProjectData?.location || 'Tuban, Jawa Timur',
-    targetSequestrationTCO2e: editingProjectData?.targetSequestrationTCO2e || 15000,
-    fundingBudgetIDR: editingProjectData?.fundingBudgetIDR || 'Rp 4.5 Miliar',
-    assignedKTH: editingProjectData?.assignedKTH || 'KTH Mangrove Tuban Mandiri',
-    budgetReportFileName: editingProjectData?.budgetReportFileName || 'RAB_Proyek_Tuban.pdf',
+    location: editingProjectData?.location || '',
+    targetSequestrationTCO2e: editingProjectData?.targetSequestrationTCO2e
+      ? String(editingProjectData.targetSequestrationTCO2e)
+      : '',
+    fundingBudgetIDR: editingProjectData?.fundingBudgetIDR
+      ? String(editingProjectData.fundingBudgetIDR)
+      : '',
+    assignedKTH: editingProjectData?.assignedKTH || '',
+    budgetReportFileName: editingProjectData?.budgetReportFileName || '',
+    budgetReportFileSize: editingProjectData?.budgetReportFileSize || 0,
     auditResultStatus: editingProjectData?.auditResultStatus || 'Mandatory Audit Valid',
-    notes: editingProjectData?.notes || 'Dokumen perencanaan lengkap',
+    notes: editingProjectData?.notes || '',
   });
 
   // Coordinates & Spatial Map State
   const [coordinates, setCoordinates] = useState<[number, number][]>(
-    editingProjectData?.coordinates || [
-      [-6.89, 112.05],
-      [-6.89, 112.07],
-      [-6.91, 112.07],
-      [-6.91, 112.05],
-    ]
+    normalizePolygonCoordinates(editingProjectData)
   );
 
   const [activeTileType] = useState<MapType>('satellite');
@@ -92,12 +152,12 @@ export default function ProjectEditorPage() {
   useEffect(() => {
     if (!LModule || mapInstanceRef.current || !mapRef.current) return;
 
-    const initialCenter: [number, number] =
-      coordinates.length > 0 ? coordinates[0] : [-6.89, 112.05];
+    const initialCenter: [number, number] = coordinates.length > 0 ? coordinates[0] : [-2.5, 118.0];
+    const initialZoom = coordinates.length > 0 ? 13 : 5;
 
     const initMap = LModule.map(mapRef.current, {
       center: initialCenter,
-      zoom: 13,
+      zoom: initialZoom,
       zoomControl: false,
     });
 
@@ -230,20 +290,32 @@ export default function ProjectEditorPage() {
   // Save Action
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    const budgetVal = parseNumeric(formData.fundingBudgetIDR);
+
+    // Compute center coordinates
+    const centerPoint: [number, number] =
+      coordinates.length > 0
+        ? [
+            Number((coordinates.reduce((s, c) => s + c[0], 0) / coordinates.length).toFixed(6)),
+            Number((coordinates.reduce((s, c) => s + c[1], 0) / coordinates.length).toFixed(6)),
+          ]
+        : [-6.89, 112.05];
+
     const payload: ForestProjectItem = {
       id: isEditing ? editingProjectData.id : `PRJ-REG-${Date.now()}`,
       projectName: formData.projectName,
       category: formData.category as any,
       categoryLabel: formData.categoryLabel,
       location: formData.location,
-      coordinates: (coordinates[0] || [-6.89, 112.05]) as [number, number],
-      targetSequestrationTCO2e: Number(formData.targetSequestrationTCO2e),
+      coordinates: centerPoint,
+      polygonCoords: coordinates.map((c) => ({ lat: c[0], lng: c[1] })),
+      targetSequestrationTCO2e: Number(formData.targetSequestrationTCO2e || 0),
       actualSequestrationTCO2e: Number(formData.targetSequestrationTCO2e || 0),
-      fundingBudgetIDR: Number(formData.fundingBudgetIDR || 0),
+      fundingBudgetIDR: budgetVal,
       assignedKTH: formData.assignedKTH,
       dMRVStatus: 'verified',
-      budgetReportFileName: formData.budgetReportFileName,
-      budgetReportFileSize: 4500000,
+      budgetReportFileName: formData.budgetReportFileName || undefined,
+      budgetReportFileSize: formData.budgetReportFileSize || undefined,
     };
 
     if (isEditing) {
@@ -253,23 +325,39 @@ export default function ProjectEditorPage() {
     }
 
     setEditingProjectData(null);
-    setAdminActiveTab('projects');
+    navigate('/projects');
   };
 
   return (
     <div className="space-y-6 text-left animate-fade-in pb-12">
+      {/* Breadcrumb Trail */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/forest">Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/projects">Manajemen Proyek Kehutanan</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>
+              {isEditing
+                ? `Edit: ${editingProjectData?.projectName || 'Proyek'}`
+                : 'Tambah Proyek Baru'}
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => {
-              setEditingProjectData(null);
-              setAdminActiveTab('projects');
-            }}
-            className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
           <div>
             <h1 className="text-xl font-black text-slate-900 tracking-tight">
               {isEditing
@@ -308,6 +396,7 @@ export default function ProjectEditorPage() {
                 type="text"
                 value={formData.projectName}
                 onChange={(e) => handleInputChange('projectName', e.target.value)}
+                placeholder="Contoh: Restorasi Mangrove Hutan Lindung Tuban"
                 className="rounded-xl text-xs"
                 required
               />
@@ -353,6 +442,7 @@ export default function ProjectEditorPage() {
                   type="text"
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
+                  placeholder="Contoh: Tuban, Jawa Timur"
                   className="rounded-xl text-xs"
                   required
                 />
@@ -362,12 +452,13 @@ export default function ProjectEditorPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-extrabold text-slate-700 block mb-1">
-                  Target Karbon (tCO2e)
+                  Target Karbon (tCO₂e)
                 </label>
                 <Input
                   type="number"
                   value={formData.targetSequestrationTCO2e}
                   onChange={(e) => handleInputChange('targetSequestrationTCO2e', e.target.value)}
+                  placeholder="Contoh: 15000"
                   className="rounded-xl text-xs"
                   required
                 />
@@ -375,12 +466,13 @@ export default function ProjectEditorPage() {
 
               <div>
                 <label className="text-xs font-extrabold text-slate-700 block mb-1">
-                  Alokasi Anggaran
+                  Alokasi Anggaran (IDR)
                 </label>
                 <Input
                   type="text"
                   value={formData.fundingBudgetIDR}
                   onChange={(e) => handleInputChange('fundingBudgetIDR', e.target.value)}
+                  placeholder="Contoh: 4500000000"
                   className="rounded-xl text-xs"
                   required
                 />
@@ -395,9 +487,72 @@ export default function ProjectEditorPage() {
                 type="text"
                 value={formData.assignedKTH}
                 onChange={(e) => handleInputChange('assignedKTH', e.target.value)}
+                placeholder="Contoh: KTH Mangrove Tuban Mandiri"
                 className="rounded-xl text-xs"
                 required
               />
+            </div>
+
+            {/* Input: File Laporan Anggaran (PDF/Excel) */}
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                File Laporan Anggaran (PDF/Excel)
+              </label>
+              {formData.budgetReportFileName ? (
+                <div className="flex items-center justify-between p-3 rounded-xl border border-emerald-200 bg-emerald-50/50">
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    {formData.budgetReportFileName.endsWith('.xlsx') ||
+                    formData.budgetReportFileName.endsWith('.xls') ? (
+                      <FileSpreadsheet className="w-5 h-5 text-emerald-600 shrink-0" />
+                    ) : (
+                      <FileText className="w-5 h-5 text-rose-500 shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <span className="text-xs font-extrabold text-slate-800 block truncate">
+                        {formData.budgetReportFileName}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-semibold block">
+                        {formData.budgetReportFileSize
+                          ? formatFileSize(formData.budgetReportFileSize)
+                          : 'Dokumen Terlampir'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleInputChange('budgetReportFileName', '');
+                      handleInputChange('budgetReportFileSize', 0);
+                    }}
+                    className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white transition-colors cursor-pointer"
+                    title="Hapus Berkas"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/20 rounded-xl cursor-pointer transition-all text-center">
+                  <UploadCloud className="w-6 h-6 text-slate-400 mb-1" />
+                  <span className="text-xs font-bold text-slate-700">
+                    Klik untuk unggah berkas laporan anggaran
+                  </span>
+                  <span className="text-[10px] text-slate-400 mt-0.5">
+                    Format .pdf, .xlsx, .xls (Maks. 10 MB)
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.xlsx,.xls"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleInputChange('budgetReportFileName', file.name);
+                        handleInputChange('budgetReportFileSize', file.size);
+                      }
+                    }}
+                  />
+                </label>
+              )}
             </div>
           </form>
         </div>

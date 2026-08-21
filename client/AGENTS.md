@@ -153,7 +153,7 @@ lib/mock/*.ts              # Typed fixtures (source of truth for mock, UUID-like
 | Raw Type            | Formatter                           | Output Example   |
 | ------------------- | ----------------------------------- | ---------------- |
 | `number` (IDR)      | `formatCurrency()`                  | `Rp 200.000.000` |
-| `number` (tCO2e)    | `formatCarbon()`                    | `48.200 tCO2e`   |
+| `number` (tCO2e)    | `formatCarbon()`                    | `48.200 tCO₂e`   |
 | `number` (hectares) | `formatArea()`                      | `2.450 ha`       |
 | `number` (percent)  | `formatPercent()`                   | `96,4%`          |
 | `number` (bytes)    | `formatFileSize()`                  | `2,45 MB`        |

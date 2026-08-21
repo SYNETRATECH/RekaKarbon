@@ -13,7 +13,7 @@ export function meta() {
   ];
 }
 
-export default function LandPolygonMapping() {
+export default function KTHDashboard() {
   const { kthPolygons } = useCarbonStore();
   const [newLandName, setNewLandName] = useState('');
   const [newAreaHa, setNewAreaHa] = useState(50);
@@ -27,7 +27,7 @@ export default function LandPolygonMapping() {
         </h2>
         <p className="text-xs text-slate-500 font-semibold mt-1">
           Penggambaran batas area polygon lahan konservasi untuk dikirim ke NusaCarbon API dan
-          dianalisis estimasi cadangan karbonnya (tCO2e).
+          dianalisis estimasi cadangan karbonnya (tCO₂e).
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export default function LandPolygonMapping() {
                     Estimasi Karbon NusaCarbon API:
                   </span>
                   <span className="font-bold text-emerald-700">
-                    {(newAreaHa * 37.5).toFixed(0)} tCO2e
+                    {(newAreaHa * 37.5).toFixed(0)} tCO₂e
                   </span>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export default function LandPolygonMapping() {
                 <div>
                   <h5 className="font-extrabold text-slate-900">{poly.name}</h5>
                   <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
-                    Luas: {poly.areaHectares} Ha · Estimasi: {poly.estimatedCO2e} tCO2e
+                    Luas: {poly.areaHectares} ha · Estimasi: {poly.estimatedCO2e} tCO₂e
                   </span>
                 </div>
                 <Badge variant="default" className="text-[10px] px-3 py-1">

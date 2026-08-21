@@ -135,7 +135,7 @@ export default function AuditReportModal() {
                       </div>
                       <div>
                         <span className="text-slate-400 text-[9px] block font-normal">
-                          Total Cadangan CO2
+                          Total Cadangan CO₂
                         </span>
                         <span className="text-xs font-black text-slate-900 font-mono">
                           {formatCarbon(activeProj.rawCarbonVal || activeProj.carbon)}
@@ -154,6 +154,7 @@ export default function AuditReportModal() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12 text-center">No.</TableHead>
                       <TableHead>Parameter Audit</TableHead>
                       <TableHead>Nilai Terukur</TableHead>
                       <TableHead>Status Ambang Batas</TableHead>
@@ -163,6 +164,9 @@ export default function AuditReportModal() {
                     {selectedReportStage ? (
                       <>
                         <TableRow>
+                          <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                            1
+                          </TableCell>
                           <TableCell>Kerapatan Kanopi Vegetasi</TableCell>
                           <TableCell className="font-mono font-bold text-emerald-700">
                             {selectedReportStage.canopyDensity}%
@@ -184,6 +188,9 @@ export default function AuditReportModal() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
+                          <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                            2
+                          </TableCell>
                           <TableCell>Tinggi Kanopi Model (CHM)</TableCell>
                           <TableCell className="font-mono font-bold text-slate-800">
                             {selectedReportStage.year <= activeProj.currentYear
@@ -205,6 +212,9 @@ export default function AuditReportModal() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
+                          <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                            3
+                          </TableCell>
                           <TableCell>Ground Sampling Distance (GSD) Drone</TableCell>
                           <TableCell className="font-mono font-bold text-slate-800">
                             {selectedReportStage.gsd} cm/px
@@ -216,9 +226,12 @@ export default function AuditReportModal() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
+                          <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                            4
+                          </TableCell>
                           <TableCell>Sertifikasi SPE-GRK Terbit</TableCell>
                           <TableCell className="font-mono font-bold text-emerald-700">
-                            +{selectedReportStage.speCreditMinted.toLocaleString('id-ID')} tCO2e
+                            +{selectedReportStage.speCreditMinted.toLocaleString('id-ID')} tCO₂e
                           </TableCell>
                           <TableCell>
                             <span
@@ -236,6 +249,9 @@ export default function AuditReportModal() {
                     ) : (
                       <>
                         <TableRow>
+                          <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                            1
+                          </TableCell>
                           <TableCell>Vegetation Health (NDVI)</TableCell>
                           <TableCell className="font-mono font-bold text-emerald-700">
                             {activeProj.ndvi.toFixed(2)}
@@ -247,6 +263,9 @@ export default function AuditReportModal() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
+                          <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                            2
+                          </TableCell>
                           <TableCell>Enhanced Vegetation Index (EVI)</TableCell>
                           <TableCell className="font-mono font-bold text-emerald-700">
                             {activeProj.evi.toFixed(2)}
@@ -258,6 +277,9 @@ export default function AuditReportModal() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
+                          <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                            3
+                          </TableCell>
                           <TableCell>Tingkat Kelangsungan Hidup Pohon</TableCell>
                           <TableCell className="font-mono font-bold text-emerald-700">
                             {(activeProj.survivalRate * 100).toFixed(1)}%
@@ -269,6 +291,9 @@ export default function AuditReportModal() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
+                          <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                            4
+                          </TableCell>
                           <TableCell>Tinggi Kanopi Model (CHM)</TableCell>
                           <TableCell className="font-mono font-bold text-slate-800">
                             {activeProj.canopyHeight.toFixed(2)} m

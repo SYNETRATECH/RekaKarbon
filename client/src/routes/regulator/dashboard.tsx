@@ -8,7 +8,14 @@ import {
   BarChart3,
   CheckCircle2,
 } from 'lucide-react';
-import { formatArea, formatCarbon, formatCurrency } from '../../lib/formatters';
+import {
+  formatArea,
+  formatCarbon,
+  formatCurrency,
+  formatCompactCurrency,
+  formatScale,
+  formatPercent,
+} from '../../lib/formatters';
 import {
   Table,
   TableHeader,
@@ -25,8 +32,22 @@ export function meta() {
   ];
 }
 
-export default function NationalForestDashboard() {
+export default function RegulatorDashboard() {
   const { nationalForestRegions: regions } = useCarbonStore();
+
+  const totalAreaHa = regions.reduce((acc: number, r: any) => acc + (r.areaHectares || 0), 0);
+  const totalCarbonTCO2e = regions.reduce(
+    (acc: number, r: any) => acc + (r.carbonSequestrationTCO2e || 0),
+    0
+  );
+  const totalFundingIDR = regions.reduce(
+    (acc: number, r: any) => acc + (r.fundingDisbursedIDR || 0),
+    0
+  );
+  const avgHealth = regions.length
+    ? regions.reduce((acc: number, r: any) => acc + (r.forestHealthPercent || 0), 0) /
+      regions.length
+    : 0;
 
   return (
     <div className="space-y-8 animate-fade-in text-left">
@@ -51,9 +72,7 @@ export default function NationalForestDashboard() {
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Total Kawasan Hutan
             </span>
-            <h3 className="text-2xl font-black text-slate-900">
-              12.4 <span className="text-xs font-bold text-slate-500">Miliar Ha</span>
-            </h3>
+            <h3 className="text-2xl font-black text-slate-900">{formatScale(totalAreaHa, 'ha')}</h3>
             <span className="text-[10px] font-bold text-emerald-600 block mt-0.5">
               Seluruh Indonesia
             </span>
@@ -69,7 +88,7 @@ export default function NationalForestDashboard() {
               Total Daya Serap
             </span>
             <h3 className="text-2xl font-black text-emerald-600">
-              148.5 <span className="text-xs font-bold text-slate-500">M tCO2e</span>
+              {formatScale(totalCarbonTCO2e, 'tCO₂e')}
             </h3>
             <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
               Kapasitas Nyata
@@ -85,7 +104,12 @@ export default function NationalForestDashboard() {
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Insentif Disalurkan
             </span>
-            <h3 className="text-2xl font-black text-slate-800">Rp 42.800.000.000</h3>
+            <h3
+              className="text-2xl font-black text-slate-800 cursor-default"
+              title={formatCurrency(totalFundingIDR)}
+            >
+              {formatCompactCurrency(totalFundingIDR)}
+            </h3>
             <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
               Ke Kelompok Tani
             </span>
@@ -100,7 +124,7 @@ export default function NationalForestDashboard() {
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Satelit CHM Status
             </span>
-            <h3 className="text-2xl font-black text-blue-600">94.2%</h3>
+            <h3 className="text-2xl font-black text-blue-600">{formatPercent(avgHealth)}</h3>
             <span className="text-[10px] font-bold text-slate-400 block mt-0.5">Tutupan Sehat</span>
           </div>
         </div>
@@ -180,6 +204,7 @@ export default function NationalForestDashboard() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Wilayah Hutan</TableHead>
               <TableHead>Luas Kawasan</TableHead>
               <TableHead>Kapasitas Serapan</TableHead>
@@ -189,14 +214,20 @@ export default function NationalForestDashboard() {
           </TableHeader>
           <TableBody>
             {regions.map(
-              (reg: {
-                id: string;
-                regionName: string;
-                areaHectares: number;
-                carbonSequestrationTCO2e: number;
-                fundingDisbursedIDR: number;
-              }) => (
+              (
+                reg: {
+                  id: string;
+                  regionName: string;
+                  areaHectares: number;
+                  carbonSequestrationTCO2e: number;
+                  fundingDisbursedIDR: number;
+                },
+                index: number
+              ) => (
                 <TableRow key={reg.id}>
+                  <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                    {index + 1}
+                  </TableCell>
                   <TableCell className="font-black text-slate-900">{reg.regionName}</TableCell>
                   <TableCell className="text-slate-600 font-bold">
                     {formatArea(reg.areaHectares)}

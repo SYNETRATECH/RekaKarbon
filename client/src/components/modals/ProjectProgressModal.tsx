@@ -54,10 +54,10 @@ export default function ProjectProgressModal({
               </span>
               <p className="text-lg font-black text-slate-900 mt-1">
                 {project.actualSequestrationTCO2e.toLocaleString('id-ID')}{' '}
-                <span className="text-xs text-slate-500 font-bold">tCO2e</span>
+                <span className="text-xs text-slate-500 font-bold">tCO₂e</span>
               </p>
               <span className="text-[10px] font-bold text-emerald-600 block mt-0.5">
-                Target: {project.targetSequestrationTCO2e.toLocaleString('id-ID')} tCO2e
+                Target: {project.targetSequestrationTCO2e.toLocaleString('id-ID')} tCO₂e
               </span>
             </div>
 

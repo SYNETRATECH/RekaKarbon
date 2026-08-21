@@ -1,6 +1,6 @@
 import { Award, Download, ExternalLink, MapPin, Sparkles, Layers } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, formatCompactCurrency } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 
 interface CertificateCardProps {
@@ -73,7 +73,7 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
             <div className="flex justify-between items-baseline">
               <span className="text-xs text-slate-400 font-bold">Volume Karbon</span>
               <span className="text-lg font-black text-status-danger-fg">
-                {cert.purchasedVolumeTCO2e.toLocaleString('id-ID')} tCO2e
+                {cert.purchasedVolumeTCO2e.toLocaleString('id-ID')} tCO₂e
               </span>
             </div>
             <div className="flex justify-between items-baseline">
@@ -134,7 +134,7 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
                 Laju Penyerapan
               </span>
               <span className="text-sm font-black text-blue-900 block mt-1">
-                +{cert.projectCondition.carbonSequestrationRate} tCO2e/ha/thn
+                +{cert.projectCondition.carbonSequestrationRate} tCO₂e/ha/tahun
               </span>
               <span className="text-[9px] font-semibold text-blue-600 block mt-0.5">
                 Biomassa Tinggi
@@ -145,8 +145,11 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
               <span className="text-[9px] font-extrabold text-amber-700 uppercase block">
                 Insentif KTH
               </span>
-              <span className="text-sm font-black text-amber-900 block mt-1">
-                {formatCurrency(cert.projectCondition.kthIncentiveDisbursed)}
+              <span
+                className="text-sm font-black text-amber-900 block mt-1 cursor-default"
+                title={formatCurrency(cert.projectCondition.kthIncentiveDisbursed)}
+              >
+                {formatCompactCurrency(cert.projectCondition.kthIncentiveDisbursed)}
               </span>
               <span className="text-[9px] font-semibold text-amber-600 block mt-0.5">
                 Disalurkan 100%

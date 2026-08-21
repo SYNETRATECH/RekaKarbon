@@ -47,7 +47,7 @@ export default function KthFarmersManagement() {
     memberCount: 30,
     location: '',
     registrationNumber: '',
-    totalIncentiveReceivedIDR: 'Rp 0 Juta',
+    totalIncentiveReceivedIDR: 0,
     walletAddress: '0x8f2a948571029485710294857102948571029485',
   });
 
@@ -59,7 +59,7 @@ export default function KthFarmersManagement() {
       memberCount: 30,
       location: '',
       registrationNumber: `SK.LHK-${Math.floor(1000 + Math.random() * 9000)}/KTH/2026`,
-      totalIncentiveReceivedIDR: 'Rp 250 Juta',
+      totalIncentiveReceivedIDR: 0,
       walletAddress:
         '0x' +
         Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
@@ -155,6 +155,7 @@ export default function KthFarmersManagement() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Kode KTH</TableHead>
               <TableHead>Nama Kelompok Tani Hutan</TableHead>
               <TableHead>Ketua Pengurus & Anggota</TableHead>
@@ -166,8 +167,11 @@ export default function KthFarmersManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredGroups.map((kth: any) => (
+            {filteredGroups.map((kth: any, index: number) => (
               <TableRow key={kth.id}>
+                <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="font-mono font-black text-slate-900">{kth.id}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

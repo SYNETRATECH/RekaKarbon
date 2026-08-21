@@ -40,7 +40,7 @@ export function meta() {
   ];
 }
 
-export default function EmissionsAuditAI() {
+export default function AuditorDashboard() {
   const {
     aiAnomalyLogs,
     anomalySummary,
@@ -79,9 +79,6 @@ export default function EmissionsAuditAI() {
     <div className="flex-1 overflow-y-auto min-h-0 space-y-6 animate-fade-in text-left pr-1 pb-8">
       {/* HEADER SECTION */}
       <div>
-        <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase block mb-1">
-          LVV — AI EMISSIONS SCREENING
-        </span>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
           Panel Penyaringan Anomali Emisi
         </h2>
@@ -196,6 +193,7 @@ export default function EmissionsAuditAI() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="py-3 px-3 text-center w-12">No.</TableHead>
                 <TableHead className="py-3 px-3">Nama Pabrik</TableHead>
                 <TableHead className="py-3 px-3">Sektor</TableHead>
                 <TableHead className="py-3 px-3 text-center">Skor Anomali</TableHead>
@@ -207,7 +205,7 @@ export default function EmissionsAuditAI() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredLogs.map((log: any) => {
+              {filteredLogs.map((log: any, index: number) => {
                 const isSelected = selectedAnomalyId === log.id;
 
                 let scoreBadgeVariant: 'destructive' | 'warning' | 'secondary' = 'destructive';
@@ -225,6 +223,11 @@ export default function EmissionsAuditAI() {
                       isSelected ? 'bg-emerald-50/40 border-l-4 border-l-[#033C2E] font-medium' : ''
                     }`}
                   >
+                    {/* No. */}
+                    <TableCell className="py-3.5 px-3 text-center font-mono font-bold text-slate-500 text-xs">
+                      {index + 1}
+                    </TableCell>
+
                     {/* Nama Pabrik & ID */}
                     <TableCell className="py-3.5 px-3">
                       <p className="font-black text-slate-900 leading-tight">{log.company}</p>

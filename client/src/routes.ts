@@ -15,7 +15,7 @@ export default [
     route('sertifikat', 'routes/emitter/sertifikat.tsx'),
 
     // Regulator Routes
-    route('forest', 'routes/regulator/forest.tsx'),
+    route('forest', 'routes/regulator/dashboard.tsx'),
     route('projects', 'routes/regulator/projects.tsx'),
     route('project-editor', 'routes/regulator/project-editor.tsx'),
     route('kth', 'routes/regulator/kth.tsx'),
@@ -23,13 +23,13 @@ export default [
     route('upload', 'routes/regulator/upload.tsx'),
 
     // Auditor Routes
-    route('audit', 'routes/auditor/audit.tsx'),
+    route('audit', 'routes/auditor/dashboard.tsx'),
     route('spatial', 'routes/auditor/spatial.tsx'),
     route('drone', 'routes/auditor/drone.tsx'),
     route('gate', 'routes/auditor/gate.tsx'),
 
     // KTH Routes
-    route('polygon', 'routes/kth/polygon.tsx'),
+    route('polygon', 'routes/kth/dashboard.tsx'),
     route('wallet', 'routes/kth/wallet.tsx'),
 
     // Settings

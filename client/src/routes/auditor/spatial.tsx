@@ -38,9 +38,6 @@ export default function SpatialMRVEvaluation() {
     <div className="flex-1 overflow-y-auto min-h-0 space-y-6 animate-fade-in text-left pr-1 pb-8">
       {/* HEADER SECTION */}
       <div>
-        <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase block mb-1">
-          LVV — DMRV KEHUTANAN
-        </span>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
           Evaluasi Spasial Carbon Stock
         </h2>
@@ -120,17 +117,18 @@ export default function SpatialMRVEvaluation() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="py-3 px-3 text-center w-12">No.</TableHead>
                 <TableHead className="py-3 px-3">Kawasan</TableHead>
                 <TableHead className="py-3 px-3 text-right">Luas (ha)</TableHead>
                 <TableHead className="py-3 px-3">NDVI</TableHead>
                 <TableHead className="py-3 px-3">EVI</TableHead>
-                <TableHead className="py-3 px-3 text-right">Kredit (tCO2e)</TableHead>
+                <TableHead className="py-3 px-3 text-right">Kredit (tCO₂e)</TableHead>
                 <TableHead className="py-3 px-3 text-center">Awan</TableHead>
                 <TableHead className="py-3 px-3 text-center">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {areas.map((area: any) => {
+              {areas.map((area: any, index: number) => {
                 const isSelected = selectedArea?.id === area.id;
 
                 return (
@@ -141,6 +139,11 @@ export default function SpatialMRVEvaluation() {
                       isSelected ? 'bg-emerald-50/40 border-l-4 border-l-[#033C2E]' : ''
                     }`}
                   >
+                    {/* No. */}
+                    <TableCell className="py-3.5 px-3 text-center font-mono font-bold text-slate-500 text-xs">
+                      {index + 1}
+                    </TableCell>
+
                     {/* Kawasan Name & Location */}
                     <TableCell className="py-3.5 px-3">
                       <p className="font-black text-slate-900 leading-tight">{area.name}</p>

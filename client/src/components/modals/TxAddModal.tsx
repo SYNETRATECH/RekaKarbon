@@ -72,7 +72,7 @@ export default function TxAddModal({
               />
             </div>
             <div>
-              <label className="font-bold text-slate-600 block mb-1">Volume SPE-GRK (tCO2e)</label>
+              <label className="font-bold text-slate-600 block mb-1">Volume SPE-GRK (tCO₂e)</label>
               <Input
                 type="number"
                 required

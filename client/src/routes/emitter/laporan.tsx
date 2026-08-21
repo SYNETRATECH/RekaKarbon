@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { formatFileSize } from '@/lib/formatters';
+import { formatFileSize, formatPercent } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
@@ -116,9 +116,6 @@ export default function EmissionReportsSector() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <span className="text-[9px] font-black text-[#003E29] uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-md border border-slate-200">
-            EMISSIONS AUDIT & SECTORAL REPORTING
-          </span>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
             Pelaporan & Audit Otomatis Emisi Industri
           </h2>
@@ -554,7 +551,7 @@ export default function EmissionReportsSector() {
                       className="bg-white font-mono font-extrabold pr-24 rounded-xl"
                     />
                     <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
-                      tCO2e / Tahun
+                      tCO₂e / Tahun
                     </span>
                   </div>
                 </div>
@@ -645,7 +642,7 @@ export default function EmissionReportsSector() {
             </span>
             <p className="text-3xl font-black text-status-danger-fg mt-1">
               {activeReport.totalEmissionsTCO2e.toLocaleString('id-ID')}{' '}
-              <span className="text-xs font-extrabold text-slate-500">tCO2e</span>
+              <span className="text-xs font-extrabold text-slate-500">tCO₂e</span>
             </p>
             <span className="text-[10px] font-bold text-slate-400 mt-1 block">
               Tahun Kepatuhan {selectedYear}
@@ -669,7 +666,7 @@ export default function EmissionReportsSector() {
               Intensitas Emisi Per Ton Produk
             </span>
             <p className="text-xl font-black text-slate-900 mt-1">
-              0,0329 <span className="text-xs font-bold text-slate-500">tCO2e / Ton Produk</span>
+              0,0329 <span className="text-xs font-bold text-slate-500">tCO₂e / Ton Produk</span>
             </p>
             <span className="text-[10px] font-extrabold text-blue-600 mt-1 block">
               Kapasitas Riil: 450.000 Ton / Tahun
@@ -683,26 +680,17 @@ export default function EmissionReportsSector() {
             Proporsi Alokasi Emisi per Sektor Industri
           </span>
           <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200">
-            <div
-              className="h-full bg-status-danger-fg"
-              style={{ width: '55.6%' }}
-              title="Scope 1: 55.6%"
-            ></div>
-            <div
-              className="h-full bg-amber-500"
-              style={{ width: '27.8%' }}
-              title="Scope 2: 27.8%"
-            ></div>
-            <div
-              className="h-full bg-blue-500"
-              style={{ width: '10.9%' }}
-              title="Scope 3: 10.9%"
-            ></div>
-            <div
-              className="h-full bg-emerald-500"
-              style={{ width: '5.7%' }}
-              title="Proses Industri: 5.7%"
-            ></div>
+            {activeReport.sectors?.map((sector: any) => (
+              <div
+                key={sector.id}
+                className="h-full transition-all"
+                style={{
+                  width: `${sector.percentage}%`,
+                  backgroundColor: sector.color || '#10B981',
+                }}
+                title={`${sector.name || sector.scope}: ${formatPercent(sector.percentage)}`}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -770,6 +758,7 @@ export default function EmissionReportsSector() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12 text-center">No.</TableHead>
               <TableHead>Judul Berkas Laporan</TableHead>
               <TableHead>Tahun</TableHead>
               <TableHead>Tanggal Unggah</TableHead>
@@ -780,8 +769,11 @@ export default function EmissionReportsSector() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reports.map((rep: any) => (
+            {reports.map((rep: any, index: number) => (
               <TableRow key={rep.id}>
+                <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="font-extrabold text-slate-900 flex items-center gap-2.5">
                   <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>{rep.title}</span>
@@ -796,7 +788,7 @@ export default function EmissionReportsSector() {
                   )}
                 </TableCell>
                 <TableCell className="font-black text-status-danger-fg font-mono">
-                  {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO2e
+                  {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO₂e
                 </TableCell>
                 <TableCell>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">

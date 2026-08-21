@@ -21,7 +21,7 @@ export function meta() {
   ];
 }
 
-export default function ComplianceDashboard() {
+export default function EmitterDashboard() {
   const { setAdminActiveTab, complianceData, projects, companies } = useCarbonStore();
   const [isPublicReportOpen, setIsPublicReportOpen] = useState(false);
 
@@ -74,10 +74,10 @@ export default function ComplianceDashboard() {
               >
                 {data.emissionIntensity}
               </h3>
-              <span className="text-xs font-extrabold text-slate-500">tCO2e/ton</span>
+              <span className="text-xs font-extrabold text-slate-500">tCO₂e/ton</span>
             </div>
             <span className="text-[11px] font-bold text-slate-400 block">
-              standar industri: {data.emissionIntensityStandard} tCO2e/ton
+              standar industri: {data.emissionIntensityStandard} tCO₂e/ton
             </span>
           </div>
           {hasDeficit ? (
@@ -103,7 +103,7 @@ export default function ComplianceDashboard() {
               >
                 {hasDeficit ? data.carbonDeficit.toLocaleString('id-ID') : '0'}
               </h3>
-              <span className="text-xs font-extrabold text-slate-500">tCO2e</span>
+              <span className="text-xs font-extrabold text-slate-500">tCO₂e</span>
             </div>
             <span
               className={`text-[11px] font-bold block ${hasDeficit ? 'text-status-danger-fg' : 'text-emerald-500'}`}
@@ -162,7 +162,7 @@ export default function ComplianceDashboard() {
                   </span>
                   <p className="text-2xl font-black text-status-danger-fg mt-1">
                     {data.actualEmissions.toLocaleString('id-ID')}{' '}
-                    <span className="text-xs font-bold text-slate-500">tCO2e</span>
+                    <span className="text-xs font-bold text-slate-500">tCO₂e</span>
                   </p>
                 </div>
                 <button
@@ -181,7 +181,7 @@ export default function ComplianceDashboard() {
                   </span>
                   <p className="text-2xl font-black text-slate-800 mt-1">
                     {data.quotaPTBAE.toLocaleString('id-ID')}{' '}
-                    <span className="text-xs font-bold text-slate-500">tCO2e</span>
+                    <span className="text-xs font-bold text-slate-500">tCO₂e</span>
                   </p>
                 </div>
                 <div className="text-[10px] font-semibold text-slate-500 flex items-center gap-1 mt-2">
@@ -195,8 +195,8 @@ export default function ComplianceDashboard() {
           {/* Progress Bar with Symmetrical Border Separator */}
           <div className="space-y-2 pt-4 border-t border-slate-200/80">
             <div className="flex justify-between text-[10px] font-extrabold text-slate-400">
-              <span>0 tCO2e</span>
-              <span>Kuota: {data.quotaPTBAE.toLocaleString('id-ID')} tCO2e</span>
+              <span>0 tCO₂e</span>
+              <span>Kuota: {data.quotaPTBAE.toLocaleString('id-ID')} tCO₂e</span>
             </div>
             <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200">
               <div
@@ -359,7 +359,9 @@ export default function ComplianceDashboard() {
                       return (
                         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-lg text-xs space-y-1 border border-slate-800">
                           <p className="font-extrabold text-slate-300">Tahun {label}</p>
-                          <p className="font-black text-status-danger-fg text-sm">Rp {val} M</p>
+                          <p className="font-black text-status-danger-fg text-sm">
+                            Rp {val} Miliar
+                          </p>
                           <p className="text-[10px] text-slate-400 font-semibold">
                             {data.label || 'Estimasi Biaya'}
                           </p>
@@ -376,7 +378,7 @@ export default function ComplianceDashboard() {
                   strokeWidth={3}
                   dot={{ r: 5, fill: '#9f1239', strokeWidth: 2, stroke: '#FFFFFF' }}
                   activeDot={{ r: 7, fill: '#9f1239', stroke: '#FFFFFF', strokeWidth: 2 }}
-                  name="Historis (Rp M)"
+                  name="Historis (Rp Miliar)"
                   connectNulls
                 />
                 <Line
@@ -387,7 +389,7 @@ export default function ComplianceDashboard() {
                   strokeDasharray="6 4"
                   dot={{ r: 5, fill: '#F59E0B', strokeWidth: 2, stroke: '#FFFFFF' }}
                   activeDot={{ r: 7, fill: '#F59E0B', stroke: '#FFFFFF', strokeWidth: 2 }}
-                  name="Proyeksi (Rp M)"
+                  name="Proyeksi (Rp Miliar)"
                   connectNulls
                 />
               </LineChart>

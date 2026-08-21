@@ -133,9 +133,15 @@ export default function MapCanvas() {
         const coords = proj.coordinates;
         if (!coords || coords.length === 0) return;
 
-        const latLngs: [number, number][] = coords.map((c: any) =>
-          Array.isArray(c) ? [c[0], c[1]] : [c.lat, c.lng]
-        );
+        const latLngs: [number, number][] = coords
+          .map((c: any) => {
+            if (!c) return [0, 0] as [number, number];
+            if (Array.isArray(c)) return [c[0], c[1]] as [number, number];
+            if (typeof c === 'object' && c !== null) return [c.lat, c.lng] as [number, number];
+            return [0, 0] as [number, number];
+          })
+          .filter((pt) => pt[0] !== 0 && pt[1] !== 0);
+        if (latLngs.length < 3) return;
         const polygon = LModule.polygon(latLngs, {
           color: isActive ? '#059669' : '#94a3b8',
           fillColor: isActive ? '#10b981' : '#cbd5e1',
@@ -259,13 +265,13 @@ export default function MapCanvas() {
               <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
                 <span style="color: #64748b;">Defisit Karbon:</span>
                 <span style="font-weight: bold; color: ${isUnpaid ? '#e11d48' : '#0f172a'}; font-family: monospace;">
-                  ${comp.carbonDeficit > 0 ? (comp.carbonDeficit / 1000).toLocaleString('id-ID') + 'k tCO2e' : '0 tCO2e'}
+                  ${comp.carbonDeficit > 0 ? (comp.carbonDeficit / 1000).toLocaleString('id-ID') + ' ribu tCO₂e' : '0 tCO₂e'}
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 6px;">
                 <span style="color: #64748b;">Tagihan Offset:</span>
                 <span style="font-weight: bold; color: #059669; font-family: monospace;">
-                  ${comp.offsetCostIDR > 0 ? 'Rp ' + (comp.offsetCostIDR / 1000000000).toFixed(1) + ' M' : 'Rp 0'}
+                  ${comp.offsetCostIDR > 0 ? 'Rp ' + (comp.offsetCostIDR / 1000000000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' Miliar' : 'Rp 0'}
                 </span>
               </div>
 
@@ -321,10 +327,17 @@ export default function MapCanvas() {
   const handleFocusBounds = () => {
     if (!LModule || !mapInstanceRef.current) return;
     if (activeModule === 'conservation' && activeCoords && activeCoords.length > 0) {
-      const latLngs: [number, number][] = activeCoords.map((c: any) =>
-        Array.isArray(c) ? [c[0], c[1]] : [c.lat, c.lng]
-      );
-      mapInstanceRef.current.fitBounds(LModule.latLngBounds(latLngs), { padding: [40, 40] });
+      const latLngs: [number, number][] = activeCoords
+        .map((c: any) => {
+          if (!c) return [0, 0] as [number, number];
+          if (Array.isArray(c)) return [c[0], c[1]] as [number, number];
+          if (typeof c === 'object' && c !== null) return [c.lat, c.lng] as [number, number];
+          return [0, 0] as [number, number];
+        })
+        .filter((pt) => pt[0] !== 0 && pt[1] !== 0);
+      if (latLngs.length > 0) {
+        mapInstanceRef.current.fitBounds(LModule.latLngBounds(latLngs), { padding: [40, 40] });
+      }
     } else if (activeModule === 'corporate') {
       const selectedComp = companies[selectedCompanyIndex];
       if (selectedComp) {

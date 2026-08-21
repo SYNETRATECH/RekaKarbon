@@ -252,6 +252,7 @@ export default function RegulatorUploadManagement() {
           <Table className="w-full text-left text-xs">
             <TableHeader>
               <TableRow className="bg-slate-50 text-slate-400 font-black uppercase text-[10px] tracking-wider border-y border-slate-200">
+                <TableHead className="py-3 px-3 text-center w-12">No.</TableHead>
                 <TableHead className="py-3 px-4">Judul Dokumen Resmi</TableHead>
                 <TableHead className="py-3 px-4">Kategori & Instansi</TableHead>
                 <TableHead className="py-3 px-4">Entitas Sasaran</TableHead>
@@ -262,8 +263,11 @@ export default function RegulatorUploadManagement() {
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100 font-medium">
-              {filteredDocs.map((doc) => (
+              {filteredDocs.map((doc, index) => (
                 <TableRow key={doc.id} className="hover:bg-slate-50/70 transition-colors">
+                  <TableCell className="py-3.5 px-3 text-center font-mono font-bold text-slate-500 text-xs">
+                    {index + 1}
+                  </TableCell>
                   <TableCell className="py-3.5 px-4">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-emerald-600 shrink-0" />

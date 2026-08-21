@@ -65,9 +65,6 @@ export default function AuthorizationGate() {
     <div className="flex-1 overflow-y-auto min-h-0 space-y-6 animate-fade-in text-left pr-1 pb-8">
       {/* HEADER SECTION */}
       <div>
-        <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase block mb-1">
-          LVV — VERIFICATION SETTLEMENT
-        </span>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
           Gerbang Otorisasi & Konsensus
         </h2>
@@ -218,7 +215,7 @@ export default function AuthorizationGate() {
               <span className="text-slate-400 font-medium">Kredit SPE-GRK</span>
               <span className="font-black text-emerald-700">
                 {currentProjectData
-                  ? `${currentProjectData.carbonCredit.toLocaleString('id-ID')} tCO2e`
+                  ? `${currentProjectData.carbonCredit.toLocaleString('id-ID')} tCO₂e`
                   : preview.carbonCreditSPE}
               </span>
             </div>

@@ -40,10 +40,31 @@ export function formatCurrency(value: number | string | null | undefined): strin
 }
 
 /**
- * Formats carbon sequestration tonnage (tCO2e).
- * Example: 48200 -> "48.200 tCO2e"
+ * Compact IDR Currency Formatter.
+ * Formats currency into compact Indonesian scale notation (e.g. Rp 42,8 Miliar, Rp 850 Juta).
+ * Ideal for hero metrics, summary cards, and widgets where horizontal space is constrained.
  */
-export function formatCarbon(value: number | string | null | undefined, unit = 'tCO2e'): string {
+export function formatCompactCurrency(value: number | string | null | undefined): string {
+  if (value === null || value === undefined || value === '') return 'Rp 0';
+  const num = parseNumeric(value);
+  const abs = Math.abs(num);
+  if (abs >= 1_000_000_000_000) {
+    return `Rp ${formatNumber(num / 1_000_000_000_000, 0, 2)} Triliun`;
+  }
+  if (abs >= 1_000_000_000) {
+    return `Rp ${formatNumber(num / 1_000_000_000, 0, 2)} Miliar`;
+  }
+  if (abs >= 1_000_000) {
+    return `Rp ${formatNumber(num / 1_000_000, 0, 2)} Juta`;
+  }
+  return formatCurrency(num);
+}
+
+/**
+ * Formats carbon sequestration tonnage (tCO₂e).
+ * Example: 48200 -> "48.200 tCO₂e"
+ */
+export function formatCarbon(value: number | string | null | undefined, unit = 'tCO₂e'): string {
   const num = parseNumeric(value);
   return `${formatNumber(num, 0, 1)} ${unit}`;
 }
@@ -95,4 +116,27 @@ export function formatQuantity(qty: number | string | null | undefined, unit?: s
   const num = parseNumeric(qty);
   const formattedNum = formatNumber(num, 0, 0);
   return unit ? `${formattedNum} ${unit}` : formattedNum;
+}
+
+/**
+ * Formats large magnitude numbers into Indonesian scale terminology (Juta, Miliar, Triliun).
+ * Example: 79710000 -> "79,71 Juta"
+ * Example: 8120000000 -> "8,12 Miliar"
+ */
+export function formatScale(value: number | string | null | undefined, suffix = ''): string {
+  const num = parseNumeric(value);
+  const abs = Math.abs(num);
+  let formatted = '';
+  if (abs >= 1_000_000_000_000) {
+    formatted = `${formatNumber(num / 1_000_000_000_000, 0, 2)} Triliun`;
+  } else if (abs >= 1_000_000_000) {
+    formatted = `${formatNumber(num / 1_000_000_000, 0, 2)} Miliar`;
+  } else if (abs >= 1_000_000) {
+    formatted = `${formatNumber(num / 1_000_000, 0, 2)} Juta`;
+  } else if (abs >= 1_000) {
+    formatted = `${formatNumber(num / 1_000, 0, 2)} Ribu`;
+  } else {
+    formatted = formatNumber(num, 0, 2);
+  }
+  return suffix ? `${formatted} ${suffix}` : formatted;
 }
