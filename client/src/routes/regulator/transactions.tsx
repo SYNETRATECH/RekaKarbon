@@ -146,39 +146,34 @@ export default function KthTransactionsMonitoring() {
     return found || projects[0];
   };
 
-  // Stage 1 (processing) -> Stage 2 (awaiting_farmer)
-  const handleApproveDisbursement = (tx: any) => {
-    if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, 'awaiting_farmer');
+  // Stage 1 approval (processing -> awaiting_farmer) or Stage 3 verification (awaiting_proof -> completed)
+  const handleApproveAction = (txId: string) => {
+    if (verifyingProofTx) {
+      const tx = txs.find((t: any) => t.id === txId) || verifyingProofTx;
+      const updatedTx = { ...tx, status: 'completed' };
+      if (updateKTHTransactionStatus) {
+        updateKTHTransactionStatus(txId, 'completed');
+      }
+      setVerifyingProofTx(null);
+      setSelectedTxReceipt(updatedTx);
+    } else {
+      if (updateKTHTransactionStatus) {
+        updateKTHTransactionStatus(txId, 'awaiting_farmer');
+      }
+      setReviewingTx(null);
     }
-    setReviewingTx(null);
-    setHoldNotice(false);
-    setShowFlagForm(false);
-    setFlagNoteInput('');
   };
 
   // Move transaction to 'flagged' (Bermasalah)
-  const handleFlagTransaction = (tx: any) => {
+  const handleFlagAction = (txId: string, reason: string) => {
     const note =
-      flagNoteInput.trim() ||
+      reason.trim() ||
       'Terdeteksi ketidaksesuaian laporan nota / foto bukti belanja oleh regulator.';
     if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, 'flagged', note);
+      updateKTHTransactionStatus(txId, 'flagged', note);
     }
     setReviewingTx(null);
     setVerifyingProofTx(null);
-    setShowFlagForm(false);
-    setFlagNoteInput('');
-  };
-
-  // Stage 3 (awaiting_proof) -> Stage 5 (completed)
-  const handleConfirmProof = (tx: any) => {
-    const updatedTx = { ...tx, status: 'completed' };
-    if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(tx.id, 'completed');
-    }
-    setVerifyingProofTx(null);
-    setSelectedTxReceipt(updatedTx);
   };
 
   return (
@@ -242,17 +237,6 @@ export default function KthTransactionsMonitoring() {
 
       {/* SEARCHABLE PROJECT DROPDOWN & STATUS FILTER */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        {/* STAGE 1 & 3 REVIEW & VERIFICATION MODAL */}
-        <TxReviewModal
-          tx={reviewingTx || verifyingProofTx}
-          onClose={() => {
-            setReviewingTx(null);
-            setVerifyingProofTx(null);
-          }}
-          onApprove={(id, notes) => handleApproveDisbursement({ id, notes })}
-          onFlag={(id, reason) => handleFlagTransaction({ id, issueNote: reason })}
-        />
-
         {/* CUSTOM SEARCHABLE DROPDOWN */}
         <div className="relative flex-1 max-w-md" ref={dropdownRef}>
           <button
@@ -571,12 +555,18 @@ export default function KthTransactionsMonitoring() {
           setReviewingTx(null);
           setVerifyingProofTx(null);
         }}
-        onApprove={(id, notes) => handleApproveDisbursement({ id, notes })}
-        onFlag={(id, reason) => handleFlagTransaction({ id, issueNote: reason })}
+        onApprove={(id, notes) => handleApproveAction(id)}
+        onFlag={(id, reason) => handleFlagAction(id, reason)}
+        onSelectImage={(url) => setLightboxImage(url)}
       />
 
       {/* STAGE 2 / DETAIL MODAL */}
-      <TxDetailModal tx={selectedTxReceipt} onClose={() => setSelectedTxReceipt(null)} />
+      <TxDetailModal
+        tx={selectedTxReceipt}
+        onClose={() => setSelectedTxReceipt(null)}
+        onSelectImage={(url) => setLightboxImage(url)}
+        onDownload={(fn) => setDownloadNotice(fn)}
+      />
 
       {/* LIGHTBOX FULLSCREEN IMAGE PREVIEW */}
       {lightboxImage && (
