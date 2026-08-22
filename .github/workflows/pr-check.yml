@@ -18,7 +18,8 @@ jobs:
     name: Verify Code Quality & Build
     runs-on: ubuntu-latest
     env:
-      PRIVATE_KEY: "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"
+      PRIVATE_KEY: '0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3'
+      DATABASE_URL: 'postgresql://ci:ci@localhost:5432/ci?schema=public'
 
     steps:
       - name: Checkout repository
@@ -117,4 +118,3 @@ jobs:
       - name: Test smart contracts
         if: steps.changes.outputs.blockchain == 'true'
         run: pnpm blockchain:test
-
