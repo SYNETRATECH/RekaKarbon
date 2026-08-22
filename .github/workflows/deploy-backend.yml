@@ -1,4 +1,4 @@
-name: Deploy NestJS backend to Server
+name: Deploy NestJS Backend to Host (Bare-Metal / PM2)
 
 on:
   workflow_dispatch:
@@ -8,11 +8,6 @@ on:
         required: true
         default: false
         type: boolean
-      image_tag:
-        description: 'Image tag to deploy (defaults to current commit SHA). Pass an older SHA to roll back.'
-        required: false
-        default: ''
-        type: string
 
 jobs:
   test:
@@ -42,48 +37,9 @@ jobs:
       - name: Test server
         run: pnpm server:test
 
-  build-and-push-docker:
-    name: Build & Push Docker Images
-    runs-on: ubuntu-latest
-    needs: test
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry (GHCR)
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Downcase GitHub Repository Name
-        run: |
-          echo "REPO_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
-      - name: Build and Push Server Docker Image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./server/Dockerfile
-          target: prod
-          push: true
-          tags: |
-            ghcr.io/${{ env.REPO_NAME }}-server:latest
-            ghcr.io/${{ env.REPO_NAME }}-server:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
   deploy:
-    name: Deploy via SSH
-    needs: build-and-push-docker
+    name: Deploy via SSH (Bare-Metal)
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -94,54 +50,18 @@ jobs:
         with:
           authkey: ${{ secrets.TS_AUTHKEY }}
 
-      - name: Downcase GitHub Repository Name
-        run: |
-          echo "REPO_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
-      - name: Resolve Image Tag
-        id: image-tag
-        run: |
-          TAG="${{ inputs.image_tag }}"
-          if [ -z "$TAG" ]; then
-            TAG="${{ github.sha }}"
-          fi
-          echo "TAG=$TAG" >> "$GITHUB_OUTPUT"
-
-      - name: Create .env
-        env:
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_DATABASE: ${{ secrets.DB_DATABASE }}
-          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
-          SERVER_IMAGE: ghcr.io/${{ env.REPO_NAME }}-server:${{ steps.image-tag.outputs.TAG }}
-        run: |
-          cat > .env << 'EOF'
-          PORT=3001
-          EOF
-
-          echo "DB_PORT=${DB_PORT//\$/\$\$}" >> .env
-          echo "DB_USERNAME=${DB_USERNAME//\$/\$\$}" >> .env
-          echo "DB_PASSWORD=${DB_PASSWORD//\$/\$\$}" >> .env
-          echo "DB_DATABASE=${DB_DATABASE//\$/\$\$}" >> .env
-          echo "TUNNEL_TOKEN=${TUNNEL_TOKEN//\$/\$\$}" >> .env
-          echo "SERVER_IMAGE=${SERVER_IMAGE//\$/\$\$}" >> .env
-
-      - name: Create deploy manifest package
-        run: |
-          tar -czf deploy.tar.gz \
-            docker-compose.yml \
-            .env
-
-      - name: Upload via SCP
-        uses: appleboy/scp-action@v0.1.7
+      - name: Write production .env to host
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: 22
-          source: 'deploy.tar.gz'
-          target: '/tmp'
+          script: |
+            mkdir -p $HOME/RekaKarbon-Backend/server
+            cat > $HOME/RekaKarbon-Backend/server/.env << 'ENVEOF'
+            ${{ secrets.SERVER_ENV }}
+            ENVEOF
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -150,68 +70,56 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: 22
-          envs: DB_USERNAME,DB_DATABASE,RUN_SEED,GHCR_USER,GHCR_TOKEN
           script: |
+            set -e
             PROJECT_DIR="$HOME/RekaKarbon-Backend"
 
-            mkdir -p $PROJECT_DIR
+            # 1. Pull latest code from main
+            if [ ! -d "$PROJECT_DIR/.git" ]; then
+              git clone https://github.com/${{ github.repository }}.git "$PROJECT_DIR"
+            fi
+            cd "$PROJECT_DIR"
+            git fetch origin
+            git checkout main
+            git reset --hard origin/main
 
-            cd $PROJECT_DIR
-            tar -xzf /tmp/deploy.tar.gz -C $PROJECT_DIR
-            rm -f /tmp/deploy.tar.gz
+            # 2. Install all dependencies (dev tools needed for build step)
+            pnpm install --frozen-lockfile
 
-            cd $PROJECT_DIR
+            # 3. Compile TypeScript → dist/
+            pnpm server:build
 
-            # Log in to GHCR on the target machine
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            # 4. Run any pending database migrations (safe no-op if up to date)
+            pnpm --filter ./server prisma:migrate:deploy
 
-            # 1. Pre-pull updated images while old containers remain active
-            echo "Pre-pulling latest Docker images..."
-            docker compose --profile prod pull rekakarbon-backend
+            # 5. Reload PM2 with zero downtime, or start fresh if first deploy
+            if pm2 describe rekakarbon-backend > /dev/null 2>&1; then
+              echo "PM2 process found — performing zero-downtime reload..."
+              pm2 reload rekakarbon-backend --update-env
+            else
+              echo "No PM2 process found — starting for the first time..."
+              pm2 start ecosystem.config.cjs --env production
+              pm2 save
+            fi
 
-            # 2. Rolling update backend server container
-            echo "Performing rolling update for rekakarbon-backend..."
-            docker compose --profile prod up -d --no-deps rekakarbon-backend
-
-            # 3. Verify backend server health
+            # 6. Health check — allow the process a moment to fully start
             sleep 5
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/health || true)
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health || true)
             if [ "$HTTP_STATUS" != "200" ]; then
-              echo "Backend healthcheck failed (HTTP $HTTP_STATUS) — checking logs..."
-              docker compose --profile prod logs rekakarbon-backend --tail=30
+              echo "Backend health check failed (HTTP $HTTP_STATUS) — dumping logs..."
+              pm2 logs rekakarbon-backend --lines 30 --nostream
               exit 1
             fi
             echo "Backend health check passed (HTTP $HTTP_STATUS)"
 
+            # 7. Optional database seeder
             if [ "$RUN_SEED" = "true" ]; then
               echo "Workflow requested — running database seeder..."
-              docker compose --profile prod exec -T rekakarbon-backend pnpm db:seed
+              pnpm db:seed
             else
               echo "Skipping database seeder."
             fi
 
-            # 4. Post-deployment cleanup: keep latest 3 images per service for rollback, prune older ones
-            echo "Cleaning up old Docker images while retaining the 3 latest images for rollback..."
-            KEEP_COUNT=3
-            REPOS=("server")
-
-            for SERVICE in "${REPOS[@]}"; do
-              IMAGE_NAME="ghcr.io/${REPO_NAME}-${SERVICE}"
-              OLD_IMAGES=$(docker images "$IMAGE_NAME" --format "{{.CreatedAt}}\t{{.ID}}" | sort -r | tail -n +$((KEEP_COUNT + 1)) | awk '{print $2}' | sort -u)
-              if [ -n "$OLD_IMAGES" ]; then
-                echo "Pruning older image versions for $IMAGE_NAME..."
-                echo "$OLD_IMAGES" | xargs -r docker rmi -f || true
-              fi
-            done
-
-            docker image prune -f
-            docker builder prune -af --filter "until=24h" || true
-
             echo "Deployment completed successfully!"
         env:
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_DATABASE: ${{ secrets.DB_DATABASE }}
-          MQTT_PASSWORD: ${{ secrets.MQTT_PASSWORD }}
           RUN_SEED: ${{ inputs.run_seed }}
-          GHCR_USER: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
