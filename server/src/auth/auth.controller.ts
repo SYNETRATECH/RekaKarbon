@@ -83,6 +83,10 @@ export class AuthController {
     const safeUser: SafeUser = {
       id: user.id,
       email: user.email,
+      name: user.fullName || user.email,
+      role: user.role,
+      agency: user.agency,
+      walletAddress: user.walletAddress,
       createdAt: user.createdAt,
     };
     return {

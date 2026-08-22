@@ -5,9 +5,7 @@ import type { MockUser, AuthCredentials, AuthResponse } from '../types';
 export class MockAuthRepository implements AuthRepository {
   async login(credentials: AuthCredentials): Promise<AuthResponse> {
     let user = Object.values(mockUsers).find(
-      (u) =>
-        u.email.toLowerCase() === credentials.identity?.toLowerCase() ||
-        u.email.toLowerCase() === credentials.email?.toLowerCase()
+      (u) => u.email.toLowerCase() === credentials.email?.toLowerCase()
     );
 
     if (!user) {

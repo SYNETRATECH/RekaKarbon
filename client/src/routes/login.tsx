@@ -32,7 +32,6 @@ export default function LoginRoute() {
     try {
       await loginWithCredentials({
         email: emailInput,
-        identity: emailInput,
         password: passwordInput,
       });
       setIsLoading(false);
