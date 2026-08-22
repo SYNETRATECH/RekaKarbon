@@ -2,7 +2,7 @@ import { Leaf, TrendingUp } from 'lucide-react';
 
 export default function CommitmentSection() {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-white hidden">
       <div className="max-w-5xl mx-auto px-6">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-[11px] text-slate-500 mb-5">
