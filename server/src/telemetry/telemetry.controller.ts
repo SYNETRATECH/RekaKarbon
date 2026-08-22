@@ -1,9 +1,28 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { TelemetryService } from './telemetry.service';
 import { CemsTelemetryDto, ForestSensorTelemetryDto } from './dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('IoT & Telemetry Ingestion')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(
+  Role.CORPORATE_EMITTER,
+  Role.AUDITOR_VERIFIER,
+  Role.REGULATOR_KLHK,
+  Role.SUPER_ADMIN,
+  Role.KTH_COMMUNITY,
+)
 @Controller('telemetry')
 export class TelemetryController {
   constructor(private readonly telemetryService: TelemetryService) {}

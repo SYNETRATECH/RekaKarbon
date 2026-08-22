@@ -5,12 +5,23 @@ import {
   Body,
   Param,
   NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { StorageService } from './storage.service';
 import { UploadFileDto } from './dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Storage & Document Ingestion')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('storage')
 export class StorageController {
   constructor(private readonly storageService: StorageService) {}

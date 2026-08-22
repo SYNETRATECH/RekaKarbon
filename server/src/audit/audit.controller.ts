@@ -1,9 +1,22 @@
-import { Controller, Get, Post, Param, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuditService } from './audit.service';
 import { AuthorizeMintingDto } from './dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Audit & dMRV Verification')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.AUDITOR_VERIFIER, Role.SUPER_ADMIN)
 @Controller('audit')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}

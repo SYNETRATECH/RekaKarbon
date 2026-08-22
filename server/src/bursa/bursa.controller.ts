@@ -1,8 +1,17 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { BursaService } from './bursa.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Carbon Bursa / DEX Marketplace')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('emitter/bursa')
 export class BursaController {
   constructor(private readonly bursaService: BursaService) {}

@@ -1,9 +1,22 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { DjpService } from './djp.service';
 import { CalculateTaxDto, IssueStpDto } from './dto';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Integrations — DJP Carbon Tax Engine')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.REGULATOR_KLHK, Role.CORPORATE_EMITTER, Role.SUPER_ADMIN)
 @Controller('integrations/djp')
 export class DjpController {
   constructor(private readonly djpService: DjpService) {}

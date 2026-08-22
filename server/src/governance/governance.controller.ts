@@ -1,8 +1,25 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { GovernanceService } from './governance.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Governance & Multi-Sig Custody')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(
+  Role.SUPER_ADMIN,
+  Role.REGULATOR_KLHK,
+  Role.AUDITOR_VERIFIER,
+  Role.KTH_COMMUNITY,
+)
 @Controller('governance')
 export class GovernanceController {
   constructor(private readonly governanceService: GovernanceService) {}
