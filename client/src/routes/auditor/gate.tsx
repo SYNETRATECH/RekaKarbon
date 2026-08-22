@@ -18,6 +18,28 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 
+import { auditRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const [certPrev, areas] = await Promise.all([
+    auditRepository.getCertificationPreview().catch(() => null),
+    auditRepository.getConservationAreas().catch(() => []),
+  ]);
+  useCarbonStore.setState({
+    certificationPreview: certPrev,
+    conservationAreas: areas,
+    selectedConservationId: areas[0]?.id ?? null,
+  });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Gerbang Otorisasi Kredit" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Gerbang Otorisasi | RekaKarbon' },

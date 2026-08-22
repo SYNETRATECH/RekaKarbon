@@ -24,6 +24,23 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+import { regulatorRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const [regions, forestPrjs] = await Promise.all([
+    regulatorRepository.getNationalForestRegions().catch(() => []),
+    regulatorRepository.getForestProjects().catch(() => []),
+  ]);
+  useCarbonStore.setState({ nationalForestRegions: regions, forestProjects: forestPrjs });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Dashboard Hutan Nasional" rows={3} />;
+}
 
 export function meta() {
   return [

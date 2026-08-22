@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { bursaRepository } from '../../repositories';
 import { useCarbonStore } from '../../store/useCarbonStore';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import BursaPurchaseModal from '../../components/modals/BursaPurchaseModal';
 import { Input } from '@/components/ui/input';
@@ -22,6 +24,18 @@ import {
   MapPin,
   Search,
 } from 'lucide-react';
+
+export async function clientLoader() {
+  const bursa = await bursaRepository.getBursaItems().catch(() => []);
+  useCarbonStore.setState({ bursaItems: bursa });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Bursa Karbon DEX" rows={3} />;
+}
 
 export function meta() {
   return [

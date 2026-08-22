@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router';
 import { useCarbonStore } from '../../store/useCarbonStore';
 import PortalSidebar from './PortalSidebar';
@@ -14,22 +13,9 @@ interface PortalLayoutProps {
 }
 
 export default function PortalLayout({ children }: PortalLayoutProps) {
-  const { userRole, userProfile, initializeData, isDataLoaded } = useCarbonStore();
+  // User state is pre-seeded by the app.tsx layout clientLoader before this mounts.
+  const { userRole, userProfile } = useCarbonStore();
   const location = useLocation();
-
-  useEffect(() => {
-    if (!isDataLoaded) {
-      initializeData();
-    }
-  }, [isDataLoaded, initializeData]);
-
-  if (!isDataLoaded) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-100 text-slate-500 font-bold">
-        Memuat Portal RekaKarbon...
-      </div>
-    );
-  }
 
   const activeRole = userRole || 'emitter';
   const activeTab = location.pathname.replace(/^\//, '') || 'dashboard';

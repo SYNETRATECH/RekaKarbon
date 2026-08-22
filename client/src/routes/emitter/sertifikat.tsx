@@ -1,8 +1,22 @@
 import { useCarbonStore } from '../../store/useCarbonStore';
+import { certificateRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { formatCurrency, formatCompactCurrency } from '../../lib/formatters';
 import { Award, ShieldCheck, TreePine, Coins } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import CertificateCard from '../../components/cards/CertificateCard';
+
+export async function clientLoader() {
+  const certs = await certificateRepository.getPurchasedCertificates().catch(() => []);
+  useCarbonStore.setState({ purchasedCertificates: certs });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Sertifikat SPE-GRK" rows={3} />;
+}
 
 export function meta() {
   return [

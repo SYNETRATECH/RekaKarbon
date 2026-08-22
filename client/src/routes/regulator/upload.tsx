@@ -27,6 +27,21 @@ import {
 import { formatFileSize } from '../../lib/formatters';
 import { formatDateTime } from '../../lib/dates';
 
+import { regulatorRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const docs = await regulatorRepository.getRegulationUploads().catch(() => []);
+  useCarbonStore.setState({ regulationUploads: docs });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Unggah Regulasi" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Unggah Regulasi & Kebijakan | RekaKarbon' },

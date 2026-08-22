@@ -82,7 +82,11 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   droneScans: [],
   kthPolygons: [],
   kthLogs: [],
-  isDataLoaded: false,
+  /**
+   * @deprecated Data loading is now handled per-route via React Router clientLoader.
+   * This flag is retained for legacy compatibility but is no longer set to false on init.
+   */
+  isDataLoaded: true,
 
   // CRUD Actions for Forest Projects
   addForestProject: (newProject: ForestProjectItem) =>
@@ -125,6 +129,11 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   addRegulationUpload: (newDoc: RegulationUploadModel) =>
     set((state) => ({ regulationUploads: [newDoc, ...state.regulationUploads] })),
 
+  /**
+   * @deprecated No longer called on app bootstrap. Per-route clientLoader functions
+   * in React Router handle data fetching. This action is retained as a utility for
+   * on-demand full-store refresh (e.g. after a role change or hard refresh).
+   */
   initializeData: async () => {
     if (get().isDataLoaded) return;
 

@@ -25,6 +25,21 @@ import {
   TableCell,
 } from '@/components/ui/table';
 
+import { regulatorRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const kths = await regulatorRepository.getKTHGroups().catch(() => []);
+  useCarbonStore.setState({ kthGroups: kths });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Kelompok Tani Hutan" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Manajemen Kelompok Tani Hutan (KTH) | RekaKarbon' },

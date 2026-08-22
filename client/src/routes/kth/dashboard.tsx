@@ -6,6 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
+import { auditRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const [polygons, logs] = await Promise.all([
+    auditRepository.getKthPolygons().catch(() => []),
+    auditRepository.getKthLogs().catch(() => []),
+  ]);
+  useCarbonStore.setState({ kthPolygons: polygons, kthLogs: logs });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Registrasi Polygon Lahan" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Registrasi Polygon Lahan | RekaKarbon' },
