@@ -1,10 +1,10 @@
 import { api } from '../lib/api';
-import type { MockUser, AuthCredentials, AuthResponse } from '../types';
+import type { User, AuthCredentials, AuthResponse } from '../types';
 
 export interface AuthRepository {
   login(credentials: AuthCredentials): Promise<AuthResponse>;
   register(data: any): Promise<AuthResponse>;
-  getCurrentUser(): Promise<MockUser | null>;
+  getCurrentUser(): Promise<User | null>;
   logout(): Promise<{ success: boolean }>;
 }
 
@@ -22,13 +22,19 @@ export class ApiAuthRepository implements AuthRepository {
     return api.post<AuthResponse>('/auth/register', data);
   }
 
-  async getCurrentUser(): Promise<MockUser | null> {
+  async getCurrentUser(): Promise<User | null> {
     if (typeof window === 'undefined') return null;
     const token = localStorage.getItem('rekakarbon_token');
     if (!token) return null;
 
     try {
-      return await api.get<MockUser>('/auth/me');
+      const user = await api.get<User>('/auth/me');
+      // Ensure user object is valid and contains essential identity properties
+      if (!user || !user.id || !user.email || !user.role) {
+        localStorage.removeItem('rekakarbon_token');
+        return null;
+      }
+      return user;
     } catch {
       localStorage.removeItem('rekakarbon_token');
       return null;

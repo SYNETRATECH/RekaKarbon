@@ -13,12 +13,31 @@ interface PortalLayoutProps {
 }
 
 export default function PortalLayout({ children }: PortalLayoutProps) {
-  // User state is pre-seeded by the app.tsx layout clientLoader before this mounts.
+  // User state and route authorization are guaranteed by app.tsx layout clientLoader before mounting.
   const { userRole, userProfile } = useCarbonStore();
   const location = useLocation();
 
   const activeRole = userRole || 'emitter';
   const activeTab = location.pathname.replace(/^\//, '') || 'dashboard';
+
+  const getRoleHeaderTitle = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'superadmin':
+      case 'admin':
+        return 'Superadmin Portal';
+      case 'regulator':
+        return 'Regulator Portal';
+      case 'auditor':
+        return 'Auditor Portal';
+      case 'kth':
+        return 'KTH Portal';
+      case 'buyer':
+        return 'Buyer Portal';
+      case 'emitter':
+      default:
+        return 'Emitter Portal';
+    }
+  };
 
   return (
     <SidebarProvider className="flex h-screen w-screen bg-slate-100 overflow-hidden font-sans text-slate-800">
@@ -31,8 +50,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0 shadow-2xs z-20">
           {/* Left: Active Page Title */}
           <div className="flex items-center gap-3">
-            <h1 className="text-base font-black text-slate-900 tracking-tight capitalize">
-              {activeRole} Portal
+            <h1 className="text-base font-black text-slate-900 tracking-tight">
+              {getRoleHeaderTitle(activeRole)}
             </h1>
             <span className="text-slate-300">/</span>
             <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider">

@@ -1,4 +1,4 @@
-export interface MockUser {
+export interface User {
   id: string;
   email: string;
   password?: string;
@@ -18,7 +18,7 @@ export interface AuthCredentials {
 }
 
 export interface AuthResponse {
-  user: MockUser;
+  user: User;
   token: string;
   accessToken?: string;
   role: string;

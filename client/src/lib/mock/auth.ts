@@ -1,6 +1,6 @@
-import type { MockUser } from '../../types';
+import type { User } from '../../types';
 
-export const mockUsers: Record<string, MockUser> = {
+export const mockUsers: Record<string, User> = {
   emitter: {
     id: 'c0a80001-0001-4000-8000-000000000001',
     email: 'admin@semennusantara.co.id',

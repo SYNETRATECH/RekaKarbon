@@ -7,6 +7,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -72,15 +73,12 @@ export class AuthController {
   })
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getProfile(@Request() req: AuthenticatedRequest) {
+  async getProfile(@Request() req: AuthenticatedRequest): Promise<SafeUser> {
     const user = await this.usersService.findById(req.user.userId);
     if (!user) {
-      return {
-        success: false,
-        error: { code: 'NOT_FOUND', message: 'User not found' },
-      };
+      throw new NotFoundException('User not found');
     }
-    const safeUser: SafeUser = {
+    return {
       id: user.id,
       email: user.email,
       name: user.fullName || user.email,
@@ -88,10 +86,6 @@ export class AuthController {
       agency: user.agency,
       walletAddress: user.walletAddress,
       createdAt: user.createdAt,
-    };
-    return {
-      success: true,
-      data: safeUser,
     };
   }
 }
