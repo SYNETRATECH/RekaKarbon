@@ -14,6 +14,29 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
+import { auditRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const [droneArch, droneSched, droneScans] = await Promise.all([
+    auditRepository.getDroneArchive().catch(() => null),
+    auditRepository.getDroneSchedules().catch(() => null),
+    auditRepository.getDroneScans().catch(() => []),
+  ]);
+  useCarbonStore.setState({
+    droneArchive: droneArch,
+    droneSchedules: droneSched,
+    droneScans,
+  });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Audit Drone & Geotag" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Audit Drone & Geotag | RekaKarbon' },

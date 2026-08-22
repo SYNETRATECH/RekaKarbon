@@ -38,6 +38,24 @@ import {
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 
+import { regulatorRepository, projectRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const [forestPrjs, projects] = await Promise.all([
+    regulatorRepository.getForestProjects().catch(() => []),
+    projectRepository.getProjects().catch(() => []),
+  ]);
+  useCarbonStore.setState({ forestProjects: forestPrjs, projects });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Manajemen Proyek Kehutanan" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Manajemen Proyek Kehutanan | RekaKarbon' },

@@ -7,6 +7,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import LogNoticeModal from '../../components/modals/LogNoticeModal';
 
+import { auditRepository, regulatorRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const [logs, txs] = await Promise.all([
+    auditRepository.getKthLogs().catch(() => []),
+    regulatorRepository.getKTHTransactions().catch(() => []),
+  ]);
+  useCarbonStore.setState({ kthLogs: logs, kthTransactions: txs });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Dompet Insentif KTH" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Dompet Insentif & Log | RekaKarbon' },

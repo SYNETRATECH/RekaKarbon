@@ -33,6 +33,30 @@ import {
   TableCell,
 } from '@/components/ui/table';
 
+import { auditRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const [anomaly, summary, energyCorr] = await Promise.all([
+    auditRepository.getAiAnomalyLogs().catch(() => []),
+    auditRepository.getAnomalySummary().catch(() => null),
+    auditRepository.getEnergyCorrelationData().catch(() => []),
+  ]);
+  useCarbonStore.setState({
+    aiAnomalyLogs: anomaly,
+    anomalySummary: summary,
+    energyCorrelationData: energyCorr,
+    selectedAnomalyId: anomaly[0]?.id ?? null,
+  });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Verifikasi Audit AI" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Verifikasi Audit AI | RekaKarbon' },

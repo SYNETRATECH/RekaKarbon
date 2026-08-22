@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { projectRepository } from '../repositories';
 import { useCarbonStore } from '../store/useCarbonStore';
 import MapCanvas from '../components/MapCanvas';
 import RightDrawer from '../components/RightDrawer';
@@ -20,6 +21,29 @@ import FAQSection from '../components/landing/FAQSection';
 import CTASectionBottom from '../components/landing/CTASectionBottom';
 import Footer from '../components/landing/Footer';
 
+/**
+ * Landing page clientLoader — fetches only public project data needed for the map.
+ * Companies data (unpaidCount) is now loaded on-demand inside the portal, not here.
+ */
+export async function clientLoader() {
+  const projects = await projectRepository.getProjects().catch(() => []);
+  useCarbonStore.setState({
+    projects,
+    activeCoords: projects[0] ? (JSON.parse(JSON.stringify(projects[0].coordinates)) as any) : [],
+  });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return (
+    <div className="flex h-screen items-center justify-center bg-slate-50 text-slate-500 font-bold text-sm">
+      Memuat Data RekaKarbon...
+    </div>
+  );
+}
+
 export function meta() {
   return [
     { title: 'RekaKarbon - Platform Verifikasi Emisi & Konservasi' },
@@ -30,20 +54,9 @@ export function meta() {
 export default function LandingPageRoute() {
   const [page, setPage] = useState<'home' | 'maps'>('home');
 
-  const { activeModule, setActiveModule, companies, initializeData, isDataLoaded } =
-    useCarbonStore();
-
-  useEffect(() => {
-    initializeData();
-  }, [initializeData]);
-
-  if (!isDataLoaded) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-100 text-slate-500 font-bold">
-        Memuat Data Sistem RekaKarbon...
-      </div>
-    );
-  }
+  // Data is pre-loaded by clientLoader. companies is no longer fetched here —
+  // unpaidCount is a portal-only concern, available after login.
+  const { activeModule, setActiveModule, companies } = useCarbonStore();
 
   const unpaidCount = companies.filter((c) => c.paymentStatus === 'unpaid').length;
 

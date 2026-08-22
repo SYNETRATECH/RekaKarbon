@@ -13,6 +13,28 @@ import {
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 
+import { auditRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const [spatialSum, areas] = await Promise.all([
+    auditRepository.getSpatialSummary().catch(() => null),
+    auditRepository.getConservationAreas().catch(() => []),
+  ]);
+  useCarbonStore.setState({
+    spatialSummary: spatialSum,
+    conservationAreas: areas,
+    selectedConservationId: areas[0]?.id ?? null,
+  });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Evaluasi Spasial dMRV" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Evaluasi Spasial dMRV | RekaKarbon' },

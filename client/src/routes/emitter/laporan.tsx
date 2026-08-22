@@ -42,6 +42,21 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 
+import { reportRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const reports = await reportRepository.getEmissionReports().catch(() => []);
+  useCarbonStore.setState({ emissionReports: reports });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Laporan Emisi" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Laporan Emisi & Sektor | RekaKarbon' },

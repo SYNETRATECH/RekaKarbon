@@ -39,6 +39,25 @@ import {
 import { formatCurrency } from '../../lib/formatters';
 import { formatDateTime } from '../../lib/dates';
 
+import { regulatorRepository, projectRepository } from '../../repositories';
+import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+
+export async function clientLoader() {
+  const [txs, forestPrjs, projects] = await Promise.all([
+    regulatorRepository.getKTHTransactions().catch(() => []),
+    regulatorRepository.getForestProjects().catch(() => []),
+    projectRepository.getProjects().catch(() => []),
+  ]);
+  useCarbonStore.setState({ kthTransactions: txs, forestProjects: forestPrjs, projects });
+  return null;
+}
+
+clientLoader.hydrate = true as const;
+
+export function HydrateFallback() {
+  return <RouteSkeletonLoader label="Monitoring Transaksi KTH" rows={3} />;
+}
+
 export function meta() {
   return [
     { title: 'Monitoring Transaksi & Insentif | RekaKarbon' },
