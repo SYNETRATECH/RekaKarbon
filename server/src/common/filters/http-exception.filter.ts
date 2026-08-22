@@ -59,8 +59,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       errorMessage = exception.message;
+
+      // Detect database connection & authentication failures
+      if (
+        exception.message.includes('Authentication failed') ||
+        exception.message.includes('Server has closed the connection') ||
+        exception.message.includes("Can't reach database server")
+      ) {
+        errorCode = 'DATABASE_CONNECTION_ERROR';
+        errorMessage =
+          'Unable to connect to PostgreSQL database. Please check your DATABASE_URL credentials in server/.env.';
+      }
+
       this.logger.error(
-        `Unhandled Exception on ${request.method} ${request.url}: ${exception.stack}`,
+        `Unhandled Exception on ${request.method} ${request.url}: ${exception.message}`,
+        exception.stack,
       );
     }
 
