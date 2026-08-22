@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
-  "packageManager": "pnpm@11.10.0",
+  "packageManager": "pnpm@11.22.0",
   "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=11.0.0"
+    "node": "24.15.0",
+    "pnpm": "11.22.0"
   },
   "scripts": {
     "dev": "pnpm dev:server & pnpm dev:client",
@@ -44,7 +44,7 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.10.0",
+      "version": "11.22.0",
       "onFail": "download"
     }
   },
