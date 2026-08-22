@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { useRouteLoaderData, useNavigate } from 'react-router';
 import { formatCurrency } from '@/lib/formatters';
-import { useCarbonStore } from '../../store/useCarbonStore';
 import PublicReportModal from '../../components/modals/PublicReportModal';
 import { CheckCircle2, AlertTriangle, Info, ShoppingCart } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -22,7 +22,12 @@ export function meta() {
 }
 
 export default function EmitterDashboard() {
-  const { setAdminActiveTab, complianceData, projects, companies } = useCarbonStore();
+  const navigate = useNavigate();
+  // Get data from the parent dashboard route's clientLoader
+  const loaderData = useRouteLoaderData('routes/dashboard') as any;
+  const complianceData = loaderData?.complianceData ?? null;
+  const projects = loaderData?.projects ?? [];
+  const companies = loaderData?.companies ?? [];
   const [isPublicReportOpen, setIsPublicReportOpen] = useState(false);
 
   const currentYear = new Date().getFullYear();
@@ -266,7 +271,7 @@ export default function EmitterDashboard() {
 
             {hasDeficit && (
               <button
-                onClick={() => setAdminActiveTab('bursa')}
+                onClick={() => navigate('/bursa')}
                 className="w-full bg-status-danger-fg hover:opacity-90 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-status-danger-border/10 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
               >
                 <ShoppingCart className="w-4 h-4 text-white" />

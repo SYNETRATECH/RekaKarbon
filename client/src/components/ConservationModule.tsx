@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { formatArea, formatCarbon } from '@/lib/formatters';
-import { useCarbonStore } from '../store/useCarbonStore';
+import { useMapStore } from '../store/useMapStore';
+import { useUIStore } from '../store/useUIStore';
 import NDVIGauge from './NDVIGauge';
 import { calculateGeodetics } from '../utils/geodetics';
 import {
@@ -38,6 +39,8 @@ export default function ConservationModule() {
   const [selectedDroneStage, setSelectedDroneStage] = useState<{ project: any; stage: any } | null>(
     null
   );
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedReportStage, setSelectedReportStage] = useState<any | null>(null);
 
   // Debounce search effect (250ms delay)
   useEffect(() => {
@@ -56,10 +59,8 @@ export default function ConservationModule() {
     setActiveIndex,
     setActiveTab,
     setTileType,
-    setLightboxImage,
-    setIsReportModalOpen,
-    setSelectedReportStage,
-  } = useCarbonStore();
+  } = useMapStore();
+  const { setLightboxImage } = useUIStore();
 
   const activeProj = projects[activeIndex];
 
@@ -877,7 +878,12 @@ export default function ConservationModule() {
         }}
       />
 
-      <AuditReportModal />
+      <AuditReportModal
+        project={activeProj}
+        isOpen={isReportModalOpen}
+        onOpenChange={setIsReportModalOpen}
+        selectedReportStage={selectedReportStage}
+      />
 
       <LightboxModal />
     </div>

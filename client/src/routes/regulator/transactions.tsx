@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData } from 'react-router';
 import TxReviewModal from '../../components/modals/TxReviewModal';
 import TxDetailModal from '../../components/modals/TxDetailModal';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -43,13 +43,12 @@ import { regulatorRepository, projectRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const [txs, forestPrjs, projects] = await Promise.all([
+  const [kthTransactions, forestProjects, projects] = await Promise.all([
     regulatorRepository.getKTHTransactions().catch(() => []),
     regulatorRepository.getForestProjects().catch(() => []),
     projectRepository.getProjects().catch(() => []),
   ]);
-  useCarbonStore.setState({ kthTransactions: txs, forestProjects: forestPrjs, projects });
-  return null;
+  return { kthTransactions, forestProjects, projects };
 }
 
 clientLoader.hydrate = true as const;
@@ -67,11 +66,20 @@ export function meta() {
 
 export default function KthTransactionsMonitoring() {
   const {
-    kthTransactions: txs,
+    kthTransactions: initialTxs,
     forestProjects,
     projects,
-    updateKTHTransactionStatus,
-  } = useCarbonStore();
+  } = useLoaderData<typeof clientLoader>();
+
+  const [txs, setTxs] = useState<any[]>(initialTxs);
+
+  const updateTxStatus = (txId: string, status: string, note?: string) => {
+    setTxs((prev: any[]) =>
+      prev.map((tx: any) =>
+        tx.id === txId ? { ...tx, status, ...(note ? { flagNote: note } : {}) } : tx
+      )
+    );
+  };
 
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState('all');
@@ -170,15 +178,11 @@ export default function KthTransactionsMonitoring() {
     if (verifyingProofTx) {
       const tx = txs.find((t: any) => t.id === txId) || verifyingProofTx;
       const updatedTx = { ...tx, status: 'completed' };
-      if (updateKTHTransactionStatus) {
-        updateKTHTransactionStatus(txId, 'completed');
-      }
+      updateTxStatus(txId, 'completed');
       setVerifyingProofTx(null);
       setSelectedTxReceipt(updatedTx);
     } else {
-      if (updateKTHTransactionStatus) {
-        updateKTHTransactionStatus(txId, 'awaiting_farmer');
-      }
+      updateTxStatus(txId, 'awaiting_farmer');
       setReviewingTx(null);
     }
   };
@@ -188,9 +192,7 @@ export default function KthTransactionsMonitoring() {
     const note =
       reason.trim() ||
       'Terdeteksi ketidaksesuaian laporan nota / foto bukti belanja oleh regulator.';
-    if (updateKTHTransactionStatus) {
-      updateKTHTransactionStatus(txId, 'flagged', note);
-    }
+    updateTxStatus(txId, 'flagged', note);
     setReviewingTx(null);
     setVerifyingProofTx(null);
   };
@@ -570,11 +572,13 @@ export default function KthTransactionsMonitoring() {
       {/* STAGE 1 & 3 REVIEW & VERIFICATION MODAL */}
       <TxReviewModal
         tx={reviewingTx || verifyingProofTx}
+        projects={projects}
+        forestProjects={forestProjects}
         onClose={() => {
           setReviewingTx(null);
           setVerifyingProofTx(null);
         }}
-        onApprove={(id, notes) => handleApproveAction(id)}
+        onApprove={(id) => handleApproveAction(id)}
         onFlag={(id, reason) => handleFlagAction(id, reason)}
         onSelectImage={(url) => setLightboxImage(url)}
       />

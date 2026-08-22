@@ -1,4 +1,5 @@
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useState } from 'react';
+import { useLoaderData, useNavigate } from 'react-router';
 import { TreePine, Leaf, Globe, MapPin, CheckCircle2, CloudRain, Layers } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,16 +18,11 @@ import { auditRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const [spatialSum, areas] = await Promise.all([
+  const [spatialSummary, conservationAreas] = await Promise.all([
     auditRepository.getSpatialSummary().catch(() => null),
     auditRepository.getConservationAreas().catch(() => []),
   ]);
-  useCarbonStore.setState({
-    spatialSummary: spatialSum,
-    conservationAreas: areas,
-    selectedConservationId: areas[0]?.id ?? null,
-  });
-  return null;
+  return { spatialSummary, conservationAreas };
 }
 
 clientLoader.hydrate = true as const;
@@ -43,13 +39,12 @@ export function meta() {
 }
 
 export default function SpatialMRVEvaluation() {
-  const {
-    conservationAreas,
-    spatialSummary,
-    selectedConservationId,
-    setSelectedConservationId,
-    setAdminActiveTab,
-  } = useCarbonStore();
+  const { conservationAreas, spatialSummary } = useLoaderData<typeof clientLoader>();
+  const navigate = useNavigate();
+
+  const [selectedConservationId, setSelectedConservationId] = useState<string | null>(
+    conservationAreas[0]?.id ?? null
+  );
 
   const summary = spatialSummary;
   const areas = conservationAreas || [];
@@ -310,7 +305,7 @@ export default function SpatialMRVEvaluation() {
               {/* Action Button */}
               {parseInt(selectedArea.cloudCover) > 50 ? (
                 <Button
-                  onClick={() => setAdminActiveTab('drone')}
+                  onClick={() => navigate('/drone')}
                   className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black text-xs py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                 >
                   <CloudRain className="w-4 h-4" />
@@ -318,7 +313,7 @@ export default function SpatialMRVEvaluation() {
                 </Button>
               ) : (
                 <Button
-                  onClick={() => setAdminActiveTab('gate')}
+                  onClick={() => navigate('/gate')}
                   className="w-full bg-primary-gradient hover:opacity-95 text-white font-black text-xs py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                 >
                   <CheckCircle2 className="w-4 h-4 text-[#00C48C]" />

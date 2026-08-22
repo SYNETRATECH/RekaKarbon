@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData } from 'react-router';
 import { Map as MapIcon, Plus, CheckCircle2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,8 @@ import { auditRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const [polygons, logs] = await Promise.all([
-    auditRepository.getKthPolygons().catch(() => []),
-    auditRepository.getKthLogs().catch(() => []),
-  ]);
-  useCarbonStore.setState({ kthPolygons: polygons, kthLogs: logs });
-  return null;
+  const kthPolygons = await auditRepository.getKthPolygons().catch(() => []);
+  return { kthPolygons };
 }
 
 clientLoader.hydrate = true as const;
@@ -32,7 +28,7 @@ export function meta() {
 }
 
 export default function KTHDashboard() {
-  const { kthPolygons } = useCarbonStore();
+  const { kthPolygons } = useLoaderData<typeof clientLoader>();
   const [newLandName, setNewLandName] = useState('');
   const [newAreaHa, setNewAreaHa] = useState(50);
   const [isAdded, setIsAdded] = useState(false);

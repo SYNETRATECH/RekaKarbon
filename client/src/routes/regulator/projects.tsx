@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useNavigate, useLoaderData } from 'react-router';
 import ProjectProgressModal from '../../components/modals/ProjectProgressModal';
 import DroneAuditModal from '../../components/modals/DroneAuditModal';
 import TransactionReceiptModal from '../../components/modals/TransactionReceiptModal';
@@ -42,12 +41,11 @@ import { regulatorRepository, projectRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const [forestPrjs, projects] = await Promise.all([
+  const [forestProjects, projects] = await Promise.all([
     regulatorRepository.getForestProjects().catch(() => []),
     projectRepository.getProjects().catch(() => []),
   ]);
-  useCarbonStore.setState({ forestProjects: forestPrjs, projects });
-  return null;
+  return { forestProjects, projects };
 }
 
 clientLoader.hydrate = true as const;
@@ -65,11 +63,8 @@ export function meta() {
 
 export default function ForestProjectsManagement() {
   const navigate = useNavigate();
-  const {
-    forestProjects: projects,
-    projects: landingProjects,
-    setEditingProjectData,
-  } = useCarbonStore();
+  const { forestProjects: projects, projects: landingProjects } =
+    useLoaderData<typeof clientLoader>();
 
   const [selectedStage, setSelectedStage] = useState<any>(null);
   const [selectedTx, setSelectedTx] = useState<any>(null);
@@ -78,13 +73,11 @@ export default function ForestProjectsManagement() {
   const [selectedProgressProject, setSelectedProgressProject] = useState<any>(null);
 
   const openCreatePage = () => {
-    setEditingProjectData(null);
     navigate('/project-editor');
   };
 
   const openEditPage = (prj: any) => {
-    setEditingProjectData(prj);
-    navigate('/project-editor');
+    navigate('/project-editor', { state: { project: prj } });
   };
 
   const filteredProjects = projects.filter(

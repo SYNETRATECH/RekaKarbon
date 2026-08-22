@@ -1,4 +1,3 @@
-import { useCarbonStore } from '../../store/useCarbonStore';
 import { formatArea, formatCarbon, formatCurrency, formatPercent } from '@/lib/formatters';
 import { FileText, Printer } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -12,16 +11,23 @@ import {
   TableCell,
 } from '@/components/ui/table';
 
-export default function AuditReportModal() {
-  const { projects, activeIndex, isReportModalOpen, selectedReportStage, setIsReportModalOpen } =
-    useCarbonStore();
+interface AuditReportModalProps {
+  project: any;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedReportStage: any;
+}
 
-  const activeProj = projects[activeIndex];
-
+export default function AuditReportModal({
+  project: activeProj,
+  isOpen,
+  onOpenChange,
+  selectedReportStage,
+}: AuditReportModalProps) {
   if (!activeProj) return null;
 
   return (
-    <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="p-6 sm:p-7 max-w-2xl border-slate-200 bg-white shadow-2xl space-y-4 text-left max-h-[90vh] flex flex-col rounded-3xl font-sans overflow-hidden">
         <DialogTitle className="sr-only">Rapor Dokumen Audit Sertifikasi</DialogTitle>
 
@@ -552,7 +558,7 @@ export default function AuditReportModal() {
             Tervalidasi secara on-chain pada Hyperledger Besu RekaKarbon
           </span>
           <Button
-            onClick={() => setIsReportModalOpen(false)}
+            onClick={() => onOpenChange(false)}
             className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 px-6 rounded-xl shadow-xs transition-all cursor-pointer"
           >
             Tutup Rapor

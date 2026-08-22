@@ -1,11 +1,11 @@
 import { redirect } from 'react-router';
 import { authRepository } from '../repositories';
-import { useCarbonStore } from '../store/useCarbonStore';
+import { useAuthStore } from '../store/useAuthStore';
 import PortalLayout from './layouts/PortalLayout';
 
 /**
  * Layout-level clientLoader — runs before any child portal route renders.
- * Checks auth session and populates Zustand user state.
+ * Checks auth session and populates auth store with user state.
  * Unauthenticated users are redirected to /login.
  */
 export async function clientLoader() {
@@ -15,7 +15,7 @@ export async function clientLoader() {
     throw redirect('/login');
   }
 
-  useCarbonStore.setState({
+  useAuthStore.setState({
     userRole: user.role as any,
     userProfile: {
       name: user.name,

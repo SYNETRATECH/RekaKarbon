@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData, useRevalidator } from 'react-router';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertTriangle,
@@ -37,18 +37,12 @@ import { auditRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const [anomaly, summary, energyCorr] = await Promise.all([
+  const [aiAnomalyLogs, anomalySummary, energyCorrelationData] = await Promise.all([
     auditRepository.getAiAnomalyLogs().catch(() => []),
     auditRepository.getAnomalySummary().catch(() => null),
     auditRepository.getEnergyCorrelationData().catch(() => []),
   ]);
-  useCarbonStore.setState({
-    aiAnomalyLogs: anomaly,
-    anomalySummary: summary,
-    energyCorrelationData: energyCorr,
-    selectedAnomalyId: anomaly[0]?.id ?? null,
-  });
-  return null;
+  return { aiAnomalyLogs, anomalySummary, energyCorrelationData };
 }
 
 clientLoader.hydrate = true as const;
@@ -65,19 +59,19 @@ export function meta() {
 }
 
 export default function AuditorDashboard() {
-  const {
-    aiAnomalyLogs,
-    anomalySummary,
-    selectedAnomalyId,
-    setSelectedAnomalyId,
-    verifyAnomalyEmitter,
-  } = useCarbonStore();
+  const { revalidate, state: revalidateState } = useRevalidator();
+  const { aiAnomalyLogs: initialLogs, anomalySummary } = useLoaderData<typeof clientLoader>();
+
+  const [aiAnomalyLogs, setAiAnomalyLogs] = useState<any[]>(initialLogs);
+  const [selectedAnomalyId, setSelectedAnomalyId] = useState<string | null>(
+    initialLogs[0]?.id ?? null
+  );
 
   const [filterPriority, setFilterPriority] = useState<'ALL' | 'KRITIS' | 'TINGGI'>('ALL');
   const [isVerifying, setIsVerifying] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
 
-  // Summary Metrics from store repository
+  // Summary Metrics from loader
   const summary = anomalySummary;
 
   const filteredLogs = aiAnomalyLogs.filter((log: any) => {
@@ -90,7 +84,10 @@ export default function AuditorDashboard() {
   const handleVerify = async (id: string) => {
     if (!id) return;
     setIsVerifying(true);
-    await verifyAnomalyEmitter(id);
+    await auditRepository.verifyAnomalyRecord(id);
+    setAiAnomalyLogs((prev: any[]) =>
+      prev.map((log: any) => (log.id === id ? { ...log, auditStatus: 'Verified' } : log))
+    );
     setIsVerifying(false);
     toast({
       variant: 'mint',
@@ -204,10 +201,13 @@ export default function AuditorDashboard() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => useCarbonStore.getState().initializeData()}
+                onClick={() => revalidate()}
+                disabled={revalidateState === 'loading'}
                 className="flex items-center gap-1.5 border-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
               >
-                <RotateCw className="w-3.5 h-3.5 text-slate-500" />
+                <RotateCw
+                  className={`w-3.5 h-3.5 text-slate-500 ${revalidateState === 'loading' ? 'animate-spin' : ''}`}
+                />
                 Refresh
               </Button>
             </div>

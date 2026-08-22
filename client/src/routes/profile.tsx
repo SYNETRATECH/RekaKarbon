@@ -1,4 +1,4 @@
-import { useCarbonStore } from '../store/useCarbonStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ export function meta() {
 }
 
 export default function ProfileRoute() {
-  const { userRole, userProfile } = useCarbonStore();
+  const { userRole, userProfile } = useAuthStore();
 
   const getRoleBadge = (role: string | null) => {
     switch (role) {

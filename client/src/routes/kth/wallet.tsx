@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData } from 'react-router';
 import { formatCurrency } from '../../lib/formatters';
 import { Wallet, Upload, CheckCircle2, FileImage } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -11,12 +11,11 @@ import { auditRepository, regulatorRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const [logs, txs] = await Promise.all([
+  const [kthLogs, kthTransactions] = await Promise.all([
     auditRepository.getKthLogs().catch(() => []),
     regulatorRepository.getKTHTransactions().catch(() => []),
   ]);
-  useCarbonStore.setState({ kthLogs: logs, kthTransactions: txs });
-  return null;
+  return { kthLogs, kthTransactions };
 }
 
 clientLoader.hydrate = true as const;
@@ -33,7 +32,7 @@ export function meta() {
 }
 
 export default function DigitalWalletHybridLogs() {
-  const { kthLogs, kthTransactions } = useCarbonStore();
+  const { kthLogs, kthTransactions } = useLoaderData<typeof clientLoader>();
   const [showNotice, setShowNotice] = useState(false);
 
   const totalDisbursedIDR =

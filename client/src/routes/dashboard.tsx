@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { useLoaderData } from 'react-router';
 import {
   complianceRepository,
   reportRepository,
@@ -6,7 +7,7 @@ import {
   regulatorRepository,
   projectRepository,
 } from '../repositories';
-import { useCarbonStore } from '../store/useCarbonStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { RouteSkeletonLoader } from '../components/ui/RouteSkeletonLoader';
 
 const EmitterDashboard = lazy(() => import('./emitter/dashboard'));
@@ -22,50 +23,41 @@ const ViewLoader = () => (
 
 /**
  * Role-aware clientLoader: fetches only the data slices relevant to the authenticated role.
- * Avoids loading emitter data for auditors, regulator data for KTH users, etc.
+ * Returns data directly — child dashboards read via useLoaderData or re-fetch in their own loaders.
  */
 export async function clientLoader() {
-  const role = useCarbonStore.getState().userRole;
+  const role = useAuthStore.getState().userRole;
 
   if (role === 'emitter' || role === 'buyer' || !role) {
-    const [compliance, reports] = await Promise.all([
+    const [complianceData, emissionReports] = await Promise.all([
       complianceRepository.getComplianceData().catch(() => null),
       reportRepository.getEmissionReports().catch(() => []),
     ]);
-    useCarbonStore.setState({ complianceData: compliance, emissionReports: reports });
+    return { role, complianceData, emissionReports };
   } else if (role === 'regulator' || role === 'admin' || role === 'superadmin') {
-    const [forestPrjs, regions, kths] = await Promise.all([
+    const [forestProjects, nationalForestRegions, kthGroups] = await Promise.all([
       regulatorRepository.getForestProjects().catch(() => []),
       regulatorRepository.getNationalForestRegions().catch(() => []),
       regulatorRepository.getKTHGroups().catch(() => []),
     ]);
-    useCarbonStore.setState({
-      forestProjects: forestPrjs,
-      nationalForestRegions: regions,
-      kthGroups: kths,
-    });
+    return { role, forestProjects, nationalForestRegions, kthGroups };
   } else if (role === 'auditor') {
-    const [anomaly, summary, energyCorr] = await Promise.all([
+    const [aiAnomalyLogs, anomalySummary, energyCorrelationData] = await Promise.all([
       auditRepository.getAiAnomalyLogs().catch(() => []),
       auditRepository.getAnomalySummary().catch(() => null),
       auditRepository.getEnergyCorrelationData().catch(() => []),
     ]);
-    useCarbonStore.setState({
-      aiAnomalyLogs: anomaly,
-      anomalySummary: summary,
-      energyCorrelationData: energyCorr,
-      selectedAnomalyId: anomaly[0]?.id ?? null,
-    });
+    return { role, aiAnomalyLogs, anomalySummary, energyCorrelationData };
   } else if (role === 'kth') {
-    const [polygons, logs, projects] = await Promise.all([
+    const [kthPolygons, kthLogs, projects] = await Promise.all([
       auditRepository.getKthPolygons().catch(() => []),
       auditRepository.getKthLogs().catch(() => []),
       projectRepository.getProjects().catch(() => []),
     ]);
-    useCarbonStore.setState({ kthPolygons: polygons, kthLogs: logs, projects });
+    return { role, kthPolygons, kthLogs, projects };
   }
 
-  return null;
+  return { role };
 }
 
 clientLoader.hydrate = true as const;
@@ -82,7 +74,9 @@ export function meta() {
 }
 
 export default function DashboardRoute() {
-  const { userRole } = useCarbonStore();
+  const { userRole } = useAuthStore();
+  // loaderData available for child dashboards that need it via their own useLoaderData
+  useLoaderData<typeof clientLoader>();
   const currentRole = userRole || 'emitter';
 
   const renderDashboardView = () => {

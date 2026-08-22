@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { projectRepository } from '../repositories';
-import { useCarbonStore } from '../store/useCarbonStore';
+import { projectRepository, companyRepository } from '../repositories';
+import { useMapStore } from '../store/useMapStore';
 import MapCanvas from '../components/MapCanvas';
 import RightDrawer from '../components/RightDrawer';
 import ConservationModule from '../components/ConservationModule';
@@ -22,13 +22,16 @@ import CTASectionBottom from '../components/landing/CTASectionBottom';
 import Footer from '../components/landing/Footer';
 
 /**
- * Landing page clientLoader — fetches only public project data needed for the map.
- * Companies data (unpaidCount) is now loaded on-demand inside the portal, not here.
+ * Landing page clientLoader — fetches public project + company data for the map.
  */
 export async function clientLoader() {
-  const projects = await projectRepository.getProjects().catch(() => []);
-  useCarbonStore.setState({
+  const [projects, companies] = await Promise.all([
+    projectRepository.getProjects().catch(() => []),
+    companyRepository.getCompanies().catch(() => []),
+  ]);
+  useMapStore.setState({
     projects,
+    companies,
     activeCoords: projects[0] ? (JSON.parse(JSON.stringify(projects[0].coordinates)) as any) : [],
   });
   return null;
@@ -54,9 +57,7 @@ export function meta() {
 export default function LandingPageRoute() {
   const [page, setPage] = useState<'home' | 'maps'>('home');
 
-  // Data is pre-loaded by clientLoader. companies is no longer fetched here —
-  // unpaidCount is a portal-only concern, available after login.
-  const { activeModule, setActiveModule, companies } = useCarbonStore();
+  const { activeModule, setActiveModule, companies } = useMapStore();
 
   const unpaidCount = companies.filter((c) => c.paymentStatus === 'unpaid').length;
 

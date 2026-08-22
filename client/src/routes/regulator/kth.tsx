@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData } from 'react-router';
 import KthFormModal from '../../components/modals/KthFormModal';
 import KthDeleteModal from '../../components/modals/KthDeleteModal';
 import {
@@ -29,9 +29,8 @@ import { regulatorRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const kths = await regulatorRepository.getKTHGroups().catch(() => []);
-  useCarbonStore.setState({ kthGroups: kths });
-  return null;
+  const kthGroups = await regulatorRepository.getKTHGroups().catch(() => []);
+  return { kthGroups };
 }
 
 clientLoader.hydrate = true as const;
@@ -48,7 +47,8 @@ export function meta() {
 }
 
 export default function KthFarmersManagement() {
-  const { kthGroups: groups, addKTHGroup, updateKTHGroup, deleteKTHGroup } = useCarbonStore();
+  const { kthGroups: initialGroups } = useLoaderData<typeof clientLoader>();
+  const [groups, setGroups] = useState<any[]>(initialGroups);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -99,20 +99,20 @@ export default function KthFarmersManagement() {
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (editingKTH) {
-      updateKTHGroup(editingKTH.id, formData as any);
+      setGroups((prev) => prev.map((k) => (k.id === editingKTH.id ? { ...k, ...formData } : k)));
     } else {
       const newKTH = {
         id: `KTH-00${groups.length + 1}`,
         ...formData,
         kybStatus: 'verified',
       };
-      addKTHGroup(newKTH);
+      setGroups((prev) => [newKTH, ...prev]);
     }
     setIsModalOpen(false);
   };
 
   const handleDelete = (id: string) => {
-    deleteKTHGroup(id);
+    setGroups((prev) => prev.filter((k) => k.id !== id));
     setDeleteConfirmId(null);
   };
 

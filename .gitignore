@@ -35,6 +35,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# PM2 runtime (bare-metal deployment)
+logs/
+.pm2/
+
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example

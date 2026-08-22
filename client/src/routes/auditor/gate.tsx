@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData } from 'react-router';
 import { toast } from '@/hooks/use-toast';
 import { ShieldCheck, Cpu, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -22,16 +22,11 @@ import { auditRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const [certPrev, areas] = await Promise.all([
+  const [certificationPreview, conservationAreas] = await Promise.all([
     auditRepository.getCertificationPreview().catch(() => null),
     auditRepository.getConservationAreas().catch(() => []),
   ]);
-  useCarbonStore.setState({
-    certificationPreview: certPrev,
-    conservationAreas: areas,
-    selectedConservationId: areas[0]?.id ?? null,
-  });
-  return null;
+  return { certificationPreview, conservationAreas };
 }
 
 clientLoader.hydrate = true as const;
@@ -48,7 +43,11 @@ export function meta() {
 }
 
 export default function AuthorizationGate() {
-  const { certificationPreview, conservationAreas, authorizeMintOffsetCredit } = useCarbonStore();
+  const { certificationPreview, conservationAreas } = useLoaderData<typeof clientLoader>();
+
+  const authorizeMintOffsetCredit = async (payload: any) => {
+    return auditRepository.authorizeMintingCredit(payload);
+  };
 
   const preview = certificationPreview;
   const projectList = conservationAreas || [];
@@ -68,6 +67,7 @@ export default function AuthorizationGate() {
 
   const handleAuthorize = async () => {
     setIsMinting(true);
+
     const res = await authorizeMintOffsetCredit({
       project: selectedProjectName,
       verifier: verifierName,

@@ -1,5 +1,5 @@
 import { useLocation, Outlet, Link } from 'react-router';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import PortalSidebar from './PortalSidebar';
 import LogoutDialog from '../../components/LogoutDialog';
 import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
@@ -14,7 +14,7 @@ interface PortalLayoutProps {
 
 export default function PortalLayout({ children }: PortalLayoutProps) {
   // User state and route authorization are guaranteed by app.tsx layout clientLoader before mounting.
-  const { userRole, userProfile } = useCarbonStore();
+  const { userRole, userProfile } = useAuthStore();
   const location = useLocation();
 
   const activeRole = userRole || 'emitter';

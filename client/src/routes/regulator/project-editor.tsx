@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, useLocation, Link } from 'react-router';
 import type L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useCarbonStore } from '../../store/useCarbonStore';
 import { sortPolygonCoordinates } from '../../utils/geodetics';
 import { Save, Plus, Trash2, UploadCloud, FileText, FileSpreadsheet, X } from 'lucide-react';
 import { ForestProjectItem } from '../../types';
@@ -61,32 +60,24 @@ function normalizePolygonCoordinates(project: ForestProjectItem | null): [number
             number,
           ];
         }
-        if (typeof c === 'object' && c !== null) {
+        if (c && typeof c === 'object' && 'lat' in c && 'lng' in c) {
           return [typeof c.lat === 'number' ? c.lat : 0, typeof c.lng === 'number' ? c.lng : 0] as [
             number,
             number,
           ];
         }
-        return [0, 0] as [number, number];
+        return null;
       })
-      .filter((pt) => pt[0] !== 0 && pt[1] !== 0);
+      .filter((c): c is [number, number] => c !== null);
+
     if (valid.length > 0) return valid;
   }
 
-  // 2. If coordinates is an array of coordinate arrays [[lat, lng], [lat, lng], ...]
-  if (Array.isArray(project.coordinates) && Array.isArray(project.coordinates[0])) {
-    return (project.coordinates as any).map((c: any) => [c[0], c[1]]);
-  }
+  // 2. Fallback to center point bounds
+  if (project.coordinates && Array.isArray(project.coordinates)) {
+    const lat = typeof project.coordinates[0] === 'number' ? project.coordinates[0] : -7.5;
+    const lng = typeof project.coordinates[1] === 'number' ? project.coordinates[1] : 110.0;
 
-  // 3. If coordinates is a single center point [lat, lng]
-  if (
-    Array.isArray(project.coordinates) &&
-    project.coordinates.length === 2 &&
-    typeof project.coordinates[0] === 'number' &&
-    typeof project.coordinates[1] === 'number'
-  ) {
-    const lat = project.coordinates[0];
-    const lng = project.coordinates[1];
     return [
       [Number((lat + 0.003).toFixed(6)), Number((lng - 0.003).toFixed(6))],
       [Number((lat + 0.003).toFixed(6)), Number((lng + 0.003).toFixed(6))],
@@ -100,8 +91,8 @@ function normalizePolygonCoordinates(project: ForestProjectItem | null): [number
 
 export default function ProjectEditorPage() {
   const navigate = useNavigate();
-  const { editingProjectData, setEditingProjectData, addForestProject, updateForestProject } =
-    useCarbonStore();
+  const location = useLocation();
+  const editingProjectData: ForestProjectItem | null = location.state?.project ?? null;
 
   const isEditing = Boolean(editingProjectData && editingProjectData.id);
 
@@ -120,8 +111,8 @@ export default function ProjectEditorPage() {
     assignedKTH: editingProjectData?.assignedKTH || '',
     budgetReportFileName: editingProjectData?.budgetReportFileName || '',
     budgetReportFileSize: editingProjectData?.budgetReportFileSize || 0,
-    auditResultStatus: editingProjectData?.auditResultStatus || 'Mandatory Audit Valid',
-    notes: editingProjectData?.notes || '',
+    auditResultStatus: (editingProjectData as any)?.auditResultStatus || 'Mandatory Audit Valid',
+    notes: (editingProjectData as any)?.notes || '',
   });
 
   // Coordinates & Spatial Map State
@@ -308,7 +299,7 @@ export default function ProjectEditorPage() {
         : [-7.5, 110.0];
 
     const payload: ForestProjectItem = {
-      id: isEditing ? editingProjectData.id : `PRJ-REG-${Date.now()}`,
+      id: isEditing && editingProjectData ? editingProjectData.id : `PRJ-REG-${Date.now()}`,
       projectName: formData.projectName,
       category: formData.category as any,
       categoryLabel: formData.categoryLabel,
@@ -324,13 +315,6 @@ export default function ProjectEditorPage() {
       budgetReportFileSize: formData.budgetReportFileSize || undefined,
     };
 
-    if (isEditing) {
-      updateForestProject(payload.id, payload);
-    } else {
-      addForestProject(payload);
-    }
-
-    setEditingProjectData(null);
     navigate('/projects');
   };
 
