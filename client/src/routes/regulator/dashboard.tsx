@@ -1,4 +1,4 @@
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData } from 'react-router';
 import {
   Globe,
   Trees as TreeIcon,
@@ -28,12 +28,8 @@ import { regulatorRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const [regions, forestPrjs] = await Promise.all([
-    regulatorRepository.getNationalForestRegions().catch(() => []),
-    regulatorRepository.getForestProjects().catch(() => []),
-  ]);
-  useCarbonStore.setState({ nationalForestRegions: regions, forestProjects: forestPrjs });
-  return null;
+  const regions = await regulatorRepository.getNationalForestRegions().catch(() => []);
+  return { regions };
 }
 
 clientLoader.hydrate = true as const;
@@ -50,7 +46,7 @@ export function meta() {
 }
 
 export default function RegulatorDashboard() {
-  const { nationalForestRegions: regions } = useCarbonStore();
+  const { regions } = useLoaderData<typeof clientLoader>();
 
   const totalAreaHa = regions.reduce((acc: number, r: any) => acc + (r.areaHectares || 0), 0);
   const totalCarbonTCO2e = regions.reduce(

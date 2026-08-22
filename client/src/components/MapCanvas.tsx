@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useCarbonStore } from '../store/useCarbonStore';
+import { useMapStore } from '../store/useMapStore';
 
 const TILE_URLS = {
   satellite:
@@ -28,7 +28,7 @@ export default function MapCanvas() {
     tileType,
     setSelectedCompanyIndex,
     setActiveIndex,
-  } = useCarbonStore();
+  } = useMapStore();
 
   const activeProj = projects[activeIndex];
 

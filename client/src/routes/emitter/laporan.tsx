@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
+import { useLoaderData } from 'react-router';
 import { formatFileSize, formatPercent } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
-import { useCarbonStore } from '../../store/useCarbonStore';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
 import DownloadNoticeModal from '../../components/modals/DownloadNoticeModal';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -46,9 +46,8 @@ import { reportRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const reports = await reportRepository.getEmissionReports().catch(() => []);
-  useCarbonStore.setState({ emissionReports: reports });
-  return null;
+  const emissionReports = await reportRepository.getEmissionReports().catch(() => []);
+  return { emissionReports };
 }
 
 clientLoader.hydrate = true as const;
@@ -65,7 +64,7 @@ export function meta() {
 }
 
 export default function EmissionReportsSector() {
-  const { emissionReports: reports } = useCarbonStore();
+  const { emissionReports: reports } = useLoaderData<typeof clientLoader>();
 
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
 

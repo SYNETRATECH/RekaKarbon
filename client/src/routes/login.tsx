@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { useCarbonStore } from '../store/useCarbonStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { Mail, Lock, ShieldCheck, ArrowLeft, UserCheck, UserPlus, Eye, EyeOff } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ export function meta() {
 }
 
 export default function LoginRoute() {
-  const { loginWithCredentials } = useCarbonStore();
+  const { loginWithCredentials } = useAuthStore();
   const navigate = useNavigate();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');

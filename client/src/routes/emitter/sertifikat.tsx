@@ -1,4 +1,4 @@
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData } from 'react-router';
 import { certificateRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { formatCurrency, formatCompactCurrency } from '../../lib/formatters';
@@ -8,8 +8,7 @@ import CertificateCard from '../../components/cards/CertificateCard';
 
 export async function clientLoader() {
   const certs = await certificateRepository.getPurchasedCertificates().catch(() => []);
-  useCarbonStore.setState({ purchasedCertificates: certs });
-  return null;
+  return { certs };
 }
 
 clientLoader.hydrate = true as const;
@@ -26,7 +25,7 @@ export function meta() {
 }
 
 export default function PurchasedCertificatesProjects() {
-  const { purchasedCertificates: certs } = useCarbonStore();
+  const { certs } = useLoaderData<typeof clientLoader>();
 
   const totalVolume = certs.reduce((acc: number, c: any) => acc + c.purchasedVolumeTCO2e, 0);
   const totalValueIDR = certs.reduce(

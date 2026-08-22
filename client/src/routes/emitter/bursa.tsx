@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { useLoaderData } from 'react-router';
 import { bursaRepository } from '../../repositories';
-import { useCarbonStore } from '../../store/useCarbonStore';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import BursaPurchaseModal from '../../components/modals/BursaPurchaseModal';
@@ -26,9 +26,8 @@ import {
 } from 'lucide-react';
 
 export async function clientLoader() {
-  const bursa = await bursaRepository.getBursaItems().catch(() => []);
-  useCarbonStore.setState({ bursaItems: bursa });
-  return null;
+  const bursaItems = await bursaRepository.getBursaItems().catch(() => []);
+  return { bursaItems };
 }
 
 clientLoader.hydrate = true as const;
@@ -45,7 +44,7 @@ export function meta() {
 }
 
 export default function CarbonDexMarket() {
-  const { bursaItems } = useCarbonStore();
+  const { bursaItems } = useLoaderData<typeof clientLoader>();
 
   const [bursaFilter, setBursaFilter] = useState<'all' | 'hutan' | 'mangrove' | 'gambut'>('all');
   const [sortBy, setSortBy] = useState<'pasokan' | 'harga' | 'perubahan'>('pasokan');

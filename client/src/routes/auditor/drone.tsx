@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData } from 'react-router';
 import { toast } from '@/hooks/use-toast';
 import {
   Upload,
@@ -18,17 +18,11 @@ import { auditRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const [droneArch, droneSched, droneScans] = await Promise.all([
+  const [droneArchive, droneSchedules] = await Promise.all([
     auditRepository.getDroneArchive().catch(() => null),
     auditRepository.getDroneSchedules().catch(() => null),
-    auditRepository.getDroneScans().catch(() => []),
   ]);
-  useCarbonStore.setState({
-    droneArchive: droneArch,
-    droneSchedules: droneSched,
-    droneScans,
-  });
-  return null;
+  return { droneArchive, droneSchedules };
 }
 
 clientLoader.hydrate = true as const;
@@ -45,7 +39,7 @@ export function meta() {
 }
 
 export default function DroneMappingController() {
-  const { droneArchive, droneSchedules } = useCarbonStore();
+  const { droneArchive, droneSchedules } = useLoaderData<typeof clientLoader>();
 
   const [activeLayer, setActiveLayer] = useState('canopy');
   const [isUploading, setIsUploading] = useState(false);

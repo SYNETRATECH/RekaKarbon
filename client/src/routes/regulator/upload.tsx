@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useLoaderData } from 'react-router';
 import RegulationUploadModal from '../../components/modals/RegulationUploadModal';
 import {
   FileUp,
@@ -31,9 +31,8 @@ import { regulatorRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const docs = await regulatorRepository.getRegulationUploads().catch(() => []);
-  useCarbonStore.setState({ regulationUploads: docs });
-  return null;
+  const regulationUploads = await regulatorRepository.getRegulationUploads().catch(() => []);
+  return { regulationUploads };
 }
 
 clientLoader.hydrate = true as const;
@@ -50,7 +49,8 @@ export function meta() {
 }
 
 export default function RegulatorUploadManagement() {
-  const { regulationUploads: docs, addRegulationUpload } = useCarbonStore();
+  const { regulationUploads: initialDocs } = useLoaderData<typeof clientLoader>();
+  const [docs, setDocs] = useState<any[]>(initialDocs);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -116,7 +116,7 @@ export default function RegulatorUploadManagement() {
           : Number(formData.fileSize) || 4500000,
     };
 
-    addRegulationUpload(newDoc);
+    setDocs((prev) => [newDoc, ...prev]);
     setIsModalOpen(false);
   };
 

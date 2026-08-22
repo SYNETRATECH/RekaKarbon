@@ -1,5 +1,6 @@
 import { useLocation, NavLink } from 'react-router';
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useUIStore } from '../../store/useUIStore';
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -42,7 +43,8 @@ interface NavItem {
 }
 
 export default function PortalSidebar() {
-  const { userRole, setIsLogoutDialogOpen } = useCarbonStore();
+  const { userRole } = useAuthStore();
+  const { setIsLogoutDialogOpen } = useUIStore();
   const location = useLocation();
   const currentPath = location.pathname;
 

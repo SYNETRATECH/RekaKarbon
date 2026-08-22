@@ -10,7 +10,6 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { useCarbonStore } from '../../store/useCarbonStore';
 import { formatCurrency } from '../../lib/formatters';
 import { formatDateTime } from '../../lib/dates';
 
@@ -20,6 +19,8 @@ interface TxReviewModalProps {
   onApprove: (id: string, notes?: string) => void;
   onFlag: (id: string, reason: string) => void;
   onSelectImage?: (imageUrl: string) => void;
+  projects?: any[];
+  forestProjects?: any[];
 }
 
 export default function TxReviewModal({
@@ -28,12 +29,11 @@ export default function TxReviewModal({
   onApprove,
   onFlag,
   onSelectImage,
+  projects = [],
+  forestProjects = [],
 }: TxReviewModalProps) {
   const [showFlagForm, setShowFlagForm] = useState(false);
   const [flagNoteInput, setFlagNoteInput] = useState('');
-
-  const projects = useCarbonStore((state) => state.projects);
-  const forestProjects = useCarbonStore((state) => state.forestProjects);
 
   if (!tx) return null;
 

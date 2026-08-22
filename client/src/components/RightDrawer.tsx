@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router';
-import { useCarbonStore } from '../store/useCarbonStore';
+import { useMapStore } from '../store/useMapStore';
+import { useUIStore } from '../store/useUIStore';
 import { Map as MapIcon, Building2, Globe, LogIn } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -7,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export default function RightDrawer() {
-  const { activeModule, setActiveModule, isDrawerOpen, setIsDrawerOpen } = useCarbonStore();
+  const { activeModule, setActiveModule } = useMapStore();
+  const { isDrawerOpen, setIsDrawerOpen } = useUIStore();
   const navigate = useNavigate();
 
   return (

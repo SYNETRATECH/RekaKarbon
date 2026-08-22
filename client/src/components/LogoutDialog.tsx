@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router';
-import { useCarbonStore } from '../store/useCarbonStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useUIStore } from '../store/useUIStore';
 import { LogOut } from 'lucide-react';
 import {
   Dialog,
@@ -12,7 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function LogoutDialog() {
-  const { isLogoutDialogOpen, setIsLogoutDialogOpen, logout } = useCarbonStore();
+  const { logout } = useAuthStore();
+  const { isLogoutDialogOpen, setIsLogoutDialogOpen } = useUIStore();
   const navigate = useNavigate();
 
   const handleConfirmLogout = async () => {

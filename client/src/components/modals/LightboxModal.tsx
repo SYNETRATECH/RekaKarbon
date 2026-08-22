@@ -1,9 +1,9 @@
-import { useCarbonStore } from '../../store/useCarbonStore';
+import { useUIStore } from '../../store/useUIStore';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 export default function LightboxModal() {
-  const { lightboxImage, setLightboxImage } = useCarbonStore();
+  const { lightboxImage, setLightboxImage } = useUIStore();
 
   return (
     <Dialog open={!!lightboxImage} onOpenChange={(open) => !open && setLightboxImage(null)}>

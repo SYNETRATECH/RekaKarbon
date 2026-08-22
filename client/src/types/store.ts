@@ -1,161 +1,19 @@
-import { Project } from './project';
-import { Company } from './company';
-import { ComplianceData } from './compliance';
-import { EmissionReport } from './report';
-import { PurchasedCertificate } from './certificate';
-import { BursaItem } from './bursa';
-import {
-  NationalForestRegion,
-  ForestProjectItem,
-  KTHGroupModel,
-  KTHTransactionItem,
-  RegulationUploadModel,
-} from './regulator';
-import { AnomalySummary, EnergyCorrelationItem } from './audit';
-import { AuthCredentials } from './auth';
+/**
+ * Re-exports store state types from the focused store slices.
+ * The monolithic CarbonStoreState has been decomposed — import from the specific
+ * store module that owns the state you need:
+ *
+ *   - Auth/session state   → useAuthStore (store/useAuthStore.ts)
+ *   - Map/spatial state    → useMapStore  (store/useMapStore.ts)
+ *   - UI/drawer/modal state → useUIStore  (store/useUIStore.ts)
+ */
+export type { AuthStoreState, ClientUserRole, UserProfile } from '../store/useAuthStore';
+export type { UIStoreState } from '../store/useUIStore';
+export type { MapStoreState } from '../store/useMapStore';
 
-export type ClientUserRole =
-  'superadmin' | 'admin' | 'regulator' | 'auditor' | 'emitter' | 'kth' | 'buyer';
-
-export interface UserProfile {
-  name: string;
-  roleTitle?: string;
-  agency?: string;
-  avatar?: string;
-}
-
+// Verichain explorer search result shape (kept for the public landing page)
 export interface SearchedTxData {
   item: any;
   type: 'vendor' | 'tokenBuyer';
-  project: Project;
-}
-
-export interface CarbonStoreState {
-  // Core Data
-  projects: Project[];
-  companies: Company[];
-  complianceData: ComplianceData | null;
-  emissionReports: EmissionReport[];
-  purchasedCertificates: PurchasedCertificate[];
-  bursaItems: BursaItem[];
-
-  // Regulator State Data
-  nationalForestRegions: NationalForestRegion[];
-  forestProjects: ForestProjectItem[];
-  kthGroups: KTHGroupModel[];
-  kthTransactions: KTHTransactionItem[];
-  regulationUploads: RegulationUploadModel[];
-  editingProjectData: any | null;
-  setEditingProjectData: (data: any | null) => void;
-
-  // Navigation & Drawer States
-  activeModule: 'conservation' | 'corporate';
-  activeTab: 'editor' | 'stats';
-  isDrawerOpen: boolean;
-
-  // Selection States
-  activeIndex: number;
-  selectedCompanyIndex: number;
-  companyFilter: 'all' | 'unpaid' | 'paid';
-
-  // Map States
-  activeCoords: Array<{ lat: number; lng: number } | [number, number]>;
-  isDragMode: boolean;
-  tileType: 'satellite' | 'topo' | 'street';
-
-  // Modals & Popups Visibilities
-  isReportModalOpen: boolean;
-  selectedReportStage: any | null;
-  lightboxImage: string | null;
-
-  // Authentication & Admin Portal States
-  userRole: ClientUserRole | null;
-  subRole: string;
-  userProfile: UserProfile;
-  isLogoutDialogOpen: boolean;
-  adminActiveTab: string;
-
-  // Feature Specific Mock Data
-  multiSigRequests: any[];
-  kybQueue: any[];
-  djpLogs: any[];
-  aiAnomalyLogs: any[];
-  anomalySummary: AnomalySummary | null;
-  energyCorrelationData: EnergyCorrelationItem[];
-  selectedAnomalyId: string | null;
-  spatialSummary: any | null;
-  conservationAreas: any[];
-  selectedConservationId: string | null;
-  droneArchive: any | null;
-  droneSchedules: any | null;
-  certificationPreview: any | null;
-  droneScans: any[];
-  kthPolygons: any[];
-  kthLogs: any[];
-  isDataLoaded: boolean;
-
-  // CRUD Actions
-  addForestProject: (newProject: ForestProjectItem) => void;
-  updateForestProject: (id: string, updated: Partial<ForestProjectItem>) => void;
-  deleteForestProject: (id: string) => void;
-
-  addKTHGroup: (newKTH: KTHGroupModel) => void;
-  updateKTHGroup: (id: string, updated: Partial<KTHGroupModel>) => void;
-  deleteKTHGroup: (id: string) => void;
-
-  updateKTHTransactionStatus: (
-    id: string,
-    status:
-      'completed' | 'processing' | 'awaiting_farmer' | 'awaiting_proof' | 'flagged' | 'failed',
-    issueNote?: string
-  ) => void;
-
-  addRegulationUpload: (newDoc: RegulationUploadModel) => void;
-  initializeData: () => Promise<void>;
-
-  // Explorer & Public Report
-  searchQuery: string;
-  isVerichainExplorerOpen: boolean;
-  searchedTxData: SearchedTxData | null;
-
-  // Setters & Actions
-  setActiveModule: (module: 'conservation' | 'corporate') => void;
-  setActiveTab: (tab: 'editor' | 'stats') => void;
-  setIsDrawerOpen: (isOpen: boolean) => void;
-  setIsLogoutDialogOpen: (isOpen: boolean) => void;
-  setAdminActiveTab: (tab: string) => void;
-  setSubRole: (roleKey: string) => void;
-
-  loginWithCredentials: (credentials: AuthCredentials, customTab?: string | null) => Promise<any>;
-  loginAsRole: (roleKey: string, subRoleKey?: string, customTab?: string | null) => Promise<any>;
-  logout: () => Promise<void>;
-
-  setSearchQuery: (query: string) => void;
-  setIsVerichainExplorerOpen: (isOpen: boolean) => void;
-  setSearchedTxData: (data: SearchedTxData | null) => void;
-
-  setActiveIndex: (index: number) => void;
-  setSelectedCompanyIndex: (index: number) => void;
-  setCompanyFilter: (filter: 'all' | 'unpaid' | 'paid') => void;
-
-  setActiveCoords: (coords: Array<{ lat: number; lng: number } | [number, number]>) => void;
-  setIsDragMode: (isDrag: boolean) => void;
-  setTileType: (tile: 'satellite' | 'topo' | 'street') => void;
-
-  setIsReportModalOpen: (isOpen: boolean) => void;
-  setSelectedReportStage: (stage: any | null) => void;
-  setLightboxImage: (image: string | null) => void;
-
-  searchVerichainHash: (query: string) => void;
-  updateProjectCoordinates: (
-    index: number,
-    coordinates: Array<{ lat: number; lng: number } | [number, number]>
-  ) => void;
-
-  setSelectedAnomalyId: (id: string | null) => void;
-  setSelectedConservationId: (id: string | null) => void;
-
-  verifyAnomalyEmitter: (id: string) => Promise<void>;
-  authorizeMintOffsetCredit: (payload: any) => Promise<{ success: boolean; txHash: string }>;
-  toggleCompanyPaymentStatus: (index: number) => void;
+  project: any;
 }

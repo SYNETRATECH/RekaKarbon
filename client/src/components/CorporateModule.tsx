@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatCarbon } from '@/lib/formatters';
-import { useCarbonStore } from '../store/useCarbonStore';
+import { useMapStore } from '../store/useMapStore';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -22,7 +22,7 @@ export default function CorporateModule() {
     companyFilter,
     setSelectedCompanyIndex,
     setCompanyFilter,
-  } = useCarbonStore();
+  } = useMapStore();
 
   // Calculate dynamic stats for deficits
   const unpaidCount = companies.filter((c) => c.paymentStatus === 'unpaid').length;
