@@ -6,8 +6,20 @@ import {
   ScrollRestoration,
   isRouteErrorResponse,
   useRouteError,
+  Link,
 } from 'react-router';
 import { Toaster } from '@/components/ui/toaster';
+import { ShieldAlert, ArrowLeft, Home, Lock } from 'lucide-react';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import brandIcon from './assets/icon.png';
 import './styles/index.css';
 
@@ -48,40 +60,117 @@ export function ErrorBoundary() {
   const error = useRouteError();
 
   if (isRouteErrorResponse(error)) {
+    const is403 = error.status === 403;
+    const is404 = error.status === 404;
+
+    const errorDescription =
+      typeof error.data === 'string'
+        ? error.data
+        : is403
+          ? 'Akun Anda tidak memiliki hak otorisasi untuk mengakses sumber daya atau instrumen ini.'
+          : is404
+            ? 'Maaf, rute URL yang Anda tuju tidak terdaftar di sistem RekaKarbon.'
+            : error.statusText || 'Terjadi kendala pada sistem.';
+
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-100 p-6 text-center font-sans">
-        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md space-y-4 border border-slate-200">
-          <h1 className="text-4xl font-black text-slate-900">{error.status}</h1>
-          <p className="text-xs text-slate-500 font-medium">
-            {error.status === 404
-              ? 'Halaman atau sumber daya yang Anda cari tidak ditemukan.'
-              : error.statusText || 'Terjadi kesalahan pada sistem.'}
-          </p>
-          <a
-            href="/"
-            className="inline-block bg-primary-gradient text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md hover:opacity-95 transition-all"
-          >
-            Kembali ke Beranda
-          </a>
-        </div>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center text-slate-900 relative overflow-hidden font-sans">
+        {/* Soft Ambient Light Glows */}
+        <div className="absolute w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -top-20 -left-20" />
+        <div className="absolute w-[400px] h-[400px] bg-[#00C48C]/10 rounded-full blur-3xl pointer-events-none -bottom-20 -right-20" />
+
+        <Card className="max-w-md w-full bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-xl z-10 text-left">
+          <CardHeader className="space-y-4 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <img src={brandIcon} alt="RekaKarbon Logo" className="w-8 h-8 object-contain" />
+              <div>
+                <h2 className="font-black text-sm text-slate-900 leading-none">REKAKARBON</h2>
+                <span className="text-[9px] text-[#00C48C] font-extrabold block mt-0.5 uppercase tracking-wider">
+                  Verification Platform
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="pt-6 space-y-4">
+            <Badge
+              variant={is403 ? 'outline' : 'destructive'}
+              className={`flex w-fit items-center gap-1.5 px-3 py-1 text-xs ${
+                is403
+                  ? 'border-amber-300 text-amber-900 bg-amber-50 font-black'
+                  : 'bg-rose-500 text-white font-bold'
+              }`}
+            >
+              {is403 ? (
+                <Lock className="w-4 h-4 text-amber-700" />
+              ) : (
+                <ShieldAlert className="w-4 h-4" />
+              )}
+              <span>
+                {is403
+                  ? 'ERROR 403 — FORBIDDEN (AKSES DIBATASI)'
+                  : is404
+                    ? 'ERROR 404 — NOT FOUND'
+                    : `ERROR ${error.status}`}
+              </span>
+            </Badge>
+
+            <div className="space-y-2">
+              <CardTitle className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
+                {is403
+                  ? 'Akses Sumber Daya Dibatasi'
+                  : is404
+                    ? 'Halaman Tidak Ditemukan'
+                    : 'Kendala Akses'}
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-600 leading-relaxed font-normal">
+                {errorDescription}
+              </CardDescription>
+            </div>
+          </CardContent>
+
+          <CardFooter className="pt-2 flex flex-col gap-2.5 w-full">
+            <Button
+              asChild
+              variant="default"
+              size="default"
+              className="w-full h-10 bg-[#183B32] hover:bg-[#122e27] text-[#00E599] font-black cursor-pointer"
+            >
+              <Link to="/dashboard" className="flex items-center justify-center gap-2">
+                <Home className="w-4 h-4 text-[#00E599]" />
+                Kembali ke Dashboard
+              </Link>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="default"
+              onClick={() => window.history.back()}
+              className="w-full h-10 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Kembali ke Halaman Sebelumnya
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <p className="text-[10px] text-slate-400 mt-8 z-10 font-medium">
+          RekaKarbon Verichain Architecture by What Time is it ?
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-slate-100 p-6 text-center font-sans">
-      <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md space-y-4 border border-slate-200">
-        <h1 className="text-lg font-black text-slate-900">Terjadi Kesalahan Sistem</h1>
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center text-slate-900 font-sans">
+      <Card className="max-w-md w-full bg-white border border-slate-200 shadow-xl p-6 text-left space-y-4">
+        <h1 className="text-lg font-black text-slate-900">Terjadi Kendala Sistem</h1>
         <p className="text-xs text-slate-500">
           {(error as Error)?.message || 'Aplikasi mengalami kendala teknis saat memuat komponen.'}
         </p>
-        <a
-          href="/"
-          className="inline-block bg-primary-gradient text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md"
-        >
-          Muat Ulang Beranda
-        </a>
-      </div>
+        <Button asChild className="w-full bg-[#183B32] text-[#00E599] font-bold">
+          <Link to="/dashboard">Kembali ke Dashboard</Link>
+        </Button>
+      </Card>
     </div>
   );
 }

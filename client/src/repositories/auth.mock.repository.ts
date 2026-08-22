@@ -1,6 +1,6 @@
 import type { AuthRepository } from './auth.repository';
 import { mockUsers } from '../lib/mock/auth';
-import type { MockUser, AuthCredentials, AuthResponse } from '../types';
+import type { User, AuthCredentials, AuthResponse } from '../types';
 
 export class MockAuthRepository implements AuthRepository {
   async login(credentials: AuthCredentials): Promise<AuthResponse> {
@@ -28,7 +28,7 @@ export class MockAuthRepository implements AuthRepository {
   async register(data: any): Promise<AuthResponse> {
     const roleKey = (data.role || 'emitter') as keyof typeof mockUsers;
     const baseUser = mockUsers[roleKey] || mockUsers.emitter;
-    const newUser: MockUser = {
+    const newUser: User = {
       ...baseUser,
       email: data.identity || data.email || baseUser.email,
       name: data.name || baseUser.name,
@@ -46,7 +46,7 @@ export class MockAuthRepository implements AuthRepository {
     };
   }
 
-  async getCurrentUser(): Promise<MockUser | null> {
+  async getCurrentUser(): Promise<User | null> {
     const savedProfileStr = localStorage.getItem('rekakarbon_user_profile');
     if (savedProfileStr) {
       try {
