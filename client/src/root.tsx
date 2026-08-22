@@ -13,7 +13,7 @@ import './styles/index.css';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -27,7 +27,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="bg-slate-50 text-slate-800 antialiased min-h-screen">
+      <body
+        className="bg-slate-50 text-slate-800 antialiased min-h-screen"
+        suppressHydrationWarning
+      >
         {children}
         <Toaster />
         <ScrollRestoration />

@@ -10,7 +10,12 @@ export interface AuthRepository {
 
 export class ApiAuthRepository implements AuthRepository {
   async login(credentials: AuthCredentials): Promise<AuthResponse> {
-    return api.post<AuthResponse>('/auth/login', credentials);
+    const res = await api.post<AuthResponse>('/auth/login', credentials);
+    const token = res?.token || res?.accessToken;
+    if (token && typeof window !== 'undefined') {
+      localStorage.setItem('rekakarbon_token', token);
+    }
+    return res;
   }
 
   async register(data: any): Promise<AuthResponse> {
@@ -18,11 +23,28 @@ export class ApiAuthRepository implements AuthRepository {
   }
 
   async getCurrentUser(): Promise<MockUser | null> {
-    return api.get<MockUser>('/auth/me');
+    if (typeof window === 'undefined') return null;
+    const token = localStorage.getItem('rekakarbon_token');
+    if (!token) return null;
+
+    try {
+      return await api.get<MockUser>('/auth/me');
+    } catch {
+      localStorage.removeItem('rekakarbon_token');
+      return null;
+    }
   }
 
   async logout(): Promise<{ success: boolean }> {
-    return api.post<{ success: boolean }>('/auth/logout', {});
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('rekakarbon_token');
+    }
+    try {
+      await api.post<{ success: boolean }>('/auth/logout', {});
+    } catch {
+      // Ignore network errors on logout
+    }
+    return { success: true };
   }
 }
 

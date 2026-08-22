@@ -20,5 +20,6 @@ export interface AuthCredentials {
 export interface AuthResponse {
   user: MockUser;
   token: string;
+  accessToken?: string;
   role: 'emitter' | 'regulator' | 'auditor' | 'kth';
 }
