@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useCarbonStore } from '../store/useCarbonStore';
-import { Mail, Lock, ShieldCheck, ArrowLeft, UserCheck, UserPlus } from 'lucide-react';
+import { Mail, Lock, ShieldCheck, ArrowLeft, UserCheck, UserPlus, Eye, EyeOff } from 'lucide-react';
 import brandIcon from '../assets/icon.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ export default function LoginRoute() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -159,13 +160,25 @@ export default function LoginRoute() {
                   <Lock className="w-4 h-4 text-[#00C48C]" />
                 </span>
                 <Input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••••••"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  className="pl-10 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:bg-white"
+                  className="pl-10 pr-10 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:bg-white"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4 text-slate-500 hover:text-slate-700" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                  )}
+                </button>
               </div>
             </div>
 
