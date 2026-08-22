@@ -1,39 +1,77 @@
-import { Injectable } from '@nestjs/common';
-import type { SystemNotification } from '../types/notification';
-import { MOCK_NOTIFICATIONS } from './notifications.mock';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  NotificationType as PrismaNotificationType,
+  PriorityLevel as PrismaPriorityLevel,
+} from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import type {
+  SystemNotification,
+  NotificationType,
+} from '../types/notification';
 import type { CreateNotificationDto } from './dto';
 
 @Injectable()
 export class NotificationsService {
-  private readonly notifications: SystemNotification[] = [
-    ...MOCK_NOTIFICATIONS,
-  ];
+  constructor(private readonly prisma: PrismaService) {}
 
-  getNotifications(): Promise<SystemNotification[]> {
-    return Promise.resolve(this.notifications);
+  async getNotifications(): Promise<SystemNotification[]> {
+    const records = await this.prisma.systemNotification.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    return records.map((n) => ({
+      id: n.id,
+      title: n.title,
+      message: n.message,
+      type: n.type.toLowerCase() as NotificationType,
+      priority: n.priority.toLowerCase() as
+        'critical' | 'high' | 'medium' | 'low',
+      isRead: n.isRead,
+      actionUrl: n.actionUrl || undefined,
+      createdAt: n.createdAt.toISOString(),
+    }));
   }
 
-  markAsRead(id: string): Promise<{ success: boolean; id: string }> {
-    const item = this.notifications.find((n) => n.id === id);
-    if (item) {
-      item.isRead = true;
+  async markAsRead(id: string): Promise<{ success: boolean; id: string }> {
+    const existing = await this.prisma.systemNotification.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(
+        `System notification with ID '${id}' was not found`,
+      );
     }
-    return Promise.resolve({ success: true, id });
+
+    await this.prisma.systemNotification.update({
+      where: { id },
+      data: { isRead: true },
+    });
+    return { success: true, id };
   }
 
-  createNotification(dto: CreateNotificationDto): Promise<SystemNotification> {
-    const randomHex = Math.floor(Math.random() * 89999 + 10000);
-    const notification: SystemNotification = {
-      id: `f1a2b3c4-0080-4000-8000-${randomHex}000000`,
-      title: dto.title,
-      message: dto.message,
+  async createNotification(
+    dto: CreateNotificationDto,
+  ): Promise<SystemNotification> {
+    const prismaType = dto.type.toUpperCase() as PrismaNotificationType;
+    const prismaPriority = dto.priority.toUpperCase() as PrismaPriorityLevel;
+
+    const created = await this.prisma.systemNotification.create({
+      data: {
+        title: dto.title,
+        message: dto.message,
+        type: prismaType,
+        priority: prismaPriority,
+        actionUrl: dto.actionUrl,
+      },
+    });
+    return {
+      id: created.id,
+      title: created.title,
+      message: created.message,
       type: dto.type,
       priority: dto.priority,
-      isRead: false,
-      actionUrl: dto.actionUrl,
-      createdAt: new Date().toISOString(),
+      isRead: created.isRead,
+      actionUrl: created.actionUrl || undefined,
+      createdAt: created.createdAt.toISOString(),
     };
-    this.notifications.unshift(notification);
-    return Promise.resolve(notification);
   }
 }

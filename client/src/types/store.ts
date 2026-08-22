@@ -14,11 +14,14 @@ import {
 import { AnomalySummary, EnergyCorrelationItem } from './audit';
 import { AuthCredentials } from './auth';
 
+export type ClientUserRole =
+  'superadmin' | 'admin' | 'regulator' | 'auditor' | 'emitter' | 'kth' | 'buyer';
+
 export interface UserProfile {
   name: string;
-  roleTitle: string;
-  agency: string;
-  avatar: string;
+  roleTitle?: string;
+  agency?: string;
+  avatar?: string;
 }
 
 export interface SearchedTxData {
@@ -66,7 +69,7 @@ export interface CarbonStoreState {
   lightboxImage: string | null;
 
   // Authentication & Admin Portal States
-  userRole: 'emitter' | 'regulator' | 'auditor' | 'kth' | null;
+  userRole: ClientUserRole | null;
   subRole: string;
   userProfile: UserProfile;
   isLogoutDialogOpen: boolean;

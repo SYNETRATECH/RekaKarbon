@@ -25,6 +25,8 @@ export default function DashboardRoute() {
 
   const renderDashboardView = () => {
     switch (currentRole) {
+      case 'superadmin':
+      case 'admin':
       case 'regulator':
         return <RegulatorDashboard />;
       case 'auditor':
@@ -32,6 +34,7 @@ export default function DashboardRoute() {
       case 'kth':
         return <KTHDashboard />;
       case 'emitter':
+      case 'buyer':
       default:
         return <EmitterDashboard />;
     }

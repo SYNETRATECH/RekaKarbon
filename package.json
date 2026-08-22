@@ -29,6 +29,12 @@
     "blockchain:test": "pnpm --filter ./blockchain test",
     "blockchain:compile": "pnpm --filter ./blockchain compile",
     "blockchain:typecheck": "pnpm --filter ./blockchain typecheck",
+    "db:generate": "pnpm --filter ./server prisma:generate",
+    "db:migrate": "pnpm --filter ./server prisma:migrate",
+    "db:deploy": "pnpm --filter ./server prisma:migrate:deploy",
+    "db:status": "pnpm --filter ./server prisma:migrate:status",
+    "db:seed": "pnpm --filter ./server prisma:seed",
+    "db:studio": "pnpm --filter ./server prisma:studio",
     "typecheck": "pnpm client:typecheck && pnpm server:typecheck && pnpm blockchain:typecheck",
     "prepare": "husky"
   },

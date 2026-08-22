@@ -27,4 +27,20 @@ export type { RegulatorRepository } from './regulator.repository';
 
 export { authRepository } from './auth.repository';
 export type { AuthRepository } from './auth.repository';
+
+export { storageRepository } from './storage.repository';
+export type { StorageRepository } from './storage.repository';
+
+export { telemetryRepository } from './telemetry.repository';
+export type { TelemetryRepository } from './telemetry.repository';
+
+export { djpRepository } from './djp.repository';
+export type { DjpRepository } from './djp.repository';
+
+export { notificationRepository } from './notification.repository';
+export type { NotificationRepository } from './notification.repository';
+
+export { healthRepository } from './health.repository';
+export type { HealthRepository } from './health.repository';
+
 export type { AuthCredentials, AuthResponse } from '../types';

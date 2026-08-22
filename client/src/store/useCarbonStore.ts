@@ -127,105 +127,112 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
 
   initializeData: async () => {
     if (get().isDataLoaded) return;
-    const [
-      currentUser,
-      projects,
-      companies,
-      multiSig,
-      kyb,
-      djp,
-      anomaly,
-      summary,
-      energyCorr,
-      spatialSum,
-      areas,
-      droneArch,
-      droneSched,
-      certPrev,
-      drone,
-      polygons,
-      logs,
-      compliance,
-      reports,
-      certificates,
-      bursa,
-      regions,
-      forestPrjs,
-      kths,
-      txs,
-      uploads,
-    ] = await Promise.all([
-      authRepository.getCurrentUser(),
-      projectRepository.getProjects(),
-      companyRepository.getCompanies(),
-      governanceRepository.getMultiSigRequests(),
-      governanceRepository.getKybQueue(),
-      governanceRepository.getDjpLogs(),
-      auditRepository.getAiAnomalyLogs(),
-      auditRepository.getAnomalySummary(),
-      auditRepository.getEnergyCorrelationData(),
-      auditRepository.getSpatialSummary(),
-      auditRepository.getConservationAreas(),
-      auditRepository.getDroneArchive(),
-      auditRepository.getDroneSchedules(),
-      auditRepository.getCertificationPreview(),
-      auditRepository.getDroneScans(),
-      auditRepository.getKthPolygons(),
-      auditRepository.getKthLogs(),
-      complianceRepository.getComplianceData(),
-      reportRepository.getEmissionReports(),
-      certificateRepository.getPurchasedCertificates(),
-      bursaRepository.getBursaItems(),
-      regulatorRepository.getNationalForestRegions(),
-      regulatorRepository.getForestProjects(),
-      regulatorRepository.getKTHGroups(),
-      regulatorRepository.getKTHTransactions(),
-      regulatorRepository.getRegulationUploads(),
-    ]);
 
-    const initialRole = currentUser?.role || get().userRole;
-    const initialProfile = currentUser
-      ? {
-          name: currentUser.name,
-          roleTitle: currentUser.roleTitle,
-          agency: currentUser.agency,
-          avatar: currentUser.avatar,
-        }
-      : get().userProfile;
+    try {
+      const [
+        currentUser,
+        projects,
+        companies,
+        multiSig,
+        kyb,
+        djp,
+        anomaly,
+        summary,
+        energyCorr,
+        spatialSum,
+        areas,
+        droneArch,
+        droneSched,
+        certPrev,
+        drone,
+        polygons,
+        logs,
+        compliance,
+        reports,
+        certificates,
+        bursa,
+        regions,
+        forestPrjs,
+        kths,
+        txs,
+        uploads,
+      ] = await Promise.all([
+        authRepository.getCurrentUser().catch(() => null),
+        projectRepository.getProjects().catch(() => []),
+        companyRepository.getCompanies().catch(() => []),
+        governanceRepository.getMultiSigRequests().catch(() => []),
+        governanceRepository.getKybQueue().catch(() => []),
+        governanceRepository.getDjpLogs().catch(() => []),
+        auditRepository.getAiAnomalyLogs().catch(() => []),
+        auditRepository.getAnomalySummary().catch(() => get().anomalySummary),
+        auditRepository.getEnergyCorrelationData().catch(() => []),
+        auditRepository.getSpatialSummary().catch(() => get().spatialSummary),
+        auditRepository.getConservationAreas().catch(() => []),
+        auditRepository.getDroneArchive().catch(() => get().droneArchive),
+        auditRepository.getDroneSchedules().catch(() => get().droneSchedules),
+        auditRepository.getCertificationPreview().catch(() => get().certificationPreview),
+        auditRepository.getDroneScans().catch(() => []),
+        auditRepository.getKthPolygons().catch(() => []),
+        auditRepository.getKthLogs().catch(() => []),
+        complianceRepository.getComplianceData().catch(() => get().complianceData),
+        reportRepository.getEmissionReports().catch(() => []),
+        certificateRepository.getPurchasedCertificates().catch(() => []),
+        bursaRepository.getBursaItems().catch(() => []),
+        regulatorRepository.getNationalForestRegions().catch(() => []),
+        regulatorRepository.getForestProjects().catch(() => []),
+        regulatorRepository.getKTHGroups().catch(() => []),
+        regulatorRepository.getKTHTransactions().catch(() => []),
+        regulatorRepository.getRegulationUploads().catch(() => []),
+      ]);
 
-    set({
-      userRole: initialRole as any,
-      userProfile: initialProfile,
-      projects,
-      companies,
-      multiSigRequests: multiSig,
-      kybQueue: kyb,
-      djpLogs: djp,
-      aiAnomalyLogs: anomaly,
-      anomalySummary: summary,
-      energyCorrelationData: energyCorr,
-      selectedAnomalyId: anomaly[0]?.id || null,
-      spatialSummary: spatialSum,
-      conservationAreas: areas,
-      selectedConservationId: areas[0]?.id || null,
-      droneArchive: droneArch,
-      droneSchedules: droneSched,
-      certificationPreview: certPrev,
-      droneScans: drone,
-      kthPolygons: polygons,
-      kthLogs: logs,
-      complianceData: compliance,
-      emissionReports: reports,
-      purchasedCertificates: certificates,
-      bursaItems: bursa,
-      nationalForestRegions: regions,
-      forestProjects: forestPrjs,
-      kthGroups: kths,
-      kthTransactions: txs,
-      regulationUploads: uploads,
-      activeCoords: projects[0] ? JSON.parse(JSON.stringify(projects[0].coordinates)) : [],
-      isDataLoaded: true,
-    });
+      const initialRole = currentUser?.role || get().userRole;
+      const initialProfile = currentUser
+        ? {
+            name: currentUser.name,
+            roleTitle: currentUser.roleTitle,
+            agency: currentUser.agency,
+            avatar: currentUser.avatar,
+          }
+        : get().userProfile;
+
+      set({
+        userRole: initialRole as any,
+        userProfile: initialProfile,
+        projects: projects || [],
+        companies: companies || [],
+        multiSigRequests: multiSig || [],
+        kybQueue: kyb || [],
+        djpLogs: djp || [],
+        aiAnomalyLogs: anomaly || [],
+        anomalySummary: summary || get().anomalySummary,
+        energyCorrelationData: energyCorr || [],
+        selectedAnomalyId: (anomaly && anomaly[0]?.id) || null,
+        spatialSummary: spatialSum || get().spatialSummary,
+        conservationAreas: areas || [],
+        selectedConservationId: (areas && areas[0]?.id) || null,
+        droneArchive: droneArch || get().droneArchive,
+        droneSchedules: droneSched || get().droneSchedules,
+        certificationPreview: certPrev || get().certificationPreview,
+        droneScans: drone || [],
+        kthPolygons: polygons || [],
+        kthLogs: logs || [],
+        complianceData: compliance || get().complianceData,
+        emissionReports: reports || [],
+        purchasedCertificates: certificates || [],
+        bursaItems: bursa || [],
+        nationalForestRegions: regions || [],
+        forestProjects: forestPrjs || [],
+        kthGroups: kths || [],
+        kthTransactions: txs || [],
+        regulationUploads: uploads || [],
+        activeCoords:
+          projects && projects[0] ? JSON.parse(JSON.stringify(projects[0].coordinates)) : [],
+        isDataLoaded: true,
+      });
+    } catch (err) {
+      console.error('Failed to initialize carbon store:', err);
+      set({ isDataLoaded: true });
+    }
   },
 
   // Verichain Explorer & Public Report States
@@ -245,7 +252,8 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   loginWithCredentials: async (credentials: AuthCredentials, customTab = null) => {
     const res = await authRepository.login(credentials);
     let defaultTab = 'compliance';
-    if (res.role === 'regulator') defaultTab = 'forest';
+    if (res.role === 'superadmin' || res.role === 'admin') defaultTab = 'dashboard';
+    else if (res.role === 'regulator') defaultTab = 'forest';
     else if (res.role === 'auditor') defaultTab = 'audit';
     else if (res.role === 'kth') defaultTab = 'polygon';
 

@@ -54,7 +54,21 @@ export default function PortalSidebar() {
 
   // Navigation Items per Role
   const getNavItems = (): NavItem[] => {
-    if (currentRole === 'regulator') {
+    if (currentRole === 'superadmin' || currentRole === 'admin') {
+      return [
+        {
+          id: 'dashboard',
+          label: 'Dashboard Utama',
+          icon: LayoutDashboard,
+          targetPath: '/dashboard',
+        },
+        { id: 'projects', label: 'Proyek Kehutanan', icon: FolderPlus, targetPath: '/projects' },
+        { id: 'kth', label: 'Kelompok Tani (KTH)', icon: Users, targetPath: '/kth' },
+        { id: 'spatial', label: 'Evaluasi Spasial dMRV', icon: Globe, targetPath: '/spatial' },
+        { id: 'bursa', label: 'Bursa Karbon (DEX)', icon: ArrowLeftRight, targetPath: '/bursa' },
+        { id: 'laporan', label: 'Laporan Emisi & Sektor', icon: FileUp, targetPath: '/laporan' },
+      ];
+    } else if (currentRole === 'regulator') {
       return [
         { id: 'forest', label: 'Dashboard', icon: Globe, targetPath: '/dashboard' },
         {
@@ -95,7 +109,7 @@ export default function PortalSidebar() {
         },
       ];
     } else {
-      // Default: Emitter / Pelaku Usaha
+      // Default: Emitter / Buyer
       return [
         {
           id: 'compliance',
@@ -127,7 +141,15 @@ export default function PortalSidebar() {
               REKAKARBON
             </h1>
             <span className="text-[9px] font-bold text-[#00C48C] tracking-wider uppercase block mt-1 text-left">
-              {currentRole === 'auditor' ? 'AUDITOR PORTAL' : 'Verichain Platform'}
+              {currentRole === 'superadmin' || currentRole === 'admin'
+                ? 'SUPERADMIN PORTAL'
+                : currentRole === 'regulator'
+                  ? 'REGULATOR PORTAL'
+                  : currentRole === 'auditor'
+                    ? 'AUDITOR PORTAL'
+                    : currentRole === 'kth'
+                      ? 'KTH PORTAL'
+                      : 'EMITTER PORTAL'}
             </span>
           </div>
         </div>
@@ -135,69 +157,90 @@ export default function PortalSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
+          <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">
+            Menu Utama
+          </div>
           <SidebarMenu>
             {navItems.map((item) => {
-              const IconComponent = item.icon;
-              const isActive = currentPath === item.targetPath;
+              const Icon = item.icon;
+              const isActive =
+                item.targetPath === '/dashboard'
+                  ? currentPath === '/dashboard'
+                  : currentPath.startsWith(item.targetPath);
+
               return (
                 <SidebarMenuItem key={item.id}>
-                  <NavLink to={item.targetPath}>
-                    <SidebarMenuButton isActive={isActive}>
-                      <div className="flex items-center gap-3 text-left min-w-0 flex-1">
-                        <IconComponent
-                          className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#00C48C]' : 'text-slate-400'}`}
-                        />
-                        <span className="text-left leading-snug truncate">{item.label}</span>
-                      </div>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className="w-full justify-start text-left"
+                  >
+                    <NavLink
+                      to={item.targetPath}
+                      className={({ isActive: linkActive }) =>
+                        `flex items-center gap-3 w-full px-3 py-2.5 rounded-xl font-bold text-xs transition-all text-left ${
+                          linkActive || isActive
+                            ? 'bg-[#183B32] text-[#00E599] shadow-sm font-black'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                        }`
+                      }
+                    >
+                      <Icon
+                        className={`w-4 h-4 shrink-0 ${
+                          isActive ? 'text-[#00E599]' : 'text-slate-400'
+                        }`}
+                      />
+                      <span className="truncate flex-1 text-left">{item.label}</span>
                       {item.badge && (
                         <Badge
                           variant="secondary"
-                          className={`shrink-0 text-[10px] font-black border-none ${item.badgeBg || 'bg-amber-500 text-white'}`}
+                          className={`text-[9px] font-black px-1.5 py-0.2 shrink-0 ${
+                            item.badgeBg || 'bg-slate-100 text-slate-600'
+                          }`}
                         >
                           {item.badge}
                         </Badge>
                       )}
-                    </SidebarMenuButton>
-                  </NavLink>
+                    </NavLink>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               );
             })}
           </SidebarMenu>
         </SidebarGroup>
-
-        {/* Secondary Nav for Auditor */}
-        {currentRole === 'auditor' && (
-          <div className="px-2 pt-4 border-t border-slate-100 text-left">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 block mb-2">
-              SISTEM
-            </span>
-            <Button
-              asChild
-              variant={currentPath === '/settings' ? 'default' : 'ghost'}
-              className={`w-full justify-start gap-3.5 px-4 py-2.5 rounded-xl text-xs font-extrabold text-left cursor-pointer ${
-                currentPath === '/settings'
-                  ? 'bg-primary-gradient text-white'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <NavLink to="/settings">
-                <Settings className="w-4 h-4 text-slate-400" />
-                Pengaturan
-              </NavLink>
-            </Button>
-          </div>
-        )}
       </SidebarContent>
 
       <SidebarFooter>
-        <Button
-          variant="outline"
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 text-xs font-bold rounded-xl cursor-pointer"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </Button>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild className="w-full justify-start text-left">
+              <NavLink
+                to="/settings"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 w-full px-3 py-2 rounded-xl text-xs font-bold transition-all text-left ${
+                    isActive
+                      ? 'bg-slate-100 text-slate-900 font-black'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                  }`
+                }
+              >
+                <Settings className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-left">Pengaturan</span>
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="w-full justify-start gap-3 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all text-left cursor-pointer"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span className="text-left">Keluar Akun</span>
+            </Button>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );

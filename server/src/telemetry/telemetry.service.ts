@@ -1,70 +1,107 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import type { CemsReading, ForestSensorReading } from '../types/telemetry';
-import {
-  MOCK_CEMS_READINGS,
-  MOCK_FOREST_SENSOR_READINGS,
-} from './telemetry.mock';
 import type { CemsTelemetryDto, ForestSensorTelemetryDto } from './dto';
 
 @Injectable()
 export class TelemetryService {
-  private readonly cemsReadings: CemsReading[] = [...MOCK_CEMS_READINGS];
-  private readonly forestReadings: ForestSensorReading[] = [
-    ...MOCK_FOREST_SENSOR_READINGS,
-  ];
+  constructor(private readonly prisma: PrismaService) {}
 
-  getCemsReadings(companyId?: string): Promise<CemsReading[]> {
-    if (companyId) {
-      return Promise.resolve(
-        this.cemsReadings.filter((r) => r.companyId === companyId),
-      );
-    }
-    return Promise.resolve(this.cemsReadings);
+  async getCemsReadings(companyId?: string): Promise<CemsReading[]> {
+    const where = companyId ? { companyId } : {};
+    const records = await this.prisma.cemsTelemetryLog.findMany({
+      where,
+      include: { company: true },
+      orderBy: { recordedAt: 'desc' },
+    });
+    return records.map((r) => ({
+      id: r.id.toString(),
+      companyId: r.companyId,
+      companyName: r.company.name,
+      stackId: r.smokestackId || 'STACK-01',
+      co2Ppm: Number(r.co2Ppm),
+      so2MgM3: Number(r.so2MgM3),
+      noxMgM3: Number(r.noxMgM3),
+      flowRateM3Sec: Number(r.flowRateM3Sec),
+      temperatureC: Number(r.temperatureC),
+      timestamp: r.recordedAt.toISOString(),
+      isAnomaly: r.isAnomaly,
+    }));
   }
 
-  getForestReadings(projectId?: string): Promise<ForestSensorReading[]> {
-    if (projectId) {
-      return Promise.resolve(
-        this.forestReadings.filter((r) => r.projectId === projectId),
-      );
-    }
-    return Promise.resolve(this.forestReadings);
+  async getForestReadings(projectId?: string): Promise<ForestSensorReading[]> {
+    const where = projectId ? { projectId } : {};
+    const records = await this.prisma.forestSensorTelemetryLog.findMany({
+      where,
+      include: { project: true },
+      orderBy: { recordedAt: 'desc' },
+    });
+    return records.map((r) => ({
+      id: r.id.toString(),
+      projectId: r.projectId,
+      projectName: r.project.projectName,
+      nodeId: r.nodeId,
+      canopyMoisturePercent: Number(r.canopyMoisturePercent),
+      soilMoisturePercent: Number(r.soilMoisturePercent),
+      ambientTempC: Number(r.ambientTempC),
+      solarRadiationWPerm2: Number(r.solarRadiationWM2),
+      timestamp: r.recordedAt.toISOString(),
+    }));
   }
 
-  ingestCems(dto: CemsTelemetryDto): Promise<CemsReading> {
+  async ingestCems(dto: CemsTelemetryDto): Promise<CemsReading> {
     const isAnomaly = dto.co2Ppm > 1800 || dto.so2MgM3 > 400;
-    const randomHex = Math.floor(Math.random() * 89999 + 10000);
-    const reading: CemsReading = {
-      id: `c1e2f3a4-0060-4000-8000-${randomHex}000000`,
-      companyId: dto.companyId,
-      companyName: 'Emitter Facility',
+    const created = await this.prisma.cemsTelemetryLog.create({
+      data: {
+        companyId: dto.companyId,
+        co2Ppm: dto.co2Ppm,
+        so2MgM3: dto.so2MgM3,
+        noxMgM3: dto.noxMgM3,
+        flowRateM3Sec: dto.flowRateM3Sec,
+        temperatureC: dto.temperatureC,
+        isAnomaly,
+      },
+      include: { company: true },
+    });
+    return {
+      id: created.id.toString(),
+      companyId: created.companyId,
+      companyName: created.company.name,
       stackId: dto.stackId,
-      co2Ppm: dto.co2Ppm,
-      so2MgM3: dto.so2MgM3,
-      noxMgM3: dto.noxMgM3,
-      flowRateM3Sec: dto.flowRateM3Sec,
-      temperatureC: dto.temperatureC,
-      timestamp: new Date().toISOString(),
-      isAnomaly,
+      co2Ppm: Number(created.co2Ppm),
+      so2MgM3: Number(created.so2MgM3),
+      noxMgM3: Number(created.noxMgM3),
+      flowRateM3Sec: Number(created.flowRateM3Sec),
+      temperatureC: Number(created.temperatureC),
+      timestamp: created.recordedAt.toISOString(),
+      isAnomaly: created.isAnomaly,
     };
-    this.cemsReadings.unshift(reading);
-    return Promise.resolve(reading);
   }
 
-  ingestForest(dto: ForestSensorTelemetryDto): Promise<ForestSensorReading> {
-    const randomHex = Math.floor(Math.random() * 89999 + 10000);
-    const reading: ForestSensorReading = {
-      id: `d1e2f3a4-0061-4000-8000-${randomHex}000000`,
-      projectId: dto.projectId,
-      projectName: 'Social Forestry Site',
-      nodeId: dto.nodeId,
-      canopyMoisturePercent: dto.canopyMoisturePercent,
-      soilMoisturePercent: dto.soilMoisturePercent,
-      ambientTempC: dto.ambientTempC,
-      solarRadiationWPerm2: dto.solarRadiationWPerm2,
-      timestamp: new Date().toISOString(),
+  async ingestForest(
+    dto: ForestSensorTelemetryDto,
+  ): Promise<ForestSensorReading> {
+    const created = await this.prisma.forestSensorTelemetryLog.create({
+      data: {
+        projectId: dto.projectId,
+        nodeId: dto.nodeId,
+        canopyMoisturePercent: dto.canopyMoisturePercent,
+        soilMoisturePercent: dto.soilMoisturePercent,
+        ambientTempC: dto.ambientTempC,
+        solarRadiationWM2: dto.solarRadiationWPerm2,
+      },
+      include: { project: true },
+    });
+    return {
+      id: created.id.toString(),
+      projectId: created.projectId,
+      projectName: created.project.projectName,
+      nodeId: created.nodeId,
+      canopyMoisturePercent: Number(created.canopyMoisturePercent),
+      soilMoisturePercent: Number(created.soilMoisturePercent),
+      ambientTempC: Number(created.ambientTempC),
+      solarRadiationWPerm2: Number(created.solarRadiationWM2),
+      timestamp: created.recordedAt.toISOString(),
     };
-    this.forestReadings.unshift(reading);
-    return Promise.resolve(reading);
   }
 }

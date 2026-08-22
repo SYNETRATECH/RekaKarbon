@@ -3,15 +3,15 @@ export interface MockUser {
   email: string;
   password?: string;
   name: string;
-  role: 'emitter' | 'regulator' | 'auditor' | 'kth';
-  roleTitle: string;
-  agency: string;
-  avatar: string;
-  token: string;
+  role: string;
+  roleTitle?: string;
+  agency?: string;
+  avatar?: string;
+  token?: string;
+  walletAddress?: string;
 }
 
 export interface AuthCredentials {
-  identity?: string;
   email?: string;
   password?: string;
   role?: string;
@@ -20,5 +20,6 @@ export interface AuthCredentials {
 export interface AuthResponse {
   user: MockUser;
   token: string;
-  role: 'emitter' | 'regulator' | 'auditor' | 'kth';
+  accessToken?: string;
+  role: string;
 }
