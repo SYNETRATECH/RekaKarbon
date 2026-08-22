@@ -9,3 +9,8 @@ export * from './certificate';
 export * from './bursa';
 export * from './regulator';
 export * from './store';
+export * from './storage';
+export * from './telemetry';
+export * from './tax';
+export * from './notification';
+export * from './health';
