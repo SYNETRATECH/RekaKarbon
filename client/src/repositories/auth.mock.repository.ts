@@ -13,13 +13,14 @@ export class MockAuthRepository implements AuthRepository {
       user = mockUsers[roleKey] || mockUsers.emitter;
     }
 
-    localStorage.setItem('rekakarbon_auth_token', user.token);
+    const token = user.token || 'mock_jwt_token';
+    localStorage.setItem('rekakarbon_auth_token', token);
     localStorage.setItem('rekakarbon_user_role', user.role);
     localStorage.setItem('rekakarbon_user_profile', JSON.stringify(user));
 
     return {
       user,
-      token: user.token,
+      token,
       role: user.role,
     };
   }
@@ -33,13 +34,14 @@ export class MockAuthRepository implements AuthRepository {
       name: data.name || baseUser.name,
     };
 
-    localStorage.setItem('rekakarbon_auth_token', newUser.token);
+    const token = newUser.token || 'mock_jwt_token';
+    localStorage.setItem('rekakarbon_auth_token', token);
     localStorage.setItem('rekakarbon_user_role', newUser.role);
     localStorage.setItem('rekakarbon_user_profile', JSON.stringify(newUser));
 
     return {
       user: newUser,
-      token: newUser.token,
+      token,
       role: newUser.role,
     };
   }

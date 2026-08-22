@@ -16,13 +16,7 @@ import { Role } from '@prisma/client';
 @ApiTags('IoT & Telemetry Ingestion')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(
-  Role.CORPORATE_EMITTER,
-  Role.AUDITOR_VERIFIER,
-  Role.REGULATOR_KLHK,
-  Role.SUPER_ADMIN,
-  Role.KTH_COMMUNITY,
-)
+@Roles(Role.emitter, Role.auditor, Role.regulator, Role.superadmin, Role.kth)
 @Controller('telemetry')
 export class TelemetryController {
   constructor(private readonly telemetryService: TelemetryService) {}

@@ -16,7 +16,7 @@ import { Role } from '@prisma/client';
 @ApiTags('Audit & dMRV Verification')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.AUDITOR_VERIFIER, Role.SUPER_ADMIN)
+@Roles(Role.auditor, Role.superadmin)
 @Controller('audit')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}

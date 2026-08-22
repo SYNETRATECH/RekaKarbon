@@ -14,7 +14,7 @@ import { Role } from '@prisma/client';
 @ApiTags('Regulator Forest Cadastre & KTH Oversight')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.REGULATOR_KLHK, Role.SUPER_ADMIN)
+@Roles(Role.regulator, Role.superadmin)
 @Controller('regulator')
 export class RegulatorController {
   constructor(private readonly regulatorService: RegulatorService) {}

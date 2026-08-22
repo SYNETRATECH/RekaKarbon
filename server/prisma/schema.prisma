@@ -13,12 +13,12 @@ datasource db {
 // ---------------------------------------------------------
 
 enum Role {
-  SUPER_ADMIN
-  REGULATOR_KLHK
-  AUDITOR_VERIFIER
-  CORPORATE_EMITTER
-  KTH_COMMUNITY
-  PUBLIC_BUYER
+  superadmin
+  regulator
+  auditor
+  emitter
+  kth
+  buyer
 }
 
 enum UserStatus {
@@ -174,7 +174,7 @@ model User {
   email        String     @unique @db.Text
   passwordHash String     @map("password_hash") @db.Text
   fullName     String?    @map("full_name") @db.Text
-  role         Role       @default(PUBLIC_BUYER)
+  role         Role       @default(buyer)
   walletAddress String?   @map("wallet_address") @db.Text
   status       UserStatus @default(ACTIVE)
   createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz

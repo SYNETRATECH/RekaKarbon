@@ -252,7 +252,8 @@ export const useCarbonStore = create<CarbonStoreState>((set, get) => ({
   loginWithCredentials: async (credentials: AuthCredentials, customTab = null) => {
     const res = await authRepository.login(credentials);
     let defaultTab = 'compliance';
-    if (res.role === 'regulator') defaultTab = 'forest';
+    if (res.role === 'superadmin' || res.role === 'admin') defaultTab = 'dashboard';
+    else if (res.role === 'regulator') defaultTab = 'forest';
     else if (res.role === 'auditor') defaultTab = 'audit';
     else if (res.role === 'kth') defaultTab = 'polygon';
 

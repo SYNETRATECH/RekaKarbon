@@ -134,7 +134,7 @@ export class AuthService {
       email: normalizedEmail,
       fullName: registerDto.fullName,
       passwordHash,
-      role: Role.PUBLIC_BUYER,
+      role: Role.buyer,
       createdAt: new Date().toISOString(),
     };
 

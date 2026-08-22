@@ -14,12 +14,7 @@ import { Role } from '@prisma/client';
 @ApiTags('Emitter Compliance')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(
-  Role.CORPORATE_EMITTER,
-  Role.REGULATOR_KLHK,
-  Role.AUDITOR_VERIFIER,
-  Role.SUPER_ADMIN,
-)
+@Roles(Role.emitter, Role.regulator, Role.auditor, Role.superadmin)
 @Controller('emitter/compliance')
 export class ComplianceController {
   constructor(private readonly complianceService: ComplianceService) {}

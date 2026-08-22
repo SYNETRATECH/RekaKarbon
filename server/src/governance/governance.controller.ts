@@ -14,12 +14,7 @@ import { Role } from '@prisma/client';
 @ApiTags('Governance & Multi-Sig Custody')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(
-  Role.SUPER_ADMIN,
-  Role.REGULATOR_KLHK,
-  Role.AUDITOR_VERIFIER,
-  Role.KTH_COMMUNITY,
-)
+@Roles(Role.superadmin, Role.regulator, Role.auditor, Role.kth)
 @Controller('governance')
 export class GovernanceController {
   constructor(private readonly governanceService: GovernanceService) {}

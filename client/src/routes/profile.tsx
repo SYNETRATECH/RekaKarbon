@@ -17,6 +17,11 @@ export default function ProfileRoute() {
 
   const getRoleBadge = (role: string | null) => {
     switch (role) {
+      case 'superadmin':
+      case 'admin':
+        return (
+          <Badge className="bg-rose-100 text-rose-900 border-rose-200">Super Administrator</Badge>
+        );
       case 'regulator':
         return <Badge className="bg-blue-100 text-blue-900 border-blue-200">Regulator KLHK</Badge>;
       case 'auditor':
@@ -29,6 +34,12 @@ export default function ProfileRoute() {
             Kelompok Tani Hutan (KTH)
           </Badge>
         );
+      case 'buyer':
+        return (
+          <Badge className="bg-teal-100 text-teal-900 border-teal-200">
+            Pembeli Karbon Terdaftar
+          </Badge>
+        );
       default:
         return (
           <Badge className="bg-purple-100 text-purple-900 border-purple-200">
@@ -39,9 +50,12 @@ export default function ProfileRoute() {
   };
 
   const mockAddress = {
+    superadmin: '0x1a2B...F9A0',
+    admin: '0x1a2B...F9A0',
     regulator: '0x8114...1945',
     auditor: '0x9942...2026',
     kth: '0x7120...0024',
+    buyer: '0x0D1E...7C8D',
     emitter: '0x003e...Bud1',
   }[userRole || 'emitter'];
 

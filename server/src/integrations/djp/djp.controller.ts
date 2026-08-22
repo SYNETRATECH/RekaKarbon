@@ -16,7 +16,7 @@ import { Role } from '@prisma/client';
 @ApiTags('Integrations — DJP Carbon Tax Engine')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.REGULATOR_KLHK, Role.CORPORATE_EMITTER, Role.SUPER_ADMIN)
+@Roles(Role.regulator, Role.emitter, Role.superadmin)
 @Controller('integrations/djp')
 export class DjpController {
   constructor(private readonly djpService: DjpService) {}
