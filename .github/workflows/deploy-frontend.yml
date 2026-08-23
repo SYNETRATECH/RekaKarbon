@@ -42,6 +42,13 @@ jobs:
         id: setup_pages
         uses: actions/configure-pages@v6
 
+      - name: Create client .env file
+        if: ${{ secrets.FRONTEND_ENV != '' }}
+        run: |
+          cat > ./client/.env << 'ENVEOF'
+          ${{ secrets.FRONTEND_ENV }}
+          ENVEOF
+
       - name: Build
         env:
           BASE_URL: ${{ steps.setup_pages.outputs.base_path }}
