@@ -20,7 +20,7 @@ jobs:
       - name: 🔐 Connect to Tailscale Network
         uses: tailscale/github-action@v2
         with:
-          authkey: ${{ secrets.TS_AUTHKEY }}
+          authkey: ${{ secrets.BLOCKCHAIN_TS_AUTHKEY }}
           tags: tag:ci
 
       - name: 🛠️ Setup pnpm
