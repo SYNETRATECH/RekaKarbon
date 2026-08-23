@@ -40,21 +40,21 @@ jobs:
       - name: 🚚 Transfer Files via SCP
         uses: appleboy/scp-action@v1.0.0
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          password: ${{ secrets.SERVER_PASSWORD }}
+          host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
+          username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
+          password: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
           source: 'blockchain'
           target: '~/VM_BLOCKHAIN'
 
       - name: 🚀 Execute Deployment on Server
         uses: appleboy/ssh-action@master
         env:
-          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          SERVER_PASSWORD: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
+          PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          password: ${{ secrets.SERVER_PASSWORD }}
+          host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
+          username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
+          password: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
           envs: SERVER_PASSWORD,PRIVATE_KEY
           script: |
             set -e
