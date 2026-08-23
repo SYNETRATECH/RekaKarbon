@@ -27,6 +27,7 @@ import {
   SidebarHeader,
   SidebarContent,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -134,7 +135,7 @@ export default function PortalSidebar() {
   const navItems = getNavItems();
 
   return (
-    <Sidebar collapsible="none">
+    <Sidebar collapsible="offcanvas">
       <SidebarHeader>
         <div className="flex items-center gap-3 text-left">
           <img src={brandIcon} alt="RekaKarbon Icon" className="w-9 h-9 object-contain shrink-0" />
@@ -159,9 +160,9 @@ export default function PortalSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">
+          <SidebarGroupLabel className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 text-left">
             Menu Utama
-          </div>
+          </SidebarGroupLabel>
           <SidebarMenu>
             {navItems.map((item) => {
               const Icon = item.icon;

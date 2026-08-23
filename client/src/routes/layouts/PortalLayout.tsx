@@ -6,7 +6,7 @@ import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface PortalLayoutProps {
   children?: React.ReactNode;
@@ -45,11 +45,13 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       <PortalSidebar />
 
       {/* MAIN PORTAL VIEW CONTAINER */}
-      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-slate-50/50">
+      <SidebarInset className="flex flex-col min-w-0 h-full overflow-hidden bg-slate-50/50">
         {/* TOPBAR HEADER */}
-        <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0 shadow-2xs z-20">
-          {/* Left: Active Page Title */}
+        <header className="h-16 bg-white border-b border-slate-200 px-6 sm:px-8 flex items-center justify-between shrink-0 shadow-2xs z-20">
+          {/* Left: Sidebar Trigger & Active Page Title */}
           <div className="flex items-center gap-3">
+            <SidebarTrigger className="text-slate-600 hover:text-slate-900 cursor-pointer" />
+            <div className="h-5 w-px bg-slate-200" />
             <h1 className="text-base font-black text-slate-900 tracking-tight">
               {getRoleHeaderTitle(activeRole)}
             </h1>
@@ -108,7 +110,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
         {/* TAB BODY CONTAINER */}
         <div className="flex-1 overflow-y-auto text-left p-8 min-h-0">{children || <Outlet />}</div>
-      </main>
+      </SidebarInset>
 
       {/* Global Overlays & Logout Modal */}
       <LogoutDialog />
