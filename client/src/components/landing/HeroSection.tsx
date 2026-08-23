@@ -59,8 +59,8 @@ function DashboardMockup() {
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden w-full relative">
-      <div className="flex" style={{ height: 460 }}>
+    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-x-auto w-full relative">
+      <div className="flex min-w-[800px]" style={{ height: 460 }}>
         {/* Sidebar */}
         <div className="w-44 bg-white border-r border-slate-100 flex flex-col py-5 px-3 shrink-0">
           <div className="flex items-center gap-2 mb-6 px-2">
