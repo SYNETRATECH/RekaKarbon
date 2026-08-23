@@ -78,36 +78,50 @@ jobs:
             git checkout main
             git reset --hard origin/main
 
-            # 2. Install all dependencies (dev tools needed for build step)
+            # 2. Install and use the Node.js version specified by .nvmrc
+            nvm install
+            nvm use
+
+            echo "Node.js: $(node --version)"
+            echo "npm: $(npm --version)"
+            echo "pnpm: $(pnpm --version)"
+
+            # 3. Download and install pnpm
+            corepack enable pnpm
+            echo "pnpm: $(pnpm --version)"
+
+            # 4. Install all dependencies (dev tools needed for build step)
             pnpm install --frozen-lockfile
 
-            # 3. Compile TypeScript → dist/
+            # 5. Compile TypeScript → dist/
             pnpm server:build
 
-            # 4. Run any pending database migrations (safe no-op if up to date)
+            # 6. Run any pending database migrations (safe no-op if up to date)
             pnpm --filter ./server prisma:migrate:deploy
 
-            # 5. Reload PM2 with zero downtime, or start fresh if first deploy
-            if pm2 describe rekakarbon-backend > /dev/null 2>&1; then
-              echo "PM2 process found — performing zero-downtime reload..."
-              pm2 reload rekakarbon-backend --update-env
-            else
-              echo "No PM2 process found — starting for the first time..."
-              pm2 start ecosystem.config.cjs --env production
-              pm2 save
-            fi
+            # 7. Restarting application with systemd Linux
+            echo "Restarting application..."
+            sudo systemctl restart rekakarbon-backend
 
-            # 6. Health check — allow the process a moment to fully start
-            sleep 5
+
+            # 8. Health check — allow the process a moment to fully start
+            sleep 10
+
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8006/health || true)
             if [ "$HTTP_STATUS" != "200" ]; then
-              echo "Backend health check failed (HTTP $HTTP_STATUS) — dumping logs..."
-              pm2 logs rekakarbon-backend --lines 30 --nostream
+              echo "Backend health check failed (HTTP $HTTP_STATUS)"
+              echo "Systemd status:"
+              sudo systemctl status rekakarbon-backend --no-pager || true
+
+              echo "Recent logs:"
+              sudo journalctl -u rekakarbon-backend -n 50 --no-pager || true
+
               exit 1
             fi
+
             echo "Backend health check passed (HTTP $HTTP_STATUS)"
 
-            # 7. Optional database seeder
+            # 9. Optional database seeder
             if [ "$RUN_SEED" = "true" ]; then
               echo "Workflow requested — running database seeder..."
               pnpm db:seed
