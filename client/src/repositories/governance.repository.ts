@@ -18,7 +18,9 @@ export class ApiGovernanceRepository implements GovernanceRepository {
   }
 }
 
+import { MockGovernanceRepository } from './governance.mock.repository';
+
 export const governanceRepository: GovernanceRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./governance.mock.repository')).MockGovernanceRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockGovernanceRepository()
     : new ApiGovernanceRepository();

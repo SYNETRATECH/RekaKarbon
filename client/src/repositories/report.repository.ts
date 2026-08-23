@@ -11,7 +11,9 @@ export class ApiReportRepository implements ReportRepository {
   }
 }
 
+import { MockReportRepository } from './report.mock.repository';
+
 export const reportRepository: ReportRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./report.mock.repository')).MockReportRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockReportRepository()
     : new ApiReportRepository();

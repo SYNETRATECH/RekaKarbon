@@ -42,7 +42,9 @@ export class ApiRegulatorRepository implements RegulatorRepository {
   }
 }
 
+import { MockRegulatorRepository } from './regulator.mock.repository';
+
 export const regulatorRepository: RegulatorRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./regulator.mock.repository')).MockRegulatorRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockRegulatorRepository()
     : new ApiRegulatorRepository();

@@ -15,7 +15,9 @@ export class ApiCompanyRepository implements CompanyRepository {
   }
 }
 
+import { MockCompanyRepository } from './company.mock.repository';
+
 export const companyRepository: CompanyRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./company.mock.repository')).MockCompanyRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockCompanyRepository()
     : new ApiCompanyRepository();

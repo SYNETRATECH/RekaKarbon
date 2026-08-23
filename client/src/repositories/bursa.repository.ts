@@ -11,7 +11,9 @@ export class ApiBursaRepository implements BursaRepository {
   }
 }
 
+import { MockBursaRepository } from './bursa.mock.repository';
+
 export const bursaRepository: BursaRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./bursa.mock.repository')).MockBursaRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockBursaRepository()
     : new ApiBursaRepository();

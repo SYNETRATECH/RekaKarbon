@@ -21,7 +21,9 @@ export class ApiStorageRepository implements StorageRepository {
   }
 }
 
+import { MockStorageRepository } from './storage.mock.repository';
+
 export const storageRepository: StorageRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./storage.mock.repository')).MockStorageRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockStorageRepository()
     : new ApiStorageRepository();

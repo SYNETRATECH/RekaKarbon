@@ -21,7 +21,9 @@ export class ApiNotificationRepository implements NotificationRepository {
   }
 }
 
+import { MockNotificationRepository } from './notification.mock.repository';
+
 export const notificationRepository: NotificationRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./notification.mock.repository')).MockNotificationRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockNotificationRepository()
     : new ApiNotificationRepository();

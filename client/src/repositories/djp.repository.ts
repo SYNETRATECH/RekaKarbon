@@ -21,7 +21,7 @@ export class ApiDjpRepository implements DjpRepository {
   }
 }
 
+import { MockDjpRepository } from './djp.mock.repository';
+
 export const djpRepository: DjpRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./djp.mock.repository')).MockDjpRepository()
-    : new ApiDjpRepository();
+  import.meta.env.VITE_USE_MOCK_DATA === 'true' ? new MockDjpRepository() : new ApiDjpRepository();

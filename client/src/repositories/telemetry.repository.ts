@@ -33,7 +33,9 @@ export class ApiTelemetryRepository implements TelemetryRepository {
   }
 }
 
+import { MockTelemetryRepository } from './telemetry.mock.repository';
+
 export const telemetryRepository: TelemetryRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./telemetry.mock.repository')).MockTelemetryRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockTelemetryRepository()
     : new ApiTelemetryRepository();
