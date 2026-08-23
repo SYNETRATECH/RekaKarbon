@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { useLoaderData } from 'react-router';
+import { useLoaderData, redirect } from 'react-router';
 import {
   complianceRepository,
   reportRepository,
@@ -28,7 +28,7 @@ const ViewLoader = () => (
 export async function clientLoader() {
   const role = useAuthStore.getState().userRole;
 
-  if (role === 'emitter' || role === 'buyer' || !role) {
+  if (role === 'emitter' || role === 'buyer') {
     const [complianceData, emissionReports] = await Promise.all([
       complianceRepository.getComplianceData().catch(() => null),
       reportRepository.getEmissionReports().catch(() => []),
@@ -63,6 +63,12 @@ export async function clientLoader() {
     return { role, kthPolygons, kthLogs, projects };
   }
 
+  // Defensive: role is null here means app.tsx loader should have redirected to /login.
+  // Belt-and-suspenders guard in case this loader runs before app.tsx's.
+  if (!role) {
+    throw redirect('/login');
+  }
+
   return { role };
 }
 
@@ -83,7 +89,13 @@ export default function DashboardRoute() {
   const { userRole } = useAuthStore();
   // loaderData available for child dashboards that need it via their own useLoaderData
   useLoaderData<typeof clientLoader>();
-  const currentRole = userRole || 'emitter';
+  const currentRole = userRole;
+
+  // Defensive: if role is somehow null after the loader chain, render nothing.
+  // The app.tsx clientLoader should have already redirected to /login.
+  if (!currentRole) {
+    return null;
+  }
 
   const renderDashboardView = () => {
     switch (currentRole) {

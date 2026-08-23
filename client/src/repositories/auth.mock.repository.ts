@@ -9,8 +9,9 @@ export class MockAuthRepository implements AuthRepository {
     );
 
     if (!user) {
-      const roleKey = (credentials.role || 'emitter') as keyof typeof mockUsers;
-      user = mockUsers[roleKey] || mockUsers.emitter;
+      throw new Error(
+        'Kredensial tidak valid. Gunakan akun demo yang tersedia di tombol Quick Login.'
+      );
     }
 
     const token = user.token || 'mock_jwt_token';
