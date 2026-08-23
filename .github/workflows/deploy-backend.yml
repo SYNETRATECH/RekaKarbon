@@ -155,25 +155,37 @@ jobs:
               ln -sfn "$PROJECT_DIR/shared/.env" "$PROJECT_DIR/releases/$RELEASE_ID/server/.env"
             fi
 
-            # 6. Install dependencies and generate Prisma client on target host
+            # 6. Install/use Node version from .nvmrc
             cd "$PROJECT_DIR/releases/$RELEASE_ID"
+
+            nvm install
+            nvm use
+
+            echo "Node: $(node --version)"
+            echo "npm:  $(npm --version)"
+
+            # 7. Enable Corepack / pnpm
+            corepack enable
+            echo "pnpm: $(pnpm --version)"
+
+            # 8. Install dependencies and generate Prisma client on target host
             echo "Installing dependencies on target host..."
             pnpm install --frozen-lockfile
 
             echo "Generating Prisma Client for host architecture..."
             pnpm --filter ./server prisma:generate
 
-            # 7. Run database migrations inside release dir
+            # 9. Run database migrations inside release dir
             pnpm --filter ./server prisma:migrate:deploy
 
-            # 8. Update current symlink atomically
+            # 10. Update current symlink atomically
             ln -sfn "$PROJECT_DIR/releases/$RELEASE_ID" "$PROJECT_DIR/current"
 
-            # 9. Restart systemd application service
+            # 11. Restart systemd application service
             echo "Restarting rekakarbon-backend systemd service..."
             sudo systemctl restart rekakarbon-backend
 
-            # 10. Health check check
+            # 12. Health check check
             sleep 5
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8006/health || true)
             if [ "$HTTP_STATUS" != "200" ]; then
@@ -184,13 +196,13 @@ jobs:
             fi
             echo "Backend health check passed (HTTP $HTTP_STATUS)"
 
-            # 11. Optional database seeder
+            # 13. Optional database seeder
             if [ "$RUN_SEED" = "true" ]; then
               echo "Running database seeder..."
               pnpm db:seed
             fi
 
-            # 12. Cleanup old releases - keep only 3 latest releases
+            # 14. Cleanup old releases - keep only 3 latest releases
             echo "Cleaning up old releases (keeping 3 latest)..."
             cd "$PROJECT_DIR/releases"
             ls -dt "$PROJECT_DIR/releases"/* 2>/dev/null | tail -n +4 | xargs -r rm -rf
