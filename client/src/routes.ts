@@ -9,7 +9,6 @@ export default [
   layout('routes/app.tsx', [
     // Shared Authenticated Routes
     route('dashboard', 'routes/dashboard.tsx'),
-    route('bursa', 'routes/emitter/bursa.tsx'),
     route('settings', 'routes/settings.tsx'),
     route('profile', 'routes/profile.tsx'),
 
@@ -37,8 +36,9 @@ export default [
       route('wallet', 'routes/kth/wallet.tsx'),
     ]),
 
-    // Emitter Protected Routes
+    // Emitter Protected Routes (emitter + buyer roles)
     layout('routes/guards/emitter.tsx', [
+      route('bursa', 'routes/emitter/bursa.tsx'),
       route('laporan', 'routes/emitter/laporan.tsx'),
       route('sertifikat', 'routes/emitter/sertifikat.tsx'),
     ]),
