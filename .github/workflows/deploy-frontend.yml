@@ -50,8 +50,6 @@ jobs:
           cat > ./client/.env << 'ENVEOF'
           ${{ secrets.FRONTEND_ENV }}
           ENVEOF
-          echo "Contents of ./client/.env:"
-          cat ./client/.env
 
       - name: Build
         env:
