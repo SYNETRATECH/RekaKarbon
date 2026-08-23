@@ -50,6 +50,8 @@ jobs:
           cat > ./client/.env << "ENVEOF"
           $FRONTEND_ENV
           ENVEOF
+          echo "Contents of ./client/.env:"
+          cat ./client/.env
 
       - name: Build
         env:
