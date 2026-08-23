@@ -1,4 +1,4 @@
-name: Deploy NestJS Backend to Host (Bare-Metal / PM2)
+name: Deploy NestJS Backend to Host (Bare-Metal)
 
 on:
   workflow_dispatch:
@@ -11,16 +11,17 @@ on:
 
 jobs:
   test:
+    name: Test Backend
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v7
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: 24.15.0
           cache: pnpm
@@ -31,95 +32,195 @@ jobs:
       - name: Lint server
         run: pnpm server:lint
 
-      - name: Typechecking server
+      - name: Typecheck server
         run: pnpm server:typecheck
 
       - name: Test server
         run: pnpm server:test
 
-  deploy:
-    name: Deploy via SSH (Bare-Metal)
+  build:
+    name: Build Artifact
     needs: test
     runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_bundle.outputs.release_id }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
-        with:
-          authkey: ${{ secrets.TS_AUTHKEY }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      - name: Write production .env to host
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+
+      - name: Build server code
+        run: pnpm server:build
+
+      - name: Create release bundle directory
+        id: create_bundle
+        run: |
+          RELEASE_ID="$(date -u +'%Y%m%d-%H%M%S')-${GITHUB_SHA::7}"
+          echo "RELEASE_ID=${RELEASE_ID}" >> "$GITHUB_ENV"
+          echo "release_id=${RELEASE_ID}" >> "$GITHUB_OUTPUT"
+
+          mkdir -p bundle/server
+
+          cp package.json bundle/
+          cp pnpm-lock.yaml bundle/
+          cp pnpm-workspace.yaml bundle/ 2>/dev/null || true
+
+          cp server/package.json bundle/server/
+          cp -r server/dist bundle/server/dist
+          cp -r server/prisma bundle/server/prisma
+
+          tar -czf "rekakarbon-backend-${RELEASE_ID}.tar.gz" -C bundle .
+
+      - name: Upload artifact archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-release-${{ env.RELEASE_ID }}
+          path: rekakarbon-backend-${{ env.RELEASE_ID }}.tar.gz
+          retention-days: 1
+
+  deploy:
+    name: Deploy to Target Server
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Release ID
+        run: |
+          RELEASE_ID="${{ needs.build.outputs.release_id }}"
+          echo "RELEASE_ID=${RELEASE_ID}" >> "$GITHUB_ENV"
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-release-${{ env.RELEASE_ID }}
+
+      - name: Upload artifact via SCP to target server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.BACKEND_SSH_HOST }}
+          username: ${{ secrets.BACKEND_SSH_USERNAME }}
+          password: ${{ secrets.BACKEND_SSH_PASSWORD }}
           port: 22
-          script: |
-            mkdir -p $HOME/RekaKarbon-Backend/server
-            cat > $HOME/RekaKarbon-Backend/server/.env << 'ENVEOF'
-            ${{ secrets.SERVER_ENV }}
-            ENVEOF
+          source: 'rekakarbon-backend-${{ env.RELEASE_ID }}.tar.gz'
+          target: '/tmp'
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Execute deployment via SSH
+        uses: appleboy/ssh-action@v1.2.5
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.BACKEND_SSH_HOST }}
+          username: ${{ secrets.BACKEND_SSH_USERNAME }}
+          password: ${{ secrets.BACKEND_SSH_PASSWORD }}
           port: 22
+          envs: RUN_SEED,BACKEND_PROJECT_DIR,RELEASE_ID,BACKEND_ENV
           script: |
             set -e
-            PROJECT_DIR="$HOME/RekaKarbon-Backend"
 
-            # 1. Pull latest code from main
-            if [ ! -d "$PROJECT_DIR/.git" ]; then
-              git clone https://github.com/${{ github.repository }}.git "$PROJECT_DIR"
+            # 1. Resolve PROJECT_DIR evaluating shell variables like $HOME
+            PROJECT_DIR_INPUT="${BACKEND_PROJECT_DIR}"
+            PROJECT_DIR=$(eval echo "$PROJECT_DIR_INPUT")
+
+            echo "Target project directory: $PROJECT_DIR"
+            echo "Release ID: $RELEASE_ID"
+
+            # 2. Ensure base directory structure exists
+            mkdir -p "$PROJECT_DIR/releases/$RELEASE_ID"
+            mkdir -p "$PROJECT_DIR/shared"
+
+            # 3. Create/update shared .env file if secrets.BACKEND_ENV is provided
+            if [ -n "$BACKEND_ENV" ]; then
+              cat > "$PROJECT_DIR/shared/.env" << 'ENVEOF'
+            ${{ secrets.BACKEND_ENV }}
+            ENVEOF
             fi
-            cd "$PROJECT_DIR"
-            git fetch origin
-            git checkout main
-            git reset --hard origin/main
 
-            # 2. Install all dependencies (dev tools needed for build step)
+            # 4. Extract release artifact into specific release folder
+            tar -xzf "/tmp/rekakarbon-backend-${RELEASE_ID}.tar.gz" -C "$PROJECT_DIR/releases/$RELEASE_ID"
+            rm -f "/tmp/rekakarbon-backend-${RELEASE_ID}.tar.gz"
+
+            # 5. Link shared .env to server release folder
+            if [ -f "$PROJECT_DIR/shared/.env" ]; then
+              ln -sfn "$PROJECT_DIR/shared/.env" "$PROJECT_DIR/releases/$RELEASE_ID/server/.env"
+            fi
+
+            # 6. Install/use Node version from .nvmrc
+            export NVM_DIR="$HOME/.nvm"
+
+            if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+              echo "ERROR: NVM not found at $NVM_DIR"
+              exit 1
+            fi
+
+            source "$NVM_DIR/nvm.sh"
+
+            echo "NVM version: $(nvm --version)"
+
+            cd "$PROJECT_DIR/releases/$RELEASE_ID"
+
+            nvm install
+            nvm use
+
+            echo "Node: $(node --version)"
+            echo "npm:  $(npm --version)"
+
+            # 7. Enable Corepack / pnpm
+            corepack enable
+            echo "pnpm: $(pnpm --version)"
+
+            # 8. Install dependencies and generate Prisma client on target host
+            echo "Installing dependencies on target host..."
             pnpm install --frozen-lockfile
 
-            # 3. Compile TypeScript → dist/
-            pnpm server:build
+            echo "Generating Prisma Client for host architecture..."
+            pnpm --filter ./server prisma:generate
 
-            # 4. Run any pending database migrations (safe no-op if up to date)
+            # 9. Run database migrations inside release dir
             pnpm --filter ./server prisma:migrate:deploy
 
-            # 5. Reload PM2 with zero downtime, or start fresh if first deploy
-            if pm2 describe rekakarbon-backend > /dev/null 2>&1; then
-              echo "PM2 process found — performing zero-downtime reload..."
-              pm2 reload rekakarbon-backend --update-env
-            else
-              echo "No PM2 process found — starting for the first time..."
-              pm2 start ecosystem.config.cjs --env production
-              pm2 save
-            fi
+            # 10. Update current symlink atomically
+            ln -sfn "$PROJECT_DIR/releases/$RELEASE_ID" "$PROJECT_DIR/current"
 
-            # 6. Health check — allow the process a moment to fully start
+            # 11. Restart systemd application service
+            echo "Restarting rekakarbon-backend systemd service..."
+            sudo systemctl restart rekakarbon-backend
+
+            # 12. Health check check
             sleep 5
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health || true)
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8006/health || true)
             if [ "$HTTP_STATUS" != "200" ]; then
-              echo "Backend health check failed (HTTP $HTTP_STATUS) — dumping logs..."
-              pm2 logs rekakarbon-backend --lines 30 --nostream
+              echo "Backend health check failed (HTTP $HTTP_STATUS)"
+              sudo systemctl status rekakarbon-backend --no-pager || true
+              sudo journalctl -u rekakarbon-backend -n 50 --no-pager || true
               exit 1
             fi
             echo "Backend health check passed (HTTP $HTTP_STATUS)"
 
-            # 7. Optional database seeder
+            # 13. Optional database seeder
             if [ "$RUN_SEED" = "true" ]; then
-              echo "Workflow requested — running database seeder..."
+              echo "Running database seeder..."
               pnpm db:seed
-            else
-              echo "Skipping database seeder."
             fi
+
+            # 14. Cleanup old releases - keep only 3 latest releases
+            echo "Cleaning up old releases (keeping 3 latest)..."
+            cd "$PROJECT_DIR/releases"
+            ls -dt "$PROJECT_DIR/releases"/* 2>/dev/null | tail -n +4 | xargs -r rm -rf
 
             echo "Deployment completed successfully!"
         env:
           RUN_SEED: ${{ inputs.run_seed }}
+          BACKEND_PROJECT_DIR: ${{ secrets.BACKEND_PROJECT_DIR }}
+          RELEASE_ID: ${{ env.RELEASE_ID }}
+          BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
