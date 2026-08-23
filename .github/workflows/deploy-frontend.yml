@@ -43,10 +43,12 @@ jobs:
         uses: actions/configure-pages@v6
 
       - name: Create client .env file
-        if: ${{ secrets.FRONTEND_ENV != '' }}
+        if: env.FRONTEND_ENV != ''
+        env:
+          FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
         run: |
           cat > ./client/.env << 'ENVEOF'
-          ${{ secrets.FRONTEND_ENV }}
+          $FRONTEND_ENV
           ENVEOF
 
       - name: Build
