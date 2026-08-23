@@ -156,6 +156,17 @@ jobs:
             fi
 
             # 6. Install/use Node version from .nvmrc
+            export NVM_DIR="$HOME/.nvm"
+
+            if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+              echo "ERROR: NVM not found at $NVM_DIR"
+              exit 1
+            fi
+
+            source "$NVM_DIR/nvm.sh"
+
+            echo "NVM version: $(nvm --version)"
+
             cd "$PROJECT_DIR/releases/$RELEASE_ID"
 
             nvm install
