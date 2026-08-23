@@ -81,7 +81,7 @@ jobs:
             echo "=== Menyiapkan Kunci Node (Node Key) ==="
             echo "$SERVER_PASSWORD" | sudo -S mkdir -p ~/VM_BLOCKHAIN/besu_data
             echo "$SERVER_PASSWORD" | sudo -S chmod 777 ~/VM_BLOCKHAIN/besu_data
-            echo "$PRIVATE_KEY" > ~/VM_BLOCKHAIN/besu_data/node_key
+            echo "8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63" > ~/VM_BLOCKHAIN/besu_data/node_key
 
             echo "=== Menjalankan Docker Hyperledger Besu ==="
             echo "$SERVER_PASSWORD" | sudo -S docker run -d \
@@ -103,7 +103,7 @@ jobs:
               --host-allowlist="*" \
               --min-gas-price=0 \
               --miner-enabled=true \
-              --miner-coinbase=0xfBB83F5872C2E4e1f8Fa49584da8DB98B91a1267
+              --miner-coinbase=0xfe3b557e8fb62b89f4916b721be55ceb828dbd73
 
             echo "=== Menunggu Node Besu siap (max 60 detik) ==="
             for i in $(seq 1 12); do
