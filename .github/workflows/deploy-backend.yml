@@ -82,6 +82,7 @@ jobs:
 
           cp server/package.json bundle/server/
           cp server/prisma.config.ts bundle/server/
+          cp server/nginx.conf bundle/server/ 2>/dev/null || true
           cp -r server/dist bundle/server/dist
           cp -r server/prisma bundle/server/prisma
 
@@ -157,7 +158,15 @@ jobs:
               ln -sfn "$PROJECT_DIR/shared/.env" "$PROJECT_DIR/releases/$RELEASE_ID/server/.env"
             fi
 
-            # 6. Install/use Node version from .nvmrc
+            # 6. Sync Nginx configuration if provided
+            if [ -f "$PROJECT_DIR/releases/$RELEASE_ID/server/nginx.conf" ]; then
+              echo "Updating Nginx configuration..."
+              sudo cp "$PROJECT_DIR/releases/$RELEASE_ID/server/nginx.conf" /etc/nginx/sites-available/api.rekakarbon.farrelad.com
+              sudo ln -sf /etc/nginx/sites-available/api.rekakarbon.farrelad.com /etc/nginx/sites-enabled/
+              sudo nginx -t && sudo systemctl reload nginx || echo "Nginx reload skipped or failed"
+            fi
+
+            # 7. Install/use Node version from .nvmrc
             export NVM_DIR="$HOME/.nvm"
 
             if [ ! -s "$NVM_DIR/nvm.sh" ]; then
@@ -177,28 +186,28 @@ jobs:
             echo "Node: $(node --version)"
             echo "npm:  $(npm --version)"
 
-            # 7. Enable Corepack / pnpm
+            # 8. Enable Corepack / pnpm
             corepack enable
             echo "pnpm: $(pnpm --version)"
 
-            # 8. Install dependencies and generate Prisma client on target host
+            # 9. Install dependencies and generate Prisma client on target host
             echo "Installing dependencies on target host..."
             pnpm install --frozen-lockfile
 
             echo "Generating Prisma Client for host architecture..."
             pnpm --filter ./server prisma:generate
 
-            # 9. Run database migrations inside release dir
+            # 10. Run database migrations inside release dir
             pnpm --filter ./server prisma:migrate:deploy
 
-            # 10. Update current symlink atomically
+            # 11. Update current symlink atomically
             ln -sfn "$PROJECT_DIR/releases/$RELEASE_ID" "$PROJECT_DIR/current"
 
-            # 11. Restart systemd application service
+            # 12. Restart systemd application service
             echo "Restarting rekakarbon-backend systemd service..."
             sudo systemctl restart rekakarbon-backend
 
-            # 12. Health check check
+            # 13. Health check check
             sleep 5
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8006/health || true)
             if [ "$HTTP_STATUS" != "200" ]; then
@@ -209,13 +218,13 @@ jobs:
             fi
             echo "Backend health check passed (HTTP $HTTP_STATUS)"
 
-            # 13. Optional database seeder
+            # 14. Optional database seeder
             if [ "$RUN_SEED" = "true" ]; then
               echo "Running database seeder..."
               pnpm db:seed
             fi
 
-            # 14. Cleanup old releases - keep only 3 latest releases
+            # 15. Cleanup old releases - keep only 3 latest releases
             echo "Cleaning up old releases (keeping 3 latest)..."
             cd "$PROJECT_DIR/releases"
             ls -dt "$PROJECT_DIR/releases"/* 2>/dev/null | tail -n +4 | xargs -r rm -rf
