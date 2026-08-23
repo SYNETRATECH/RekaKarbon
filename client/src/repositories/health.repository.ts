@@ -11,7 +11,9 @@ export class ApiHealthRepository implements HealthRepository {
   }
 }
 
+import { MockHealthRepository } from './health.mock.repository';
+
 export const healthRepository: HealthRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./health.mock.repository')).MockHealthRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockHealthRepository()
     : new ApiHealthRepository();

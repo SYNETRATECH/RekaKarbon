@@ -59,7 +59,9 @@ export class ApiAuditRepository implements AuditRepository {
   }
 }
 
+import { MockAuditRepository } from './audit.mock.repository';
+
 export const auditRepository: AuditRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./audit.mock.repository')).MockAuditRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockAuditRepository()
     : new ApiAuditRepository();

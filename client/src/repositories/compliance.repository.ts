@@ -11,7 +11,9 @@ export class ApiComplianceRepository implements ComplianceRepository {
   }
 }
 
+import { MockComplianceRepository } from './compliance.mock.repository';
+
 export const complianceRepository: ComplianceRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./compliance.mock.repository')).MockComplianceRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockComplianceRepository()
     : new ApiComplianceRepository();

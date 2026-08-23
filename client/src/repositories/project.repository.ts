@@ -15,7 +15,9 @@ export class ApiProjectRepository implements ProjectRepository {
   }
 }
 
+import { MockProjectRepository } from './project.mock.repository';
+
 export const projectRepository: ProjectRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./project.mock.repository')).MockProjectRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockProjectRepository()
     : new ApiProjectRepository();

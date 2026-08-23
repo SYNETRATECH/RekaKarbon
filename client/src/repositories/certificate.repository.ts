@@ -11,7 +11,9 @@ export class ApiCertificateRepository implements CertificateRepository {
   }
 }
 
+import { MockCertificateRepository } from './certificate.mock.repository';
+
 export const certificateRepository: CertificateRepository =
-  import.meta.env.VITE_USE_MOCK_DATA !== 'false'
-    ? new (await import('./certificate.mock.repository')).MockCertificateRepository()
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockCertificateRepository()
     : new ApiCertificateRepository();
