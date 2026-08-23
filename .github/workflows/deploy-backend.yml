@@ -75,6 +75,7 @@ jobs:
 
           mkdir -p bundle/server
 
+          cp .nvmrc bundle/
           cp package.json bundle/
           cp pnpm-lock.yaml bundle/
           cp pnpm-workspace.yaml bundle/ 2>/dev/null || true
