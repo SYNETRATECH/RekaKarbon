@@ -25,7 +25,7 @@ export function meta() {
 }
 
 export default function PurchasedCertificatesProjects() {
-  const { certs } = useLoaderData<typeof clientLoader>();
+  const { certs = [] } = (useLoaderData<typeof clientLoader>() || {}) as any;
 
   const totalVolume = certs.reduce((acc: number, c: any) => acc + c.purchasedVolumeTCO2e, 0);
   const totalValueIDR = certs.reduce(

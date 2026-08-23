@@ -46,7 +46,8 @@ export function meta() {
 }
 
 export default function RegulatorDashboard() {
-  const { regions } = useLoaderData<typeof clientLoader>();
+  const loaderData = (useLoaderData<typeof clientLoader>() || {}) as any;
+  const regions: any[] = loaderData?.regions || loaderData?.nationalForestRegions || [];
 
   const totalAreaHa = regions.reduce((acc: number, r: any) => acc + (r.areaHectares || 0), 0);
   const totalCarbonTCO2e = regions.reduce(

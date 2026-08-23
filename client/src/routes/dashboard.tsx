@@ -40,7 +40,13 @@ export async function clientLoader() {
       regulatorRepository.getNationalForestRegions().catch(() => []),
       regulatorRepository.getKTHGroups().catch(() => []),
     ]);
-    return { role, forestProjects, nationalForestRegions, kthGroups };
+    return {
+      role,
+      forestProjects,
+      nationalForestRegions,
+      regions: nationalForestRegions,
+      kthGroups,
+    };
   } else if (role === 'auditor') {
     const [aiAnomalyLogs, anomalySummary, energyCorrelationData] = await Promise.all([
       auditRepository.getAiAnomalyLogs().catch(() => []),
