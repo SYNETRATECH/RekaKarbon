@@ -81,6 +81,7 @@ jobs:
           cp pnpm-workspace.yaml bundle/ 2>/dev/null || true
 
           cp server/package.json bundle/server/
+          cp server/prisma.config.ts bundle/server/
           cp -r server/dist bundle/server/dist
           cp -r server/prisma bundle/server/prisma
 
