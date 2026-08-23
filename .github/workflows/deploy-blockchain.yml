@@ -37,6 +37,21 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: 🧹 Clean up heavy local directories
+        run: rm -rf blockchain/node_modules blockchain/artifacts blockchain/cache blockchain/typechain-types
+
+      - name: 🧹 Clean up old blockchain folder on Server
+        uses: appleboy/ssh-action@master
+        env:
+          SERVER_PASSWORD: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
+        with:
+          host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
+          username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
+          password: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
+          envs: SERVER_PASSWORD
+          script: |
+            echo "$SERVER_PASSWORD" | sudo -S rm -rf ~/VM_BLOCKHAIN/blockchain
+
       - name: 🚚 Transfer Files via SCP
         uses: appleboy/scp-action@v1.0.0
         with:
