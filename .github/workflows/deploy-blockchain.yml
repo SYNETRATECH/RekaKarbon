@@ -112,6 +112,6 @@ jobs:
               -e PRIVATE_KEY="$PRIVATE_KEY" \
               --network host \
               node:20 \
-              bash -c "npm ci && npx hardhat run scripts/deploy.ts --network besu_local"
+              bash -c "npm install && npx hardhat run scripts/deploy.ts --network besu_local"
 
             echo "✅ DEPLOYMENT SERVER SELESAI!"
