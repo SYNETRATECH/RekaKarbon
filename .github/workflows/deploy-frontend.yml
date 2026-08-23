@@ -47,7 +47,7 @@ jobs:
         env:
           FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
         run: |
-          cat > ./client/.env << 'ENVEOF'
+          cat > ./client/.env << "ENVEOF"
           $FRONTEND_ENV
           ENVEOF
 
