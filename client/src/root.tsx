@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ServiceWorkerRegister, OfflineIndicator, InstallPromptBanner } from '@/components/pwa';
 import brandIcon from './assets/icon.png';
 import './styles/index.css';
 
@@ -29,7 +30,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#033C2E" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="RekaKarbon" />
+        <meta
+          name="description"
+          content="Platform Terintegrasi Pengukuran, Verifikasi, dan Bursa Kredit Karbon Indonesia"
+        />
         <link rel="icon" type="image/png" href={brandIcon} />
+        <link rel="apple-touch-icon" href="/icons/apple-icon.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -43,8 +55,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         className="bg-slate-50 text-slate-800 antialiased min-h-screen"
         suppressHydrationWarning
       >
+        <OfflineIndicator />
         {children}
         <Toaster />
+        <InstallPromptBanner />
+        <ServiceWorkerRegister />
         <ScrollRestoration />
         <Scripts />
       </body>
