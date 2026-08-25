@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -7,7 +16,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuditService } from './audit.service';
-import { AuthorizeMintingDto } from './dto';
+import { AuthorizeMintingDto, AuditQueryDto, VerifyAnomalyDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -26,7 +35,7 @@ export class AuditController {
   })
   @ApiResponse({ status: 200, description: 'AI anomaly logs retrieved.' })
   @Get('anomaly-logs')
-  async getAiAnomalyLogs() {
+  async getAiAnomalyLogs(@Query() _query: AuditQueryDto) {
     const data = await this.auditService.getAiAnomalyLogs();
     return { success: true, data };
   }
@@ -50,10 +59,13 @@ export class AuditController {
   }
 
   @ApiOperation({ summary: 'Mark an anomaly record as verified' })
-  @ApiParam({ name: 'id', description: 'Anomaly record ID' })
+  @ApiParam({ name: 'id', description: 'Anomaly record ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Record verified successfully.' })
   @Post('verify/:id')
-  async verifyAnomalyRecord(@Param('id') id: string) {
+  async verifyAnomalyRecord(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() _dto?: VerifyAnomalyDto,
+  ) {
     const result = await this.auditService.verifyAnomalyRecord(id);
     return { success: true, data: result };
   }

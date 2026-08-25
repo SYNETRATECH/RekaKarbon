@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { BursaService } from './bursa.service';
+import { BursaQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
@@ -24,7 +25,7 @@ export class BursaController {
     description: 'Bursa items retrieved successfully.',
   })
   @Get()
-  async getBursaItems() {
+  async getBursaItems(@Query() _query: BursaQueryDto) {
     const items = await this.bursaService.getBursaItems();
     return {
       success: true,

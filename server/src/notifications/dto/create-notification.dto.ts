@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import type { NotificationType } from '../../types/notification';
+import type { NotificationType } from '../types';
 
 export class CreateNotificationDto {
   @ApiProperty({

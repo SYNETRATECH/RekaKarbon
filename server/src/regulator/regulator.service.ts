@@ -5,7 +5,7 @@ import type {
   ForestProjectItem,
   KTHTransactionItem,
   RegulationDocumentUploadItem,
-} from '../types/regulator';
+} from './types';
 
 @Injectable()
 export class RegulatorService {

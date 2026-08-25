@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { FileCategory as PrismaFileCategory } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type { StoredFile, FileCategory } from '../types/storage';
+import type { StoredFile, FileCategory } from './types';
 import type { UploadFileDto } from './dto';
 
 @Injectable()

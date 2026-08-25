@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
+import { ReportQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -27,7 +28,7 @@ export class ReportsController {
     description: 'Emission reports retrieved successfully.',
   })
   @Get()
-  async getReports() {
+  async getReports(@Query() _query: ReportQueryDto) {
     const reports = await this.reportsService.getEmissionReports();
     return {
       success: true,

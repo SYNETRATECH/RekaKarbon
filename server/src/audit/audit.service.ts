@@ -6,7 +6,7 @@ import type {
   EnergyCorrelationItem,
   ConservationArea,
   SpatialSummary,
-} from '../types/audit';
+} from './types';
 import type { AuthorizeMintingDto } from './dto';
 
 @Injectable()

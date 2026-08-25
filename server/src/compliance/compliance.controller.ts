@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ComplianceService } from './compliance.service';
+import { ComplianceQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -28,7 +29,7 @@ export class ComplianceController {
     description: 'Compliance data retrieved successfully.',
   })
   @Get()
-  async getCompliance() {
+  async getCompliance(@Query() _query: ComplianceQueryDto) {
     const data = await this.complianceService.getComplianceData();
     return {
       success: true,

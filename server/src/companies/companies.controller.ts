@@ -2,8 +2,10 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   NotFoundException,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -13,6 +15,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CompaniesService } from './companies.service';
+import { CompanyQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
@@ -31,7 +34,7 @@ export class CompaniesController {
     description: 'Companies list retrieved successfully.',
   })
   @Get()
-  async getCompanies() {
+  async getCompanies(@Query() _query: CompanyQueryDto) {
     const companies = await this.companiesService.findAll();
     return {
       success: true,
@@ -56,7 +59,9 @@ export class CompaniesController {
     description: 'Company with specified ID not found.',
   })
   @Get(':id')
-  async getCompanyById(@Param('id') id: string) {
+  async getCompanyById(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     const company = await this.companiesService.findById(id);
     if (!company) {
       throw new NotFoundException({

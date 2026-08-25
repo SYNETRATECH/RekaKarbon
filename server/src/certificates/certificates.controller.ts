@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CertificatesService } from './certificates.service';
+import { CertificateQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
@@ -24,7 +25,7 @@ export class CertificatesController {
     description: 'Certificates retrieved successfully.',
   })
   @Get()
-  async getCertificates() {
+  async getCertificates(@Query() _query: CertificateQueryDto) {
     const certificates =
       await this.certificatesService.getPurchasedCertificates();
     return {

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { CarbonTaxCalculation, StpDocument } from '../../types/tax';
+import type { CarbonTaxCalculation, StpDocument } from './types';
 import type { CalculateTaxDto, IssueStpDto } from './dto';
 
 @Injectable()
