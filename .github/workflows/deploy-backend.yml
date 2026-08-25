@@ -86,6 +86,9 @@ jobs:
           cp -r server/dist bundle/server/dist
           cp -r server/prisma bundle/server/prisma
 
+          mkdir -p bundle/ml/models
+          cp -r ml/models/* bundle/ml/models/
+
           tar -czf "rekakarbon-backend-${RELEASE_ID}.tar.gz" -C bundle .
 
       - name: Upload artifact archive

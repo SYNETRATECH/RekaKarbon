@@ -1,98 +1,110 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# ⚙️ RekaKarbon Backend Server (`server/`)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Robust, production-grade NestJS REST API and enterprise backend powering the **RekaKarbon** digital Measurement, Reporting, and Verification (dMRV) and Carbon Exchange (Bursa Karbon) platform.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🏛️ Architecture Overview
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+The backend server is structured with modular NestJS architecture, integrating relational storage (PostgreSQL via Prisma), EVM blockchain interaction (Hyperledger Besu / Ethers.js), and **native in-process AI/ML anomaly detection (`onnxruntime-node`)**.
 
-## Project setup
-
-```bash
-$ pnpm install
+```
+server/src/
+├── auth/            # JWT authentication, Argon2/Bcrypt password hashing, RBAC guards
+├── emitter/         # Industrial emitter registration, facility management, and emission logging
+├── audit/           # dMRV verification, auditor workflow, spatial GIS, and embedded ONNX AI/ML Engine
+│   ├── dto/         # Audit query and emission report validation DTOs
+│   ├── types/       # Audit and ML result interfaces
+│   ├── ml-audit-engine.service.ts # Real-time ONNX runtime execution & multi-tier audit rules
+│   ├── ml-feature-engineer.ts    # 15-dimensional physical & econometric feature extractor
+│   └── audit.controller.ts       # REST endpoints including POST /audit/evaluate-emission
+├── blockchain/      # Ethers.js client, ERC-20 Carbon Token minting, retirement & burn listeners
+├── marketplace/     # Bursa Karbon orderbook, trade settlement, and bid/ask matching
+├── notifications/   # System-wide alert and audit trigger notifications
+└── prisma/          # Database client service and schema mapping
 ```
 
-## Compile and run the project
+---
+
+## 🌿 Embedded AI/ML dMRV Engine (`onnxruntime-node`)
+
+The server directly executes the trained machine learning pipeline without requiring an external Python service in production.
+
+### How it Works:
+
+1. **Model Graph Loading**: On application startup (`onModuleInit`), `MlAuditEngineService` loads `ml/models/anomaly_pipeline.onnx` into memory using Microsoft's `onnxruntime-node` C++ runtime.
+2. **Feature Transformation**: When an emitter submits emission data, `EmissionFeatureEngineer` computes 15 derived physical parameters:
+   - Stoichiometric combustion balance (IPCC Tier-2 & KLHK factors).
+   - DJP e-Faktur fuel unit price validation (Rp 16,000 – 25,000 / L index).
+   - Sector carbon intensity Z-scores across 6 Indonesian industrial sectors.
+3. **ONNX Graph Inference**: The 15-dimensional Float32 tensor is executed asynchronously in the ONNX graph (`IsolationForest + RobustScaler`).
+4. **Diagnostic Verdict**: The service combines the raw ML outlier score with fiscal & physical checks to return a comprehensive diagnostic payload (`isAnomaly`, `verdict`, `trustScore`, `scoreDjp`, `scoreBbm`, `scoreCems`, `flags`, `explanation`).
+
+---
+
+## 🔌 Key API Endpoints
+
+| Method | Path                        | Description                                                     | Access Role             |
+| :----- | :-------------------------- | :-------------------------------------------------------------- | :---------------------- |
+| `POST` | `/audit/evaluate-emission`  | Run real-time AI/ML & stoichiometric audit on emission filing   | `auditor`, `superadmin` |
+| `GET`  | `/audit/anomaly-logs`       | Retrieve AI anomaly detection history across emitters           | `auditor`, `superadmin` |
+| `GET`  | `/audit/anomaly-summary`    | Retrieve aggregate anomaly statistics and DJP mismatch counts   | `auditor`, `superadmin` |
+| `GET`  | `/audit/energy-correlation` | Retrieve physical energy spend vs. emission correlation data    | `auditor`, `superadmin` |
+| `POST` | `/audit/verify/:id`         | Auditor verification action on flagged anomaly                  | `auditor`, `superadmin` |
+| `POST` | `/audit/authorize-minting`  | Authorize carbon token minting for verified emission reductions | `superadmin`            |
+
+---
+
+## 🛠️ Getting Started & Development
+
+### 1. Installation
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# From workspace root
+pnpm install
 ```
 
-## Run tests
+### 2. Environment Configuration
+
+Create `.env` in `server/` with the following variables:
+
+```env
+PORT=3000
+DATABASE_URL="postgresql://rekakarbon:rekakarbon123@localhost:5432/rekakarbon_db?schema=public"
+JWT_SECRET="your-secure-jwt-secret"
+JWT_EXPIRES_IN="7d"
+RPC_URL="http://localhost:8545"
+CARBON_TOKEN_ADDRESS="0x..."
+PRIVATE_KEY="0x..."
+```
+
+### 3. Database Migration & Seed
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm --filter ./server prisma:migrate
+pnpm --filter ./server prisma:seed
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 4. Running the Server
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+# Development mode with hot-reload
+pnpm server:dev
+
+# Production build & run
+pnpm server:build
+pnpm server:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 5. Running Tests & Quality Checks
 
-## Resources
+```bash
+# Run unit & integration tests (Jest)
+pnpm server:test
 
-Check out a few resources that may come in handy when working with NestJS:
+# TypeScript Typecheck
+pnpm server:typecheck
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# ESLint check & auto-fix
+pnpm server:lint
+```

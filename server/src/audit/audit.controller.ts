@@ -15,12 +15,18 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { AuditService } from './audit.service';
-import { AuthorizeMintingDto, AuditQueryDto, VerifyAnomalyDto } from './dto';
+import {
+  AuthorizeMintingDto,
+  AuditQueryDto,
+  VerifyAnomalyDto,
+  AuditEmissionReportDto,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { AuditService } from './audit.service';
+import { MlAuditEngineService } from './ml-audit-engine.service';
 
 @ApiTags('Audit & dMRV Verification')
 @ApiBearerAuth('JWT-auth')
@@ -28,7 +34,24 @@ import { Role } from '@prisma/client';
 @Roles(Role.auditor, Role.superadmin)
 @Controller('audit')
 export class AuditController {
-  constructor(private readonly auditService: AuditService) {}
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly mlAuditEngineService: MlAuditEngineService,
+  ) {}
+
+  @ApiOperation({
+    summary:
+      'Perform real-time multi-tier AI/ML and stoichiometric audit on emission report',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Emission report audited successfully.',
+  })
+  @Post('evaluate-emission')
+  async evaluateEmissionReport(@Body() dto: AuditEmissionReportDto) {
+    const result = await this.mlAuditEngineService.evaluateEmissionReport(dto);
+    return { success: true, data: result };
+  }
 
   @ApiOperation({
     summary: 'Retrieve AI anomaly detection logs across emitters',
@@ -142,5 +165,20 @@ export class AuditController {
   async getKthLogs() {
     const data = await this.auditService.getKthLogs();
     return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Retrieve ONNX ML engine inference status and active model path',
+  })
+  @ApiResponse({ status: 200, description: 'ML engine status retrieved.' })
+  @Get('ml-status')
+  getMlEngineStatus() {
+    return {
+      success: true,
+      data: {
+        isLoaded: this.mlAuditEngineService.isModelLoaded(),
+        modelPath: this.mlAuditEngineService.getModelPath(),
+      },
+    };
   }
 }

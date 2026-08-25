@@ -13,7 +13,7 @@ from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import FloatTensorType
 from sklearn.pipeline import Pipeline
 
-from .transformers import FEATURE_COLUMNS
+from .transformers import DERIVED_FEATURE_NAMES
 
 
 def export_pipeline_to_onnx(
@@ -21,7 +21,7 @@ def export_pipeline_to_onnx(
 ) -> str:
     """
     Converts the core detector (scaler + IsolationForest) to ONNX.
-    Accepts 6 float32 derived features and outputs predictions & decision scores.
+    Accepts 15 float32 derived features and outputs predictions & decision scores.
     """
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -29,7 +29,8 @@ def export_pipeline_to_onnx(
         [("scaler", pipeline.named_steps["scaler"]), ("detector", pipeline.named_steps["detector"])]
     )
 
-    initial_type = [("float_input", FloatTensorType([None, 6]))]
+    n_features = len(DERIVED_FEATURE_NAMES)
+    initial_type = [("float_input", FloatTensorType([None, n_features]))]
     onnx_model = convert_sklearn(
         sub_pipeline, initial_types=initial_type, target_opset={"": 15, "ai.onnx.ml": 3}
     )
@@ -37,7 +38,7 @@ def export_pipeline_to_onnx(
     with open(output_path, "wb") as f:
         f.write(onnx_model.SerializeToString())
 
-    print(f"Successfully exported ONNX model to {output_path}")
+    print(f"Successfully exported ONNX model ({n_features} features) to {output_path}")
     return output_path
 
 
@@ -57,7 +58,7 @@ def verify_onnx_parity(
 
     # 1. Scikit-Learn inference
     feat_engineer = pipeline.named_steps["feature_engineer"]
-    engineered_features = feat_engineer.transform(sample_df[FEATURE_COLUMNS])
+    engineered_features = feat_engineer.transform(sample_df)
 
     scaler = pipeline.named_steps["scaler"]
     detector = pipeline.named_steps["detector"]

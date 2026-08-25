@@ -1,22 +1,42 @@
 """
 Synthetic Dataset Generator for Industrial Carbon Emissions and Anomalies.
-Generates balanced compliant vs anomalous submissions reflecting Indonesian industrial sectors.
+Generates balanced compliant vs anomalous submissions reflecting Indonesian industrial sectors,
+incorporating physical stoichiometry, process emissions, and econometric price boundaries.
 """
+
+from typing import List
 
 import numpy as np
 import pandas as pd
 
-from .benchmark_loader import SectorBenchmarkLoader
+from .benchmark_loader import (
+    MARKET_PRICE_RANGES,
+    STOICHIOMETRIC_FACTORS,
+    SUPPORTED_SECTORS,
+    SectorBenchmarkLoader,
+)
 
 
 class EmissionDataGenerator:
+    """
+    Generates realistic, sector-grounded industrial carbon reporting datasets
+    with calibrated normal distributions and multi-modal anomaly injections.
+    """
+
     def __init__(self, random_state: int = 42):
         self.rng = np.random.RandomState(random_state)
         self.loader = SectorBenchmarkLoader()
         self.sector_benchmarks = self.loader.get_sector_emission_factors()
+        self.factors = STOICHIOMETRIC_FACTORS
+        self.prices = MARKET_PRICE_RANGES
 
-    def generate_dataset(self, n_samples: int = 1500, anomaly_ratio: float = 0.12) -> pd.DataFrame:
-        sectors = list(self.sector_benchmarks.keys())
+    def generate_dataset(
+        self,
+        n_samples: int = 1800,
+        anomaly_ratio: float = 0.12,
+        sectors: List[str] | None = None,
+    ) -> pd.DataFrame:
+        sectors_to_use = sectors or SUPPORTED_SECTORS
         data = []
 
         n_anomalies = int(n_samples * anomaly_ratio)
@@ -24,51 +44,114 @@ class EmissionDataGenerator:
 
         # 1. Generate Normal Compliant Reports
         for _ in range(n_normals):
-            sector = self.rng.choice(sectors)
+            sector = self.rng.choice(sectors_to_use)
             bench = self.sector_benchmarks[sector]
 
-            production = float(self.rng.uniform(50000, 800000))
-            intensity = float(self.rng.uniform(bench["min_intensity"], bench["max_intensity"]))
+            # Production scale based on sector
+            if sector == "Ketenagalistrikan & PLTU":
+                production = float(self.rng.uniform(100000, 1500000))  # MWh equivalent
+            elif sector == "Logam & Baja":
+                production = float(self.rng.uniform(50000, 500000))  # Ton crude steel
+            else:
+                production = float(self.rng.uniform(80000, 900000))  # Ton product
+
+            intensity = float(
+                np.clip(
+                    self.rng.normal(bench["avg_intensity_tco2e_per_ton"], bench["std_intensity"]),
+                    bench["min_intensity"],
+                    bench["max_intensity"],
+                )
+            )
+
             expected_total_emissions = production * intensity
 
-            emiss_coal = expected_total_emissions * bench.get("fuel_share_coal", 0.4)
-            emiss_solar = expected_total_emissions * bench.get("fuel_share_solar", 0.25)
-            emiss_elec = expected_total_emissions * bench.get("fuel_share_electricity", 0.25)
-            emiss_gas = expected_total_emissions * max(
-                0.0,
-                1.0
-                - (
-                    bench.get("fuel_share_coal", 0.4)
-                    + bench.get("fuel_share_solar", 0.25)
-                    + bench.get("fuel_share_electricity", 0.25)
-                ),
-            )
+            # Process emissions (e.g. limestone calcination in cement)
+            clinker_tonnes = 0.0
+            e_process = 0.0
+            if bench.get("has_process_emissions", False):
+                if sector == "Semen & Bahan Bangunan":
+                    clinker_ratio = bench.get("clinker_ratio", 0.72)
+                    clinker_tonnes = (
+                        production * clinker_ratio * float(self.rng.uniform(0.95, 1.05))
+                    )
+                    e_process = (
+                        clinker_tonnes * self.factors["cement_clinker_calcination_tco2e_per_ton"]
+                    )
+                else:
+                    e_process = (
+                        production
+                        * bench.get("process_emission_factor", 0.35)
+                        * float(self.rng.uniform(0.9, 1.1))
+                    )
 
-            stat_fuel_liters = max(1000.0, (emiss_solar * 0.8) / 0.00268)
-            mob_fuel_liters = max(500.0, (emiss_solar * 0.2) / 0.00268)
-            coal_kg = max(1000.0, emiss_coal / 0.00242)
-            gas_m3 = max(500.0, emiss_gas / 0.0019)
-            elec_kwh = max(5000.0, emiss_elec / 0.00085)
+            # Energy / combustion emissions
+            e_combustion = max(expected_total_emissions - e_process, expected_total_emissions * 0.3)
+
+            share_coal = bench.get("fuel_share_coal", 0.3)
+            share_solar = bench.get("fuel_share_solar", 0.2)
+            share_elec = bench.get("fuel_share_electricity", 0.3)
+            share_gas = bench.get("fuel_share_gas", 0.2)
+            tot_fossil = share_coal + share_solar + share_elec + share_gas
+            if tot_fossil > 0:
+                share_coal /= tot_fossil
+                share_solar /= tot_fossil
+                share_elec /= tot_fossil
+                share_gas /= tot_fossil
+
+            emiss_coal = e_combustion * share_coal
+            emiss_solar = e_combustion * share_solar
+            emiss_elec = e_combustion * share_elec
+            emiss_gas = e_combustion * share_gas
+
+            # Convert to physical units
+            stat_fuel_liters = max(
+                0.0, (emiss_solar * 0.8) / self.factors["solar_diesel_tco2e_per_liter"]
+            )
+            mob_fuel_liters = max(
+                0.0, (emiss_solar * 0.2) / self.factors["solar_diesel_tco2e_per_liter"]
+            )
+            coal_kg = max(0.0, emiss_coal / self.factors["coal_tco2e_per_kg"])
+            gas_m3 = max(0.0, emiss_gas / self.factors["natural_gas_tco2e_per_m3"])
+            elec_kwh = max(0.0, emiss_elec / self.factors["grid_electricity_tco2e_per_kwh"])
+
             biomass_ton = (
-                float(self.rng.uniform(100, 20000)) if "biomass_utilization_ratio" in bench else 0.0
+                float(self.rng.uniform(500, 25000))
+                if bench.get("biomass_utilization_ratio", 0.0) > 0
+                else 0.0
             )
 
-            solar_price = float(self.rng.uniform(18500, 22000))
+            # Econometric utility costs (IDR) with realistic market dispersion (± 8%)
+            solar_price = float(
+                self.rng.uniform(
+                    self.prices["solar_diesel"]["min"], self.prices["solar_diesel"]["max"]
+                )
+            )
             cost_solar = stat_fuel_liters * solar_price
 
-            coal_price = float(self.rng.uniform(900, 1400))
+            coal_price = float(
+                self.rng.uniform(self.prices["coal"]["min"], self.prices["coal"]["max"])
+            )
             cost_coal = coal_kg * coal_price
 
-            gas_price = float(self.rng.uniform(8000, 12000))
+            gas_price = float(
+                self.rng.uniform(
+                    self.prices["natural_gas"]["min"], self.prices["natural_gas"]["max"]
+                )
+            )
             cost_gas = gas_m3 * gas_price
 
-            pln_price = float(self.rng.uniform(1450, 1750))
+            pln_price = float(
+                self.rng.uniform(
+                    self.prices["grid_electricity"]["min"], self.prices["grid_electricity"]["max"]
+                )
+            )
             cost_pln = elec_kwh * pln_price
 
-            yoy_factor = float(self.rng.uniform(0.92, 1.08))
+            # Historical baseline & slight reporting noise (± 2%)
+            yoy_factor = float(self.rng.uniform(0.94, 1.06))
             historical_emissions = expected_total_emissions * yoy_factor
 
-            noise = float(self.rng.uniform(0.98, 1.02))
+            noise = float(self.rng.uniform(0.985, 1.015))
             reported_emissions = expected_total_emissions * noise
 
             data.append(
@@ -80,6 +163,7 @@ class EmissionDataGenerator:
                     "stat_fuel_liters": round(stat_fuel_liters, 2),
                     "mob_fuel_liters": round(mob_fuel_liters, 2),
                     "biomass_tonnes": round(biomass_ton, 2),
+                    "clinker_tonnes": round(clinker_tonnes, 2),
                     "cost_solar_idr": round(cost_solar, 2),
                     "cost_coal_idr": round(cost_coal, 2),
                     "cost_gas_idr": round(cost_gas, 2),
@@ -92,41 +176,57 @@ class EmissionDataGenerator:
         # 2. Generate Labeled Anomalies
         anomaly_types = [
             "UNDER_REPORTING_FRAUD",
+            "UNDER_REPORTING_SUBTLE",
             "FUEL_COST_MISMATCH",
             "IMPOSSIBLE_PRODUCTION_INTENSITY",
+            "UNREPORTED_PROCESS_EMISSIONS",
             "EXTREME_YOY_COLLAPSE",
         ]
 
         for _ in range(n_anomalies):
-            sector = self.rng.choice(sectors)
+            sector = self.rng.choice(sectors_to_use)
             bench = self.sector_benchmarks[sector]
             atype = self.rng.choice(anomaly_types)
 
             production = float(self.rng.uniform(100000, 800000))
             normal_intensity = float(
-                self.rng.uniform(bench["min_intensity"], bench["max_intensity"])
+                np.clip(
+                    self.rng.normal(bench["avg_intensity_tco2e_per_ton"], bench["std_intensity"]),
+                    bench["min_intensity"],
+                    bench["max_intensity"],
+                )
             )
             real_physics_emissions = production * normal_intensity
 
-            stat_fuel_liters = float(self.rng.uniform(2000000, 10000000))
-            mob_fuel_liters = float(self.rng.uniform(500000, 2000000))
+            stat_fuel_liters = float(self.rng.uniform(2500000, 9000000))
+            mob_fuel_liters = float(self.rng.uniform(400000, 1800000))
             biomass_ton = float(self.rng.uniform(500, 15000))
+            clinker_tonnes = production * 0.72 if sector == "Semen & Bahan Bangunan" else 0.0
 
-            cost_solar = stat_fuel_liters * float(self.rng.uniform(19000, 22000))
-            cost_coal = float(self.rng.uniform(5e9, 25e9))
-            cost_gas = float(self.rng.uniform(1e9, 8e9))
-            cost_pln = float(self.rng.uniform(4e9, 15e9))
+            cost_solar = stat_fuel_liters * float(self.rng.uniform(19000, 22500))
+            cost_coal = float(self.rng.uniform(4e9, 20e9))
+            cost_gas = float(self.rng.uniform(1e9, 7e9))
+            cost_pln = float(self.rng.uniform(3e9, 14e9))
             historical_emissions = real_physics_emissions * float(self.rng.uniform(0.95, 1.05))
 
             if atype == "UNDER_REPORTING_FRAUD":
-                reported_emissions = real_physics_emissions * float(self.rng.uniform(0.10, 0.35))
+                reported_emissions = real_physics_emissions * float(self.rng.uniform(0.15, 0.40))
+            elif atype == "UNDER_REPORTING_SUBTLE":
+                reported_emissions = real_physics_emissions * float(self.rng.uniform(0.55, 0.72))
             elif atype == "FUEL_COST_MISMATCH":
-                cost_solar = stat_fuel_liters * float(self.rng.uniform(200, 1200))
+                # Fake or subsidized invoice: unit price absurdly off market bounds (e.g. Rp 800/L)
+                cost_solar = stat_fuel_liters * float(self.rng.uniform(400, 1500))
                 reported_emissions = real_physics_emissions
             elif atype == "IMPOSSIBLE_PRODUCTION_INTENSITY":
-                reported_emissions = production * float(self.rng.uniform(0.005, 0.02))
+                reported_emissions = production * float(self.rng.uniform(0.005, 0.025))
+            elif atype == "UNREPORTED_PROCESS_EMISSIONS":
+                # Only combustion is reported, calcination is omitted
+                clinker_tonnes = production * 0.75
+                e_combustion = real_physics_emissions * 0.35
+                reported_emissions = e_combustion
             else:
-                reported_emissions = historical_emissions * 0.10
+                # EXTREME_YOY_COLLAPSE
+                reported_emissions = historical_emissions * float(self.rng.uniform(0.08, 0.20))
 
             data.append(
                 {
@@ -137,6 +237,7 @@ class EmissionDataGenerator:
                     "stat_fuel_liters": round(stat_fuel_liters, 2),
                     "mob_fuel_liters": round(mob_fuel_liters, 2),
                     "biomass_tonnes": round(biomass_ton, 2),
+                    "clinker_tonnes": round(clinker_tonnes, 2),
                     "cost_solar_idr": round(cost_solar, 2),
                     "cost_coal_idr": round(cost_coal, 2),
                     "cost_gas_idr": round(cost_gas, 2),
@@ -148,3 +249,22 @@ class EmissionDataGenerator:
 
         df = pd.DataFrame(data)
         return df.sample(frac=1.0, random_state=self.rng).reset_index(drop=True)
+
+    def generate_train_val_test_splits(
+        self,
+        n_total: int = 2500,
+        anomaly_ratio: float = 0.12,
+        train_ratio: float = 0.70,
+        val_ratio: float = 0.15,
+        test_ratio: float = 0.15,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Generates stratified non-leaking train, validation, and test datasets."""
+        full_df = self.generate_dataset(n_samples=n_total, anomaly_ratio=anomaly_ratio)
+        n_train = int(n_total * train_ratio)
+        n_val = int(n_total * val_ratio)
+
+        train_df = full_df.iloc[:n_train].reset_index(drop=True)
+        val_df = full_df.iloc[n_train : n_train + n_val].reset_index(drop=True)
+        test_df = full_df.iloc[n_train + n_val :].reset_index(drop=True)
+
+        return train_df, val_df, test_df

@@ -76,3 +76,18 @@ export interface KthLog {
   detail: string;
   status: string;
 }
+
+export interface MlAuditResult {
+  isAnomaly: boolean;
+  verdict: 'PASS_VERIFIED' | 'REJECT_ANOMALY';
+  anomalyScore: number;
+  trustScore: number;
+  divergencePercent: number;
+  expectedEmissionTco2e: number;
+  reportedEmissionTco2e: number;
+  scoreDjp: number;
+  scoreBbm: number;
+  scoreCems: number;
+  flags: string[];
+  explanation: string;
+}

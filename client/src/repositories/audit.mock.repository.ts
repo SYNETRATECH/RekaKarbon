@@ -60,4 +60,25 @@ export class MockAuditRepository implements AuditRepository {
   async getKthLogs() {
     return mockKthLogs;
   }
+  async evaluateEmissionReport(params: import('../types').AuditEmissionReportParams) {
+    const isUnderReporting = params.reportedEmissionsTco2e < params.productionTonnes * 0.1;
+    return {
+      isAnomaly: isUnderReporting,
+      verdict: isUnderReporting ? ('REJECT_ANOMALY' as const) : ('PASS_VERIFIED' as const),
+      anomalyScore: isUnderReporting ? 0.942 : 0.085,
+      trustScore: isUnderReporting ? 38.5 : 94.2,
+      divergencePercent: isUnderReporting ? 54.2 : 4.1,
+      expectedEmissionTco2e: Math.round(params.productionTonnes * 0.28 * 100) / 100,
+      reportedEmissionTco2e: params.reportedEmissionsTco2e,
+      scoreDjp: 98.5,
+      scoreBbm: isUnderReporting ? 42.0 : 96.0,
+      scoreCems: 95.0,
+      flags: isUnderReporting
+        ? ['UNDER_REPORTING_TERINDIKASI', 'DEVIASI_FISIK_DAN_LAPORAN_TINGGI']
+        : [],
+      explanation: isUnderReporting
+        ? 'Anomali terdeteksi: Laporan emisi berada di bawah ambang batas fisik.'
+        : 'Laporan terverifikasi konsisten dengan model ONNX dan indeks fiskal.',
+    };
+  }
 }
