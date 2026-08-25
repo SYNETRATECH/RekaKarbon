@@ -217,7 +217,7 @@ describe('RekaKarbon Smart Contract', function () {
     it('Harus berhasil executeBursaPurchase (atomic buy)', async function () {
       const balanceRkbBefore = await rekaKarbon.balanceOf(corpA.address, RKB_CREDIT);
       const balanceSpeGrkBefore = await rekaKarbon.balanceOf(corpB.address, assetId);
-      
+
       await rekaKarbon.connect(deposit).executeBursaPurchase(
         corpA.address, // buyer
         corpB.address, // seller
@@ -238,9 +238,9 @@ describe('RekaKarbon Smart Contract', function () {
     it('Harus gagal executeBursaPurchase jika saldo RKB tidak cukup', async function () {
       let error: Error | undefined;
       try {
-        await rekaKarbon.connect(deposit).executeBursaPurchase(
-          corpA.address, corpB.address, assetId, 100n, 10000n
-        );
+        await rekaKarbon
+          .connect(deposit)
+          .executeBursaPurchase(corpA.address, corpB.address, assetId, 100n, 10000n);
       } catch (err) {
         error = err as Error;
       }
@@ -251,9 +251,9 @@ describe('RekaKarbon Smart Contract', function () {
     it('Harus gagal executeBursaPurchase jika pasokan SPE-GRK tidak cukup', async function () {
       let error: Error | undefined;
       try {
-        await rekaKarbon.connect(deposit).executeBursaPurchase(
-          corpA.address, corpB.address, assetId, 10000n, 10n
-        );
+        await rekaKarbon
+          .connect(deposit)
+          .executeBursaPurchase(corpA.address, corpB.address, assetId, 10000n, 10n);
       } catch (err) {
         error = err as Error;
       }
@@ -267,8 +267,10 @@ describe('RekaKarbon Smart Contract', function () {
 
     it('Harus berhasil retireCarbonWithCertificate dan mencatat sertifikat', async function () {
       const balanceBefore = await rekaKarbon.balanceOf(corpA.address, assetId);
-      
-      const tx = await rekaKarbon.connect(corpA).retireCarbonWithCertificate(assetId, 50n, "CERT-2026-001");
+
+      const tx = await rekaKarbon
+        .connect(corpA)
+        .retireCarbonWithCertificate(assetId, 50n, 'CERT-2026-001');
       await tx.wait();
 
       const balanceAfter = await rekaKarbon.balanceOf(corpA.address, assetId);
@@ -279,17 +281,19 @@ describe('RekaKarbon Smart Contract', function () {
 
       const certId = certs[certs.length - 1];
       const certData = await rekaKarbon.retirementCerts(certId);
-      
+
       expect(certData.retiree).to.equal(corpA.address);
       expect(certData.amountRetired).to.equal(50n);
-      expect(certData.certificateNumber).to.equal("CERT-2026-001");
+      expect(certData.certificateNumber).to.equal('CERT-2026-001');
       expect(certData.isActive).to.be.true;
     });
 
     it('Harus gagal retireCarbonWithCertificate jika saldo SPE-GRK tidak cukup', async function () {
       let error: Error | undefined;
       try {
-        await rekaKarbon.connect(corpA).retireCarbonWithCertificate(assetId, 5000n, "CERT-2026-002");
+        await rekaKarbon
+          .connect(corpA)
+          .retireCarbonWithCertificate(assetId, 5000n, 'CERT-2026-002');
       } catch (err) {
         error = err as Error;
       }

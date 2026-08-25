@@ -9,15 +9,13 @@ describe('EmissionReportRegistry Smart Contract', function () {
   let EmissionReportRegistry: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let registry: any;
-  let admin: HardhatEthersSigner,
-    auditor: HardhatEthersSigner,
-    corpA: HardhatEthersSigner;
-  
+  let admin: HardhatEthersSigner, auditor: HardhatEthersSigner, corpA: HardhatEthersSigner;
+
   const YEAR = 2026n;
-  const MERKLE_ROOT = ethers.keccak256(ethers.toUtf8Bytes("dummy_merkle_root_2026"));
-  const MERKLE_ROOT_2 = ethers.keccak256(ethers.toUtf8Bytes("dummy_merkle_root_2026_v2"));
-  const MERKLE_ROOT_3 = ethers.keccak256(ethers.toUtf8Bytes("dummy_merkle_root_2026_v3"));
-  const MERKLE_ROOT_4 = ethers.keccak256(ethers.toUtf8Bytes("dummy_merkle_root_2026_v4"));
+  const MERKLE_ROOT = ethers.keccak256(ethers.toUtf8Bytes('dummy_merkle_root_2026'));
+  const MERKLE_ROOT_2 = ethers.keccak256(ethers.toUtf8Bytes('dummy_merkle_root_2026_v2'));
+  const MERKLE_ROOT_3 = ethers.keccak256(ethers.toUtf8Bytes('dummy_merkle_root_2026_v3'));
+  const MERKLE_ROOT_4 = ethers.keccak256(ethers.toUtf8Bytes('dummy_merkle_root_2026_v4'));
 
   before(async function () {
     [admin, auditor, corpA] = await ethers.getSigners();
@@ -61,11 +59,11 @@ describe('EmissionReportRegistry Smart Contract', function () {
   describe('2. Audit & Revision', function () {
     it('Harus mengizinkan AUDITOR_ROLE menolak laporan', async function () {
       const reportId = await registry.latestReportIdByYear(corpA.address, YEAR);
-      await registry.connect(auditor).auditReport(reportId, 3, "Missing some files"); // 3 = REJECTED
+      await registry.connect(auditor).auditReport(reportId, 3, 'Missing some files'); // 3 = REJECTED
 
       const report = await registry.reports(reportId);
       expect(report.status).to.equal(3n);
-      expect(report.auditorNotes).to.equal("Missing some files");
+      expect(report.auditorNotes).to.equal('Missing some files');
     });
 
     it('Harus bisa submit revisi ke-2 (revision = 1)', async function () {
@@ -81,12 +79,12 @@ describe('EmissionReportRegistry Smart Contract', function () {
 
     it('Harus bisa menyetujui revisi ke-2', async function () {
       const reportId = await registry.latestReportIdByYear(corpA.address, YEAR);
-      await registry.connect(auditor).auditReport(reportId, 2, "Looks good now"); // 2 = APPROVED
+      await registry.connect(auditor).auditReport(reportId, 2, 'Looks good now'); // 2 = APPROVED
 
       const report = await registry.reports(reportId);
       expect(report.status).to.equal(2n);
     });
-    
+
     it('Harus menolak submit lagi setelah APPROVED', async function () {
       let error: Error | undefined;
       try {
@@ -105,22 +103,22 @@ describe('EmissionReportRegistry Smart Contract', function () {
       // Sub 0
       await registry.connect(corpA).submitReport(YEAR_2, MERKLE_ROOT);
       let rId = await registry.latestReportIdByYear(corpA.address, YEAR_2);
-      await registry.connect(auditor).auditReport(rId, 3, "Reject");
+      await registry.connect(auditor).auditReport(rId, 3, 'Reject');
 
       // Rev 1
       await registry.connect(corpA).submitReport(YEAR_2, MERKLE_ROOT_2);
       rId = await registry.latestReportIdByYear(corpA.address, YEAR_2);
-      await registry.connect(auditor).auditReport(rId, 3, "Reject");
+      await registry.connect(auditor).auditReport(rId, 3, 'Reject');
 
       // Rev 2
       await registry.connect(corpA).submitReport(YEAR_2, MERKLE_ROOT_3);
       rId = await registry.latestReportIdByYear(corpA.address, YEAR_2);
-      await registry.connect(auditor).auditReport(rId, 3, "Reject");
-      
+      await registry.connect(auditor).auditReport(rId, 3, 'Reject');
+
       // Rev 3 (Max)
       await registry.connect(corpA).submitReport(YEAR_2, MERKLE_ROOT_4);
       rId = await registry.latestReportIdByYear(corpA.address, YEAR_2);
-      await registry.connect(auditor).auditReport(rId, 3, "Reject");
+      await registry.connect(auditor).auditReport(rId, 3, 'Reject');
 
       // Rev 4 (Harus gagal)
       let error: Error | undefined;

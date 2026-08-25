@@ -7,18 +7,18 @@
 
 ## 1. Arsitektur & Technology Stack
 
-| Komponen | Teknologi | Versi/Detail |
-|---|---|---|
-| Smart Contract | Solidity | `^0.8.24` |
-| Library | OpenZeppelin Contracts | **`5.0.0`** (pinned, bukan `^5.x`) |
-| Framework | Hardhat + TypeScript | `^2.22.8` |
-| EVM Target | **Paris** | Hindari `PUSH0`/`mcopy` (Cancun) |
-| Blockchain Node | Hyperledger Besu | `v23.4.4` (Docker) |
-| Chain ID | `1337` | Dev network |
-| Backend Integration | NestJS + ethers.js v6 | Di folder `server/` |
-| Package Manager | pnpm | Monorepo workspace |
-| CI/CD | GitHub Actions | 2 workflow files |
-| VPN/Tunnel | Tailscale | Koneksi ke server deployment |
+| Komponen            | Teknologi              | Versi/Detail                       |
+| ------------------- | ---------------------- | ---------------------------------- |
+| Smart Contract      | Solidity               | `^0.8.24`                          |
+| Library             | OpenZeppelin Contracts | **`5.0.0`** (pinned, bukan `^5.x`) |
+| Framework           | Hardhat + TypeScript   | `^2.22.8`                          |
+| EVM Target          | **Paris**              | Hindari `PUSH0`/`mcopy` (Cancun)   |
+| Blockchain Node     | Hyperledger Besu       | `v23.4.4` (Docker)                 |
+| Chain ID            | `1337`                 | Dev network                        |
+| Backend Integration | NestJS + ethers.js v6  | Di folder `server/`                |
+| Package Manager     | pnpm                   | Monorepo workspace                 |
+| CI/CD               | GitHub Actions         | 2 workflow files                   |
+| VPN/Tunnel          | Tailscale              | Koneksi ke server deployment       |
 
 > [!IMPORTANT]
 > OpenZeppelin **wajib** dipinning di `v5.0.0` dan EVM target **wajib** `paris`. Ini karena Besu `v23.4.4` tidak support opcode Cancun (`PUSH0`, `mcopy`).
@@ -73,19 +73,19 @@ RekaKarbon is ERC1155, AccessControl, ERC1155Holder
 
 ### 3.2 Token IDs & Jenis Aset
 
-| Token ID | Nama | Keterangan |
-|---|---|---|
-| `0` | `GLOBAL_RESERVE` | Pool asuransi global (5% tax cut otomatis) |
-| `1` | `PTBAE_PU` | Jatah Emisi Nasional (diterbitkan KLHK) |
-| `>= 2` | `SPE-GRK` | Sertifikat Pengurangan Emisi GRK (auto-increment) |
+| Token ID | Nama             | Keterangan                                        |
+| -------- | ---------------- | ------------------------------------------------- |
+| `0`      | `GLOBAL_RESERVE` | Pool asuransi global (5% tax cut otomatis)        |
+| `1`      | `PTBAE_PU`       | Jatah Emisi Nasional (diterbitkan KLHK)           |
+| `>= 2`   | `SPE-GRK`        | Sertifikat Pengurangan Emisi GRK (auto-increment) |
 
 ### 3.3 Role-Based Access Control (RBAC)
 
-| Role | Kode | Hak Akses |
-|---|---|---|
-| `DEFAULT_ADMIN_ROLE` | `0x00` (bawaan OZ) | `freezeAsset()`, `unfreezeAsset()`, `grantRole()` |
-| `MINISTRY_ROLE` | `keccak256("MINISTRY_ROLE")` | `issueQuota()` — menerbitkan PTBAE-PU |
-| `ORACLE_ROLE` | `keccak256("ORACLE_ROLE")` | `mintOffsetCredit()` — mencetak SPE-GRK |
+| Role                 | Kode                         | Hak Akses                                         |
+| -------------------- | ---------------------------- | ------------------------------------------------- |
+| `DEFAULT_ADMIN_ROLE` | `0x00` (bawaan OZ)           | `freezeAsset()`, `unfreezeAsset()`, `grantRole()` |
+| `MINISTRY_ROLE`      | `keccak256("MINISTRY_ROLE")` | `issueQuota()` — menerbitkan PTBAE-PU             |
+| `ORACLE_ROLE`        | `keccak256("ORACLE_ROLE")`   | `mintOffsetCredit()` — mencetak SPE-GRK           |
 
 ### 3.4 Struct: `CarbonAsset`
 
@@ -105,14 +105,14 @@ flowchart TD
     A["🏛️ KLHK (MINISTRY_ROLE)"] -->|issueQuota| B["Token PTBAE-PU (ID: 1)"]
     B -->|transfer| C["Korporasi A"]
     B -->|transfer| D["Korporasi B"]
-    
+
     E["🤖 Oracle/AI (ORACLE_ROLE)"] -->|mintOffsetCredit| F["Token SPE-GRK (ID: ≥2)"]
     F -->|"95% → Pengelola Hutan"| G["Pengelola Hutan"]
     F -->|"5% Tax → Reserve Pool"| H["GLOBAL_RESERVE (ID: 0)"]
-    
+
     C -->|retireCarbon| I["🔥 Burn (Bukti Kepatuhan)"]
     D -->|retireCarbon| I
-    
+
     J["🚨 Admin freezeAsset"] -->|"isFrozen = true"| K["Transfer Diblokir"]
     K -->|swapFrozenAsset| L["Tukar Token Beku → Reserve Token"]
     L -->|"burn frozen + transfer reserve"| G
@@ -120,30 +120,31 @@ flowchart TD
 
 #### Detail Fungsi:
 
-| Fungsi | Modifier | Input | Logika |
-|---|---|---|---|
-| [`issueQuota()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L75-L77) | `MINISTRY_ROLE` | `to`, `amount` | Mint `PTBAE_PU` (ID 1) ke alamat tujuan |
-| [`mintOffsetCredit()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L84-L109) | `ORACLE_ROLE` | `to`, `amount`, `coordinates` | Mint SPE-GRK baru; 95% ke penerima, 5% ke `GLOBAL_RESERVE` |
-| [`swapFrozenAsset()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L115-L127) | Public | `frozenAssetId`, `amount` | Burn token beku, transfer RESERVE ke pengguna (klaim asuransi) |
-| [`retireCarbon()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L132-L138) | Public | `assetId`, `amount` | Burn token sebagai bukti offset/kepatuhan emisi |
-| [`freezeAsset()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L142-L146) | `DEFAULT_ADMIN_ROLE` | `assetId` | Set `isFrozen = true` (darurat, misal hutan terbakar) |
-| [`unfreezeAsset()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L150-L154) | `DEFAULT_ADMIN_ROLE` | `assetId` | Set `isFrozen = false` |
+| Fungsi                                                                                                                         | Modifier             | Input                         | Logika                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------ | -------------------- | ----------------------------- | -------------------------------------------------------------- |
+| [`issueQuota()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L75-L77)        | `MINISTRY_ROLE`      | `to`, `amount`                | Mint `PTBAE_PU` (ID 1) ke alamat tujuan                        |
+| [`mintOffsetCredit()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L84-L109) | `ORACLE_ROLE`        | `to`, `amount`, `coordinates` | Mint SPE-GRK baru; 95% ke penerima, 5% ke `GLOBAL_RESERVE`     |
+| [`swapFrozenAsset()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L115-L127) | Public               | `frozenAssetId`, `amount`     | Burn token beku, transfer RESERVE ke pengguna (klaim asuransi) |
+| [`retireCarbon()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L132-L138)    | Public               | `assetId`, `amount`           | Burn token sebagai bukti offset/kepatuhan emisi                |
+| [`freezeAsset()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L142-L146)     | `DEFAULT_ADMIN_ROLE` | `assetId`                     | Set `isFrozen = true` (darurat, misal hutan terbakar)          |
+| [`unfreezeAsset()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L150-L154)   | `DEFAULT_ADMIN_ROLE` | `assetId`                     | Set `isFrozen = false`                                         |
 
 ### 3.6 Transfer Guard: `_update()` Override
 
 [`_update()`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/blockchain/contracts/RekaKarbon.sol#L158-L173) adalah internal hook dari ERC-1155 v5. Logikanya:
+
 - **Mint** (`from == address(0)`) → **diizinkan** meski frozen
 - **Burn** (`to == address(0)`) → **diizinkan** (untuk `swapFrozenAsset`)
 - **Transfer antar alamat** → **diblokir** jika `isFrozen == true`
 
 ### 3.7 Events
 
-| Event | Parameter | Kapan Dipancarkan |
-|---|---|---|
-| `AssetFrozen` | `assetId` | Saat admin membekukan aset |
-| `AssetUnfrozen` | `assetId` | Saat admin membuka blokir |
-| `CarbonRetired` | `account`, `assetId`, `amount` | Saat token di-burn untuk kepatuhan |
-| `InsuranceClaimed` | `account`, `frozenAssetId`, `amount` | Saat klaim asuransi berhasil |
+| Event              | Parameter                            | Kapan Dipancarkan                  |
+| ------------------ | ------------------------------------ | ---------------------------------- |
+| `AssetFrozen`      | `assetId`                            | Saat admin membekukan aset         |
+| `AssetUnfrozen`    | `assetId`                            | Saat admin membuka blokir          |
+| `CarbonRetired`    | `account`, `assetId`, `amount`       | Saat token di-burn untuk kepatuhan |
+| `InsuranceClaimed` | `account`, `frozenAssetId`, `amount` | Saat klaim asuransi berhasil       |
 
 ---
 
@@ -163,13 +164,13 @@ Alur deployment:
 
 Test menggunakan **Mocha + Chai** dengan 5 signers: `admin`, `ministry`, `oracle`, `corpA`, `corpB`.
 
-| # | Test Group | Skenario |
-|---|---|---|
-| 1 | Issue Quota (KLHK) | ✅ Ministry bisa mint PTBAE-PU; ❌ Non-authorized gagal |
-| 2 | Mint Offset + Auto Tax | ✅ Oracle mint 2000 SPE-GRK → 1900 ke penerima, 100 ke reserve |
-| 3 | Transfer & Freeze | ✅ Transfer normal; ✅ Admin freeze; ❌ Transfer saat frozen; ✅ Admin unfreeze |
-| 4 | Retire Carbon | ✅ Burn token, saldo berkurang |
-| 5 | Insurance Swap | ❌ Klaim tanpa freeze ditolak; ✅ Swap frozen → reserve berhasil |
+| #   | Test Group             | Skenario                                                                        |
+| --- | ---------------------- | ------------------------------------------------------------------------------- |
+| 1   | Issue Quota (KLHK)     | ✅ Ministry bisa mint PTBAE-PU; ❌ Non-authorized gagal                         |
+| 2   | Mint Offset + Auto Tax | ✅ Oracle mint 2000 SPE-GRK → 1900 ke penerima, 100 ke reserve                  |
+| 3   | Transfer & Freeze      | ✅ Transfer normal; ✅ Admin freeze; ❌ Transfer saat frozen; ✅ Admin unfreeze |
+| 4   | Retire Carbon          | ✅ Burn token, saldo berkurang                                                  |
+| 5   | Insurance Swap         | ❌ Klaim tanpa freeze ditolak; ✅ Swap frozen → reserve berhasil                |
 
 ---
 
@@ -210,6 +211,7 @@ Test menggunakan **Mocha + Chai** dengan 5 signers: `admin`, `ministry`, `oracle
 ### 7.1 PR Check: [`pr-check.yml`](file:///c:/Peyimpanan%20Pribadi/PROJEK%20BESAR/RekaKarbon/.github/workflows/pr-check.yml)
 
 Dijalankan saat PR, hanya jika ada perubahan di `blockchain/**`:
+
 1. `pnpm blockchain:typecheck`
 2. `pnpm blockchain:compile`
 3. `pnpm blockchain:test`
@@ -233,6 +235,7 @@ flowchart LR
 **Server path**: `~/VM_BLOCKHAIN/blockchain`
 
 **GitHub Secrets yang digunakan**:
+
 - `BLOCKCHAIN_TS_AUTHKEY` — Tailscale auth key
 - `BLOCKCHAIN_SSH_HOST`, `BLOCKCHAIN_SSH_USERNAME`, `BLOCKCHAIN_SSH_PASSWORD`
 - `BLOCKCHAIN_PRIVATE_KEY` — Private key untuk deploy
@@ -255,6 +258,7 @@ flowchart TD
 ```
 
 ### Aturan Penting:
+
 - **`gasPrice: 0`** wajib untuk semua transaksi write di dev network
 - **`bigint` / `ethers.BigNumberish`** wajib untuk high-precision values
 - Backend memegang `ORACLE_ROLE` sehingga bisa `mintOffsetCredit()`

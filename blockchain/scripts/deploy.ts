@@ -26,7 +26,7 @@ async function main(): Promise<void> {
 
   const rekaKarbonAddress = await rekaKarbon.getAddress();
   const registryAddress = await registry.getAddress();
-  
+
   console.log('\n=======================================================');
   console.log('✅ DEPLOYMENT BERHASIL!');
   console.log('✅ RekaKarbon Contract Address:', rekaKarbonAddress);
@@ -37,10 +37,10 @@ async function main(): Promise<void> {
   const ORACLE_ROLE: string = await rekaKarbon.ORACLE_ROLE();
   const DEPOSIT_ROLE: string = await rekaKarbon.DEPOSIT_ROLE();
   const AUDITOR_ROLE: string = await registry.AUDITOR_ROLE();
-  
+
   await rekaKarbon.grantRole(ORACLE_ROLE, deployer.address);
   console.log('✅ ORACLE_ROLE (RekaKarbon) diberikan kepada Backend.');
-  
+
   await rekaKarbon.grantRole(DEPOSIT_ROLE, deployer.address);
   console.log('✅ DEPOSIT_ROLE (RekaKarbon) diberikan kepada Backend.');
 
