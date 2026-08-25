@@ -1,4 +1,9 @@
-import { Injectable, InternalServerErrorException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import type { BursaItem } from './types';
@@ -9,7 +14,7 @@ export class BursaService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly blockchainService: BlockchainService
+    private readonly blockchainService: BlockchainService,
   ) {}
 
   async getBursaItems(): Promise<BursaItem[]> {
@@ -50,42 +55,53 @@ export class BursaService {
     });
   }
 
-  async buyCarbonToken(buyerUserId: string, listingId: string, volumeTco2e: number) {
-    const buyer = await this.prisma.user.findUnique({ where: { id: buyerUserId } });
-    if (!buyer || !buyer.walletAddress) throw new BadRequestException('Buyer wallet not found');
+  async buyCarbonToken(
+    buyerUserId: string,
+    listingId: string,
+    volumeTco2e: number,
+  ) {
+    const buyer = await this.prisma.user.findUnique({
+      where: { id: buyerUserId },
+    });
+    if (!buyer || !buyer.walletAddress)
+      throw new BadRequestException('Buyer wallet not found');
 
     const listing = await this.prisma.bursaListing.findUnique({
       where: { id: listingId },
-      include: { 
-        seller: true, 
-        carbonToken: true 
-      }
+      include: {
+        seller: true,
+        carbonToken: true,
+      },
     });
 
     if (!listing) throw new NotFoundException('Listing not found');
     if (listing.status !== 'ACTIVE' && listing.status !== 'PARTIALLY_FILLED') {
       throw new BadRequestException('Listing is no longer active');
     }
-    
+
     if (Number(listing.volumeAvailableTco2e) < volumeTco2e) {
       throw new BadRequestException('Not enough volume available');
     }
 
-    if (!listing.seller.walletAddress) throw new BadRequestException('Seller wallet not found');
-    if (listing.carbonToken.blockchainTokenId == null) throw new BadRequestException('Asset not minted on blockchain');
+    if (!listing.seller.walletAddress)
+      throw new BadRequestException('Seller wallet not found');
+    if (listing.carbonToken.blockchainTokenId == null)
+      throw new BadRequestException('Asset not minted on blockchain');
 
     const assetId = Number(listing.carbonToken.blockchainTokenId);
     const totalCostIdr = volumeTco2e * Number(listing.pricePerTonIdr);
 
-    this.logger.log(`Executing bursa purchase on-chain: ${buyer.walletAddress} buys ${volumeTco2e} from ${listing.seller.walletAddress}`);
-    
+    this.logger.log(
+      `Executing bursa purchase on-chain: ${buyer.walletAddress} buys ${volumeTco2e} from ${listing.seller.walletAddress}`,
+    );
+
     // 1. Blockchain execution (atomic deduction and transfer)
     const txHash = await this.blockchainService.executeBursaPurchase(
       buyer.walletAddress,
       listing.seller.walletAddress,
       assetId,
       volumeTco2e,
-      totalCostIdr
+      totalCostIdr,
     );
 
     // 2. Database updates
@@ -100,8 +116,8 @@ export class BursaService {
           totalAmountIdr: totalCostIdr,
           txHash,
           status: 'COMPLETED',
-          completedAt: new Date()
-        }
+          completedAt: new Date(),
+        },
       });
 
       // Update listing volume
@@ -112,8 +128,8 @@ export class BursaService {
         where: { id: listing.id },
         data: {
           volumeAvailableTco2e: newVolume,
-          status: newStatus
-        }
+          status: newStatus,
+        },
       });
 
       return order;

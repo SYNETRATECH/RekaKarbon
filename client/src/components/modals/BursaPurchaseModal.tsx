@@ -22,7 +22,8 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
     setIsSubmitting(true);
     try {
       // In a real app we'd map token.id to a listing ID if needed, here we just parse it as number
-      const listingId = typeof token.id === 'number' ? token.id : parseInt(token.id.replace(/\D/g, '') || '1');
+      const listingId =
+        typeof token.id === 'number' ? token.id : parseInt(token.id.replace(/\D/g, '') || '1');
       await bursaRepository.buyCarbonToken(listingId, buyQuantity);
       alert('Pembelian token karbon berhasil (Tx tersimpan di Blockchain).');
       onClose();
@@ -152,9 +153,13 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
           className="w-full bg-primary-gradient text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md cursor-pointer active:scale-95 flex items-center justify-center gap-2 h-11 transition-all"
         >
           {isSubmitting ? (
-             <><Activity className="w-4 h-4 animate-spin text-white" /> Memproses Transaksi dApp...</>
+            <>
+              <Activity className="w-4 h-4 animate-spin text-white" /> Memproses Transaksi dApp...
+            </>
           ) : (
-             <><ShoppingCart className="w-4 h-4 text-[#00C48C]" /> Konfirmasi & Beli Token Karbon</>
+            <>
+              <ShoppingCart className="w-4 h-4 text-[#00C48C]" /> Konfirmasi & Beli Token Karbon
+            </>
           )}
         </Button>
       </DialogContent>

@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,6 +17,7 @@ import { BursaService } from './bursa.service';
 import { BursaQueryDto, CreateOrderDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import type { AuthenticatedRequest } from '../auth/types';
 
 @ApiTags('Carbon Bursa / DEX Marketplace')
 @ApiBearerAuth('JWT-auth')
@@ -38,15 +47,23 @@ export class BursaController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Carbon token purchased and transferred on-chain successfully.',
+    description:
+      'Carbon token purchased and transferred on-chain successfully.',
   })
   @Post('buy')
-  async buyCarbonToken(@Req() req: any, @Body() dto: CreateOrderDto) {
-    const userId = req.user?.id || 'mock-user-id'; // using req.user injected by JwtAuthGuard
-    const order = await this.bursaService.buyCarbonToken(userId, dto.listingId, dto.volumeTCO2e);
+  async buyCarbonToken(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateOrderDto,
+  ) {
+    const userId = req.user.userId || 'mock-user-id';
+    const order = await this.bursaService.buyCarbonToken(
+      userId,
+      dto.listingId,
+      dto.volumeTCO2e,
+    );
     return {
       success: true,
-      data: order
+      data: order,
     };
   }
 }

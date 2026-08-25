@@ -1,4 +1,13 @@
-import { Award, Download, ExternalLink, MapPin, Sparkles, Layers, Flame, Activity } from 'lucide-react';
+import {
+  Award,
+  Download,
+  ExternalLink,
+  MapPin,
+  Sparkles,
+  Layers,
+  Flame,
+  Activity,
+} from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { formatCurrency, formatCompactCurrency } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
@@ -32,12 +41,20 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
   const [hasRetired, setHasRetired] = useState(false);
 
   const handleRetire = async () => {
-    if (confirm('Apakah Anda yakin ingin membakar/retire sertifikat ini untuk pelaporan pajak? Aksi ini tidak dapat dibatalkan.')) {
+    if (
+      confirm(
+        'Apakah Anda yakin ingin membakar/retire sertifikat ini untuk pelaporan pajak? Aksi ini tidak dapat dibatalkan.'
+      )
+    ) {
       setIsRetiring(true);
       try {
         // Here we parse cert.id as assetId or assume 1 for mockup
         const assetId = parseInt(cert.id.replace(/\D/g, '') || '1');
-        await certificateRepository.retireCertificate(assetId, cert.purchasedVolumeTCO2e, cert.certificateNumber);
+        await certificateRepository.retireCertificate(
+          assetId,
+          cert.purchasedVolumeTCO2e,
+          cert.certificateNumber
+        );
         setHasRetired(true);
         alert('Sertifikat berhasil dibakar (Retire). Transaksi tercatat di Blockchain.');
       } catch (error) {
@@ -59,7 +76,9 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
             </div>
             <div>
               <h3 className="text-lg font-black text-white">Sertifikat Telah Di-Retire</h3>
-              <p className="text-xs font-semibold text-slate-400 mt-1">Sertifikat ini telah dibakar dan dilaporkan.</p>
+              <p className="text-xs font-semibold text-slate-400 mt-1">
+                Sertifikat ini telah dibakar dan dilaporkan.
+              </p>
             </div>
           </div>
         </div>
@@ -96,7 +115,11 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
               disabled={isRetiring}
               className="bg-status-danger-bg hover:bg-status-danger-border text-status-danger-fg border border-status-danger-border px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             >
-              {isRetiring ? <Activity className="w-4 h-4 animate-spin" /> : <Flame className="w-4 h-4" />}
+              {isRetiring ? (
+                <Activity className="w-4 h-4 animate-spin" />
+              ) : (
+                <Flame className="w-4 h-4" />
+              )}
               Bakar (Retire) Token
             </button>
           )}

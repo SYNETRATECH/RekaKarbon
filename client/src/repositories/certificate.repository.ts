@@ -3,7 +3,11 @@ import { api } from '../lib/api';
 
 export interface CertificateRepository {
   getPurchasedCertificates(): Promise<PurchasedCertificate[]>;
-  retireCertificate(assetId: number, volume: number, certNumber: string): Promise<{ txHash: string }>;
+  retireCertificate(
+    assetId: number,
+    volume: number,
+    certNumber: string
+  ): Promise<{ txHash: string }>;
 }
 
 export class ApiCertificateRepository implements CertificateRepository {
@@ -11,8 +15,16 @@ export class ApiCertificateRepository implements CertificateRepository {
     return api.get<PurchasedCertificate[]>('/emitter/certificates');
   }
 
-  async retireCertificate(assetId: number, volume: number, certNumber: string): Promise<{ txHash: string }> {
-    return api.post<{ txHash: string }>('/emitter/certificates/retire', { assetId, volume, certNumber });
+  async retireCertificate(
+    assetId: number,
+    volume: number,
+    certNumber: string
+  ): Promise<{ txHash: string }> {
+    return api.post<{ txHash: string }>('/emitter/certificates/retire', {
+      assetId,
+      volume,
+      certNumber,
+    });
   }
 }
 

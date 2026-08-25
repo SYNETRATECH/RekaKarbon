@@ -6,7 +6,9 @@ export class SubmitReportDto {
   @IsNumber()
   year!: number;
 
-  @ApiProperty({ description: 'JSON stringified data representing form and file hashes' })
+  @ApiProperty({
+    description: 'JSON stringified data representing form and file hashes',
+  })
   @IsString()
   @IsNotEmpty()
   reportData!: string;

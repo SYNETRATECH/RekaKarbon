@@ -107,7 +107,9 @@ export default function EmissionReportsSector() {
     try {
       const files = [cat1File, cat2File, cat3File].filter((f): f is File => f !== null);
       // Hardcode totalEmissions for demo based on form logic or just pass a number
-      const totalEmissions = parseInt(cat1StationaryFuel || '0') / 1000 * 2.5 + parseInt(cat1VehicleFuel || '0') / 1000 * 2.3;
+      const totalEmissions =
+        (parseInt(cat1StationaryFuel || '0') / 1000) * 2.5 +
+        (parseInt(cat1VehicleFuel || '0') / 1000) * 2.3;
       await reportRepository.submitReport(selectedYear, totalEmissions || 45000, files);
 
       // Step-by-step AI simulation timer

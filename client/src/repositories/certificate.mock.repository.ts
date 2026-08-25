@@ -7,7 +7,11 @@ export class MockCertificateRepository implements CertificateRepository {
     return MOCK_PURCHASED_CERTIFICATES;
   }
 
-  async retireCertificate(assetId: number, volume: number, certNumber: string): Promise<{ txHash: string }> {
+  async retireCertificate(
+    assetId: number,
+    volume: number,
+    certNumber: string
+  ): Promise<{ txHash: string }> {
     return Promise.resolve({ txHash: '0xmockretirehash123' });
   }
 }

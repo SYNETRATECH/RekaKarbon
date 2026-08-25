@@ -1,4 +1,8 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Xendit } from 'xendit-node';
 import type { Invoice } from 'xendit-node/invoice/models';
 
@@ -19,14 +23,23 @@ export class XenditService {
     }
   }
 
-  async createInvoice(externalId: string, amount: number, description: string) {
-    if (process.env.XENDIT_SECRET_KEY === 'xnd_development_xxxxxxx' || !process.env.XENDIT_SECRET_KEY) {
-      this.logger.log('Returning MOCK invoice because Xendit key is not configured.');
+  async createInvoice(
+    externalId: string,
+    amount: number,
+    description: string,
+  ): Promise<Pick<Invoice, 'invoiceUrl' | 'externalId' | 'status'>> {
+    if (
+      process.env.XENDIT_SECRET_KEY === 'xnd_development_xxxxxxx' ||
+      !process.env.XENDIT_SECRET_KEY
+    ) {
+      this.logger.log(
+        'Returning MOCK invoice because Xendit key is not configured.',
+      );
       return {
         invoiceUrl: 'https://checkout-staging.xendit.co/web/mock-invoice',
-        externalId: externalId,
-        status: 'PENDING'
-      } as any;
+        externalId,
+        status: 'PENDING',
+      };
     }
 
     try {
@@ -48,7 +61,9 @@ export class XenditService {
   verifyWebhook(callbackToken: string | undefined): boolean {
     const expectedToken = process.env.XENDIT_WEBHOOK_TOKEN;
     if (!expectedToken) {
-      this.logger.warn('XENDIT_WEBHOOK_TOKEN not configured, skipping validation');
+      this.logger.warn(
+        'XENDIT_WEBHOOK_TOKEN not configured, skipping validation',
+      );
       return true; // Bypass in dev if not set
     }
     return callbackToken === expectedToken;

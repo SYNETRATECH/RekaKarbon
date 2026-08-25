@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, UseGuards, Req, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  Query,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -11,6 +19,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import type { AuthenticatedRequest } from '../auth/types';
 
 @ApiTags('Emitter Emission Reports')
 @ApiBearerAuth('JWT-auth')
@@ -39,8 +48,11 @@ export class ReportsController {
   @ApiOperation({ summary: 'Submit emission report to blockchain' })
   @ApiResponse({ status: 201, description: 'Report successfully submitted.' })
   @Post('submit')
-  async submitReport(@Req() req: any, @Body() dto: SubmitReportDto) {
-    const userId = req.user?.id || 'mock-user-id';
+  async submitReport(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: SubmitReportDto,
+  ) {
+    const userId = req.user.userId || 'mock-user-id';
     const result = await this.reportsService.submitReport(
       userId,
       dto.year,

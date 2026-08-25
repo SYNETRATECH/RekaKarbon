@@ -39,8 +39,8 @@ export class MockWalletRepository implements WalletRepository {
         title: 'Top-up Xendit',
         amount: 50000000,
         date: new Date().toISOString(),
-        status: 'SUCCESS'
-      }
+        status: 'SUCCESS',
+      },
     ]);
   }
 }

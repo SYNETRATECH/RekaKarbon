@@ -3,7 +3,15 @@ import { useLoaderData, useNavigate } from 'react-router';
 import { walletRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { formatCurrency } from '../../lib/formatters';
-import { Wallet, ArrowDownCircle, ArrowUpRight, Plus, Activity, Clock, FileText } from 'lucide-react';
+import {
+  Wallet,
+  ArrowDownCircle,
+  ArrowUpRight,
+  Plus,
+  Activity,
+  Clock,
+  FileText,
+} from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,7 +66,8 @@ export default function EmitterWallet() {
           Dompet Digital (RKB_CREDIT)
         </h2>
         <p className="text-xs text-slate-500 font-semibold mt-1">
-          Kelola saldo deposit internal perusahaan untuk pembayaran di Bursa Karbon (DEX). Terintegrasi secara otomatis dengan payment gateway Xendit.
+          Kelola saldo deposit internal perusahaan untuk pembayaran di Bursa Karbon (DEX).
+          Terintegrasi secara otomatis dengan payment gateway Xendit.
         </p>
       </div>
 
@@ -124,7 +133,7 @@ export default function EmitterWallet() {
                 onChange={(e) => setDepositAmount(Number(e.target.value))}
                 className="text-lg font-black font-mono h-12 rounded-xl"
               />
-              
+
               <div className="grid grid-cols-3 gap-2 mt-2">
                 {[10000000, 50000000, 100000000].map((preset) => (
                   <button
@@ -158,13 +167,15 @@ export default function EmitterWallet() {
           </form>
         </Card>
       </div>
-      
+
       {/* Dynamic Transaction History */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-black text-slate-900">Riwayat Transaksi Dompet</h3>
-            <span className="text-[10px] font-bold text-slate-400">Menampilkan data asli dari Blockchain</span>
+            <span className="text-[10px] font-bold text-slate-400">
+              Menampilkan data asli dari Blockchain
+            </span>
           </div>
           <Button variant="outline" size="sm" className="text-[10px] font-bold rounded-lg h-8">
             <FileText className="w-3.5 h-3.5 mr-1" />
@@ -179,30 +190,52 @@ export default function EmitterWallet() {
             </div>
           ) : (
             history.map((tx: any) => (
-              <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-100">
-                 <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      tx.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
-                    }`}>
-                      {tx.type === 'DEPOSIT' ? <ArrowDownCircle className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-extrabold text-slate-900">{tx.title}</h4>
-                      <span className="text-[10px] font-medium text-slate-500 flex items-center gap-1 mt-0.5">
-                        <Clock className="w-3 h-3" /> {new Date(tx.date).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })} WIB
-                      </span>
-                    </div>
-                 </div>
-                 <div className="text-right">
-                    <span className={`text-sm font-black font-mono ${
-                      tx.type === 'DEPOSIT' ? 'text-emerald-600' : 'text-rose-600'
-                    }`}>
-                      {tx.type === 'DEPOSIT' ? '+' : '-'} {formatCurrency(tx.amount)}
+              <div
+                key={tx.id}
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-100"
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      tx.type === 'DEPOSIT'
+                        ? 'bg-emerald-100 text-emerald-600'
+                        : 'bg-rose-100 text-rose-600'
+                    }`}
+                  >
+                    {tx.type === 'DEPOSIT' ? (
+                      <ArrowDownCircle className="w-5 h-5" />
+                    ) : (
+                      <ArrowUpRight className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-extrabold text-slate-900">{tx.title}</h4>
+                    <span className="text-[10px] font-medium text-slate-500 flex items-center gap-1 mt-0.5">
+                      <Clock className="w-3 h-3" />{' '}
+                      {new Date(tx.date).toLocaleString('id-ID', {
+                        dateStyle: 'short',
+                        timeStyle: 'short',
+                      })}{' '}
+                      WIB
                     </span>
-                    <span className={`text-[10px] font-bold block mt-0.5 ${
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span
+                    className={`text-sm font-black font-mono ${
+                      tx.type === 'DEPOSIT' ? 'text-emerald-600' : 'text-rose-600'
+                    }`}
+                  >
+                    {tx.type === 'DEPOSIT' ? '+' : '-'} {formatCurrency(tx.amount)}
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold block mt-0.5 ${
                       tx.type === 'DEPOSIT' ? 'text-emerald-600/70' : 'text-rose-600/70'
-                    }`}>{tx.status}</span>
-                 </div>
+                    }`}
+                  >
+                    {tx.status}
+                  </span>
+                </div>
               </div>
             ))
           )}

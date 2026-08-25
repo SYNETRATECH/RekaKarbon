@@ -17,14 +17,18 @@ export class ApiReportRepository implements ReportRepository {
     return api.get<EmissionReport[]>('/emitter/reports');
   }
 
-  async submitReport(year: number, totalEmissions: number, files: File[]): Promise<{ txHash: string }> {
+  async submitReport(
+    year: number,
+    totalEmissions: number,
+    files: File[]
+  ): Promise<{ txHash: string }> {
     // Note: To send files we should ideally use FormData, but since backend
     // expects JSON body (as implemented earlier in ReportsService) we'll just
     // pass year and totalEmissions, mocking the file metadata internally.
-    return api.post<{ txHash: string }>('/emitter/reports/submit', { 
-      year, 
+    return api.post<{ txHash: string }>('/emitter/reports/submit', {
+      year,
       totalEmissions,
-      files: files.map(f => ({ name: f.name, size: f.size }))
+      files: files.map((f) => ({ name: f.name, size: f.size })),
     });
   }
 }
