@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RekaKarbon - Mode Offline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #f8fafc;
+        color: #0f172a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 1.5rem;
+        text-align: center;
+      }
+      .ambient-glow-1 {
+        position: fixed;
+        width: 450px;
+        height: 450px;
+        background: rgba(16, 185, 129, 0.08);
+        border-radius: 9999px;
+        filter: blur(80px);
+        top: -100px;
+        left: -100px;
+        pointer-events: none;
+      }
+      .ambient-glow-2 {
+        position: fixed;
+        width: 350px;
+        height: 350px;
+        background: rgba(0, 196, 140, 0.1);
+        border-radius: 9999px;
+        filter: blur(80px);
+        bottom: -80px;
+        right: -80px;
+        pointer-events: none;
+      }
+      .card {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 2.5rem 2rem;
+        max-width: 440px;
+        width: 100%;
+        box-shadow:
+          0 10px 25px -5px rgba(15, 23, 42, 0.05),
+          0 8px 10px -6px rgba(15, 23, 42, 0.03);
+        position: relative;
+        z-index: 10;
+      }
+      .brand-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+      .brand-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        object-fit: contain;
+      }
+      .brand-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+        text-align: left;
+      }
+      .brand-sub {
+        font-size: 0.65rem;
+        color: #00c48c;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: block;
+      }
+      .icon-wrapper {
+        width: 56px;
+        height: 56px;
+        background-color: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+        color: #047857;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0.75rem;
+        background-color: #f1f5f9;
+        color: #475569;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 9999px;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: #f59e0b;
+      }
+      h1 {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 0.75rem;
+        letter-spacing: -0.02em;
+      }
+      p {
+        color: #64748b;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        margin-bottom: 1.75rem;
+      }
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      button {
+        background-color: #033c2e;
+        color: #ffffff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      button:hover {
+        background-color: #022b21;
+        transform: translateY(-1px);
+      }
+      button:active {
+        transform: translateY(0);
+      }
+      .tip {
+        margin-top: 1.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #f1f5f9;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
+    <div class="card">
+      <div class="brand-header">
+        <img src="/icons/icon-192x192.png" alt="RekaKarbon Logo" class="brand-icon" />
+        <div>
+          <div class="brand-title">REKAKARBON</div>
+          <span class="brand-sub">Verification Platform</span>
+        </div>
+      </div>
+
+      <div class="icon-wrapper">
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+          <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+          <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+          <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+          <line x1="12" y1="20" x2="12.01" y2="20"></line>
+        </svg>
+      </div>
+
+      <div class="badge">
+        <span class="badge-dot"></span>
+        Mode Offline
+      </div>
+
+      <h1>Koneksi Terputus</h1>
+      <p>
+        Platform MRV RekaKarbon sedang tidak terhubung ke jaringan internet. Anda dapat memuat ulang saat koneksi kembali aktif.
+      </p>
+
+      <div class="actions">
+        <button onclick="window.location.reload()">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          Muat Ulang Halaman
+        </button>
+      </div>
+
+      <div class="tip">
+        Data audit dan polygon yang telah disimpan secara lokal tetap aman di perangkat Anda.
+      </div>
+    </div>
+  </body>
+</html>
