@@ -4,6 +4,8 @@ import { PieChart, ShoppingCart } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { bursaRepository } from '../../repositories';
+import { Activity } from 'lucide-react';
 
 interface BursaPurchaseModalProps {
   token: any | null;
@@ -12,8 +14,26 @@ interface BursaPurchaseModalProps {
 
 export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModalProps) {
   const [buyQuantity, setBuyQuantity] = useState<number>(1250);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!token) return null;
+
+  const handlePurchase = async () => {
+    setIsSubmitting(true);
+    try {
+      // In a real app we'd map token.id to a listing ID if needed, here we just parse it as number
+      const listingId =
+        typeof token.id === 'number' ? token.id : parseInt(token.id.replace(/\D/g, '') || '1');
+      await bursaRepository.buyCarbonToken(listingId, buyQuantity);
+      alert('Pembelian token karbon berhasil (Tx tersimpan di Blockchain).');
+      onClose();
+    } catch (error) {
+      console.error('Bursa purchase error:', error);
+      alert('Gagal melakukan pembelian token karbon.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Calculation Logic (3% Fee vs 97% Project Fund allocated to 5 environmental funds)
   const pricePerTon = token.priceIDR || 260000;
@@ -128,11 +148,19 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
         </div>
 
         <Button
-          onClick={onClose}
-          className="w-full bg-primary-gradient text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md cursor-pointer active:scale-95 flex items-center justify-center gap-2 h-11"
+          onClick={handlePurchase}
+          disabled={isSubmitting}
+          className="w-full bg-primary-gradient text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md cursor-pointer active:scale-95 flex items-center justify-center gap-2 h-11 transition-all"
         >
-          <ShoppingCart className="w-4 h-4 text-[#00C48C]" />
-          Konfirmasi & Beli Token Karbon
+          {isSubmitting ? (
+            <>
+              <Activity className="w-4 h-4 animate-spin text-white" /> Memproses Transaksi dApp...
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="w-4 h-4 text-[#00C48C]" /> Konfirmasi & Beli Token Karbon
+            </>
+          )}
         </Button>
       </DialogContent>
     </Dialog>

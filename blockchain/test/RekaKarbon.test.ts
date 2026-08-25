@@ -24,15 +24,17 @@ describe('RekaKarbon Smart Contract', function () {
   let admin: HardhatEthersSigner,
     ministry: HardhatEthersSigner,
     oracle: HardhatEthersSigner,
+    deposit: HardhatEthersSigner,
     corpA: HardhatEthersSigner,
     corpB: HardhatEthersSigner;
   let contractAddress: string;
 
   const GLOBAL_RESERVE = 0n;
   const PTBAE_PU = 1n;
+  const RKB_CREDIT = 3n;
 
   before(async function () {
-    [admin, ministry, oracle, corpA, corpB] = await ethers.getSigners();
+    [admin, ministry, oracle, deposit, corpA, corpB] = await ethers.getSigners();
 
     RekaKarbon = await ethers.getContractFactory('RekaKarbon');
     rekaKarbon = await RekaKarbon.deploy();
@@ -42,9 +44,11 @@ describe('RekaKarbon Smart Contract', function () {
 
     const MINISTRY_ROLE = await rekaKarbon.MINISTRY_ROLE();
     const ORACLE_ROLE = await rekaKarbon.ORACLE_ROLE();
+    const DEPOSIT_ROLE = await rekaKarbon.DEPOSIT_ROLE();
 
     await rekaKarbon.grantRole(MINISTRY_ROLE, ministry.address);
     await rekaKarbon.grantRole(ORACLE_ROLE, oracle.address);
+    await rekaKarbon.grantRole(DEPOSIT_ROLE, deposit.address);
   });
 
   describe('1. Issue Quota (KLHK)', function () {
@@ -74,7 +78,7 @@ describe('RekaKarbon Smart Contract', function () {
         .mintOffsetCredit(corpB.address, 2000n, 'Lat: -6.2, Long: 106.8');
       await tx.wait();
 
-      const newAssetId = 2n;
+      const newAssetId = 4n;
       const balanceB = await rekaKarbon.balanceOf(corpB.address, newAssetId);
       expect(balanceB).to.equal(1900n);
 
@@ -133,7 +137,7 @@ describe('RekaKarbon Smart Contract', function () {
 
   describe('6. Insurance Swap Reserve', function () {
     it('Harus menolak klaim asuransi jika token tidak dibekukan', async function () {
-      const newAssetId = 2n;
+      const newAssetId = 4n;
 
       let error: Error | undefined;
       try {
@@ -146,7 +150,7 @@ describe('RekaKarbon Smart Contract', function () {
     });
 
     it('Harus bisa menukar token beku dengan token cadangan (GLOBAL_RESERVE) jika dibekukan', async function () {
-      const newAssetId = 2n;
+      const newAssetId = 4n;
 
       await rekaKarbon.connect(admin).freezeAsset(newAssetId);
       await rekaKarbon.connect(corpB).swapFrozenAsset(newAssetId, 50n);
@@ -159,6 +163,142 @@ describe('RekaKarbon Smart Contract', function () {
 
       const contractReserveBalance = await rekaKarbon.balanceOf(contractAddress, GLOBAL_RESERVE);
       expect(contractReserveBalance).to.equal(50n);
+    });
+  });
+
+  describe('7. Wallet (RKB_CREDIT)', function () {
+    it('Harus mengizinkan DEPOSIT_ROLE mint RKB_CREDIT', async function () {
+      await rekaKarbon.connect(deposit).mintWalletCredit(corpA.address, 1000n);
+      const balance = await rekaKarbon.balanceOf(corpA.address, RKB_CREDIT);
+      expect(balance).to.equal(1000n);
+    });
+
+    it('Harus menolak jika akun tanpa izin mint RKB_CREDIT', async function () {
+      let error: Error | undefined;
+      try {
+        await rekaKarbon.connect(corpA).mintWalletCredit(corpA.address, 100n);
+      } catch (err) {
+        error = err as Error;
+      }
+      expect(error).to.not.be.undefined;
+    });
+
+    it('Harus bisa spendWalletCredit dan saldo berkurang', async function () {
+      await rekaKarbon.connect(deposit).spendWalletCredit(corpA.address, 200n);
+      const balance = await rekaKarbon.balanceOf(corpA.address, RKB_CREDIT);
+      expect(balance).to.equal(800n);
+    });
+
+    it('Harus gagal spendWalletCredit jika saldo tidak cukup', async function () {
+      let error: Error | undefined;
+      try {
+        await rekaKarbon.connect(deposit).spendWalletCredit(corpA.address, 2000n);
+      } catch (err) {
+        error = err as Error;
+      }
+      expect(error).to.not.be.undefined;
+      expect(error?.message).to.include('RekaKarbon: Saldo RKB tidak cukup');
+    });
+  });
+
+  describe('8. Bursa Karbon', function () {
+    const assetId = 4n; // SPE-GRK dari test sebelumnya
+
+    before(async function () {
+      // Unfreeze jika masih frozen dari test asuransi
+      const assetData = await rekaKarbon.carbonAssets(assetId);
+      if (assetData.isFrozen) {
+        await rekaKarbon.connect(admin).unfreezeAsset(assetId);
+      }
+      // Topup RKB_CREDIT ke corpA
+      await rekaKarbon.connect(deposit).mintWalletCredit(corpA.address, 5000n);
+    });
+
+    it('Harus berhasil executeBursaPurchase (atomic buy)', async function () {
+      const balanceRkbBefore = await rekaKarbon.balanceOf(corpA.address, RKB_CREDIT);
+      const balanceSpeGrkBefore = await rekaKarbon.balanceOf(corpB.address, assetId);
+
+      await rekaKarbon.connect(deposit).executeBursaPurchase(
+        corpA.address, // buyer
+        corpB.address, // seller
+        assetId,
+        100n, // amount SPE-GRK
+        1500n // total Cost RKB
+      );
+
+      const balanceRkbAfter = await rekaKarbon.balanceOf(corpA.address, RKB_CREDIT);
+      const balanceSpeGrkBuyerAfter = await rekaKarbon.balanceOf(corpA.address, assetId);
+      const balanceSpeGrkSellerAfter = await rekaKarbon.balanceOf(corpB.address, assetId);
+
+      expect(balanceRkbAfter).to.equal(balanceRkbBefore - 1500n);
+      expect(balanceSpeGrkBuyerAfter).to.equal(100n);
+      expect(balanceSpeGrkSellerAfter).to.equal(balanceSpeGrkBefore - 100n);
+    });
+
+    it('Harus gagal executeBursaPurchase jika saldo RKB tidak cukup', async function () {
+      let error: Error | undefined;
+      try {
+        await rekaKarbon
+          .connect(deposit)
+          .executeBursaPurchase(corpA.address, corpB.address, assetId, 100n, 10000n);
+      } catch (err) {
+        error = err as Error;
+      }
+      expect(error).to.not.be.undefined;
+      expect(error?.message).to.include('RekaKarbon: Saldo RKB tidak cukup');
+    });
+
+    it('Harus gagal executeBursaPurchase jika pasokan SPE-GRK tidak cukup', async function () {
+      let error: Error | undefined;
+      try {
+        await rekaKarbon
+          .connect(deposit)
+          .executeBursaPurchase(corpA.address, corpB.address, assetId, 10000n, 10n);
+      } catch (err) {
+        error = err as Error;
+      }
+      expect(error).to.not.be.undefined;
+      expect(error?.message).to.include('RekaKarbon: Pasokan SPE-GRK tidak cukup');
+    });
+  });
+
+  describe('9. Retire & Certificate', function () {
+    const assetId = 4n;
+
+    it('Harus berhasil retireCarbonWithCertificate dan mencatat sertifikat', async function () {
+      const balanceBefore = await rekaKarbon.balanceOf(corpA.address, assetId);
+
+      const tx = await rekaKarbon
+        .connect(corpA)
+        .retireCarbonWithCertificate(assetId, 50n, 'CERT-2026-001');
+      await tx.wait();
+
+      const balanceAfter = await rekaKarbon.balanceOf(corpA.address, assetId);
+      expect(balanceAfter).to.equal(balanceBefore - 50n);
+
+      const certs = await rekaKarbon.getCertsByRetiree(corpA.address);
+      expect(certs.length).to.be.greaterThan(0);
+
+      const certId = certs[certs.length - 1];
+      const certData = await rekaKarbon.retirementCerts(certId);
+
+      expect(certData.retiree).to.equal(corpA.address);
+      expect(certData.amountRetired).to.equal(50n);
+      expect(certData.certificateNumber).to.equal('CERT-2026-001');
+      expect(certData.isActive).to.be.true;
+    });
+
+    it('Harus gagal retireCarbonWithCertificate jika saldo SPE-GRK tidak cukup', async function () {
+      let error: Error | undefined;
+      try {
+        await rekaKarbon
+          .connect(corpA)
+          .retireCarbonWithCertificate(assetId, 5000n, 'CERT-2026-002');
+      } catch (err) {
+        error = err as Error;
+      }
+      expect(error).to.not.be.undefined;
+      expect(error?.message).to.include('RekaKarbon: Saldo tidak cukup');
     });
   });
 });

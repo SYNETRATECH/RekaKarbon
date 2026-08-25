@@ -128,6 +128,12 @@ export default function PortalSidebar() {
           icon: Award,
           targetPath: '/sertifikat',
         },
+        {
+          id: 'wallet',
+          label: 'Dompet Digital',
+          icon: Wallet,
+          targetPath: '/dompet',
+        },
       ];
     }
   };

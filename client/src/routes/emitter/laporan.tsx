@@ -98,24 +98,38 @@ export default function EmissionReportsSector() {
 
   const activeReport = reports.find((r) => r.year === selectedYear) || reports[0];
 
-  const handleStartAIAudit = (e: FormEvent) => {
+  const handleStartAIAudit = async (e: FormEvent) => {
     e.preventDefault();
     setIsAuditModalOpen(true);
     setIsAuditing(true);
     setAuditStep(1);
 
-    // Step-by-step AI simulation timer
-    setTimeout(() => {
-      setAuditStep(2);
+    try {
+      const files = [cat1File, cat2File, cat3File].filter((f): f is File => f !== null);
+      // Hardcode totalEmissions for demo based on form logic or just pass a number
+      const totalEmissions =
+        (parseInt(cat1StationaryFuel || '0') / 1000) * 2.5 +
+        (parseInt(cat1VehicleFuel || '0') / 1000) * 2.3;
+      await reportRepository.submitReport(selectedYear, totalEmissions || 45000, files);
+
+      // Step-by-step AI simulation timer
       setTimeout(() => {
-        setAuditStep(3);
+        setAuditStep(2);
         setTimeout(() => {
-          setAuditStep(4);
-          setIsAuditing(false);
-          setAuditComplete(true);
+          setAuditStep(3);
+          setTimeout(() => {
+            setAuditStep(4);
+            setIsAuditing(false);
+            setAuditComplete(true);
+          }, 1500);
         }, 1500);
       }, 1500);
-    }, 1500);
+    } catch (error) {
+      console.error('Submit report error:', error);
+      setIsAuditModalOpen(false);
+      setIsAuditing(false);
+      alert('Gagal mengirim laporan emisi. Pastikan server aktif dan form valid.');
+    }
   };
 
   const getSectorIcon = (scope: string) => {

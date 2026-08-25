@@ -1,10 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
+import { ethers } from 'ethers';
 import type { EmissionReport } from './types';
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ReportsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly blockchainService: BlockchainService,
+  ) {}
 
   async getEmissionReports(): Promise<EmissionReport[]> {
     const companies = await this.prisma.company.findMany({
@@ -54,5 +66,70 @@ export class ReportsService {
         ],
       };
     });
+  }
+
+  private generateMerkleRoot(dataString: string): string {
+    try {
+      const parsedData: unknown = JSON.parse(dataString);
+      if (
+        typeof parsedData !== 'object' ||
+        parsedData === null ||
+        Array.isArray(parsedData)
+      ) {
+        throw new Error('Report data must be a JSON object');
+      }
+      const dataObj = parsedData as Record<string, unknown>;
+      const leaves = Object.keys(dataObj)
+        .sort() // manual sorting as requested by user
+        .map((key) =>
+          ethers.keccak256(
+            ethers.toUtf8Bytes(`${key}:${JSON.stringify(dataObj[key])}`),
+          ),
+        );
+
+      let root = leaves.length > 0 ? leaves[0] : ethers.ZeroHash;
+      for (let i = 1; i < leaves.length; i++) {
+        // Sort pairs before hashing for consistency
+        const pair = [root, leaves[i]].sort();
+        root = ethers.keccak256(ethers.concat(pair));
+      }
+      return root;
+    } catch {
+      throw new BadRequestException('Invalid JSON report data');
+    }
+  }
+
+  async submitReport(userId: string, year: number, reportData: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { companies: true },
+    });
+    if (!user) throw new BadRequestException('User not found');
+
+    // Generate Merkle Root
+    const merkleRoot = this.generateMerkleRoot(reportData);
+    this.logger.log(`Generated Merkle Root for year ${year}: ${merkleRoot}`);
+
+    try {
+      // 1. Submit to Blockchain (EmissionReportRegistry)
+      const { txHash, reportId } =
+        await this.blockchainService.submitEmissionReport(year, merkleRoot);
+      this.logger.log(
+        `Successfully submitted report on-chain. TX: ${txHash}, ReportID: ${reportId}`,
+      );
+
+      // 2. We can save this to DB if needed, but for now we return the on-chain reference
+      return {
+        year,
+        merkleRoot,
+        txHash,
+        blockchainReportId: reportId,
+      };
+    } catch (error) {
+      this.logger.error('Failed to submit report', error);
+      throw new InternalServerErrorException(
+        'Failed to process report on-chain',
+      );
+    }
   }
 }

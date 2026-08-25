@@ -11,3 +11,4 @@ artifacts/
 
 # Mac
 .DS_Store
+deployment-info.json
