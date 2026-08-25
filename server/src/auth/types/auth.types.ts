@@ -31,6 +31,7 @@ export interface AuthenticatedUserPayload {
   userId: string;
   email: string;
   role: Role;
+  walletAddress?: string;
 }
 
 export interface AuthenticatedRequest {

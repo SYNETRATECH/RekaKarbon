@@ -56,7 +56,4 @@ export class ApiAuthRepository implements AuthRepository {
 
 import { MockAuthRepository } from './auth.mock.repository';
 
-export const authRepository: AuthRepository =
-  import.meta.env.VITE_USE_MOCK_DATA === 'true'
-    ? new MockAuthRepository()
-    : new ApiAuthRepository();
+export const authRepository: AuthRepository = new ApiAuthRepository();
