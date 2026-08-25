@@ -130,7 +130,7 @@ jobs:
           username: ${{ secrets.BACKEND_SSH_USERNAME }}
           password: ${{ secrets.BACKEND_SSH_PASSWORD }}
           port: 22
-          envs: RUN_SEED,BACKEND_PROJECT_DIR,RELEASE_ID,BACKEND_ENV
+          envs: RUN_SEED,BACKEND_PROJECT_DIR,RELEASE_ID,BACKEND_ENV,BACKEND_SSH_PASSWORD
           script: |
             set -e
 
@@ -211,15 +211,28 @@ jobs:
             sudo systemctl restart rekakarbon-backend
 
             # 13. Health check check
-            sleep 5
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8006/health || true)
+            echo "Waiting for backend to start..."
+            MAX_RETRIES=12
+            RETRY_COUNT=0
+            HTTP_STATUS="000"
+
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8006/health || true)
+              if [ "$HTTP_STATUS" = "200" ]; then
+                echo "Backend health check passed (HTTP $HTTP_STATUS)"
+                break
+              fi
+              echo "Backend not ready yet (HTTP $HTTP_STATUS), waiting 5 seconds... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
+              sleep 5
+              RETRY_COUNT=$((RETRY_COUNT+1))
+            done
+
             if [ "$HTTP_STATUS" != "200" ]; then
-              echo "Backend health check failed (HTTP $HTTP_STATUS)"
-              sudo systemctl status rekakarbon-backend --no-pager || true
-              sudo journalctl -u rekakarbon-backend -n 50 --no-pager || true
+              echo "Backend health check failed after $((MAX_RETRIES * 5)) seconds (HTTP $HTTP_STATUS)"
+              echo "$BACKEND_SSH_PASSWORD" | sudo -S systemctl status rekakarbon-backend --no-pager || true
+              echo "$BACKEND_SSH_PASSWORD" | sudo -S journalctl -u rekakarbon-backend -n 50 --no-pager || true
               exit 1
             fi
-            echo "Backend health check passed (HTTP $HTTP_STATUS)"
 
             # 14. Optional database seeder
             if [ "$RUN_SEED" = "true" ]; then
@@ -238,3 +251,4 @@ jobs:
           BACKEND_PROJECT_DIR: ${{ secrets.BACKEND_PROJECT_DIR }}
           RELEASE_ID: ${{ env.RELEASE_ID }}
           BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
+          BACKEND_SSH_PASSWORD: ${{ secrets.BACKEND_SSH_PASSWORD }}
