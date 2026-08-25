@@ -41,6 +41,7 @@ export default [
       route('bursa', 'routes/emitter/bursa.tsx'),
       route('laporan', 'routes/emitter/laporan.tsx'),
       route('sertifikat', 'routes/emitter/sertifikat.tsx'),
+      route('dompet', 'routes/emitter/wallet.tsx'),
     ]),
   ]),
 

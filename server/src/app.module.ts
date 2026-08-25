@@ -18,6 +18,8 @@ import { StorageModule } from './storage/storage.module';
 import { TelemetryModule } from './telemetry/telemetry.module';
 import { DjpModule } from './integrations/djp/djp.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { WalletModule } from './wallet/wallet.module';
+import { XenditModule } from './integrations/xendit/xendit.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     TelemetryModule,
     DjpModule,
     NotificationsModule,
+    WalletModule,
+    XenditModule,
   ],
   controllers: [AppController],
   providers: [],

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,7 +6,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
-import { ReportQueryDto } from './dto';
+import { ReportQueryDto, SubmitReportDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -33,6 +33,22 @@ export class ReportsController {
     return {
       success: true,
       data: reports,
+    };
+  }
+
+  @ApiOperation({ summary: 'Submit emission report to blockchain' })
+  @ApiResponse({ status: 201, description: 'Report successfully submitted.' })
+  @Post('submit')
+  async submitReport(@Req() req: any, @Body() dto: SubmitReportDto) {
+    const userId = req.user?.id || 'mock-user-id';
+    const result = await this.reportsService.submitReport(
+      userId,
+      dto.year,
+      dto.reportData,
+    );
+    return {
+      success: true,
+      data: result,
     };
   }
 }

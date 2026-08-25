@@ -1,10 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
 import type { PurchasedCertificate } from './types';
 
 @Injectable()
 export class CertificatesService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CertificatesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly blockchainService: BlockchainService
+  ) {}
 
   async getPurchasedCertificates(): Promise<PurchasedCertificate[]> {
     const tokens = await this.prisma.carbonToken.findMany({
@@ -44,5 +50,44 @@ export class CertificatesService {
         },
       };
     });
+  }
+
+  async retireCarbonToken(userId: string, tokenId: string, volumeTco2e: number) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.walletAddress) throw new BadRequestException('User wallet not found');
+
+    const token = await this.prisma.carbonToken.findUnique({
+      where: { id: tokenId }
+    });
+
+    if (!token || token.blockchainTokenId == null) {
+      throw new NotFoundException('Token not found on blockchain');
+    }
+
+    const assetId = Number(token.blockchainTokenId);
+    
+    // Check balance on-chain
+    const balance = await this.blockchainService.getCarbonBalance(user.walletAddress, assetId);
+    if (balance < volumeTco2e) {
+      throw new BadRequestException(`Not enough token balance on chain. Wallet has ${balance}, trying to retire ${volumeTco2e}`);
+    }
+
+    const certNumber = `SPE-RET-${Date.now()}`;
+    
+    this.logger.log(`Retiring ${volumeTco2e} tCO2e of assetId ${assetId} for user ${user.walletAddress}`);
+    
+    const txHash = await this.blockchainService.retireCarbonToken(
+      user.walletAddress,
+      assetId,
+      volumeTco2e,
+      certNumber
+    );
+    
+    return {
+      txHash,
+      certificateNumber: certNumber,
+      volumeRetired: volumeTco2e,
+      assetId
+    };
   }
 }

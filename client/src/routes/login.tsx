@@ -136,7 +136,7 @@ export default function LoginRoute() {
               <button
                 type="button"
                 onClick={() => {
-                  setEmailInput('admin@semennusantara.co.id');
+                  setEmailInput('director@suralaya.co.id');
                   setPasswordInput('password123');
                 }}
                 className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
@@ -146,7 +146,7 @@ export default function LoginRoute() {
               <button
                 type="button"
                 onClick={() => {
-                  setEmailInput('198204122008011004@klhk.go.id');
+                  setEmailInput('regulator@klhk.go.id');
                   setPasswordInput('password123');
                 }}
                 className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
@@ -156,7 +156,7 @@ export default function LoginRoute() {
               <button
                 type="button"
                 onClick={() => {
-                  setEmailInput('auditor.rian@sucofindo.co.id');
+                  setEmailInput('auditor@sucofindo.co.id');
                   setPasswordInput('password123');
                 }}
                 className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
@@ -166,7 +166,7 @@ export default function LoginRoute() {
               <button
                 type="button"
                 onClick={() => {
-                  setEmailInput('sutrisno@kthbaluran.org');
+                  setEmailInput('kth.tuban@perhutanan.id');
                   setPasswordInput('password123');
                 }}
                 className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"

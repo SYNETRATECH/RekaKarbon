@@ -17,23 +17,40 @@ async function main(): Promise<void> {
   const RekaKarbon = await ethers.getContractFactory('RekaKarbon');
   const rekaKarbon = await RekaKarbon.deploy();
 
+  const EmissionReportRegistry = await ethers.getContractFactory('EmissionReportRegistry');
+  const registry = await EmissionReportRegistry.deploy();
+
   console.log('Menunggu proses deployment ke blockchain...');
   await rekaKarbon.waitForDeployment();
+  await registry.waitForDeployment();
 
-  const contractAddress = await rekaKarbon.getAddress();
+  const rekaKarbonAddress = await rekaKarbon.getAddress();
+  const registryAddress = await registry.getAddress();
+  
   console.log('\n=======================================================');
   console.log('✅ DEPLOYMENT BERHASIL!');
-  console.log('✅ RekaKarbon Contract Address:', contractAddress);
+  console.log('✅ RekaKarbon Contract Address:', rekaKarbonAddress);
+  console.log('✅ EmissionReportRegistry Address:', registryAddress);
 
   // 1. SETUP ROLES UNTUK BACKEND
   console.log('\nMemproses pengaturan otorisasi (Roles)...');
   const ORACLE_ROLE: string = await rekaKarbon.ORACLE_ROLE();
+  const DEPOSIT_ROLE: string = await rekaKarbon.DEPOSIT_ROLE();
+  const AUDITOR_ROLE: string = await registry.AUDITOR_ROLE();
+  
   await rekaKarbon.grantRole(ORACLE_ROLE, deployer.address);
-  console.log('✅ ORACLE_ROLE berhasil diberikan kepada akun Backend (Deployer).');
+  console.log('✅ ORACLE_ROLE (RekaKarbon) diberikan kepada Backend.');
+  
+  await rekaKarbon.grantRole(DEPOSIT_ROLE, deployer.address);
+  console.log('✅ DEPOSIT_ROLE (RekaKarbon) diberikan kepada Backend.');
+
+  await registry.grantRole(AUDITOR_ROLE, deployer.address);
+  console.log('✅ AUDITOR_ROLE (EmissionReportRegistry) diberikan kepada Backend.');
 
   // 2. SIMPAN CONTRACT ADDRESS KE FILE JSON
   const deploymentInfo = {
-    contractAddress: contractAddress,
+    rekaKarbonAddress: rekaKarbonAddress,
+    emissionReportRegistryAddress: registryAddress,
     network: 'besu_dev',
     deployer: deployer.address,
     timestamp: new Date().toISOString(),

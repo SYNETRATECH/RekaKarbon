@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,6 +9,7 @@ import { CertificatesService } from './certificates.service';
 import { CertificateQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { RetireCarbonDto } from './dto/retire-carbon.dto';
 
 @ApiTags('Emitter Carbon Certificates')
 @ApiBearerAuth('JWT-auth')
@@ -31,6 +32,18 @@ export class CertificatesController {
     return {
       success: true,
       data: certificates,
+    };
+  }
+
+  @ApiOperation({ summary: 'Retire / Burn carbon token on-chain to offset emissions' })
+  @ApiResponse({ status: 201, description: 'Token successfully retired.' })
+  @Post('retire')
+  async retireCarbonToken(@Req() req: any, @Body() dto: RetireCarbonDto) {
+    const userId = req.user?.id || 'mock-user-id';
+    const result = await this.certificatesService.retireCarbonToken(userId, dto.tokenId, dto.volumeTco2e);
+    return {
+      success: true,
+      data: result
     };
   }
 }

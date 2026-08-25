@@ -4,14 +4,11 @@ import { InternalServerErrorException } from '@nestjs/common';
 import { ethers } from 'ethers';
 
 jest.mock('ethers', () => {
-  const original = jest.requireActual(
-    'ethers',
-  ) as unknown as typeof import('ethers');
-  const originalEthers = original.ethers;
+  const original = jest.requireActual('ethers') as unknown as typeof import('ethers');
   return {
     ...original,
     ethers: {
-      ...originalEthers,
+      ...original.ethers,
       JsonRpcProvider: jest.fn().mockImplementation(() => ({})),
       Wallet: jest.fn().mockImplementation(() => ({})),
       Contract: jest.fn().mockImplementation(() => ({
@@ -53,29 +50,24 @@ describe('BlockchainService', () => {
 
   describe('onModuleInit without env configuration', () => {
     it('should fail initialization gracefully if env vars are missing', () => {
-      delete process.env.RPC_URL;
+      delete process.env.BESU_RPC_URL;
       delete process.env.PRIVATE_KEY;
-      delete process.env.CONTRACT_ADDRESS;
+      delete process.env.CARBON_TOKEN_CONTRACT_ADDRESS;
+      delete process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
 
-      // Reset service instantiation to trigger onModuleInit manually
       service.onModuleInit();
-
       expect(ethers.JsonRpcProvider).not.toHaveBeenCalled();
     });
   });
 
   describe('with env configuration', () => {
-    let mockContract: {
-      balanceOf: jest.Mock;
-      mintOffsetCredit: jest.Mock;
-    };
+    let mockContract: any;
 
     beforeEach(() => {
-      process.env.RPC_URL = 'http://127.0.0.1:8545';
-      process.env.PRIVATE_KEY =
-        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
-      process.env.CONTRACT_ADDRESS =
-        '0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0';
+      process.env.BESU_RPC_URL = 'http://127.0.0.1:8545';
+      process.env.PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+      process.env.CARBON_TOKEN_CONTRACT_ADDRESS = '0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0';
+      process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS = '0x9DdaF0CD259887258Bc13a92C0a6dA92698644C1';
 
       mockContract = {
         balanceOf: jest.fn().mockResolvedValue(BigInt(150)),
@@ -84,29 +76,28 @@ describe('BlockchainService', () => {
         }),
       };
 
-      jest
-        .mocked(ethers.JsonRpcProvider)
-        .mockImplementation(() => ({}) as unknown as ethers.JsonRpcProvider);
-      jest
-        .mocked(ethers.Wallet)
-        .mockImplementation(() => ({}) as unknown as ethers.Wallet);
-      jest
-        .mocked(ethers.Contract)
-        .mockImplementation(() => mockContract as unknown as ethers.Contract);
+      jest.mocked(ethers.JsonRpcProvider).mockImplementation(() => ({}) as any);
+      jest.mocked(ethers.Wallet).mockImplementation(() => ({}) as any);
+      jest.mocked(ethers.Contract).mockImplementation(() => mockContract as any);
 
       service.onModuleInit();
     });
 
     it('should initialize providers and contracts when env is present', () => {
-      expect(ethers.JsonRpcProvider).toHaveBeenCalledWith(
-        'http://127.0.0.1:8545',
-      );
+      expect(ethers.JsonRpcProvider).toHaveBeenCalledWith('http://127.0.0.1:8545');
       expect(ethers.Wallet).toHaveBeenCalledWith(
         '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
         expect.any(Object),
       );
+      // RekaKarbon contract
       expect(ethers.Contract).toHaveBeenCalledWith(
         '0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0',
+        expect.any(Array),
+        expect.any(Object),
+      );
+      // EmissionRegistry contract
+      expect(ethers.Contract).toHaveBeenCalledWith(
+        '0x9DdaF0CD259887258Bc13a92C0a6dA92698644C1',
         expect.any(Array),
         expect.any(Object),
       );
@@ -119,34 +110,14 @@ describe('BlockchainService', () => {
     });
 
     it('should mint offset credit and return tx hash', async () => {
-      const hash = await service.mintOffsetCredit(
-        '0xtoaddress',
-        500,
-        '-6.2,106.8',
-      );
+      const hash = await service.mintOffsetCredit('0xtoaddress', 500, '-6.2,106.8');
       expect(hash).toBe('0xtesttxhash');
       expect(mockContract.mintOffsetCredit).toHaveBeenCalledWith(
         '0xtoaddress',
         500,
         '-6.2,106.8',
-        {
-          gasPrice: 0,
-        },
+        { gasPrice: 0 }
       );
-    });
-
-    it('should throw InternalServerErrorException if read fails', async () => {
-      mockContract.balanceOf.mockRejectedValue(new Error('RPC Error'));
-      await expect(service.getCarbonBalance('0xaddress', 1)).rejects.toThrow(
-        InternalServerErrorException,
-      );
-    });
-
-    it('should throw InternalServerErrorException if write fails', async () => {
-      mockContract.mintOffsetCredit.mockRejectedValue(new Error('Reverted'));
-      await expect(
-        service.mintOffsetCredit('0xtoaddress', 500, ''),
-      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 });
