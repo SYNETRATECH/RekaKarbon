@@ -4,12 +4,16 @@ import {
   PriorityLevel as PrismaPriorityLevel,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { WebPushService } from './web-push.service';
 import type { SystemNotification, NotificationType } from './types';
 import type { CreateNotificationDto } from './dto';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly webPushService: WebPushService,
+  ) {}
 
   async getNotifications(): Promise<SystemNotification[]> {
     const records = await this.prisma.systemNotification.findMany({
@@ -60,6 +64,27 @@ export class NotificationsService {
         actionUrl: dto.actionUrl,
       },
     });
+
+    // Automatically trigger WebPush delivery asynchronously
+    this.webPushService
+      .broadcastNotification({
+        title: dto.title,
+        body: dto.message,
+        icon: '/logo.png',
+        tag: `notif-${created.id}`,
+        renotify: dto.priority === 'critical' || dto.priority === 'high',
+        data: {
+          url: dto.actionUrl || '/notifications',
+          notificationId: created.id,
+          priority: dto.priority,
+          timestamp: created.createdAt.toISOString(),
+        },
+      })
+      .catch((err) => {
+        // Log error without blocking notification creation response
+        console.error('Failed to broadcast WebPush notification:', err);
+      });
+
     return {
       id: created.id,
       title: created.title,

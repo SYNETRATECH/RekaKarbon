@@ -1,4 +1,9 @@
-import type { SystemNotification, CreateNotificationDto } from '../types/notification';
+import type {
+  SystemNotification,
+  CreateNotificationDto,
+  SubscribeWebPushParams,
+  VapidKeyResponse,
+} from '../types/notification';
 import type { NotificationRepository } from './notification.repository';
 
 export class MockNotificationRepository implements NotificationRepository {
@@ -39,5 +44,19 @@ export class MockNotificationRepository implements NotificationRepository {
     };
     this.notifications.unshift(notif);
     return Promise.resolve(notif);
+  }
+
+  async getVapidPublicKey(): Promise<VapidKeyResponse> {
+    return Promise.resolve({
+      publicKey: 'BCsE6L7_mock_vapid_public_key_for_client_development_and_testing_purposes',
+    });
+  }
+
+  async subscribeWebPush(_data: SubscribeWebPushParams): Promise<{ success: boolean }> {
+    return Promise.resolve({ success: true });
+  }
+
+  async unsubscribeWebPush(_endpoint: string): Promise<{ success: boolean }> {
+    return Promise.resolve({ success: true });
   }
 }
