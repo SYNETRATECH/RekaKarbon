@@ -199,4 +199,35 @@ describe('WebPushService', () => {
     expect(result.sent).toBe(2);
     expect(result.failed).toBe(0);
   });
+
+  it('should safely handle missing credentials in production mode without throwing', () => {
+    const originalEnv = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = 'production';
+      delete process.env.VAPID_PUBLIC_KEY;
+      delete process.env.VAPID_PRIVATE_KEY;
+      delete process.env.VAPID_SUBJECT;
+
+      service.initVapid();
+      // Should not throw and should be unconfigured
+      expect(service).toBeDefined();
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+    }
+  });
+
+  it('should initialize with explicit custom credentials when provided', () => {
+    const originalEnv = { ...process.env };
+    try {
+      const keys = webpush.generateVAPIDKeys();
+      process.env.VAPID_PUBLIC_KEY = keys.publicKey;
+      process.env.VAPID_PRIVATE_KEY = keys.privateKey;
+      process.env.VAPID_SUBJECT = 'mailto:admin@example.com';
+
+      service.initVapid();
+      expect(service.getVapidPublicKey().publicKey).toBe(keys.publicKey);
+    } finally {
+      process.env = originalEnv;
+    }
+  });
 });

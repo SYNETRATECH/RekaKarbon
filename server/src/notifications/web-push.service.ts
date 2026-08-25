@@ -27,27 +27,32 @@ export class WebPushService implements OnModuleInit {
    * Initializes VAPID keys from environment variables or auto-generates dev keys.
    */
   public initVapid(): void {
-    const envPublic = process.env.VAPID_PUBLIC_KEY;
-    const envPrivate = process.env.VAPID_PRIVATE_KEY;
-    const envSubject = process.env.VAPID_SUBJECT;
+    const envPublic = process.env.VAPID_PUBLIC_KEY?.trim();
+    const envPrivate = process.env.VAPID_PRIVATE_KEY?.trim();
+    const envSubject = process.env.VAPID_SUBJECT?.trim();
+    const isProd = process.env.NODE_ENV === 'production';
 
-    if (envSubject) {
+    if (envPublic && envPrivate && envSubject) {
+      this.vapidPublicKey = envPublic;
+      this.vapidPrivateKey = envPrivate;
       this.vapidSubject = envSubject;
-    }
-
-    if (envPublic && envPrivate) {
-      this.vapidPublicKey = envPublic.trim();
-      this.vapidPrivateKey = envPrivate.trim();
       this.isConfigured = true;
-    } else {
-      // In development or test, generate ephemeral VAPID keys for zero-config startup
+    } else if (!isProd) {
+      // Zero-credential ephemeral setup for development, test, and CI
       const generated = webpush.generateVAPIDKeys();
-      this.vapidPublicKey = generated.publicKey;
-      this.vapidPrivateKey = generated.privateKey;
+      this.vapidPublicKey = envPublic || generated.publicKey;
+      this.vapidPrivateKey = envPrivate || generated.privateKey;
+      this.vapidSubject = envSubject || 'mailto:dev@example.com';
       this.isConfigured = true;
       this.logger.log(
-        'VAPID keys not provided in environment; generated ephemeral VAPID keys for session.',
+        'VAPID credentials not fully provided in environment; initialized ephemeral VAPID keys for non-production session.',
       );
+    } else {
+      this.logger.warn(
+        'WebPush VAPID configuration missing required environment variables in production. Push notifications disabled.',
+      );
+      this.isConfigured = false;
+      return;
     }
 
     try {
