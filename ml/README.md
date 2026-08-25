@@ -172,7 +172,7 @@ poetry run streamlit run app.py
 ### Features:
 
 1. **🔬 Single Company Audit Simulator**:
-   - 3-category input form mirroring [`client/src/routes/emitter/laporan.tsx`](file:///D:/03-STORAGE/03-GITHUB/02-TEAM/KMIPN-2026/RekaKarbon/client/src/routes/emitter/laporan.tsx).
+   - 3-category input form mirroring [`client/src/routes/emitter/laporan.tsx`](../client/src/routes/emitter/laporan.tsx).
    - Quick presets: _Normal (Compliant)_, _Under-Reporting Fraud_, and _Fake e-Faktur Invoices_.
    - Dynamic gauges for `score_djp`, `score_bbm`, `score_cems`, and AI explanation text.
 2. **📁 Batch CSV Auditor & Benchmark Map**:
