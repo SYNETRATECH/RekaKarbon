@@ -104,8 +104,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "bcrypt",
-      "onnxruntime-node"
+      "bcrypt"
     ]
   }
 }

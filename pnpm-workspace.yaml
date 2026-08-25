@@ -10,4 +10,5 @@ allowBuilds:
   keccak: true
   prisma: true
   unrs-resolver: true
+  onnxruntime-node: true
 engineStrict: true
