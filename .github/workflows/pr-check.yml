@@ -14,13 +14,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Verify Code Quality & Build
+  detect-changes:
+    name: Detect Changed Components
     runs-on: ubuntu-latest
-    env:
-      PRIVATE_KEY: '0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3'
-      DATABASE_URL: 'postgresql://ci:ci@localhost:5432/ci?schema=public'
-
+    outputs:
+      formatting: ${{ steps.changes.outputs.formatting }}
+      client: ${{ steps.changes.outputs.client }}
+      server: ${{ steps.changes.outputs.server }}
+      blockchain: ${{ steps.changes.outputs.blockchain }}
+      ml: ${{ steps.changes.outputs.ml }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -30,24 +32,44 @@ jobs:
         id: changes
         with:
           filters: |
+            formatting:
+              - 'client/**'
+              - 'server/**'
+              - 'blockchain/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/pr-check.yml'
             client:
               - 'client/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
-              - '.github/workflows/**'
+              - '.github/workflows/pr-check.yml'
             server:
               - 'server/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
-              - '.github/workflows/**'
+              - '.github/workflows/pr-check.yml'
             blockchain:
               - 'blockchain/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
-              - '.github/workflows/**'
+              - '.github/workflows/pr-check.yml'
+            ml:
+              - 'ml/**'
+              - '.github/workflows/pr-check.yml'
+
+  format-check:
+    name: Code Formatting (Prettier)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.formatting == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -66,55 +88,193 @@ jobs:
       - name: Check code formatting (Prettier)
         run: pnpm format:check
 
-      # --- CLIENT VERIFICATION ---
+  verify-client:
+    name: Verify Client (React & Tailwind)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Typecheck client
-        if: steps.changes.outputs.client == 'true'
         run: pnpm client:typecheck
 
       - name: Lint client
-        if: steps.changes.outputs.client == 'true'
         run: pnpm client:lint
 
       - name: Test client (unit & architecture)
-        if: steps.changes.outputs.client == 'true'
         run: |
           pnpm --filter ./client test
           pnpm --filter ./client test:arch
 
       - name: Build client
-        if: steps.changes.outputs.client == 'true'
         run: pnpm client:build
 
-      # --- SERVER VERIFICATION ---
+  verify-server:
+    name: Verify Server (NestJS & Prisma)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    env:
+      PRIVATE_KEY: '0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3'
+      DATABASE_URL: 'postgresql://ci:ci@localhost:5432/ci?schema=public'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Generate Prisma Client
-        if: steps.changes.outputs.server == 'true'
         run: pnpm --filter ./server prisma:generate
 
       - name: Typecheck server
-        if: steps.changes.outputs.server == 'true'
         run: pnpm server:typecheck
 
       - name: Lint server
-        if: steps.changes.outputs.server == 'true'
         run: pnpm server:lint
 
       - name: Test server
-        if: steps.changes.outputs.server == 'true'
         run: pnpm server:test
 
       - name: Build server
-        if: steps.changes.outputs.server == 'true'
         run: pnpm server:build
 
-      # --- BLOCKCHAIN VERIFICATION ---
+  verify-blockchain:
+    name: Verify Blockchain (Hardhat & Smart Contracts)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.blockchain == 'true'
+    runs-on: ubuntu-latest
+    env:
+      PRIVATE_KEY: '0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Typecheck smart contracts code
-        if: steps.changes.outputs.blockchain == 'true'
         run: pnpm blockchain:typecheck
 
       - name: Compile smart contracts
-        if: steps.changes.outputs.blockchain == 'true'
         run: pnpm blockchain:compile
 
       - name: Test smart contracts
-        if: steps.changes.outputs.blockchain == 'true'
         run: pnpm blockchain:test
+
+  verify-ml:
+    name: Verify ML Engine (Python, Ruff, Mypy & Pytest)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ml == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.13
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.1.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: ml/.venv
+          key: venv-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('ml/poetry.lock') }}
+
+      - name: Install ML dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        working-directory: ./ml
+        run: poetry install --no-interaction --no-root
+
+      - name: Check code formatting (Ruff)
+        working-directory: ./ml
+        run: poetry run ruff format --check .
+
+      - name: Lint ML code (Ruff)
+        working-directory: ./ml
+        run: poetry run ruff check .
+
+      - name: Typecheck ML code (Mypy)
+        working-directory: ./ml
+        run: poetry run mypy src tests app.py
+
+      - name: Test ML engine & ONNX parity (Pytest)
+        working-directory: ./ml
+        run: poetry run pytest -v
+
+  pr-check-complete:
+    name: All PR Checks Passed
+    runs-on: ubuntu-latest
+    needs:
+      - detect-changes
+      - format-check
+      - verify-client
+      - verify-server
+      - verify-blockchain
+      - verify-ml
+    if: always()
+    steps:
+      - name: Evaluate Status of All PR Checks
+        run: |
+          echo "Detect changes result: ${{ needs.detect-changes.result }}"
+          echo "Format check result: ${{ needs.format-check.result }}"
+          echo "Client verification result: ${{ needs.verify-client.result }}"
+          echo "Server verification result: ${{ needs.verify-server.result }}"
+          echo "Blockchain verification result: ${{ needs.verify-blockchain.result }}"
+          echo "ML verification result: ${{ needs.verify-ml.result }}"
+
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "❌ One or more required PR verification jobs failed or were cancelled."
+            exit 1
+          fi
+
+          echo "✅ All required checks completed successfully or were skipped appropriately."
