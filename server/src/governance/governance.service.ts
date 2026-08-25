@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type {
-  MultiSigRequest,
-  KybQueueItem,
-  DjpLogItem,
-} from '../types/governance';
+import type { MultiSigRequest, KybQueueItem, DjpLogItem } from './types';
 
 @Injectable()
 export class GovernanceService {

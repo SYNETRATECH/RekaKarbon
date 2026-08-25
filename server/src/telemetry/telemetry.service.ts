@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CemsReading, ForestSensorReading } from '../types/telemetry';
+import type { CemsReading, ForestSensorReading } from './types';
 import type { CemsTelemetryDto, ForestSensorTelemetryDto } from './dto';
 
 @Injectable()

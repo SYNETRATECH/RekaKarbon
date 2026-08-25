@@ -20,7 +20,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
-import type { AuthenticatedRequest, SafeUser } from '../types/auth';
+import type { AuthenticatedRequest, SafeUser } from './types';
 
 @ApiTags('Authentication')
 @Controller('auth')

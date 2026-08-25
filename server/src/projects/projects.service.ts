@@ -4,8 +4,8 @@ import {
   ProjectStage as PrismaProjectStage,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { Project, ReforestationStage } from '../types/project';
-import { ForestProjectItem, NationalForestRegion } from '../types/regulator';
+import { Project, ReforestationStage } from './types';
+import { ForestProjectItem, NationalForestRegion } from '../regulator/types';
 
 type FullProjectRecord = PrismaForestProject & {
   stages?: PrismaProjectStage[];

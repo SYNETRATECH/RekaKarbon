@@ -4,10 +4,7 @@ import {
   PriorityLevel as PrismaPriorityLevel,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type {
-  SystemNotification,
-  NotificationType,
-} from '../types/notification';
+import type { SystemNotification, NotificationType } from './types';
 import type { CreateNotificationDto } from './dto';
 
 @Injectable()

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { EmissionReport } from '../types/report';
+import type { EmissionReport } from './types';
 
 @Injectable()
 export class ReportsService {

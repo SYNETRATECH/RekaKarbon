@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { BursaItem } from '../types/bursa';
+import type { BursaItem } from './types';
 
 @Injectable()
 export class BursaService {

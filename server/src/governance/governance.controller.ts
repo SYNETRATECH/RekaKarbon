@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { GovernanceService } from './governance.service';
+import { GovernanceQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -25,7 +26,7 @@ export class GovernanceController {
   })
   @ApiResponse({ status: 200, description: 'Multi-sig requests retrieved.' })
   @Get('multi-sig')
-  async getMultiSigRequests() {
+  async getMultiSigRequests(@Query() _query: GovernanceQueryDto) {
     const data = await this.governanceService.getMultiSigRequests();
     return { success: true, data };
   }

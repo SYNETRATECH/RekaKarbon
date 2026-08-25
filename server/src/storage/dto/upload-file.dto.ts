@@ -7,7 +7,7 @@ import {
   IsPositive,
   IsString,
 } from 'class-validator';
-import type { FileCategory } from '../../types/storage';
+import type { FileCategory } from '../types';
 
 export class UploadFileDto {
   @ApiProperty({

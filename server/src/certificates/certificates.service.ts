@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { PurchasedCertificate } from '../types/certificate';
+import type { PurchasedCertificate } from './types';
 
 @Injectable()
 export class CertificatesService {

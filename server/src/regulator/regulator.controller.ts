@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { RegulatorService } from './regulator.service';
+import { RegulatorQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -25,7 +26,7 @@ export class RegulatorController {
     description: 'National forest regions retrieved.',
   })
   @Get('forest-regions')
-  async getForestRegions() {
+  async getForestRegions(@Query() _query: RegulatorQueryDto) {
     const data = await this.regulatorService.getNationalForestRegions();
     return { success: true, data };
   }
@@ -33,7 +34,7 @@ export class RegulatorController {
   @ApiOperation({ summary: 'Retrieve regulator oversight forest projects' })
   @ApiResponse({ status: 200, description: 'Forest projects retrieved.' })
   @Get('forest-projects')
-  async getForestProjects() {
+  async getForestProjects(@Query() _query: RegulatorQueryDto) {
     const data = await this.regulatorService.getForestProjects();
     return { success: true, data };
   }
@@ -43,7 +44,7 @@ export class RegulatorController {
   })
   @ApiResponse({ status: 200, description: 'KTH groups retrieved.' })
   @Get('kth-groups')
-  async getKthGroups() {
+  async getKthGroups(@Query() _query: RegulatorQueryDto) {
     const data = await this.regulatorService.getKTHGroups();
     return { success: true, data };
   }
@@ -53,7 +54,7 @@ export class RegulatorController {
   })
   @ApiResponse({ status: 200, description: 'KTH transactions retrieved.' })
   @Get('kth-transactions')
-  async getKthTransactions() {
+  async getKthTransactions(@Query() _query: RegulatorQueryDto) {
     const data = await this.regulatorService.getKTHTransactions();
     return { success: true, data };
   }
@@ -63,7 +64,7 @@ export class RegulatorController {
   })
   @ApiResponse({ status: 200, description: 'Regulation uploads retrieved.' })
   @Get('regulation-uploads')
-  async getRegulationUploads() {
+  async getRegulationUploads(@Query() _query: RegulatorQueryDto) {
     const data = await this.regulatorService.getRegulationUploads();
     return { success: true, data };
   }

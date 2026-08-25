@@ -1,6 +1,14 @@
-import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  NotFoundException,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
+import { ProjectQueryDto } from './dto';
 
 @ApiTags('Carbon Projects')
 @Controller('projects')
@@ -15,7 +23,7 @@ export class ProjectsController {
     description: 'Carbon projects list retrieved successfully.',
   })
   @Get()
-  async getProjects() {
+  async getProjects(@Query() _query: ProjectQueryDto) {
     const projects = await this.projectsService.findProjects();
     return {
       success: true,
@@ -41,7 +49,9 @@ export class ProjectsController {
     description: 'Project with specified ID not found.',
   })
   @Get(':id')
-  async getProjectById(@Param('id') id: string) {
+  async getProjectById(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     const project = await this.projectsService.findProjectById(id);
     if (!project) {
       throw new NotFoundException({
