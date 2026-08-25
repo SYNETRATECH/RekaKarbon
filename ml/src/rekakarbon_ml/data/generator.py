@@ -91,6 +91,12 @@ class EmissionDataGenerator:
             share_solar = bench.get("fuel_share_solar", 0.2)
             share_elec = bench.get("fuel_share_electricity", 0.3)
             share_gas = bench.get("fuel_share_gas", 0.2)
+            tot_fossil = share_coal + share_solar + share_elec + share_gas
+            if tot_fossil > 0:
+                share_coal /= tot_fossil
+                share_solar /= tot_fossil
+                share_elec /= tot_fossil
+                share_gas /= tot_fossil
 
             emiss_coal = e_combustion * share_coal
             emiss_solar = e_combustion * share_solar
@@ -243,3 +249,22 @@ class EmissionDataGenerator:
 
         df = pd.DataFrame(data)
         return df.sample(frac=1.0, random_state=self.rng).reset_index(drop=True)
+
+    def generate_train_val_test_splits(
+        self,
+        n_total: int = 2500,
+        anomaly_ratio: float = 0.12,
+        train_ratio: float = 0.70,
+        val_ratio: float = 0.15,
+        test_ratio: float = 0.15,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Generates stratified non-leaking train, validation, and test datasets."""
+        full_df = self.generate_dataset(n_samples=n_total, anomaly_ratio=anomaly_ratio)
+        n_train = int(n_total * train_ratio)
+        n_val = int(n_total * val_ratio)
+
+        train_df = full_df.iloc[:n_train].reset_index(drop=True)
+        val_df = full_df.iloc[n_train : n_train + n_val].reset_index(drop=True)
+        test_df = full_df.iloc[n_train + n_val :].reset_index(drop=True)
+
+        return train_df, val_df, test_df

@@ -1,0 +1,217 @@
+{
+  "model_name": "RekaKarbon Carbon Anomaly Detector",
+  "version": "1.0.0",
+  "release_timestamp": "2026-08-25T15:18:47.914647+00:00",
+  "framework": "Scikit-Learn (IsolationForest + RobustScaler) & ONNX Runtime",
+  "target_opset": {
+    "": 15,
+    "ai.onnx.ml": 3
+  },
+  "raw_features": [
+    "production_tonnes",
+    "reported_emissions_tco2e",
+    "historical_emissions_tco2e",
+    "stat_fuel_liters",
+    "mob_fuel_liters",
+    "biomass_tonnes",
+    "cost_solar_idr",
+    "cost_coal_idr",
+    "cost_gas_idr",
+    "cost_pln_idr",
+    "clinker_tonnes",
+    "sector_idx"
+  ],
+  "derived_features": [
+    "stoichiometric_divergence",
+    "solar_unit_cost_log",
+    "emission_intensity",
+    "sector_intensity_zscore",
+    "yoy_change_ratio",
+    "energy_spend_per_ton_product",
+    "spend_ratio",
+    "process_emission_ratio",
+    "solar_price_residual_ratio",
+    "sector_is_semen",
+    "sector_is_manufaktur",
+    "sector_is_cpo",
+    "sector_is_logam",
+    "sector_is_pulp",
+    "sector_is_pltu"
+  ],
+  "supported_sectors": [
+    "Semen & Bahan Bangunan",
+    "Manufaktur & Pengolahan",
+    "Kelapa Sawit & CPO",
+    "Logam & Baja",
+    "Pulp & Kertas",
+    "Ketenagalistrikan & PLTU"
+  ],
+  "stoichiometric_factors": {
+    "solar_diesel_tco2e_per_liter": 0.00268,
+    "coal_tco2e_per_kg": 0.00242,
+    "natural_gas_tco2e_per_m3": 0.0019,
+    "grid_electricity_tco2e_per_kwh": 0.00085,
+    "cement_clinker_calcination_tco2e_per_ton": 0.525,
+    "biomass_net_tco2e_per_ton": 0.02
+  },
+  "market_price_ranges": {
+    "solar_diesel": {
+      "min": 16000.0,
+      "max": 25000.0,
+      "nominal": 20500.0
+    },
+    "coal": {
+      "min": 850.0,
+      "max": 1600.0,
+      "nominal": 1200.0
+    },
+    "natural_gas": {
+      "min": 7500.0,
+      "max": 13500.0,
+      "nominal": 10000.0
+    },
+    "grid_electricity": {
+      "min": 1350.0,
+      "max": 1900.0,
+      "nominal": 1600.0
+    }
+  },
+  "sector_benchmarks": {
+    "Semen & Bahan Bangunan": {
+      "avg_intensity_tco2e_per_ton": 0.65,
+      "min_intensity": 0.45,
+      "max_intensity": 0.95,
+      "std_intensity": 0.08,
+      "clinker_ratio": 0.72,
+      "has_process_emissions": true,
+      "process_emission_factor": 0.525,
+      "fuel_share_coal": 0.7,
+      "fuel_share_solar": 0.08,
+      "fuel_share_electricity": 0.15,
+      "fuel_share_gas": 0.07,
+      "biomass_utilization_ratio": 0.05
+    },
+    "Manufaktur & Pengolahan": {
+      "avg_intensity_tco2e_per_ton": 0.28,
+      "min_intensity": 0.1,
+      "max_intensity": 0.55,
+      "std_intensity": 0.06,
+      "clinker_ratio": 0.0,
+      "has_process_emissions": false,
+      "process_emission_factor": 0.0,
+      "fuel_share_coal": 0.25,
+      "fuel_share_solar": 0.25,
+      "fuel_share_electricity": 0.35,
+      "fuel_share_gas": 0.15,
+      "biomass_utilization_ratio": 0.0
+    },
+    "Kelapa Sawit & CPO": {
+      "avg_intensity_tco2e_per_ton": 0.18,
+      "min_intensity": 0.08,
+      "max_intensity": 0.4,
+      "std_intensity": 0.04,
+      "clinker_ratio": 0.0,
+      "has_process_emissions": false,
+      "process_emission_factor": 0.0,
+      "fuel_share_coal": 0.02,
+      "fuel_share_solar": 0.4,
+      "fuel_share_electricity": 0.18,
+      "fuel_share_gas": 0.0,
+      "biomass_utilization_ratio": 0.4
+    },
+    "Logam & Baja": {
+      "avg_intensity_tco2e_per_ton": 1.85,
+      "min_intensity": 1.2,
+      "max_intensity": 2.8,
+      "std_intensity": 0.25,
+      "clinker_ratio": 0.0,
+      "has_process_emissions": true,
+      "process_emission_factor": 0.35,
+      "fuel_share_coal": 0.55,
+      "fuel_share_solar": 0.08,
+      "fuel_share_electricity": 0.27,
+      "fuel_share_gas": 0.1,
+      "biomass_utilization_ratio": 0.0
+    },
+    "Pulp & Kertas": {
+      "avg_intensity_tco2e_per_ton": 0.45,
+      "min_intensity": 0.25,
+      "max_intensity": 0.8,
+      "std_intensity": 0.07,
+      "clinker_ratio": 0.0,
+      "has_process_emissions": false,
+      "process_emission_factor": 0.0,
+      "fuel_share_coal": 0.35,
+      "fuel_share_solar": 0.12,
+      "fuel_share_electricity": 0.23,
+      "fuel_share_gas": 0.1,
+      "biomass_utilization_ratio": 0.2
+    },
+    "Ketenagalistrikan & PLTU": {
+      "avg_intensity_tco2e_per_ton": 0.92,
+      "min_intensity": 0.75,
+      "max_intensity": 1.25,
+      "std_intensity": 0.09,
+      "clinker_ratio": 0.0,
+      "has_process_emissions": false,
+      "process_emission_factor": 0.0,
+      "fuel_share_coal": 0.85,
+      "fuel_share_solar": 0.05,
+      "fuel_share_electricity": 0.1,
+      "fuel_share_gas": 0.0,
+      "biomass_utilization_ratio": 0.03
+    }
+  },
+  "evaluation_metrics": {
+    "precision": 1.0,
+    "recall": 0.9167,
+    "f1_score": 0.9565,
+    "accuracy": 0.9867,
+    "roc_auc": 0.9919,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.0833
+  },
+  "confusion_matrix": {
+    "true_negative": 315,
+    "false_positive": 0,
+    "false_negative": 5,
+    "true_positive": 55,
+    "total_samples": 375
+  },
+  "fraud_detection_recall": {
+    "UNDER_REPORTING_SUBTLE": {
+      "count": 13,
+      "recall": 0.6154
+    },
+    "UNDER_REPORTING_FRAUD": {
+      "count": 14,
+      "recall": 1.0
+    },
+    "EXTREME_YOY_COLLAPSE": {
+      "count": 18,
+      "recall": 1.0
+    },
+    "IMPOSSIBLE_PRODUCTION_INTENSITY": {
+      "count": 5,
+      "recall": 1.0
+    },
+    "UNREPORTED_PROCESS_EMISSIONS": {
+      "count": 5,
+      "recall": 1.0
+    },
+    "FUEL_COST_MISMATCH": {
+      "count": 5,
+      "recall": 1.0
+    }
+  },
+  "quality_gate": {
+    "status": "PASSED",
+    "thresholds": {
+      "min_overall_f1": 0.85,
+      "min_overall_recall": 0.88,
+      "min_under_reporting_recall": 0.92,
+      "max_false_positive_rate": 0.1
+    },
+    "passed": true
+  }
+}

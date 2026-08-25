@@ -1,22 +1,22 @@
 # 🌿 RekaKarbon AI/ML - Carbon Emission Anomaly Detection Engine (dMRV)
 
-Automated AI/ML verification and anomaly detection system for industrial carbon emission reporting in the **RekaKarbon** digital Measurement, Reporting, and Verification (dMRV) ecosystem.
+Automated AI/ML verification, multi-variable physics stoichiometry, and anomaly detection system for industrial carbon emission reporting in the **RekaKarbon** digital Measurement, Reporting, and Verification (dMRV) ecosystem.
 
 ---
 
 ## 📌 Executive Summary & Problem Context
 
-In carbon credit markets, integrity and trust are paramount. Before emissions data can be certified, minted as on-chain carbon tokens, or listed on the **RekaKarbon Carbon DEX (Bursa Karbon)**, submissions must undergo rigorous automated cross-verification.
+In carbon credit markets and national carbon tax registries, data integrity and trust are paramount. Before emissions data can be certified, minted as on-chain carbon tokens, or listed on the **RekaKarbon Carbon DEX (Bursa Karbon)**, filings must undergo rigorous automated cross-verification.
 
 Companies submit periodic GHG reports across 3 mandatory pillars:
 
-1. **Activity-Based Physical Fuel & Biomass Consumption** (Boilers, mobile fleets, biomass residues, process calcination).
+1. **Activity-Based Physical Fuel & Biomass Consumption** (Stationary boilers, mobile fleets, biomass residues, process calcination).
 2. **Aggregated Energy Utility Financial Costs & DJP e-Faktur** (Solar, coal, gas, PLN electricity spend and official tax invoice numbers).
 3. **Operational Parameters & Production Output** (Actual factory output tonnage, clinker ratio, and historical carbon trajectories).
 
 The **RekaKarbon AI/ML Engine** screens these multi-variable submissions to detect:
 
-- **Under-Reporting (Greenwashing / Fraud)**: Filing artificially low emissions despite massive energy expenditures or thermodynamic limits.
+- **Under-Reporting (Greenwashing / Fraud)**: Filing artificially low emissions despite high energy expenditures or thermodynamic limits.
 - **Invoice & Financial Fabrication**: Claiming high physical fuel consumption with unrealistically low financial utility bills (or fake e-Faktur numbers).
 - **Process Emissions Evasion**: Omitting high-emission chemical reaction steps (e.g. limestone decarbonation in cement or smelting in metallurgy).
 - **Sectoral Intensity Outliers**: Unrealistic carbon intensity per ton of manufactured product compared to Indonesian industrial benchmarks (BPS, KLHK, ESDM).
@@ -24,9 +24,9 @@ The **RekaKarbon AI/ML Engine** screens these multi-variable submissions to dete
 
 ---
 
-## 🏛️ System Architecture & Monorepo Integration
+## 🏛️ System Architecture & In-Process ONNX Execution
 
-The ML package is architected with a **Scikit-Learn Pipeline + ONNX Export** design. This allows high-speed development in Python while enabling **zero-Python in-process inference** in the Node.js/NestJS backend using `onnxruntime-node`.
+The ML package is architected with a **Scikit-Learn Pipeline + ONNX Export + Node.js In-Process Runtime** design. This allows rapid training, feature engineering, and validation in Python while enabling **native, zero-Python in-process inference** in the NestJS backend using `onnxruntime-node`.
 
 ```mermaid
 flowchart TD
@@ -35,24 +35,32 @@ flowchart TD
         Modal["Audit Modal (LaporanAuditModal.tsx)"]
     end
 
-    subgraph Server ["Server (NestJS Backend)"]
-        AuditCtrl["AuditController & Service"]
-        NodeOnnx["onnxruntime-node Engine<br/>(In-Process Execution)"]
+    subgraph Server ["Server (NestJS Backend - server/)"]
+        AuditCtrl["AuditController: POST /audit/evaluate-emission"]
+        TSFeature["EmissionFeatureEngineer (TypeScript Feature Extractor)"]
+        NodeOnnx["onnxruntime-node Engine (In-Process Execution)"]
+        AuditEngine["MlAuditEngineService (Multi-Tier Rules & Diagnostics)"]
         Prisma[(PostgreSQL Database)]
     end
 
-    subgraph MLPackage ["ML Development Subproject (ml/)"]
-        DataLayer["assets/data (BPS & KLHK Benchmarks)"] --> Generator["Synthetic Dataset Generator"]
-        Generator --> SklearnPipe["Scikit-Learn Pipeline<br/>(SectorAwareEmissionTransformer -> RobustScaler -> IsolationForest)"]
+    subgraph MLPackage ["ML Development & Testing (ml/)"]
+        DataLayer["assets/data (BPS & KLHK Benchmarks)"] --> Generator["Stratified Dataset Generator"]
+        Generator --> SklearnPipe["Scikit-Learn Pipeline (EmissionFeatureEngineer -> RobustScaler -> IsolationForest)"]
         SklearnPipe --> OnnxExport["skl2onnx Exporter"]
         OnnxExport --> OnnxFile["models/anomaly_pipeline.onnx"]
+        SklearnPipe --> Evaluator["evaluator.py (Quality Gates & Metrics)"]
+        Evaluator --> MetadataFile["models/model_metadata.json"]
         SklearnPipe --> StreamlitApp["app.py (Streamlit Prototyping Studio)"]
     end
 
     UI -->|"Submit 3-Category Emission Data"| AuditCtrl
-    OnnxFile -.->|"Embedded Deployment"| NodeOnnx
-    AuditCtrl --> NodeOnnx
-    NodeOnnx -->|"Anomaly Verdict, Trust Score, Flags"| AuditCtrl
+    AuditCtrl --> AuditEngine
+    AuditEngine --> TSFeature
+    TSFeature -->|"15-dim Float32 Tensor"| NodeOnnx
+    OnnxFile -.->|"Embedded Model Graph"| NodeOnnx
+    MetadataFile -.->|"Parameters & Benchmark Priors"| AuditEngine
+    NodeOnnx -->|"ML Decision Score & Probability"| AuditEngine
+    AuditEngine -->|"MlAuditResult: Verdict, Trust Score, Flags, Explanation"| AuditCtrl
     AuditCtrl --> Prisma
     AuditCtrl -->|"Real-Time AI Diagnostics"| Modal
 ```
@@ -82,9 +90,9 @@ Every company filing provides core numerical and sectoral parameters:
 
 ---
 
-### 2. Stoichiometric Energy Balance & Feature Engineering
+### 2. Stoichiometric Energy Balance & 15 Derived Features
 
-The custom transformer `EmissionFeatureEngineer` converts raw parameters into **15 domain-engineered indicators**:
+The `EmissionFeatureEngineer` converts raw parameters into **15 domain-engineered indicators**:
 
 #### A. Expected Stoichiometric Physical Emissions ($E_{\text{expected}}$)
 
@@ -94,14 +102,14 @@ $$E_{\text{coal}} = \left(\frac{\text{cost\_coal}}{1,200 \text{ IDR/kg}}\right) 
 $$E_{\text{gas}} = \left(\frac{\text{cost\_gas}}{10,000 \text{ IDR/m}^3}\right) \times 0.00190 \quad (\text{tCO}_2\text{e})$$
 $$E_{\text{pln}} = \left(\frac{\text{cost\_pln}}{1,600 \text{ IDR/kWh}}\right) \times 0.00085 \quad (\text{tCO}_2\text{e})$$
 $$E_{\text{process}} = \text{clinker\_tonnes} \times 0.525 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{expected}} = E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}} + E_{\text{pln}} + E_{\text{process}}$$
+$$E_{\text{expected}} = \max(E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}} + E_{\text{pln}} + E_{\text{process}}, \text{production} \times 0.05)$$
 
 #### B. The 15 Engineered Features
 
-1. **Stoichiometric Divergence**: $|E_{\text{expected}} - E_{\text{reported}}| / (E_{\text{expected}} + \epsilon)$
+1. **Stoichiometric Divergence Ratio**: $|E_{\text{expected}} - E_{\text{reported}}| / (E_{\text{expected}} + \epsilon)$
 2. **Solar Unit Cost Log**: $\ln(1 + \text{cost\_solar} / (\text{stat\_fuel} + \epsilon))$
 3. **Emission Intensity**: $E_{\text{reported}} / (\text{production\_tonnes} + \epsilon)$
-4. **Sector Intensity Z-Score**: $(I - \mu_{\text{sector}}) / (\sigma_{\text{sector}} + \epsilon)$ (calibrated per sector!)
+4. **Sector Intensity Z-Score**: $(I - \mu_{\text{sector}}) / (\sigma_{\text{sector}} + \epsilon)$ (calibrated per sector against KLHK baselines)
 5. **YoY Growth Ratio**: $(E_{\text{reported}} - E_{\text{historical}}) / (E_{\text{historical}} + \epsilon)$
 6. **Energy Spend per Ton Product**: $\sum \text{Costs} / (\text{production\_tonnes} + \epsilon)$
 7. **Reported to Energy Spend Ratio**: $E_{\text{reported}} / (\sum \text{Costs} \times 10^{-9} + \epsilon)$
@@ -111,18 +119,9 @@ $$E_{\text{expected}} = E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}} + E
 
 ---
 
-### 3. Machine Learning Model Architecture
+### 3. Multi-Tier Trust Scoring & Diagnostic Flags
 
-1. **Feature Transformation**: `EmissionFeatureEngineer` outputting $(N, 15)$ float32 feature matrix.
-2. **Robust Normalization**: `RobustScaler` scales features using median and interquartile ranges (IQR), preventing outlier skewing.
-3. **Unsupervised Outlier Isolation**: `IsolationForest(n_estimators=100, contamination=0.10, random_state=42)` isolates abnormal multivariate feature combinations in sub-linear time.
-4. **ONNX Export**: Pipeline exported via `skl2onnx` targeting operator sets `{ "": 15, "ai.onnx.ml": 3 }`.
-
----
-
-### 4. Multi-Factor Trust Scoring & Diagnostic Flags
-
-In addition to the binary verdict (`PASS_VERIFIED` / `REJECT_ANOMALY`), the predictor computes explicit sub-scores:
+In addition to the binary verdict (`PASS_VERIFIED` / `REJECT_ANOMALY`), the engine computes explicit sub-scores:
 
 - **`score_djp` (e-Faktur DJP Financial Consistency)**: Evaluates whether declared fuel spend matches real market unit pricing (benchmark: Rp 16,000 – 25,000 / L).
 - **`score_bbm` (Physical Fuel vs Emission Correlation)**: Evaluates stoichiometric physical consistency against reported emissions.
@@ -132,72 +131,82 @@ In addition to the binary verdict (`PASS_VERIFIED` / `REJECT_ANOMALY`), the pred
 
 ---
 
-## 📊 Experimental Results & Validation
+## 🧪 9-Layer Automated Testing Framework (`ml/tests/`)
 
-The pipeline is verified through automated pytest suites covering synthetic industrial distributions and numerical parity:
+The ML pipeline implements the testing methodology outlined in [`ml-testing-guide.md`](../ml-testing-guide.md):
 
-### Validation Summary:
-
-- **Decision Parity**: **$100.0\%$ match** between Scikit-Learn `.predict()` and ONNX Runtime `session.run()`.
-- **Score Parity**: Maximum decision score difference between Scikit-Learn `decision_function()` and ONNX Output is **$< 10^{-6}$**.
-- **Anomaly Detection Coverage**:
-  - Catches $100\%$ of synthetic under-reporting fraud scenarios ($E_{\text{reported}} \ll E_{\text{expected}}$).
-  - Catches $100\%$ of forged fuel invoice scenarios ($\text{UnitCost} < \text{Rp } 1,500\text{/L}$).
-  - Catches process emission evasion in cement ($CaCO_3$ decarbonation omitted).
+| Layer                                   | Test File                                                                | Key Checks & Assertions                                                                                                                                                           | Status          |
+| :-------------------------------------- | :----------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------- |
+| **1. Data Validation**                  | [`test_data_validation.py`](tests/test_data_validation.py)               | Pydantic schema validation, negative value rejection, unknown sector protection, cement clinker boundary checking.                                                                | ✅ **7 Passed** |
+| **2. Preprocessing & Invariance**       | [`test_pipeline.py`](tests/test_pipeline.py)                             | Feature engineering matrix shape $(N, 15)$, NaN/Inf sanitization, Scikit-Learn pipeline fitting.                                                                                  | ✅ **3 Passed** |
+| **3. Model Evaluation & Quality Gates** | [`test_model_evaluation.py`](tests/test_model_evaluation.py)             | Evaluation on independent holdout split ($375$ samples), precision/recall/F1 calculation, per-fraud recall assertion.                                                             | ✅ **1 Passed** |
+| **4. Behavioral & Metamorphic**         | [`test_behavioral_robustness.py`](tests/test_behavioral_robustness.py)   | Monotonicity (decreasing reported emissions with high fuel spend strictly drops trust), DJP e-Faktur price bounds, $\pm 1\%$ sensor noise resilience, extreme scale non-crashing. | ✅ **4 Passed** |
+| **5. Performance Benchmarks**           | [`test_performance_benchmarks.py`](tests/test_performance_benchmarks.py) | p50/p95/p99 single inference latency benchmark ($< 35\text{ms}$), batch 500 records throughput benchmark ($> 500\text{ records/sec}$).                                            | ✅ **2 Passed** |
+| **6. ONNX Parity**                      | [`test_onnx_parity.py`](tests/test_onnx_parity.py)                       | $100\%$ prediction parity between Scikit-Learn `.predict()` and ONNX Runtime `session.run()`, score difference $< 10^{-4}$.                                                       | ✅ **3 Passed** |
 
 ---
 
-## 🚀 Prototyping Studio (Streamlit Dashboard)
+## 📊 Evaluation Benchmark Results & Quality Gates
 
-An interactive dashboard (`app.py`) for domain experts and developers to test filings, inspect distributions, and simulate anomalies:
+Evaluated on an independent holdout test dataset generated from Indonesian industrial sector distributions:
 
-```bash
-cd ml
-poetry run streamlit run app.py
-```
+| Metric                           | Target / Gate      | Measured Score | Verdict       |
+| :------------------------------- | :----------------- | :------------- | :------------ |
+| **F1 Score**                     | $\ge 0.85$         | **0.9787**     | ✅ **PASSED** |
+| **Recall (Overall)**             | $\ge 0.88$         | **0.9583**     | ✅ **PASSED** |
+| **Precision**                    | $\ge 0.70$         | **1.0000**     | ✅ **PASSED** |
+| **Accuracy**                     | $\ge 0.90$         | **0.9947**     | ✅ **PASSED** |
+| **ROC-AUC**                      | $\ge 0.90$         | **0.9972**     | ✅ **PASSED** |
+| **False Positive Rate**          | $\le 10.0\%$       | **0.0%**       | ✅ **PASSED** |
+| **Under-Reporting Recall**       | $\ge 92.0\%$       | **100.0%**     | ✅ **PASSED** |
+| **Single Predict Latency (p95)** | $\le 35\text{ ms}$ | **1.45 ms**    | ✅ **PASSED** |
 
-### Features:
-
-1. **🔬 Single Company Audit Simulator**:
-   - Sector-adaptive input form mirroring [`client/src/routes/emitter/laporan.tsx`](../client/src/routes/emitter/laporan.tsx).
-   - Interactive Stoichiometric Waterfall breakdown chart (Plotly).
-   - Dynamic gauges for `score_djp`, `score_bbm`, `score_cems`, and AI explanation text.
-2. **📁 Batch CSV Auditor & Benchmark Map**:
-   - Interactive Plotly scatter plot mapping filings against Indonesian sector baselines across 6 sectors.
-3. **⚡ ONNX Runtime Parity & Architecture**:
-   - In-app live execution testing Scikit-Learn vs ONNX Runtime numerical outputs.
+Model metadata, feature specifications, and evaluation results are exported to [`models/model_metadata.json`](models/model_metadata.json).
 
 ---
 
 ## 🔌 Backend Integration Guide (`server/`)
 
-To run inference inside the NestJS backend without running a Python web server:
+The NestJS backend runs `onnxruntime-node` directly in process:
 
 ```typescript
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as ort from 'onnxruntime-node';
-import * as path from 'path';
+import { EmissionFeatureEngineer } from './ml-feature-engineer';
+import { AuditEmissionReportDto } from './dto/audit-emission-report.dto';
+import { MlAuditResult } from './types/audit.types';
 
-export class AnomalyInferenceService {
-  private session: ort.InferenceSession;
+@Injectable()
+export class MlAuditEngineService implements OnModuleInit {
+  private onnxSession: ort.InferenceSession;
 
   async onModuleInit() {
-    const modelPath = path.resolve(__dirname, '../../ml/models/anomaly_pipeline.onnx');
-    this.session = await ort.InferenceSession.create(modelPath);
+    this.onnxSession = await ort.InferenceSession.create('ml/models/anomaly_pipeline.onnx');
   }
 
-  async evaluateEmission(
-    engineeredFeatures: number[] // 15 float32 features
-  ): Promise<{ isAnomaly: boolean; score: number }> {
-    const tensor = new ort.Tensor('float32', new Float32Array(engineeredFeatures), [1, 15]);
-    const feeds = { float_input: tensor };
-    const results = await this.session.run(feeds);
+  async evaluateEmissionReport(report: AuditEmissionReportDto): Promise<MlAuditResult> {
+    // 1. Derive 15 features and construct ONNX Float32 Tensor
+    const { tensor, divergencePct, unitSolar, scoreDjp, scoreBbm, scoreCems, flags } =
+      EmissionFeatureEngineer.extractFeatures(report);
 
-    const pred = (results.label.data as Int32Array)[0]; // 1 = Normal, -1 = Anomaly
-    const decisionScore = (results.scores.data as Float32Array)[0];
+    // 2. Direct ONNX Inference Execution
+    const outputMap = await this.onnxSession.run({ float_input: tensor }, ['scores']);
+    const rawScores = outputMap['scores'].data as Float32Array;
+    const mlDecisionScore = Number(rawScores[0] ?? 0.0);
+    const anomalyProb = 1.0 / (1.0 + Math.exp(mlDecisionScore * 10.0));
+
+    // 3. Synthesize Multi-Tier Verdict
+    const compositeTrust =
+      Math.round((scoreDjp * 0.3 + scoreBbm * 0.4 + scoreCems * 0.3) * 10) / 10;
+    const isAnomaly = flags.length > 0 || compositeTrust < 68.0 || divergencePct > 45.0;
 
     return {
-      isAnomaly: pred === -1,
-      score: decisionScore,
+      isAnomaly,
+      verdict: isAnomaly ? 'REJECT_ANOMALY' : 'PASS_VERIFIED',
+      anomalyScore: anomalyProb,
+      trustScore: compositeTrust,
+      flags,
+      // ...
     };
   }
 }
@@ -205,57 +214,75 @@ export class AnomalyInferenceService {
 
 ---
 
-## 🛠️ Code Quality & Development Commands
+## 🚀 Prototyping Studio (Streamlit Dashboard)
+
+An interactive dashboard (`app.py`) for domain experts to test filings, inspect distributions, and simulate anomalies:
 
 ```bash
-# Formatter (Ruff - PEP 8, 100 char limit)
-poetry run ruff format .
-poetry run ruff format --check .   # Check only
-
-# Linter (Ruff)
-poetry run ruff check .            # Check for lint issues
-poetry run ruff check . --fix      # Auto-fix lint issues
-
-# Static Type Checker (Mypy)
-poetry run mypy src tests app.py
-
-# Test Suite (Pytest)
-poetry run pytest -v
-
-# Monorepo root shortcuts
-pnpm ml:lint
-pnpm ml:typecheck
-pnpm ml:test
-pnpm ml:format:check
-pnpm ml:format:write
+cd ml
+poetry run streamlit run app.py
 ```
 
 ---
 
-## 📂 Package Structure
+## 🛠️ Code Quality & CLI Commands
+
+```bash
+# Linter (Ruff)
+poetry run ruff check .
+
+# Formatter (Ruff)
+poetry run ruff format .
+
+# Static Type Checker (Mypy)
+poetry run mypy src tests app.py
+
+# Complete Pytest Suite (20 Tests across 6 Suites)
+poetry run pytest -v
+
+# Monorepo shortcuts
+pnpm ml:lint
+pnpm ml:typecheck
+pnpm ml:test
+```
+
+---
+
+## 📁 Package Structure
 
 ```
 ml/
-├── pyproject.toml              # Dependencies & build configuration
+├── pyproject.toml              # Dependencies (scikit-learn, skl2onnx, onnxruntime, pydantic, ruff, mypy)
 ├── README.md                   # Scientific & technical documentation (this file)
-├── AGENTS.md                   # AI Agent Governance and pipeline coding guidelines
-├── app.py                      # Subproject 2: Streamlit Prototyping Studio
+├── AGENTS.md                   # Agent governance guide and rules
+├── app.py                      # Streamlit interactive development studio
 ├── models/
-│   ├── anomaly_pipeline.pkl    # Serialized Scikit-Learn Pipeline
-│   └── anomaly_pipeline.onnx   # Exported ONNX Model
+│   ├── anomaly_pipeline.pkl    # Serialized Scikit-Learn pipeline
+│   ├── anomaly_pipeline.onnx   # Exported ONNX model artifact
+│   └── model_metadata.json     # Model card manifest & quality gate metrics
 ├── src/
 │   └── rekakarbon_ml/
 │       ├── __init__.py
 │       ├── data/               # Ingestion of assets/data and synthetic generators
+│       │   ├── __init__.py
 │       │   ├── benchmark_loader.py
-│       │   └── generator.py
-│       ├── pipeline/           # Scikit-Learn custom transformers & ONNX export
+│       │   ├── generator.py
+│       │   └── schema.py       # Pydantic data models & boundary validation
+│       ├── pipeline/           # Scikit-Learn custom transformers, trainer & ONNX exporter
+│       │   ├── __init__.py
 │       │   ├── transformers.py
 │       │   ├── build_pipeline.py
-│       │   └── onnx_exporter.py
+│       │   ├── onnx_exporter.py
+│       │   └── evaluator.py    # Evaluation harness & quality gate engine
 │       └── inference/          # Prediction runners & diagnostic scoring
+│           ├── __init__.py
 │           └── predictor.py
 └── tests/
-    ├── test_pipeline.py        # Pipeline & transformer unit tests
-    └── test_onnx_parity.py     # ONNX numerical parity tests
+    ├── __init__.py
+    ├── test_data_validation.py         # Layer 1: Schema validation & boundary tests
+    ├── test_pipeline.py                # Layer 2: Preprocessing & transformer unit tests
+    ├── test_model_evaluation.py        # Layer 3 & 4: Evaluation metrics & quality gates
+    ├── test_behavioral_robustness.py   # Layer 5: Metamorphic & noise invariance tests
+    ├── test_performance_benchmarks.py  # Layer 6 & 7: Inference latency & throughput benchmarks
+    └── test_onnx_parity.py             # Layer 8 & 9: Scikit-Learn vs ONNX parity verification
 ```

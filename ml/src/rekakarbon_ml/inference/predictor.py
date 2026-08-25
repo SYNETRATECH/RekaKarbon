@@ -60,9 +60,19 @@ class CarbonAnomalyPredictor:
         self.onnx_path = onnx_path
         self.ort_session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
 
-    def predict_single(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def predict_single(self, record: Dict[str, Any], validate: bool = False) -> Dict[str, Any]:
         """Runs end-to-end anomaly audit on a single company report dict."""
-        df = pd.DataFrame([record])
+        if validate:
+            from ..data.schema import validate_emission_dict
+
+            is_valid, err_msg, validated = validate_emission_dict(record)
+            if not is_valid or validated is None:
+                raise ValueError(f"Input validation error: {err_msg}")
+            payload = validated.to_feature_dict()
+        else:
+            payload = record
+
+        df = pd.DataFrame([payload])
         res = self.predict_batch(df)
         return res[0]
 
@@ -89,24 +99,21 @@ class CarbonAnomalyPredictor:
         if self.use_onnx:
             input_name = self.ort_session.get_inputs()[0].name
             onnx_out = self.ort_session.run(None, {input_name: eng_features.astype(np.float32)})
-            preds = onnx_out[0].flatten()
             decisions = onnx_out[1].flatten()
         else:
             scaler = self.pipeline.named_steps["scaler"]
             detector = self.pipeline.named_steps["detector"]
             scaled = scaler.transform(eng_features)
-            preds = detector.predict(scaled)
             decisions = detector.decision_function(scaled)
 
         results = []
-        for i in range(len(df_eval)):
-            row = df_eval.iloc[i]
+        dict_rows = df_eval.to_dict(orient="records")
+        for i, row in enumerate(dict_rows):
             sector_name = str(row.get("sector", SUPPORTED_SECTORS[0]))
             if sector_name not in self.benchmarks:
                 sector_name = SUPPORTED_SECTORS[0]
             bench = self.benchmarks[sector_name]
 
-            is_ml_anomaly = bool(preds[i] == -1)
             decision = float(decisions[i])
 
             # Logistic mapping of decision score to continuous anomaly probability [0, 1]
@@ -165,12 +172,13 @@ class CarbonAnomalyPredictor:
                 score_djp = max(10.0, round(100.0 - (deviation / 250.0), 1))
 
             # --- TIER 2 PHYSICAL: BBM & COMBUSTION CORRELATION ---
-            if divergence_pct < 15.0:
-                score_bbm = round(99.0 - (divergence_pct * 0.5), 1)
-            elif divergence_pct < 30.0:
-                score_bbm = round(90.0 - (divergence_pct - 15.0) * 1.5, 1)
+            # Accounts for industrial fuel market price variations (±25% around nominal)
+            if divergence_pct < 25.0:
+                score_bbm = round(99.0 - (divergence_pct * 0.4), 1)
+            elif divergence_pct < 45.0:
+                score_bbm = round(89.0 - (divergence_pct - 25.0) * 1.2, 1)
             else:
-                score_bbm = max(5.0, round(65.0 - (divergence_pct - 30.0) * 1.2, 1))
+                score_bbm = max(5.0, round(65.0 - (divergence_pct - 45.0) * 1.5, 1))
 
             # --- TIER 2 SECTOR: PEER INTENSITY & VOLATILITY ---
             intensity = reported / prod
@@ -178,36 +186,41 @@ class CarbonAnomalyPredictor:
             bench_std = bench["std_intensity"]
             intensity_z = abs(intensity - bench_avg) / (bench_std + 1e-6)
 
-            if intensity_z <= 1.5:
+            if intensity_z <= 2.0:
                 score_cems = 96.0
-            elif intensity_z <= 3.0:
-                score_cems = max(50.0, round(95.0 - (intensity_z - 1.5) * 25.0, 1))
+            elif intensity_z <= 3.5:
+                score_cems = max(50.0, round(95.0 - (intensity_z - 2.0) * 25.0, 1))
             else:
-                score_cems = max(10.0, round(50.0 - (intensity_z - 3.0) * 15.0, 1))
+                score_cems = max(10.0, round(50.0 - (intensity_z - 3.5) * 15.0, 1))
 
             # Diagnostic Flags
             flags = []
             if score_djp < 70.0:
                 flags.append("BIAYA_SOLAR_TIDAK_REALISTIS")
-            if divergence_pct > 25.0:
+            if divergence_pct > 45.0:
                 flags.append("DEVIASI_FISIK_DAN_LAPORAN_TINGGI")
-            if reported < e_expected * 0.60:
+            if reported < e_expected * 0.50:
                 flags.append("UNDER_REPORTING_TERINDIKASI")
-            if intensity < bench["min_intensity"] * 0.5:
+            if intensity < bench["min_intensity"] * 0.45:
                 flags.append("INTENSITAS_EMISI_TERLALU_RENDAH")
-            elif intensity > bench["max_intensity"] * 1.5:
+            elif intensity > bench["max_intensity"] * 1.6:
                 flags.append("INTENSITAS_EMISI_ABERRAN_SEKTOR")
             if (
                 bench.get("has_process_emissions", False)
                 and clinker == 0
-                and reported < e_expected * 0.70
+                and reported < e_expected * 0.65
             ):
                 flags.append("EMISI_PROSES_TIDAK_DILAPORKAN")
-            if abs(reported - hist) / (hist + 1e-6) > 0.55:
+            if abs(reported - hist) / (hist + 1e-6) > 0.65:
                 flags.append("VOLATILITAS_HISTORIS_EKSTRIM")
 
             composite_trust = round((score_djp * 0.30 + score_bbm * 0.40 + score_cems * 0.30), 1)
-            is_flagged = is_ml_anomaly or (composite_trust < 75.0) or (divergence_pct > 30.0)
+            is_flagged = (
+                (len(flags) > 0)
+                or (composite_trust < 68.0)
+                or (divergence_pct > 45.0)
+                or (anomaly_prob > 0.70 and composite_trust < 80.0)
+            )
 
             # Explanations in Bahasa Indonesia
             if not is_flagged:
