@@ -12,6 +12,7 @@ import {
   MARKET_PRICE_RANGES,
   SECTOR_BENCHMARKS,
 } from './ml-feature-engineer';
+import { findWorkspaceRoot } from '../common/utils';
 
 @Injectable()
 export class MlAuditEngineService implements OnModuleInit {
@@ -24,39 +25,39 @@ export class MlAuditEngineService implements OnModuleInit {
   }
 
   /**
-   * Discovers and initializes the ONNX runtime inference session from models/anomaly_pipeline.onnx.
+   * Initializes the ONNX runtime inference session from workspace root ml/models/anomaly_pipeline.onnx.
    */
-  public async initOnnxSession(customPath?: string): Promise<void> {
-    const candidatePaths = [
-      customPath,
-      path.resolve(process.cwd(), '../ml/models/anomaly_pipeline.onnx'),
-      path.resolve(process.cwd(), 'models/anomaly_pipeline.onnx'),
-      path.resolve(__dirname, '../../../../ml/models/anomaly_pipeline.onnx'),
-      path.resolve(__dirname, '../../../ml/models/anomaly_pipeline.onnx'),
-    ].filter(Boolean) as string[];
+  public async initOnnxSession(): Promise<void> {
+    const workspaceRoot = findWorkspaceRoot(__dirname);
+    const defaultModelPath = path.join(
+      workspaceRoot,
+      'ml/models/anomaly_pipeline.onnx',
+    );
 
-    for (const candidate of candidatePaths) {
-      if (fs.existsSync(candidate)) {
-        try {
-          this.onnxSession = await ort.InferenceSession.create(candidate, {
-            executionProviders: ['cpu'],
-          });
-          this.onnxModelPath = candidate;
-          this.logger.log(
-            `Successfully loaded ONNX Anomaly Detection Model from: ${candidate}`,
-          );
-          return;
-        } catch (err) {
-          this.logger.warn(
-            `Failed to initialize ONNX session from ${candidate}: ${(err as Error).message}`,
-          );
-        }
-      }
+    const modelPath = process.env.ONNX_MODEL_PATH || defaultModelPath;
+
+    this.onnxModelPath = modelPath;
+
+    if (!fs.existsSync(modelPath)) {
+      this.logger.warn(
+        `ONNX model not found at expected path '${modelPath}'. Fallback deterministic ML scoring will be used.`,
+      );
+      return;
     }
 
-    this.logger.warn(
-      'ONNX model file not found in standard paths. Fallback deterministic ML scoring will be used.',
-    );
+    try {
+      this.onnxSession = await ort.InferenceSession.create(modelPath, {
+        executionProviders: ['cpu'],
+      });
+      this.logger.log(
+        `Successfully loaded ONNX Anomaly Detection Model from: ${modelPath}`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Failed to initialize ONNX session from '${modelPath}': ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+    }
   }
 
   /**

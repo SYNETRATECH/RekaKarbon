@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, Min } from 'class-validator';
 
 export enum IndustrialSector {
   SEMEN = 'Semen & Bahan Bangunan',
@@ -16,29 +17,33 @@ export class AuditEmissionReportDto {
     enum: IndustrialSector,
     example: IndustrialSector.MANUFAKTUR,
   })
-  @IsEnum(IndustrialSector)
-  sector: IndustrialSector;
+  @IsEnum(IndustrialSector, { message: 'Valid industrial sector is required.' })
+  @IsNotEmpty()
+  sector!: IndustrialSector;
 
   @ApiProperty({
     description: 'Physical production output volume in metric tonnes',
     example: 450000.0,
   })
-  @IsNumber()
-  @Min(0.001)
-  productionTonnes: number;
+  @Type(() => Number)
+  @IsNumber({}, { message: 'productionTonnes must be a valid number.' })
+  @Min(0.001, { message: 'productionTonnes must be at least 0.001 tonnes.' })
+  productionTonnes!: number;
 
   @ApiProperty({
     description: 'Reported GHG emissions in metric tonnes CO2e',
     example: 48200.0,
   })
-  @IsNumber()
-  @Min(0)
-  reportedEmissionsTco2e: number;
+  @Type(() => Number)
+  @IsNumber({}, { message: 'reportedEmissionsTco2e must be a valid number.' })
+  @Min(0, { message: 'reportedEmissionsTco2e must be non-negative.' })
+  reportedEmissionsTco2e!: number;
 
   @ApiPropertyOptional({
     description: 'Historical baseline emissions in metric tonnes CO2e',
     example: 47200.0,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -48,6 +53,7 @@ export class AuditEmissionReportDto {
     description: 'Stationary diesel fuel consumption in Liters',
     example: 4850000.0,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -57,6 +63,7 @@ export class AuditEmissionReportDto {
     description: 'Mobile fleet diesel fuel consumption in Liters',
     example: 1240000.0,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -66,6 +73,7 @@ export class AuditEmissionReportDto {
     description: 'Biomass fuel consumption in metric tonnes',
     example: 0.0,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -75,6 +83,7 @@ export class AuditEmissionReportDto {
     description: 'Clinker production in tonnes (for cement calcination)',
     example: 0.0,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -84,6 +93,7 @@ export class AuditEmissionReportDto {
     description: 'Total expenditure for industrial solar / diesel fuel in IDR',
     example: 99425000000.0,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -93,6 +103,7 @@ export class AuditEmissionReportDto {
     description: 'Total expenditure for coal in IDR',
     example: 12800000000.0,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -102,6 +113,7 @@ export class AuditEmissionReportDto {
     description: 'Total expenditure for natural gas in IDR',
     example: 3100000000.0,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -111,6 +123,7 @@ export class AuditEmissionReportDto {
     description: 'Total expenditure for grid electricity (PLN) in IDR',
     example: 8950000000.0,
   })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)

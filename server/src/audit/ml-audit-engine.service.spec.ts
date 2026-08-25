@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import * as path from 'path';
 import { MlAuditEngineService } from './ml-audit-engine.service';
 import { IndustrialSector } from './dto/audit-emission-report.dto';
 
@@ -12,12 +11,8 @@ describe('MlAuditEngineService', () => {
     }).compile();
 
     service = module.get<MlAuditEngineService>(MlAuditEngineService);
-    // Explicitly point to the ONNX artifact from workspace
-    const onnxPath = path.resolve(
-      __dirname,
-      '../../../ml/models/anomaly_pipeline.onnx',
-    );
-    await service.initOnnxSession(onnxPath);
+    // Initialize default deterministic ONNX model from server/models/
+    await service.initOnnxSession();
   });
 
   it('should be defined and initialize ONNX session', () => {

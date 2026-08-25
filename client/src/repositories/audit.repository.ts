@@ -1,8 +1,14 @@
 import { api } from '../lib/api';
-import type { AnomalySummary, EnergyCorrelationItem } from '../types';
+import type {
+  AnomalySummary,
+  EnergyCorrelationItem,
+  AiAnomalyLog,
+  MlAuditResult,
+  AuditEmissionReportParams,
+} from '../types';
 
 export interface AuditRepository {
-  getAiAnomalyLogs(): Promise<any[]>;
+  getAiAnomalyLogs(): Promise<AiAnomalyLog[]>;
   getAnomalySummary(): Promise<AnomalySummary>;
   getEnergyCorrelationData(): Promise<EnergyCorrelationItem[]>;
   verifyAnomalyRecord(id: string): Promise<{ success: boolean; id: string }>;
@@ -15,11 +21,12 @@ export interface AuditRepository {
   getDroneScans(): Promise<any[]>;
   getKthPolygons(): Promise<any[]>;
   getKthLogs(): Promise<any[]>;
+  evaluateEmissionReport(params: AuditEmissionReportParams): Promise<MlAuditResult>;
 }
 
 export class ApiAuditRepository implements AuditRepository {
   async getAiAnomalyLogs() {
-    return api.get<any[]>('/audit/anomaly-logs');
+    return api.get<AiAnomalyLog[]>('/audit/anomaly-logs');
   }
   async getAnomalySummary() {
     return api.get<AnomalySummary>('/audit/anomaly-summary');
@@ -56,6 +63,9 @@ export class ApiAuditRepository implements AuditRepository {
   }
   async getKthLogs() {
     return api.get<any[]>('/audit/kth-logs');
+  }
+  async evaluateEmissionReport(params: AuditEmissionReportParams) {
+    return api.post<MlAuditResult>('/audit/evaluate-emission', params);
   }
 }
 

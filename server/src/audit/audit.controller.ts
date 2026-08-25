@@ -166,4 +166,19 @@ export class AuditController {
     const data = await this.auditService.getKthLogs();
     return { success: true, data };
   }
+
+  @ApiOperation({
+    summary: 'Retrieve ONNX ML engine inference status and active model path',
+  })
+  @ApiResponse({ status: 200, description: 'ML engine status retrieved.' })
+  @Get('ml-status')
+  getMlEngineStatus() {
+    return {
+      success: true,
+      data: {
+        isLoaded: this.mlAuditEngineService.isModelLoaded(),
+        modelPath: this.mlAuditEngineService.getModelPath(),
+      },
+    };
+  }
 }
