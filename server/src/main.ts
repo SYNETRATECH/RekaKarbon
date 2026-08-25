@@ -11,6 +11,7 @@ import {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api/v1');
 
   // Dynamic CORS origin configuration for multi-server / distributed deployment
   const corsOriginsEnv = process.env.CORS_ORIGINS;

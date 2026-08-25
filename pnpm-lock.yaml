@@ -481,6 +481,9 @@ importers:
       tsx:
         specifier: ^4.23.12
         version: 4.23.12
+      xendit-node:
+        specifier: ^7.0.0
+        version: 7.0.0
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.2.0
@@ -11770,6 +11773,13 @@ packages:
       }
     engines: { node: '>=20' }
 
+  xendit-node@7.0.0:
+    resolution:
+      {
+        integrity: sha512-atsCQ9femoWLu+hU5rY0TZ+ZhqSYbpTtABZN7rGMhhBh1xLhTuY1rgLfoaXzFiRt3eOQRqsew78wPUcQn1QckA==,
+      }
+    engines: { node: '>=18.0.0' }
+
   xtend@4.0.2:
     resolution:
       {
@@ -19149,6 +19159,8 @@ snapshots:
     dependencies:
       is-wsl: 3.1.1
       powershell-utils: 0.1.0
+
+  xendit-node@7.0.0: {}
 
   xtend@4.0.2: {}
 

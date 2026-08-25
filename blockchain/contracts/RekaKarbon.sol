@@ -20,8 +20,47 @@ contract RekaKarbon is ERC1155, AccessControl, ERC1155Holder {
     /// @notice Token ID 1 dialokasikan khusus untuk Jatah Emisi (PTBAE-PU)
     uint256 public constant PTBAE_PU = 1; 
 
-    /// @notice Token ID untuk SPE-GRK (Offset) dimulai dari angka 2
-    uint256 private _nextTokenId = 2; 
+    /// @notice Token ID 3 digunakan untuk Wallet Credit berbasis Rupiah (RKB_CREDIT)
+    uint256 public constant RKB_CREDIT = 3;
+
+    /// @notice Role untuk deposit/pembelian bursa
+    bytes32 public constant DEPOSIT_ROLE = keccak256("DEPOSIT_ROLE");
+
+    /// @notice Token ID untuk SPE-GRK (Offset) dimulai dari angka 4
+    uint256 private _nextTokenId = 4; 
+
+    /// @notice Struktur data untuk sertifikat setelah token di-burn
+    struct RetirementCertificate {
+        address retiree;
+        uint256 assetId;
+        uint256 amountRetired;
+        string certificateNumber;
+        bytes32 burnTxHash;
+        uint256 retiredAt;
+        bool isActive;
+    }
+
+    uint256 private _nextCertId = 1;
+    mapping(uint256 => RetirementCertificate) public retirementCerts;
+    mapping(address => uint256[]) public certsByRetiree;
+
+    /// @notice Event ketika pembelian karbon terjadi di Bursa
+    event CarbonPurchased(
+        address indexed buyer,
+        uint256 indexed assetId,
+        uint256 amount,
+        uint256 totalValueWei,
+        uint256 timestamp
+    );
+
+    /// @notice Event ketika sertifikat dikeluarkan paska pembakaran (burn) token
+    event RetirementCertificateIssued(
+        uint256 indexed certId,
+        address indexed retiree,
+        uint256 indexed assetId,
+        uint256 amount,
+        string certificateNumber
+    );
 
     /// @notice Struktur data untuk menyimpan metadata setiap aset karbon
     struct CarbonAsset {
@@ -51,6 +90,7 @@ contract RekaKarbon is ERC1155, AccessControl, ERC1155Holder {
     constructor() ERC1155("") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINISTRY_ROLE, msg.sender); 
+        _grantRole(DEPOSIT_ROLE, msg.sender);
         
         // Metadata asuransi global
         carbonAssets[GLOBAL_RESERVE] = CarbonAsset({
@@ -67,6 +107,14 @@ contract RekaKarbon is ERC1155, AccessControl, ERC1155Holder {
             coordinates: "National",
             isFrozen: false
         });
+
+        // Inisialisasi metadata untuk RKB_CREDIT
+        carbonAssets[RKB_CREDIT] = CarbonAsset({
+            assetType: "RKB-CREDIT",
+            creator: msg.sender,
+            coordinates: "Wallet",
+            isFrozen: false
+        });
     }
 
     /// @notice Mencetak token Jatah Emisi (PTBAE-PU) ke alamat tujuan
@@ -74,6 +122,17 @@ contract RekaKarbon is ERC1155, AccessControl, ERC1155Holder {
     /// @param amount Jumlah token yang dicetak
     function issueQuota(address to, uint256 amount) public onlyRole(MINISTRY_ROLE) {
         _mint(to, PTBAE_PU, amount, "");
+    }
+
+    /// @notice Mencetak RKB_CREDIT untuk pengguna yang deposit fiat
+    function mintWalletCredit(address to, uint256 amount) public onlyRole(DEPOSIT_ROLE) {
+        _mint(to, RKB_CREDIT, amount, "");
+    }
+
+    /// @notice Membakar RKB_CREDIT ketika pengguna membelanjakannya (misal di luar bursa)
+    function spendWalletCredit(address from, uint256 amount) public onlyRole(DEPOSIT_ROLE) {
+        require(balanceOf(from, RKB_CREDIT) >= amount, "RekaKarbon: Saldo RKB tidak cukup");
+        _burn(from, RKB_CREDIT, amount);
     }
 
     /// @notice AI Verifier mencetak SPE-GRK. 5% otomatis dialokasikan ke Brankas Asuransi (GLOBAL_RESERVE)
@@ -126,6 +185,28 @@ contract RekaKarbon is ERC1155, AccessControl, ERC1155Holder {
         emit InsuranceClaimed(msg.sender, frozenAssetId, amount);
     }
 
+    /// @notice Backend mengeksekusi pembelian karbon di Bursa
+    /// @dev Atomic: burn RKB_CREDIT + transfer SPE-GRK dalam 1 transaksi
+    function executeBursaPurchase(
+        address buyer,
+        address seller,         // Pool proyek / pengelola hutan
+        uint256 assetId,        // Token ID SPE-GRK
+        uint256 amount,         // Jumlah tCO2e
+        uint256 totalCostRKB    // Total Rupiah (RKB_CREDIT)
+    ) public onlyRole(DEPOSIT_ROLE) {
+        require(balanceOf(buyer, RKB_CREDIT) >= totalCostRKB, "RekaKarbon: Saldo RKB tidak cukup");
+        require(balanceOf(seller, assetId) >= amount, "RekaKarbon: Pasokan SPE-GRK tidak cukup");
+        require(!carbonAssets[assetId].isFrozen, "RekaKarbon: Aset sedang dibekukan");
+
+        // 1. Burn RKB_CREDIT dari pembeli
+        _burn(buyer, RKB_CREDIT, totalCostRKB);
+
+        // 2. Transfer SPE-GRK dari seller ke pembeli
+        _safeTransferFrom(seller, buyer, assetId, amount, "");
+
+        emit CarbonPurchased(buyer, assetId, amount, totalCostRKB, block.timestamp);
+    }
+
     /// @notice Menghanguskan token sebagai bukti pelaporan kepatuhan/offset karbon
     /// @param assetId ID aset yang akan di-retire
     /// @param amount Jumlah aset yang di-retire
@@ -135,6 +216,41 @@ contract RekaKarbon is ERC1155, AccessControl, ERC1155Holder {
         _burn(msg.sender, assetId, amount);
         
         emit CarbonRetired(msg.sender, assetId, amount);
+    }
+
+    /// @notice Menghanguskan token untuk mendapatkan Sertifikat Pensiun Karbon
+    function retireCarbonWithCertificate(
+        uint256 assetId,
+        uint256 amount,
+        string calldata certificateNumber
+    ) public returns (uint256) {
+        require(!carbonAssets[assetId].isFrozen, "RekaKarbon: Aset sedang dibekukan");
+        require(balanceOf(msg.sender, assetId) >= amount, "RekaKarbon: Saldo tidak cukup");
+        
+        _burn(msg.sender, assetId, amount);
+        
+        uint256 certId = _nextCertId++;
+        retirementCerts[certId] = RetirementCertificate({
+            retiree: msg.sender,
+            assetId: assetId,
+            amountRetired: amount,
+            certificateNumber: certificateNumber,
+            burnTxHash: bytes32(0), // Diisi oleh backend setelah tx confirmed
+            retiredAt: block.timestamp,
+            isActive: true
+        });
+        
+        certsByRetiree[msg.sender].push(certId);
+        
+        emit CarbonRetired(msg.sender, assetId, amount);
+        emit RetirementCertificateIssued(certId, msg.sender, assetId, amount, certificateNumber);
+        
+        return certId;
+    }
+
+    /// @notice Mendapatkan daftar ID sertifikat milik seorang pengguna
+    function getCertsByRetiree(address retiree) external view returns (uint256[] memory) {
+        return certsByRetiree[retiree];
     }
 
     /// @notice Admin (KLHK) membekukan aset karbon (misal: hutan terbakar)

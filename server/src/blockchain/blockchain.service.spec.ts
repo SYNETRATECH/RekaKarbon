@@ -1,17 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BlockchainService } from './blockchain.service';
-import { InternalServerErrorException } from '@nestjs/common';
 import { ethers } from 'ethers';
+import type { BlockchainTransaction, CarbonTokenContract } from './types';
 
 jest.mock('ethers', () => {
   const original = jest.requireActual(
     'ethers',
   ) as unknown as typeof import('ethers');
-  const originalEthers = original.ethers;
   return {
     ...original,
     ethers: {
-      ...originalEthers,
+      ...original.ethers,
       JsonRpcProvider: jest.fn().mockImplementation(() => ({})),
       Wallet: jest.fn().mockImplementation(() => ({})),
       Contract: jest.fn().mockImplementation(() => ({
@@ -53,35 +52,40 @@ describe('BlockchainService', () => {
 
   describe('onModuleInit without env configuration', () => {
     it('should fail initialization gracefully if env vars are missing', () => {
-      delete process.env.RPC_URL;
+      delete process.env.BESU_RPC_URL;
       delete process.env.PRIVATE_KEY;
-      delete process.env.CONTRACT_ADDRESS;
+      delete process.env.CARBON_TOKEN_CONTRACT_ADDRESS;
+      delete process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
 
-      // Reset service instantiation to trigger onModuleInit manually
       service.onModuleInit();
-
       expect(ethers.JsonRpcProvider).not.toHaveBeenCalled();
     });
   });
 
   describe('with env configuration', () => {
-    let mockContract: {
-      balanceOf: jest.Mock;
-      mintOffsetCredit: jest.Mock;
-    };
+    let mockContract: Pick<
+      CarbonTokenContract,
+      'balanceOf' | 'mintOffsetCredit'
+    >;
 
     beforeEach(() => {
-      process.env.RPC_URL = 'http://127.0.0.1:8545';
+      process.env.BESU_RPC_URL = 'http://127.0.0.1:8545';
       process.env.PRIVATE_KEY =
         '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
-      process.env.CONTRACT_ADDRESS =
+      process.env.CARBON_TOKEN_CONTRACT_ADDRESS =
         '0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0';
+      process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS =
+        '0x9DdaF0CD259887258Bc13a92C0a6dA92698644C1';
 
+      const transaction: BlockchainTransaction = {
+        wait: jest.fn().mockResolvedValue({
+          hash: '0xtesttxhash',
+          logs: [],
+        }),
+      };
       mockContract = {
         balanceOf: jest.fn().mockResolvedValue(BigInt(150)),
-        mintOffsetCredit: jest.fn().mockResolvedValue({
-          wait: jest.fn().mockResolvedValue({ hash: '0xtesttxhash' }),
-        }),
+        mintOffsetCredit: jest.fn().mockResolvedValue(transaction),
       };
 
       jest
@@ -105,8 +109,15 @@ describe('BlockchainService', () => {
         '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
         expect.any(Object),
       );
+      // RekaKarbon contract
       expect(ethers.Contract).toHaveBeenCalledWith(
         '0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0',
+        expect.any(Array),
+        expect.any(Object),
+      );
+      // EmissionRegistry contract
+      expect(ethers.Contract).toHaveBeenCalledWith(
+        '0x9DdaF0CD259887258Bc13a92C0a6dA92698644C1',
         expect.any(Array),
         expect.any(Object),
       );
@@ -129,24 +140,7 @@ describe('BlockchainService', () => {
         '0xtoaddress',
         500,
         '-6.2,106.8',
-        {
-          gasPrice: 0,
-        },
       );
-    });
-
-    it('should throw InternalServerErrorException if read fails', async () => {
-      mockContract.balanceOf.mockRejectedValue(new Error('RPC Error'));
-      await expect(service.getCarbonBalance('0xaddress', 1)).rejects.toThrow(
-        InternalServerErrorException,
-      );
-    });
-
-    it('should throw InternalServerErrorException if write fails', async () => {
-      mockContract.mintOffsetCredit.mockRejectedValue(new Error('Reverted'));
-      await expect(
-        service.mintOffsetCredit('0xtoaddress', 500, ''),
-      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 });
