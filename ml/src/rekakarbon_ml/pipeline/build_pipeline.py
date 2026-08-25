@@ -13,7 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
 from ..data.generator import EmissionDataGenerator
-from .transformers import FEATURE_COLUMNS, EmissionFeatureEngineer
+from .transformers import EmissionFeatureEngineer
 
 
 def build_anomaly_pipeline(contamination: float = 0.10, random_state: int = 42) -> Pipeline:
@@ -25,10 +25,10 @@ def build_anomaly_pipeline(contamination: float = 0.10, random_state: int = 42) 
             (
                 "detector",
                 IsolationForest(
-                    n_estimators=150,
+                    n_estimators=100,
                     contamination=contamination,
                     random_state=random_state,
-                    n_jobs=-1,
+                    n_jobs=1,
                 ),
             ),
         ]
@@ -44,7 +44,7 @@ def train_and_save_pipeline(
     generator = EmissionDataGenerator(random_state=42)
     df = generator.generate_dataset(n_samples=n_samples, anomaly_ratio=contamination)
 
-    X = df[FEATURE_COLUMNS]
+    X = df
     pipeline = build_anomaly_pipeline(contamination=contamination, random_state=42)
     pipeline.fit(X)
 
