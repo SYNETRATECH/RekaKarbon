@@ -15,8 +15,7 @@ RekaKarbon/
 ├── blockchain/      # ⛓️ Smart Contracts & EVM Network (Solidity, Hardhat, Hyperledger Besu)
 ├── ml/              # 🌿 AI/ML Anomaly Detection Engine (Scikit-Learn, ONNX, Streamlit, Pytest)
 ├── assets/data/     # 📊 Official Indonesian Benchmark Datasets (BPS, KLHK, ESDM)
-├── .agents/skills/  # 🤖 Shared AI Agent Specifications and Standards
-└── ml-testing-guide.md # 🧪 Team Machine Learning Testing & Validation Guideline
+└── .agents/skills/  # 🤖 Shared AI Agent Specifications and Standards
 ```
 
 ```mermaid
@@ -131,7 +130,6 @@ pnpm blockchain:test
 ## 📖 Key Documentation
 
 - **Monorepo Agent Governance**: [`AGENTS.md`](AGENTS.md)
-- **ML Testing & Validation Guideline**: [`ml-testing-guide.md`](ml-testing-guide.md)
 - **AI/ML Engine Scientific Guide**: [`ml/README.md`](ml/README.md)
 - **Backend API & Architecture**: [`server/README.md`](server/README.md)
 - **Blockchain Smart Contracts Guide**: [`blockchain/DOCUMENTATION.md`](blockchain/DOCUMENTATION.md)
