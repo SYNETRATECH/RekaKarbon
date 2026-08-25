@@ -1,12 +1,23 @@
 [project]
 name = "rekakarbon-ml"
 version = "0.1.0"
-description = ""
+description = "AI/ML Carbon Emissions Anomaly Detection Engine for RekaKarbon dMRV"
 authors = [
-    {name = "Farrel Augusta Dinata",email = "farrel.apeiron@gmail.com"}
+    {name = "Farrel Augusta Dinata", email = "farrel.apeiron@gmail.com"}
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
+    "scikit-learn>=1.5.0",
+    "skl2onnx>=1.17.0",
+    "onnxruntime>=1.19.0",
+    "onnx>=1.16.0",
+    "pandas>=2.2.0",
+    "numpy>=1.26.0",
+    "streamlit>=1.38.0",
+    "plotly>=5.24.0",
+    "joblib>=1.4.0",
+    "openpyxl>=3.1.0",
+    "pytest>=8.3.0"
 ]
 
 
