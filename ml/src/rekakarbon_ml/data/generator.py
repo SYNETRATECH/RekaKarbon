@@ -3,9 +3,9 @@ Synthetic Dataset Generator for Industrial Carbon Emissions and Anomalies.
 Generates balanced compliant vs anomalous submissions reflecting Indonesian industrial sectors.
 """
 
-from typing import Optional
 import numpy as np
 import pandas as pd
+
 from .benchmark_loader import SectorBenchmarkLoader
 
 
@@ -15,11 +15,7 @@ class EmissionDataGenerator:
         self.loader = SectorBenchmarkLoader()
         self.sector_benchmarks = self.loader.get_sector_emission_factors()
 
-    def generate_dataset(
-        self,
-        n_samples: int = 1500,
-        anomaly_ratio: float = 0.12
-    ) -> pd.DataFrame:
+    def generate_dataset(self, n_samples: int = 1500, anomaly_ratio: float = 0.12) -> pd.DataFrame:
         sectors = list(self.sector_benchmarks.keys())
         data = []
 
@@ -40,7 +36,12 @@ class EmissionDataGenerator:
             emiss_elec = expected_total_emissions * bench.get("fuel_share_electricity", 0.25)
             emiss_gas = expected_total_emissions * max(
                 0.0,
-                1.0 - (bench.get("fuel_share_coal", 0.4) + bench.get("fuel_share_solar", 0.25) + bench.get("fuel_share_electricity", 0.25))
+                1.0
+                - (
+                    bench.get("fuel_share_coal", 0.4)
+                    + bench.get("fuel_share_solar", 0.25)
+                    + bench.get("fuel_share_electricity", 0.25)
+                ),
             )
 
             stat_fuel_liters = max(1000.0, (emiss_solar * 0.8) / 0.00268)
@@ -48,7 +49,9 @@ class EmissionDataGenerator:
             coal_kg = max(1000.0, emiss_coal / 0.00242)
             gas_m3 = max(500.0, emiss_gas / 0.0019)
             elec_kwh = max(5000.0, emiss_elec / 0.00085)
-            biomass_ton = float(self.rng.uniform(100, 20000)) if "biomass_utilization_ratio" in bench else 0.0
+            biomass_ton = (
+                float(self.rng.uniform(100, 20000)) if "biomass_utilization_ratio" in bench else 0.0
+            )
 
             solar_price = float(self.rng.uniform(18500, 22000))
             cost_solar = stat_fuel_liters * solar_price
@@ -68,21 +71,23 @@ class EmissionDataGenerator:
             noise = float(self.rng.uniform(0.98, 1.02))
             reported_emissions = expected_total_emissions * noise
 
-            data.append({
-                "sector": sector,
-                "production_tonnes": round(production, 2),
-                "reported_emissions_tco2e": round(reported_emissions, 2),
-                "historical_emissions_tco2e": round(historical_emissions, 2),
-                "stat_fuel_liters": round(stat_fuel_liters, 2),
-                "mob_fuel_liters": round(mob_fuel_liters, 2),
-                "biomass_tonnes": round(biomass_ton, 2),
-                "cost_solar_idr": round(cost_solar, 2),
-                "cost_coal_idr": round(cost_coal, 2),
-                "cost_gas_idr": round(cost_gas, 2),
-                "cost_pln_idr": round(cost_pln, 2),
-                "is_anomaly": 0,
-                "anomaly_type": "NORMAL"
-            })
+            data.append(
+                {
+                    "sector": sector,
+                    "production_tonnes": round(production, 2),
+                    "reported_emissions_tco2e": round(reported_emissions, 2),
+                    "historical_emissions_tco2e": round(historical_emissions, 2),
+                    "stat_fuel_liters": round(stat_fuel_liters, 2),
+                    "mob_fuel_liters": round(mob_fuel_liters, 2),
+                    "biomass_tonnes": round(biomass_ton, 2),
+                    "cost_solar_idr": round(cost_solar, 2),
+                    "cost_coal_idr": round(cost_coal, 2),
+                    "cost_gas_idr": round(cost_gas, 2),
+                    "cost_pln_idr": round(cost_pln, 2),
+                    "is_anomaly": 0,
+                    "anomaly_type": "NORMAL",
+                }
+            )
 
         # 2. Generate Labeled Anomalies
         anomaly_types = [
@@ -98,7 +103,9 @@ class EmissionDataGenerator:
             atype = self.rng.choice(anomaly_types)
 
             production = float(self.rng.uniform(100000, 800000))
-            normal_intensity = float(self.rng.uniform(bench["min_intensity"], bench["max_intensity"]))
+            normal_intensity = float(
+                self.rng.uniform(bench["min_intensity"], bench["max_intensity"])
+            )
             real_physics_emissions = production * normal_intensity
 
             stat_fuel_liters = float(self.rng.uniform(2000000, 10000000))
@@ -121,21 +128,23 @@ class EmissionDataGenerator:
             else:
                 reported_emissions = historical_emissions * 0.10
 
-            data.append({
-                "sector": sector,
-                "production_tonnes": round(production, 2),
-                "reported_emissions_tco2e": round(reported_emissions, 2),
-                "historical_emissions_tco2e": round(historical_emissions, 2),
-                "stat_fuel_liters": round(stat_fuel_liters, 2),
-                "mob_fuel_liters": round(mob_fuel_liters, 2),
-                "biomass_tonnes": round(biomass_ton, 2),
-                "cost_solar_idr": round(cost_solar, 2),
-                "cost_coal_idr": round(cost_coal, 2),
-                "cost_gas_idr": round(cost_gas, 2),
-                "cost_pln_idr": round(cost_pln, 2),
-                "is_anomaly": 1,
-                "anomaly_type": atype
-            })
+            data.append(
+                {
+                    "sector": sector,
+                    "production_tonnes": round(production, 2),
+                    "reported_emissions_tco2e": round(reported_emissions, 2),
+                    "historical_emissions_tco2e": round(historical_emissions, 2),
+                    "stat_fuel_liters": round(stat_fuel_liters, 2),
+                    "mob_fuel_liters": round(mob_fuel_liters, 2),
+                    "biomass_tonnes": round(biomass_ton, 2),
+                    "cost_solar_idr": round(cost_solar, 2),
+                    "cost_coal_idr": round(cost_coal, 2),
+                    "cost_gas_idr": round(cost_gas, 2),
+                    "cost_pln_idr": round(cost_pln, 2),
+                    "is_anomaly": 1,
+                    "anomaly_type": atype,
+                }
+            )
 
         df = pd.DataFrame(data)
         return df.sample(frac=1.0, random_state=self.rng).reset_index(drop=True)

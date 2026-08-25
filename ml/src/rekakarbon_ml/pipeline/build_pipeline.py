@@ -5,35 +5,39 @@ Follows standard Scikit-Learn Pipeline and RobustScaler + IsolationForest.
 
 import os
 from typing import Tuple
+
 import joblib
 import pandas as pd
+from sklearn.ensemble import IsolationForest
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
-from sklearn.ensemble import IsolationForest
 
-from .transformers import EmissionFeatureEngineer, FEATURE_COLUMNS
 from ..data.generator import EmissionDataGenerator
+from .transformers import FEATURE_COLUMNS, EmissionFeatureEngineer
 
 
 def build_anomaly_pipeline(contamination: float = 0.10, random_state: int = 42) -> Pipeline:
     """Builds a scikit-learn pipeline for feature engineering, scaling, and outlier detection."""
-    pipeline = Pipeline([
-        ("feature_engineer", EmissionFeatureEngineer()),
-        ("scaler", RobustScaler()),
-        ("detector", IsolationForest(
-            n_estimators=150,
-            contamination=contamination,
-            random_state=random_state,
-            n_jobs=-1
-        ))
-    ])
+    pipeline = Pipeline(
+        [
+            ("feature_engineer", EmissionFeatureEngineer()),
+            ("scaler", RobustScaler()),
+            (
+                "detector",
+                IsolationForest(
+                    n_estimators=150,
+                    contamination=contamination,
+                    random_state=random_state,
+                    n_jobs=-1,
+                ),
+            ),
+        ]
+    )
     return pipeline
 
 
 def train_and_save_pipeline(
-    save_dir: str = "models",
-    n_samples: int = 2000,
-    contamination: float = 0.10
+    save_dir: str = "models", n_samples: int = 2000, contamination: float = 0.10
 ) -> Tuple[Pipeline, pd.DataFrame]:
     """Generates synthetic training data, trains the pipeline, and saves to disk."""
     os.makedirs(save_dir, exist_ok=True)

@@ -4,6 +4,7 @@ Follows BaseEstimator & TransformerMixin conventions for strict pipeline compati
 """
 
 from typing import List
+
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -18,7 +19,7 @@ FEATURE_COLUMNS: List[str] = [
     "cost_solar_idr",
     "cost_coal_idr",
     "cost_gas_idr",
-    "cost_pln_idr"
+    "cost_pln_idr",
 ]
 
 DERIVED_FEATURE_NAMES: List[str] = [
@@ -27,7 +28,7 @@ DERIVED_FEATURE_NAMES: List[str] = [
     "emission_intensity",
     "yoy_change_ratio",
     "energy_spend_per_ton_product",
-    "scope1_to_energy_cost_ratio"
+    "scope1_to_energy_cost_ratio",
 ]
 
 
@@ -66,13 +67,14 @@ class EmissionFeatureEngineer(BaseEstimator, TransformerMixin):
 
         eps = 1e-6
 
-        # 1. Stoichiometric expected emissions from fuel & utility spend
+        # 1. Stoichiometric expected emissions from fuel, biomass & utility spend
         total_fuel_l = stat_fuel + mob_fuel
         e_diesel = total_fuel_l * 0.00268
         e_coal = (c_coal / 1200.0) * 0.00242
         e_gas = (c_gas / 10000.0) * 0.0019
         e_pln = (c_pln / 1600.0) * 0.00085
-        e_expected = e_diesel + e_coal + e_gas + e_pln
+        e_biomass = biomass * 0.05
+        e_expected = e_diesel + e_coal + e_gas + e_pln + e_biomass
 
         # Feature 1: Divergence ratio |expected - reported| / expected
         divergence = np.abs(e_expected - reported) / (e_expected + eps)
@@ -94,13 +96,15 @@ class EmissionFeatureEngineer(BaseEstimator, TransformerMixin):
         # Feature 6: Scope 1 emissions to total fuel spend ratio
         spend_ratio = reported / (total_cost * 1e-9 + eps)
 
-        engineered = np.column_stack([
-            divergence,
-            solar_unit_cost_log,
-            emission_intensity,
-            yoy_change,
-            cost_per_ton,
-            spend_ratio
-        ]).astype(np.float32)
+        engineered = np.column_stack(
+            [
+                divergence,
+                solar_unit_cost_log,
+                emission_intensity,
+                yoy_change,
+                cost_per_ton,
+                spend_ratio,
+            ]
+        ).astype(np.float32)
 
         return engineered

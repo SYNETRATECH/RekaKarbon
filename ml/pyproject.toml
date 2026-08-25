@@ -17,10 +17,33 @@ dependencies = [
     "plotly>=5.24.0",
     "joblib>=1.4.0",
     "openpyxl>=3.1.0",
-    "pytest>=8.3.0"
+    "pytest>=8.3.0",
+    "ruff>=0.9.0",
+    "mypy>=1.15.0",
+    "pandas-stubs>=2.2.0",
+    "types-openpyxl>=3.1.0"
 ]
-
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rekakarbon_ml"]
+
+[tool.mypy]
+python_version = "3.13"
+mypy_path = "src"
+explicit_package_bases = true
+warn_return_any = false
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true

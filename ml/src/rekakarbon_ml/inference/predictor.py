@@ -4,13 +4,14 @@ Supports both Scikit-Learn (.pkl) and ONNX Runtime (.onnx).
 """
 
 import os
-from typing import Dict, Any, List
-import numpy as np
-import pandas as pd
-import onnxruntime as ort
+from typing import Any, Dict, List
 
-from ..pipeline.transformers import EmissionFeatureEngineer, FEATURE_COLUMNS
+import numpy as np
+import onnxruntime as ort
+import pandas as pd
+
 from ..pipeline.build_pipeline import load_pipeline
+from ..pipeline.transformers import FEATURE_COLUMNS, EmissionFeatureEngineer
 
 
 class CarbonAnomalyPredictor:
@@ -20,19 +21,23 @@ class CarbonAnomalyPredictor:
         self,
         model_pkl_path: str = "models/anomaly_pipeline.pkl",
         onnx_path: str = "models/anomaly_pipeline.onnx",
-        use_onnx: bool = True
+        use_onnx: bool = True,
     ):
         self.use_onnx = use_onnx
         self.feature_engineer = EmissionFeatureEngineer()
 
         if not os.path.exists(model_pkl_path):
             from ..pipeline.build_pipeline import train_and_save_pipeline
-            self.pipeline, _ = train_and_save_pipeline(save_dir=os.path.dirname(model_pkl_path) or "models")
+
+            self.pipeline, _ = train_and_save_pipeline(
+                save_dir=os.path.dirname(model_pkl_path) or "models"
+            )
         else:
             self.pipeline = load_pipeline(model_pkl_path)
 
         if not os.path.exists(onnx_path):
             from ..pipeline.onnx_exporter import export_pipeline_to_onnx
+
             export_pipeline_to_onnx(self.pipeline, onnx_path)
 
         self.onnx_path = onnx_path
@@ -73,7 +78,9 @@ class CarbonAnomalyPredictor:
             decision = float(decisions[i])
 
             # Logistic mapping of decision score to anomaly probability
-            anomaly_score = round(float(np.clip(1.0 / (1.0 + np.exp(decision * 10.0)), 0.0, 1.0)), 4)
+            anomaly_score = round(
+                float(np.clip(1.0 / (1.0 + np.exp(decision * 10.0)), 0.0, 1.0)), 4
+            )
 
             stat_fuel = float(row.get("stat_fuel_liters", 0))
             mob_fuel = float(row.get("mob_fuel_liters", 0))
@@ -87,10 +94,10 @@ class CarbonAnomalyPredictor:
 
             # Expected physical stoichiometric emission calculation
             e_expected = (
-                (stat_fuel + mob_fuel) * 0.00268 +
-                (c_coal / 1200.0) * 0.00242 +
-                (c_gas / 10000.0) * 0.0019 +
-                (c_pln / 1600.0) * 0.00085
+                (stat_fuel + mob_fuel) * 0.00268
+                + (c_coal / 1200.0) * 0.00242
+                + (c_gas / 10000.0) * 0.0019
+                + (c_pln / 1600.0) * 0.00085
             )
             divergence_pct = round(abs(e_expected - reported) / (e_expected + 1e-6) * 100, 1)
 
@@ -132,19 +139,21 @@ class CarbonAnomalyPredictor:
             else:
                 explanation = f"Anomali terdeteksi (Divergensi {divergence_pct}%). Terindikasi ketidaksesuaian antara pos biaya e-Faktur dan volume bahan bakar fisik."
 
-            results.append({
-                "is_anomaly": is_flagged,
-                "verdict": "REJECT_ANOMALY" if is_flagged else "PASS_VERIFIED",
-                "anomaly_score": anomaly_score,
-                "trust_score": composite_trust,
-                "divergence_percent": divergence_pct,
-                "expected_emission_tco2e": round(e_expected, 2),
-                "reported_emission_tco2e": round(reported, 2),
-                "score_djp": round(score_djp, 1),
-                "score_bbm": round(score_bbm, 1),
-                "score_cems": round(score_cems, 1),
-                "flags": flags,
-                "explanation": explanation
-            })
+            results.append(
+                {
+                    "is_anomaly": is_flagged,
+                    "verdict": "REJECT_ANOMALY" if is_flagged else "PASS_VERIFIED",
+                    "anomaly_score": anomaly_score,
+                    "trust_score": composite_trust,
+                    "divergence_percent": divergence_pct,
+                    "expected_emission_tco2e": round(e_expected, 2),
+                    "reported_emission_tco2e": round(reported, 2),
+                    "score_djp": round(score_djp, 1),
+                    "score_bbm": round(score_bbm, 1),
+                    "score_cems": round(score_cems, 1),
+                    "flags": flags,
+                    "explanation": explanation,
+                }
+            )
 
         return results

@@ -4,20 +4,20 @@ Converts Scikit-Learn models to ONNX and tests exact numerical parity.
 """
 
 import os
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
 import numpy as np
+import onnxruntime as ort
 import pandas as pd
-from sklearn.pipeline import Pipeline
 from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import FloatTensorType
-import onnxruntime as ort
+from sklearn.pipeline import Pipeline
 
 from .transformers import FEATURE_COLUMNS
 
 
 def export_pipeline_to_onnx(
-    pipeline: Pipeline,
-    output_path: str = "models/anomaly_pipeline.onnx"
+    pipeline: Pipeline, output_path: str = "models/anomaly_pipeline.onnx"
 ) -> str:
     """
     Converts the core detector (scaler + IsolationForest) to ONNX.
@@ -25,16 +25,13 @@ def export_pipeline_to_onnx(
     """
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    sub_pipeline = Pipeline([
-        ("scaler", pipeline.named_steps["scaler"]),
-        ("detector", pipeline.named_steps["detector"])
-    ])
+    sub_pipeline = Pipeline(
+        [("scaler", pipeline.named_steps["scaler"]), ("detector", pipeline.named_steps["detector"])]
+    )
 
     initial_type = [("float_input", FloatTensorType([None, 6]))]
     onnx_model = convert_sklearn(
-        sub_pipeline,
-        initial_types=initial_type,
-        target_opset={"": 15, "ai.onnx.ml": 3}
+        sub_pipeline, initial_types=initial_type, target_opset={"": 15, "ai.onnx.ml": 3}
     )
 
     with open(output_path, "wb") as f:
@@ -47,13 +44,14 @@ def export_pipeline_to_onnx(
 def verify_onnx_parity(
     pipeline: Pipeline,
     onnx_path: str = "models/anomaly_pipeline.onnx",
-    sample_df: Optional[pd.DataFrame] = None
+    sample_df: Optional[pd.DataFrame] = None,
 ) -> Tuple[bool, float]:
     """
     Validates numerical parity between Scikit-Learn decision function and ONNX Runtime.
     """
     if sample_df is None:
         from ..data.generator import EmissionDataGenerator
+
         gen = EmissionDataGenerator(random_state=99)
         sample_df = gen.generate_dataset(n_samples=50)
 
@@ -83,5 +81,5 @@ def verify_onnx_parity(
     max_score_diff = float(np.max(np.abs(skl_decision - onnx_decision.flatten())))
 
     parity_ok = (pred_match == 1.0) and (max_score_diff < 1e-4)
-    print(f"ONNX Parity: Match={pred_match*100:.1f}%, Max Score Diff={max_score_diff:.6f}")
+    print(f"ONNX Parity: Match={pred_match * 100:.1f}%, Max Score Diff={max_score_diff:.6f}")
     return parity_ok, max_score_diff

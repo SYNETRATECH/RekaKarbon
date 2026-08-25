@@ -218,11 +218,38 @@ export class AnomalyInferenceService {
 
 ---
 
+## 🛠️ Code Quality & Development Commands
+
+```bash
+# Formatter (Ruff - PEP 8, 100 char limit)
+poetry run ruff format .
+poetry run ruff format --check .   # Check only
+
+# Linter (Ruff)
+poetry run ruff check .            # Check for lint issues
+poetry run ruff check . --fix      # Auto-fix lint issues
+
+# Static Type Checker (Mypy)
+poetry run mypy src tests app.py
+
+# Test Suite (Pytest)
+poetry run pytest -v
+
+# Monorepo root shortcuts
+pnpm ml:lint
+pnpm ml:typecheck
+pnpm ml:test
+pnpm ml:format:check
+pnpm ml:format:write
+```
+
+---
+
 ## 📂 Directory Structure
 
 ```
 ml/
-├── pyproject.toml              # Dependencies: scikit-learn, skl2onnx, onnxruntime, streamlit, plotly, pytest
+├── pyproject.toml              # Dependencies: scikit-learn, skl2onnx, onnxruntime, ruff, mypy, streamlit, pytest
 ├── README.md                   # Scientific & technical documentation (this file)
 ├── AGENTS.md                   # AI Agent Governance and pipeline coding guidelines
 ├── app.py                      # Subproject 2: Streamlit Prototyping Studio
@@ -232,16 +259,16 @@ ml/
 ├── src/
 │   └── rekakarbon_ml/
 │       ├── __init__.py
-│       ├── data/
-│       │   ├── benchmark_loader.py   # Ingests assets/data/ (BPS & KLHK datasets)
-│       │   └── generator.py          # Synthetic compliant & anomaly dataset generator
-│       ├── pipeline/
-│       │   ├── transformers.py       # Scikit-Learn custom EmissionFeatureEngineer
-│       │   ├── build_pipeline.py     # Pipeline builder (RobustScaler + IsolationForest)
-│       │   └── onnx_exporter.py      # ONNX export and parity validator
-│       └── inference/
-│           └── predictor.py          # Unified predictor with trust scoring & diagnostic flags
+│       ├── data/               # Ingestion of assets/data and synthetic generators
+│       │   ├── benchmark_loader.py
+│       │   └── generator.py
+│       ├── pipeline/           # Scikit-Learn custom transformers & ONNX export
+│       │   ├── transformers.py
+│       │   ├── build_pipeline.py
+│       │   └── onnx_exporter.py
+│       └── inference/          # Prediction runners & diagnostic scoring
+│           └── predictor.py
 └── tests/
-    ├── test_pipeline.py              # Scikit-Learn pipeline & transformer tests
-    └── test_onnx_parity.py           # ONNX numerical parity tests
+    ├── test_pipeline.py        # Pipeline & transformer unit tests
+    └── test_onnx_parity.py     # ONNX numerical parity tests
 ```

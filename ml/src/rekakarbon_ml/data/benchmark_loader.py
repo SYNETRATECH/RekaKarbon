@@ -5,6 +5,7 @@ from assets/data (BPS & KLHK datasets).
 
 from pathlib import Path
 from typing import Dict, Optional
+
 import pandas as pd
 
 
@@ -22,7 +23,9 @@ class SectorBenchmarkLoader:
         self.data_dir = data_dir or get_assets_data_path()
 
     def load_sector_trends(self) -> pd.DataFrame:
-        csv_path = self.data_dir / "emisi-gas-rumah-kaca-menurut-jenis-sektor-2000-2023" / "2000-2023.csv"
+        csv_path = (
+            self.data_dir / "emisi-gas-rumah-kaca-menurut-jenis-sektor-2000-2023" / "2000-2023.csv"
+        )
         if not csv_path.exists():
             return pd.DataFrame()
         return pd.read_csv(csv_path)

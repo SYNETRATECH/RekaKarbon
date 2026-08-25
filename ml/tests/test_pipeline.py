@@ -2,12 +2,11 @@
 Unit Tests for Scikit-Learn Carbon Anomaly Detection Pipeline.
 """
 
-import pytest
 import numpy as np
-import pandas as pd
+
 from rekakarbon_ml.data.generator import EmissionDataGenerator
-from rekakarbon_ml.pipeline.transformers import EmissionFeatureEngineer, FEATURE_COLUMNS
-from rekakarbon_ml.pipeline.build_pipeline import build_anomaly_pipeline, train_and_save_pipeline
+from rekakarbon_ml.pipeline.build_pipeline import build_anomaly_pipeline
+from rekakarbon_ml.pipeline.transformers import FEATURE_COLUMNS, EmissionFeatureEngineer
 
 
 def test_generator_output():
