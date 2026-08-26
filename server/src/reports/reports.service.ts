@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
+import { StorageService } from '../storage/storage.service';
 import { ethers } from 'ethers';
-import type { EmissionReport } from './types';
 
 @Injectable()
 export class ReportsService {
@@ -16,28 +16,39 @@ export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly blockchainService: BlockchainService,
+    private readonly storageService: StorageService,
   ) {}
 
-  async getEmissionReports(): Promise<EmissionReport[]> {
-    const companies = await this.prisma.company.findMany({
+  async getEmissionReports() {
+    const reports = await this.prisma.emissionReport.findMany({
+      include: {
+        company: true,
+        files: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
 
-    return companies.map((c) => {
-      const actual = Number(c.actualEmissionTco2e);
-
+    return reports.map((r) => {
+      const actual = Number(r.totalEmissionsTco2e);
       return {
-        id: c.id,
-        year: 2026,
-        title: `Laporan Emisi Tahunan ${c.name} 2026`,
-        fileName: `Laporan_Emisi_${c.name.replace(/\s+/g, '_')}_2026.pdf`,
-        fileSizeBytes: 2450000,
-        uploadDate: c.auditDate ? c.auditDate.toISOString().split('T')[0] : '',
-        status: 'verified',
+        id: r.id,
+        year: r.year,
+        title: `Laporan Emisi Tahunan ${r.company.name} ${r.year}`,
+        fileName: r.files[0]?.originalFileName || 'No File',
+        fileSizeBytes: Number(
+          r.files.reduce((acc, f) => acc + f.fileSizeBytes, 0n),
+        ),
+        uploadDate: r.createdAt.toISOString().split('T')[0],
+        status: r.status.toLowerCase(),
         totalEmissionsTCO2e: actual,
+        blockchainTxHash: r.blockchainTxHash,
+        blockchainReportId: r.blockchainReportId
+          ? Number(r.blockchainReportId)
+          : null,
+        merkleRoot: r.merkleRoot,
         sectors: [
           {
-            id: `sec-${c.id}-1`,
+            id: `sec-${r.id}-1`,
             name: 'Pembakaran Bahan Bakar Langsung (Scope 1)',
             scope: 'Scope 1',
             emissionsTCO2e: Math.round(actual * 0.75),
@@ -45,42 +56,15 @@ export class ReportsService {
             description: 'Emisi dari cerobong pembakaran batu bara / gas',
             color: '#10b981',
           },
-          {
-            id: `sec-${c.id}-2`,
-            name: 'Konsumsi Listrik Grid PLN (Scope 2)',
-            scope: 'Scope 2',
-            emissionsTCO2e: Math.round(actual * 0.18),
-            percentage: 18,
-            description: 'Emisi tidak langsung dari konsumsi listrik',
-            color: '#3b82f6',
-          },
-          {
-            id: `sec-${c.id}-3`,
-            name: 'Proses Fugitive & Limbah Operasional',
-            scope: 'Scope 1',
-            emissionsTCO2e: Math.round(actual * 0.07),
-            percentage: 7,
-            description: 'Emisi fugitive dari sistem pendingin dan flare',
-            color: '#f59e0b',
-          },
         ],
       };
     });
   }
 
-  private generateMerkleRoot(dataString: string): string {
+  private generateMerkleRoot(dataObj: Record<string, any>): string {
     try {
-      const parsedData: unknown = JSON.parse(dataString);
-      if (
-        typeof parsedData !== 'object' ||
-        parsedData === null ||
-        Array.isArray(parsedData)
-      ) {
-        throw new Error('Report data must be a JSON object');
-      }
-      const dataObj = parsedData as Record<string, unknown>;
       const leaves = Object.keys(dataObj)
-        .sort() // manual sorting as requested by user
+        .sort()
         .map((key) =>
           ethers.keccak256(
             ethers.toUtf8Bytes(`${key}:${JSON.stringify(dataObj[key])}`),
@@ -89,7 +73,6 @@ export class ReportsService {
 
       let root = leaves.length > 0 ? leaves[0] : ethers.ZeroHash;
       for (let i = 1; i < leaves.length; i++) {
-        // Sort pairs before hashing for consistency
         const pair = [root, leaves[i]].sort();
         root = ethers.keccak256(ethers.concat(pair));
       }
@@ -99,36 +82,104 @@ export class ReportsService {
     }
   }
 
-  async submitReport(userId: string, year: number, reportData: string) {
+  async submitReport(
+    userId: string,
+    year: number,
+    totalEmissions: number,
+    files: Express.Multer.File[],
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { companies: true },
     });
     if (!user) throw new BadRequestException('User not found');
+    const company = user.companies[0];
+    if (!company) throw new BadRequestException('User has no company');
 
-    // Generate Merkle Root
-    const merkleRoot = this.generateMerkleRoot(reportData);
+    const uploadedFilesData: {
+      originalFileName: string;
+      fileSizeBytes: bigint;
+      mimeType: string;
+      storageKey: string;
+      accessUrl: string;
+      fileHash: string;
+      category: 'EMISSION_REPORT';
+    }[] = [];
+    for (const file of files) {
+      const minioPath = await this.storageService.uploadFileToMinio(
+        file,
+        `reports/${company.id}/${year}`,
+      );
+      const accessUrl = await this.storageService.getFileUrl(minioPath);
+      const fileHash = ethers.keccak256(file.buffer);
+
+      uploadedFilesData.push({
+        originalFileName: file.originalname,
+        fileSizeBytes: BigInt(file.size),
+        mimeType: file.mimetype,
+        storageKey: minioPath,
+        accessUrl,
+        fileHash,
+        category: 'EMISSION_REPORT' as const,
+      });
+    }
+
+    const reportMetadata = {
+      year,
+      totalEmissionsTCO2e: totalEmissions,
+      companyId: company.id,
+      files: uploadedFilesData.map((f) => ({
+        name: f.originalFileName,
+        hash: f.fileHash,
+      })),
+    };
+
+    const merkleRoot = this.generateMerkleRoot(reportMetadata);
     this.logger.log(`Generated Merkle Root for year ${year}: ${merkleRoot}`);
 
     try {
-      // 1. Submit to Blockchain (EmissionReportRegistry)
       const { txHash, reportId } =
         await this.blockchainService.submitEmissionReport(year, merkleRoot);
       this.logger.log(
         `Successfully submitted report on-chain. TX: ${txHash}, ReportID: ${reportId}`,
       );
 
-      // 2. We can save this to DB if needed, but for now we return the on-chain reference
+      const report = await this.prisma.emissionReport.create({
+        data: {
+          year,
+          totalEmissionsTco2e: totalEmissions,
+          status: 'SUBMITTED',
+          merkleRoot,
+          blockchainTxHash: txHash,
+          blockchainReportId: BigInt(reportId),
+          companyId: company.id,
+          files: {
+            create: uploadedFilesData.map((f) => ({
+              originalFileName: f.originalFileName,
+              fileSizeBytes: f.fileSizeBytes,
+              mimeType: f.mimeType,
+              storageKey: f.storageKey,
+              accessUrl: f.accessUrl,
+              category: f.category,
+              uploadedByUserId: user.id,
+            })),
+          },
+        },
+      });
+
       return {
+        id: report.id,
         year,
         merkleRoot,
         txHash,
-        blockchainReportId: reportId,
+        blockchainReportId: Number(reportId),
       };
-    } catch (error) {
-      this.logger.error('Failed to submit report', error);
+    } catch (error: unknown) {
+      this.logger.error('Failed to process report', error);
+      const e = error as Record<string, unknown>;
+      const errMsg = typeof e?.message === 'string' ? e.message : String(error);
       throw new InternalServerErrorException(
-        'Failed to process report on-chain',
+        'Failed to process report: ' + errMsg,
       );
     }
   }

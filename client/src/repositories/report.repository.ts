@@ -22,14 +22,15 @@ export class ApiReportRepository implements ReportRepository {
     totalEmissions: number,
     files: File[]
   ): Promise<{ txHash: string }> {
-    // Note: To send files we should ideally use FormData, but since backend
-    // expects JSON body (as implemented earlier in ReportsService) we'll just
-    // pass year and totalEmissions, mocking the file metadata internally.
-    return api.post<{ txHash: string }>('/emitter/reports/submit', {
-      year,
-      totalEmissions,
-      files: files.map((f) => ({ name: f.name, size: f.size })),
+    const formData = new FormData();
+    formData.append('year', String(year));
+    formData.append('totalEmissions', String(totalEmissions));
+
+    files.forEach((file) => {
+      formData.append('files', file);
     });
+
+    return api.upload<{ txHash: string }>('/emitter/reports/submit', formData);
   }
 }
 

@@ -1,75 +1,86 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { FileCategory as PrismaFileCategory } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import type { StoredFile, FileCategory } from './types';
-import type { UploadFileDto } from './dto';
+import { Injectable, Logger } from '@nestjs/common';
+import * as Minio from 'minio';
 
 @Injectable()
 export class StorageService {
-  constructor(private readonly prisma: PrismaService) {}
+  private minioClient: Minio.Client;
+  private logger = new Logger(StorageService.name);
+  private bucketName = process.env.STORAGE_BUCKET || 'rekakarbon-documents';
 
-  async listFiles(): Promise<StoredFile[]> {
-    const records = await this.prisma.storedFile.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-    return records.map((r) => ({
-      id: r.id,
-      originalFileName: r.originalFileName,
-      mimeType: r.mimeType,
-      fileSizeBytes: Number(r.fileSizeBytes),
-      storageKey: r.storageKey,
-      accessUrl: r.accessUrl,
-      uploadedBy: 'Current Authenticated Participant',
-      category: r.category.toLowerCase() as FileCategory,
-      uploadedAt: r.createdAt.toISOString(),
-    }));
-  }
+  constructor() {
+    const endPointRaw = process.env.STORAGE_ENDPOINT || 'http://127.0.0.1:9000';
+    const isHttps = endPointRaw.startsWith('https://');
+    let endPoint = endPointRaw.replace('https://', '').replace('http://', '');
+    let port = isHttps ? 443 : 80;
 
-  async findFileById(id: string): Promise<StoredFile> {
-    const record = await this.prisma.storedFile.findUnique({
-      where: { id },
-    });
-    if (!record) {
-      throw new NotFoundException(`Stored file with ID '${id}' was not found`);
+    if (endPoint.includes(':')) {
+      const parts = endPoint.split(':');
+      endPoint = parts[0];
+      port = parseInt(parts[1], 10);
+    } else if (
+      endPointRaw === 'http://127.0.0.1:9000' ||
+      endPoint === '127.0.0.1'
+    ) {
+      port = 9000;
     }
-    return {
-      id: record.id,
-      originalFileName: record.originalFileName,
-      mimeType: record.mimeType,
-      fileSizeBytes: Number(record.fileSizeBytes),
-      storageKey: record.storageKey,
-      accessUrl: record.accessUrl,
-      uploadedBy: 'Current Authenticated Participant',
-      category: record.category.toLowerCase() as FileCategory,
-      uploadedAt: record.createdAt.toISOString(),
-    };
+
+    this.minioClient = new Minio.Client({
+      endPoint: endPoint,
+      port: port,
+      useSSL: isHttps,
+      accessKey: process.env.STORAGE_ACCESS_KEY || 'minioadmin',
+      secretKey: process.env.STORAGE_SECRET_KEY || 'minioadmin',
+    });
   }
 
-  async uploadFile(dto: UploadFileDto): Promise<StoredFile> {
-    const storageKey = `uploads/${dto.category}/${Date.now()}_${dto.fileName}`;
-    const accessUrl = `https://storage.rekakarbon.id/uploads/${dto.category}/${dto.fileName}`;
-    const categoryEnum = dto.category.toUpperCase() as PrismaFileCategory;
+  // --- For MinIO Upload (used by ReportsService) ---
+  async uploadFileToMinio(
+    file: Express.Multer.File,
+    folder: string,
+  ): Promise<string> {
+    const fileName = `${folder}/${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`;
 
-    const created = await this.prisma.storedFile.create({
-      data: {
-        originalFileName: dto.fileName,
-        mimeType: dto.mimeType,
-        fileSizeBytes: BigInt(dto.fileSizeBytes),
-        storageKey,
-        accessUrl,
-        category: categoryEnum,
-      },
-    });
-    return {
-      id: created.id,
-      originalFileName: created.originalFileName,
-      mimeType: created.mimeType,
-      fileSizeBytes: Number(created.fileSizeBytes),
-      storageKey: created.storageKey,
-      accessUrl: created.accessUrl,
-      uploadedBy: 'Current Authenticated Participant',
-      category: dto.category,
-      uploadedAt: created.createdAt.toISOString(),
-    };
+    try {
+      if (this.minioClient['port'] === 9000) {
+        const exists = await this.minioClient
+          .bucketExists(this.bucketName)
+          .catch(() => false);
+        if (!exists) {
+          await this.minioClient
+            .makeBucket(this.bucketName, 'us-east-1')
+            .catch((e) => this.logger.warn('Could not create bucket', e));
+        }
+      }
+
+      await this.minioClient.putObject(
+        this.bucketName,
+        fileName,
+        file.buffer,
+        file.size,
+        { 'Content-Type': file.mimetype },
+      );
+
+      this.logger.log(`File uploaded successfully to MinIO: ${fileName}`);
+      return fileName;
+    } catch (error) {
+      this.logger.error(`Failed to upload file to MinIO: ${fileName}`, error);
+      throw error;
+    }
+  }
+
+  async getFileUrl(fileName: string): Promise<string> {
+    try {
+      return await this.minioClient.presignedGetObject(
+        this.bucketName,
+        fileName,
+        24 * 60 * 60,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to generate presigned URL for: ${fileName}`,
+        error,
+      );
+      return '';
+    }
   }
 }

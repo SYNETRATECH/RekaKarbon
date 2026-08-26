@@ -6,7 +6,11 @@ import {
   UseGuards,
   Req,
   Query,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -48,15 +52,23 @@ export class ReportsController {
   @ApiOperation({ summary: 'Submit emission report to blockchain' })
   @ApiResponse({ status: 201, description: 'Report successfully submitted.' })
   @Post('submit')
+  @UseInterceptors(FilesInterceptor('files'))
   async submitReport(
     @Req() req: AuthenticatedRequest,
     @Body() dto: SubmitReportDto,
+    @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
-    const userId = req.user.userId || 'mock-user-id';
+    const userId = req.user.userId;
+    // ensure files are uploaded
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Supporting files are required');
+    }
+
     const result = await this.reportsService.submitReport(
       userId,
-      dto.year,
-      dto.reportData,
+      Number(dto.year),
+      Number(dto.totalEmissions),
+      files || [],
     );
     return {
       success: true,

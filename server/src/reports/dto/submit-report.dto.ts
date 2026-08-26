@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty } from 'class-validator';
 
 export class SubmitReportDto {
   @ApiProperty({ description: 'Reporting Year', example: 2026 })
-  @IsNumber()
-  year!: number;
+  @IsNotEmpty()
+  year!: string | number;
 
   @ApiProperty({
-    description: 'JSON stringified data representing form and file hashes',
+    description: 'Total Emissions in TCO2e',
+    example: 45000,
   })
-  @IsString()
   @IsNotEmpty()
-  reportData!: string;
+  totalEmissions!: string | number;
 }

@@ -190,6 +190,7 @@ model User {
   uploadedFiles         StoredFile[]
   systemNotifications   SystemNotification[]
   pushSubscriptions     WebPushSubscription[]
+  auditedReports        EmissionReport[]        @relation("AuditorReports")
 
   @@map("users")
 }
@@ -246,6 +247,7 @@ model Company {
   auditAnomalies         AuditAnomaly[]
   carbonTaxAssessments   CarbonTaxAssessment[]
   stpInvoices            StpInvoice[]
+  emissionReports        EmissionReport[]
 
   @@index([complianceRating])
   @@index([region])
@@ -620,9 +622,41 @@ model StpInvoice {
 // 7. FILE STORAGE & NOTIFICATIONS
 // ---------------------------------------------------------
 
+enum EmissionReportStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model EmissionReport {
+  id                   String               @id @default(uuid()) @db.Uuid
+  companyId            String               @map("company_id") @db.Uuid
+  year                 Int
+  totalEmissionsTco2e  Decimal              @map("total_emissions_tco2e") @db.Decimal(14, 2)
+  merkleRoot           String               @map("merkle_root") @db.Text
+  blockchainTxHash     String?              @map("blockchain_tx_hash") @db.Text
+  blockchainReportId   BigInt?              @map("blockchain_report_id")
+  status               EmissionReportStatus @default(SUBMITTED)
+  submittedAt          DateTime             @default(now()) @map("submitted_at") @db.Timestamptz
+  auditedByUserId      String?              @map("audited_by_user_id") @db.Uuid
+  auditorNotes         String?              @map("auditor_notes") @db.Text
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+
+  company              Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  auditor              User?                @relation("AuditorReports", fields: [auditedByUserId], references: [id])
+  files                StoredFile[]
+
+  @@unique([companyId, year])
+  @@index([status])
+  @@map("emission_reports")
+}
+
 model StoredFile {
   id               String       @id @default(uuid()) @db.Uuid
   uploadedByUserId String?      @map("uploaded_by_user_id") @db.Uuid
+  emissionReportId String?      @map("emission_report_id") @db.Uuid
   originalFileName String       @map("original_file_name") @db.Text
   mimeType         String       @map("mime_type") @db.Text
   fileSizeBytes    BigInt       @map("file_size_bytes")
@@ -632,10 +666,12 @@ model StoredFile {
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
 
   uploadedByUser   User?        @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  emissionReport   EmissionReport? @relation(fields: [emissionReportId], references: [id], onDelete: SetNull)
   missionOrthos    DroneMission[] @relation("MissionOrthoFile")
   missionPointclouds DroneMission[] @relation("MissionPointcloudFile")
 
   @@index([uploadedByUserId])
+  @@index([emissionReportId])
   @@index([category])
   @@map("stored_files")
 }
