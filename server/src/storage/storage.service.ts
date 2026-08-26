@@ -68,27 +68,27 @@ export class StorageService {
   }
 
   // --- Legacy Mocks for StorageController ---
-  async listFiles() {
-    return [];
+  listFiles() {
+    return Promise.resolve([]);
   }
 
-  async findFileById(id: string) {
-    return {
+  findFileById(id: string) {
+    return Promise.resolve({
       id,
       originalFileName: 'mock_file.pdf',
       accessUrl: 'https://example.com/mock_file.pdf',
       mimeType: 'application/pdf',
       fileSizeBytes: 12345,
       createdAt: new Date(),
-    };
+    });
   }
 
-  async uploadFile(uploadDto: any) {
-    return {
+  uploadFile(uploadDto: Record<string, unknown>) {
+    return Promise.resolve({
       id: 'mock-uuid',
       ...uploadDto,
       accessUrl: 'https://example.com/uploaded.pdf',
       createdAt: new Date(),
-    };
+    });
   }
 }

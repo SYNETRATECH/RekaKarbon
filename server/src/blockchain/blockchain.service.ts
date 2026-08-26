@@ -244,9 +244,10 @@ export class BlockchainService implements OnModuleInit {
       );
       const reportId = event?.args ? Number(event.args[0]) : 0;
       return { txHash: receipt.hash, reportId };
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.error('Error submitting emission report:', error);
-      const errStr = String(error?.message || '') + String(error?.reason || '') + String(error) + JSON.stringify(error, Object.getOwnPropertyNames(error));
+      const e = error as Record<string, unknown>;
+      const errStr = String(e?.message || '') + String(e?.reason || '') + String(error) + JSON.stringify(error, Object.getOwnPropertyNames(error || {}));
       if (errStr.includes('Report already approved or pending')) {
          this.logger.warn('Blockchain rejected: Report already submitted for this year.');
          throw new Error('Laporan emisi untuk tahun ini sudah pernah disubmit atau sedang dalam proses.');

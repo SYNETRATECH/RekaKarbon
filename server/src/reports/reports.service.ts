@@ -9,20 +9,6 @@ import { BlockchainService } from '../blockchain/blockchain.service';
 import { StorageService } from '../storage/storage.service';
 import { ethers } from 'ethers';
 
-// Helper to safely convert BigInt for serialization
-function serializeBigInts(obj: any): any {
-  if (obj === null || obj === undefined) return obj;
-  if (typeof obj === 'bigint') return Number(obj);
-  if (Array.isArray(obj)) return obj.map(serializeBigInts);
-  if (typeof obj === 'object') {
-    const res: any = {};
-    for (const [k, v] of Object.entries(obj)) {
-      res[k] = serializeBigInts(v);
-    }
-    return res;
-  }
-  return obj;
-}
 
 @Injectable()
 export class ReportsService {
@@ -107,7 +93,15 @@ export class ReportsService {
     const company = user.companies[0];
     if (!company) throw new BadRequestException('User has no company');
 
-    const uploadedFilesData: any[] = [];
+    const uploadedFilesData: {
+      originalFileName: string;
+      fileSizeBytes: bigint;
+      mimeType: string;
+      storageKey: string;
+      accessUrl: string;
+      fileHash: string;
+      category: "EMISSION_REPORT";
+    }[] = [];
     for (const file of files) {
       const minioPath = await this.storageService.uploadFileToMinio(file, `reports/${company.id}/${year}`);
       const accessUrl = await this.storageService.getFileUrl(minioPath);
@@ -171,10 +165,11 @@ export class ReportsService {
         txHash,
         blockchainReportId: Number(reportId),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.error('Failed to process report', error);
+      const e = error as Record<string, unknown>;
       throw new InternalServerErrorException(
-        'Failed to process report: ' + (error?.message || String(error))
+        'Failed to process report: ' + (e?.message || String(error))
       );
     }
   }
