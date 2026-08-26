@@ -24,9 +24,28 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_DATABASE=${DB_DATABASE}
+      - STORAGE_ENDPOINT=${STORAGE_ENDPOINT:-http://rekakarbon-minio:9000}
+      - STORAGE_BUCKET=${STORAGE_BUCKET:-rekakarbon-documents}
+      - STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY:-minioadmin}
+      - STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY:-minioadmin}
     depends_on:
       db:
         condition: service_started
+      rekakarbon-minio:
+        condition: service_started
+
+  rekakarbon-minio:
+    image: minio/minio:latest
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - rekakarbon_minio_data:/data
 
 volumes:
   rekakarbon_pgdata:
+  rekakarbon_minio_data:
