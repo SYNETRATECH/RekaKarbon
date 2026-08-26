@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as Minio from 'minio';
-import { UploadFileDto } from './dto';
 
 @Injectable()
 export class StorageService {
@@ -83,30 +82,5 @@ export class StorageService {
       );
       return '';
     }
-  }
-
-  // --- Legacy Mocks for StorageController ---
-  listFiles() {
-    return Promise.resolve([]);
-  }
-
-  findFileById(id: string) {
-    return Promise.resolve({
-      id,
-      originalFileName: 'mock_file.pdf',
-      accessUrl: 'https://example.com/mock_file.pdf',
-      mimeType: 'application/pdf',
-      fileSizeBytes: 12345,
-      createdAt: new Date(),
-    });
-  }
-
-  uploadFile(uploadDto: UploadFileDto) {
-    return Promise.resolve({
-      id: 'mock-uuid',
-      ...uploadDto,
-      accessUrl: 'https://example.com/uploaded.pdf',
-      createdAt: new Date(),
-    });
   }
 }
