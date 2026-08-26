@@ -243,13 +243,15 @@ export class BlockchainService implements OnModuleInit {
         (log) => log.fragment?.name === 'ReportSubmitted',
       );
       const reportId = event?.args ? Number(event.args[0]) : 0;
-
       return { txHash: receipt.hash, reportId };
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Error submitting emission report:', error);
-      throw new InternalServerErrorException(
-        'Failed to submit report on-chain',
-      );
+      const errStr = String(error?.message || '') + String(error?.reason || '') + String(error) + JSON.stringify(error, Object.getOwnPropertyNames(error));
+      if (errStr.includes('Report already approved or pending')) {
+         this.logger.warn('Blockchain rejected: Report already submitted for this year.');
+         throw new Error('Laporan emisi untuk tahun ini sudah pernah disubmit atau sedang dalam proses.');
+      }
+      throw new Error('Failed to process report on-chain: ' + errStr.substring(0, 500));
     }
   }
 }
