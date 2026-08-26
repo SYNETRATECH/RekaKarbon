@@ -123,7 +123,7 @@ pm2 list
 **Verify the server is healthy:**
 
 ```bash
-curl http://localhost:3000/api/health
+curl http://localhost:3000/health
 # Expected: HTTP 200 {"status":"ok",...}
 ```
 
@@ -161,7 +161,7 @@ The workflow automatically:
 4. Installs dependencies and recompiles TypeScript.
 5. Runs pending database migrations (`prisma migrate deploy` — safe, no data loss).
 6. Performs a **zero-downtime PM2 reload** (new workers start before old ones stop).
-7. Verifies `GET /api/health` returns `HTTP 200`.
+7. Verifies `GET /health` returns `HTTP 200`.
 8. Optionally runs the database seeder (opt-in checkbox).
 
 ---
@@ -184,7 +184,7 @@ pnpm server:build
 pm2 reload rekakarbon-backend --update-env
 
 # Verify health
-curl http://localhost:3000/api/health
+curl http://localhost:3000/health
 ```
 
 ---
