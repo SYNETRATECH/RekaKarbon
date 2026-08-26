@@ -96,20 +96,21 @@ export default function EmissionReportsSector() {
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditComplete, setAuditComplete] = useState(false);
 
-  const activeReport = reports.find((r) => r.year === selectedYear) || reports[0] || {
-    id: 'empty',
-    year: selectedYear,
-    title: 'Belum Ada Laporan',
-    fileName: 'Tidak ada file',
-    fileSizeBytes: 0,
-    uploadDate: '-',
-    status: 'draft',
-    totalEmissionsTCO2e: 0,
-    blockchainTxHash: null,
-    blockchainReportId: null,
-    merkleRoot: null,
-    sectors: []
-  };
+  const activeReport = reports.find((r) => r.year === selectedYear) ||
+    reports[0] || {
+      id: 'empty',
+      year: selectedYear,
+      title: 'Belum Ada Laporan',
+      fileName: 'Tidak ada file',
+      fileSizeBytes: 0,
+      uploadDate: '-',
+      status: 'draft',
+      totalEmissionsTCO2e: 0,
+      blockchainTxHash: null,
+      blockchainReportId: null,
+      merkleRoot: null,
+      sectors: [],
+    };
 
   const handleStartAIAudit = async (e: FormEvent) => {
     e.preventDefault();
@@ -141,8 +142,9 @@ export default function EmissionReportsSector() {
       console.error('Submit report error:', error);
       setIsAuditModalOpen(false);
       setIsAuditing(false);
-      
-      const backendMessage = error?.response?.data?.message || error?.message || 'Gagal mengirim laporan emisi.';
+
+      const backendMessage =
+        error?.response?.data?.message || error?.message || 'Gagal mengirim laporan emisi.';
       alert(`⚠️ Peringatan Sistem Anti-Duplikat / Error:\n\n${backendMessage}`);
     }
   };

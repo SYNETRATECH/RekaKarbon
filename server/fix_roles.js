@@ -34,7 +34,10 @@ for (const file of files) {
   let changed = false;
   for (const [key, value] of Object.entries(replacements)) {
     if (content.includes(key)) {
-      content = content.replace(new RegExp(key.replace('.', '\\.'), 'g'), value);
+      content = content.replace(
+        new RegExp(key.replace('.', '\\.'), 'g'),
+        value,
+      );
       changed = true;
     }
   }

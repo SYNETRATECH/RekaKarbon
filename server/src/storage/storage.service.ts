@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as Minio from 'minio';
+import { UploadFileDto } from './dto';
 
 @Injectable()
 export class StorageService {
@@ -17,7 +18,10 @@ export class StorageService {
       const parts = endPoint.split(':');
       endPoint = parts[0];
       port = parseInt(parts[1], 10);
-    } else if (endPointRaw === 'http://127.0.0.1:9000' || endPoint === '127.0.0.1') {
+    } else if (
+      endPointRaw === 'http://127.0.0.1:9000' ||
+      endPoint === '127.0.0.1'
+    ) {
       port = 9000;
     }
 
@@ -26,19 +30,26 @@ export class StorageService {
       port: port,
       useSSL: isHttps,
       accessKey: process.env.STORAGE_ACCESS_KEY || 'minioadmin',
-      secretKey: process.env.STORAGE_SECRET_KEY || 'minioadmin'
+      secretKey: process.env.STORAGE_SECRET_KEY || 'minioadmin',
     });
   }
 
   // --- For MinIO Upload (used by ReportsService) ---
-  async uploadFileToMinio(file: Express.Multer.File, folder: string): Promise<string> {
+  async uploadFileToMinio(
+    file: Express.Multer.File,
+    folder: string,
+  ): Promise<string> {
     const fileName = `${folder}/${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`;
-    
+
     try {
       if (this.minioClient['port'] === 9000) {
-        const exists = await this.minioClient.bucketExists(this.bucketName).catch(() => false);
+        const exists = await this.minioClient
+          .bucketExists(this.bucketName)
+          .catch(() => false);
         if (!exists) {
-          await this.minioClient.makeBucket(this.bucketName, 'us-east-1').catch(e => this.logger.warn('Could not create bucket', e));
+          await this.minioClient
+            .makeBucket(this.bucketName, 'us-east-1')
+            .catch((e) => this.logger.warn('Could not create bucket', e));
         }
       }
 
@@ -47,9 +58,9 @@ export class StorageService {
         fileName,
         file.buffer,
         file.size,
-        { 'Content-Type': file.mimetype }
+        { 'Content-Type': file.mimetype },
       );
-      
+
       this.logger.log(`File uploaded successfully to MinIO: ${fileName}`);
       return fileName;
     } catch (error) {
@@ -60,9 +71,16 @@ export class StorageService {
 
   async getFileUrl(fileName: string): Promise<string> {
     try {
-      return await this.minioClient.presignedGetObject(this.bucketName, fileName, 24 * 60 * 60);
+      return await this.minioClient.presignedGetObject(
+        this.bucketName,
+        fileName,
+        24 * 60 * 60,
+      );
     } catch (error) {
-      this.logger.error(`Failed to generate presigned URL for: ${fileName}`, error);
+      this.logger.error(
+        `Failed to generate presigned URL for: ${fileName}`,
+        error,
+      );
       return '';
     }
   }
@@ -83,7 +101,7 @@ export class StorageService {
     });
   }
 
-  uploadFile(uploadDto: Record<string, unknown>) {
+  uploadFile(uploadDto: UploadFileDto) {
     return Promise.resolve({
       id: 'mock-uuid',
       ...uploadDto,

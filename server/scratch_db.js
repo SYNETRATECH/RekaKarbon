@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const reports = await prisma.emissionReport.findMany({
-    include: { company: true, files: true }
+    include: { company: true, files: true },
   });
   console.log(reports);
 }

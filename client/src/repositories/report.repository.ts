@@ -25,7 +25,7 @@ export class ApiReportRepository implements ReportRepository {
     const formData = new FormData();
     formData.append('year', String(year));
     formData.append('totalEmissions', String(totalEmissions));
-    
+
     files.forEach((file) => {
       formData.append('files', file);
     });
