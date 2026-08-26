@@ -9,7 +9,6 @@ import { BlockchainService } from '../blockchain/blockchain.service';
 import { StorageService } from '../storage/storage.service';
 import { ethers } from 'ethers';
 
-
 @Injectable()
 export class ReportsService {
   private readonly logger = new Logger(ReportsService.name);
@@ -36,12 +35,16 @@ export class ReportsService {
         year: r.year,
         title: `Laporan Emisi Tahunan ${r.company.name} ${r.year}`,
         fileName: r.files[0]?.originalFileName || 'No File',
-        fileSizeBytes: Number(r.files.reduce((acc, f) => acc + f.fileSizeBytes, 0n)),
+        fileSizeBytes: Number(
+          r.files.reduce((acc, f) => acc + f.fileSizeBytes, 0n),
+        ),
         uploadDate: r.createdAt.toISOString().split('T')[0],
         status: r.status.toLowerCase(),
         totalEmissionsTCO2e: actual,
         blockchainTxHash: r.blockchainTxHash,
-        blockchainReportId: r.blockchainReportId ? Number(r.blockchainReportId) : null,
+        blockchainReportId: r.blockchainReportId
+          ? Number(r.blockchainReportId)
+          : null,
         merkleRoot: r.merkleRoot,
         sectors: [
           {
@@ -100,13 +103,16 @@ export class ReportsService {
       storageKey: string;
       accessUrl: string;
       fileHash: string;
-      category: "EMISSION_REPORT";
+      category: 'EMISSION_REPORT';
     }[] = [];
     for (const file of files) {
-      const minioPath = await this.storageService.uploadFileToMinio(file, `reports/${company.id}/${year}`);
+      const minioPath = await this.storageService.uploadFileToMinio(
+        file,
+        `reports/${company.id}/${year}`,
+      );
       const accessUrl = await this.storageService.getFileUrl(minioPath);
       const fileHash = ethers.keccak256(file.buffer);
-      
+
       uploadedFilesData.push({
         originalFileName: file.originalname,
         fileSizeBytes: BigInt(file.size),
@@ -122,9 +128,12 @@ export class ReportsService {
       year,
       totalEmissionsTCO2e: totalEmissions,
       companyId: company.id,
-      files: uploadedFilesData.map(f => ({ name: f.originalFileName, hash: f.fileHash }))
+      files: uploadedFilesData.map((f) => ({
+        name: f.originalFileName,
+        hash: f.fileHash,
+      })),
     };
-    
+
     const merkleRoot = this.generateMerkleRoot(reportMetadata);
     this.logger.log(`Generated Merkle Root for year ${year}: ${merkleRoot}`);
 
@@ -145,16 +154,16 @@ export class ReportsService {
           blockchainReportId: BigInt(reportId),
           companyId: company.id,
           files: {
-            create: uploadedFilesData.map(f => ({
+            create: uploadedFilesData.map((f) => ({
               originalFileName: f.originalFileName,
               fileSizeBytes: f.fileSizeBytes,
               mimeType: f.mimeType,
               storageKey: f.storageKey,
               accessUrl: f.accessUrl,
               category: f.category,
-              uploadedByUserId: user.id
-            }))
-          }
+              uploadedByUserId: user.id,
+            })),
+          },
         },
       });
 
@@ -168,8 +177,9 @@ export class ReportsService {
     } catch (error: unknown) {
       this.logger.error('Failed to process report', error);
       const e = error as Record<string, unknown>;
+      const errMsg = typeof e?.message === 'string' ? e.message : String(error);
       throw new InternalServerErrorException(
-        'Failed to process report: ' + (e?.message || String(error))
+        'Failed to process report: ' + errMsg,
       );
     }
   }

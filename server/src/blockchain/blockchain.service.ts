@@ -247,12 +247,24 @@ export class BlockchainService implements OnModuleInit {
     } catch (error: unknown) {
       this.logger.error('Error submitting emission report:', error);
       const e = error as Record<string, unknown>;
-      const errStr = String(e?.message || '') + String(e?.reason || '') + String(error) + JSON.stringify(error, Object.getOwnPropertyNames(error || {}));
+      const errMsg = typeof e?.message === 'string' ? e.message : '';
+      const errReason = typeof e?.reason === 'string' ? e.reason : '';
+      const errStr =
+        errMsg +
+        errReason +
+        String(error) +
+        JSON.stringify(error, Object.getOwnPropertyNames(error || {}));
       if (errStr.includes('Report already approved or pending')) {
-         this.logger.warn('Blockchain rejected: Report already submitted for this year.');
-         throw new Error('Laporan emisi untuk tahun ini sudah pernah disubmit atau sedang dalam proses.');
+        this.logger.warn(
+          'Blockchain rejected: Report already submitted for this year.',
+        );
+        throw new Error(
+          'Laporan emisi untuk tahun ini sudah pernah disubmit atau sedang dalam proses.',
+        );
       }
-      throw new Error('Failed to process report on-chain: ' + errStr.substring(0, 500));
+      throw new Error(
+        'Failed to process report on-chain: ' + errStr.substring(0, 500),
+      );
     }
   }
 }
