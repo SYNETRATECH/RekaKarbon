@@ -8,6 +8,7 @@ import {
   Query,
   UseInterceptors,
   UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -60,8 +61,7 @@ export class ReportsController {
     const userId = req.user.userId;
     // ensure files are uploaded
     if (!files || files.length === 0) {
-      // In production, we'd throw an error if files are required
-      // throw new BadRequestException('Supporting files are required');
+      throw new BadRequestException('Supporting files are required');
     }
 
     const result = await this.reportsService.submitReport(
