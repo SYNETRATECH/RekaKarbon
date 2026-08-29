@@ -41,8 +41,11 @@ export class ReportsController {
     description: 'Emission reports retrieved successfully.',
   })
   @Get()
-  async getReports(@Query() _query: ReportQueryDto) {
-    const reports = await this.reportsService.getEmissionReports();
+  async getReports(
+    @Req() req: AuthenticatedRequest,
+    @Query() _query: ReportQueryDto,
+  ) {
+    const reports = await this.reportsService.getEmissionReports(req.user);
     return {
       success: true,
       data: reports,

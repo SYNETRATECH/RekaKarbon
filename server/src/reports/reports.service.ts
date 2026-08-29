@@ -19,8 +19,20 @@ export class ReportsService {
     private readonly storageService: StorageService,
   ) {}
 
-  async getEmissionReports() {
+  async getEmissionReports(user?: { userId: string; role: string }) {
+    let whereClause = {};
+    if (user && user.role === 'emitter') {
+      const dbUser = await this.prisma.user.findUnique({
+        where: { id: user.userId },
+        include: { companies: true },
+      });
+      if (dbUser && dbUser.companies.length > 0) {
+        whereClause = { companyId: dbUser.companies[0].id };
+      }
+    }
+
     const reports = await this.prisma.emissionReport.findMany({
+      where: whereClause,
       include: {
         company: true,
         files: true,
@@ -95,6 +107,18 @@ export class ReportsService {
     if (!user) throw new BadRequestException('User not found');
     const company = user.companies[0];
     if (!company) throw new BadRequestException('User has no company');
+
+    const existingReport = await this.prisma.emissionReport.findUnique({
+      where: {
+        companyId_year: {
+          companyId: company.id,
+          year: year,
+        }
+      }
+    });
+    if (existingReport) {
+      throw new BadRequestException(`Laporan emisi untuk tahun ${year} sudah pernah dikirimkan oleh perusahaan Anda.`);
+    }
 
     const uploadedFilesData: {
       originalFileName: string;

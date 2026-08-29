@@ -78,7 +78,11 @@ export class BlockchainService implements OnModuleInit {
   async getCarbonBalance(address: string, tokenId: number): Promise<number> {
     const contract = this.ensureRekaKarbon();
     try {
-      const balance = await contract.balanceOf(address, tokenId);
+      const validAddress = this.sanitizeAddress(
+        address,
+        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', // Fallback to a mock address if invalid
+      );
+      const balance = await contract.balanceOf(validAddress, tokenId);
       return Number(balance);
     } catch (error) {
       this.logger.error('Error reading carbon balance:', error);
@@ -133,8 +137,12 @@ export class BlockchainService implements OnModuleInit {
   async getWalletTransactionHistory(address: string) {
     const contract = this.ensureRekaKarbon();
     try {
-      const filterIn = contract.filters.TransferSingle(null, null, address);
-      const filterOut = contract.filters.TransferSingle(null, address, null);
+      const validAddress = this.sanitizeAddress(
+        address,
+        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+      );
+      const filterIn = contract.filters.TransferSingle(null, null, validAddress);
+      const filterOut = contract.filters.TransferSingle(null, validAddress, null);
 
       const [eventsIn, eventsOut] = await Promise.all([
         contract.queryFilter(filterIn, 0, 'latest'),
@@ -179,6 +187,15 @@ export class BlockchainService implements OnModuleInit {
     }
   }
 
+  private sanitizeAddress(address: string, fallback: string): string {
+    try {
+      return ethers.getAddress(address.toLowerCase());
+    } catch {
+      this.logger.warn(`Invalid address detected: ${address}. Using fallback.`);
+      return fallback;
+    }
+  }
+
   async executeBursaPurchase(
     buyer: string,
     seller: string,
@@ -188,9 +205,12 @@ export class BlockchainService implements OnModuleInit {
   ): Promise<string> {
     const contract = this.ensureRekaKarbon();
     try {
+      const validBuyer = this.sanitizeAddress(buyer, '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266');
+      const validSeller = this.sanitizeAddress(seller, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8');
+      
       const tx = await contract.executeBursaPurchase(
-        buyer,
-        seller,
+        validBuyer,
+        validSeller,
         assetId,
         amountTco2e,
         totalCost,

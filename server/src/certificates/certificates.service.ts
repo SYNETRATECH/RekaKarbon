@@ -17,18 +17,32 @@ export class CertificatesService {
     private readonly blockchainService: BlockchainService,
   ) {}
 
-  async getPurchasedCertificates(): Promise<PurchasedCertificate[]> {
-    const tokens = await this.prisma.carbonToken.findMany({
-      include: { project: true },
+  async getPurchasedCertificates(userId: string): Promise<PurchasedCertificate[]> {
+    const orders = await this.prisma.bursaOrder.findMany({
+      where: { 
+        buyerUserId: userId,
+        status: 'COMPLETED',
+        volumeTco2e: { gt: 0 } // Don't show fully burned ones if we deduct
+      },
+      include: {
+        listing: {
+          include: {
+            carbonToken: {
+              include: { project: true }
+            }
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' },
     });
 
-    return tokens.map((t) => {
-      const vol = Number(t.totalMintedTco2e);
-      const price = Number(t.project.carbonPricePerTonIdr);
+    return orders.map((o) => {
+      const t = o.listing.carbonToken;
+      const vol = Number(o.volumeTco2e);
+      const price = Number(o.pricePerTonIdr);
 
       return {
-        id: t.id,
+        id: t.id, // Using carbonToken ID here because retireCarbonToken expects tokenId
         certificateNumber: t.speCertificateNumber,
         projectName: t.project.projectName,
         projectCategory: t.project.ecosystemType
@@ -39,12 +53,10 @@ export class CertificatesService {
         purchasedVolumeTCO2e: vol,
         pricePerTonIDR: price,
         totalPaidIDR: vol * price,
-        purchaseDate: t.mintedAt
-          ? t.mintedAt.toISOString().split('T')[0]
-          : '2026-02-14',
+        purchaseDate: o.createdAt.toISOString().split('T')[0],
         registryStandard: 'SPE-GRK (Sistem Registri Nasional PPI)',
         blockchainTxHash:
-          t.mintTxHash ||
+          o.txHash ||
           '0x7f9a8b1c94857102948571029485710294857102948571029485710294857102',
         projectCondition: {
           canopyDensityPercent: Number(t.project.ndviScore) * 100,
@@ -99,6 +111,31 @@ export class CertificatesService {
       volumeTco2e,
       certNumber,
     );
+
+    // Deduct from DB BursaOrders (FIFO)
+    let remainingToDeduct = volumeTco2e;
+    const orders = await this.prisma.bursaOrder.findMany({
+      where: {
+        buyerUserId: userId,
+        listing: { carbonTokenId: tokenId },
+        status: 'COMPLETED',
+        volumeTco2e: { gt: 0 }
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    for (const order of orders) {
+      if (remainingToDeduct <= 0) break;
+      const orderVol = Number(order.volumeTco2e);
+      const deduct = Math.min(orderVol, remainingToDeduct);
+      
+      await this.prisma.bursaOrder.update({
+        where: { id: order.id },
+        data: { volumeTco2e: orderVol - deduct }
+      });
+      
+      remainingToDeduct -= deduct;
+    }
 
     return {
       txHash,

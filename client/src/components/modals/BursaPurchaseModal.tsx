@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { bursaRepository } from '../../repositories';
 import { Activity } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface BursaPurchaseModalProps {
   token: any | null;
@@ -15,21 +16,33 @@ interface BursaPurchaseModalProps {
 export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModalProps) {
   const [buyQuantity, setBuyQuantity] = useState<number>(1250);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   if (!token) return null;
 
   const handlePurchase = async () => {
     setIsSubmitting(true);
     try {
-      // In a real app we'd map token.id to a listing ID if needed, here we just parse it as number
-      const listingId =
-        typeof token.id === 'number' ? token.id : parseInt(token.id.replace(/\D/g, '') || '1');
+      // Pass the UUID directly to the repository
+      const listingId = token.id;
       await bursaRepository.buyCarbonToken(listingId, buyQuantity);
-      alert('Pembelian token karbon berhasil (Tx tersimpan di Blockchain).');
+      
+      toast({
+        title: 'Transaksi Berhasil 🎉',
+        description: `Pembelian token ${token.name} sukses dan telah dicatat permanen ke dalam Blockchain.`,
+        variant: 'default',
+        className: 'bg-emerald-600 text-white border-none',
+      });
+      
       onClose();
     } catch (error) {
       console.error('Bursa purchase error:', error);
-      alert('Gagal melakukan pembelian token karbon.');
+      
+      toast({
+        title: 'Transaksi Gagal ❌',
+        description: 'Gagal melakukan pembelian token karbon. Pastikan saldo wallet dan koneksi blockchain stabil.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -64,13 +77,13 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
             <label className="font-bold text-slate-700">Jumlah Pembelian Token (tCO₂e):</label>
             <Input
               type="number"
-              max="2330"
+              max={token.volumeAvailableTco2e || 100000}
               value={buyQuantity}
-              onChange={(e) => setBuyQuantity(Math.min(2330, Number(e.target.value)))}
+              onChange={(e) => setBuyQuantity(Math.min(token.volumeAvailableTco2e || 100000, Number(e.target.value)))}
               className="font-mono text-xs rounded-xl"
             />
-            <span className="text-[9px] text-rose-600 font-bold block">
-              Cap Control Aktif: Maksimal {formatCarbon(2330)} (Sesuai Defisit Aktif)
+            <span className="text-[9px] text-slate-500 font-bold block">
+              Tersedia: {formatCarbon(token.volumeAvailableTco2e || 0)} tCO₂e di pasaran
             </span>
           </div>
 

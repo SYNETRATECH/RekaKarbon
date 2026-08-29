@@ -78,6 +78,9 @@ async function main() {
   const userAuditorId = randomUUID();
   const userEmitter1Id = randomUUID();
   const userEmitter2Id = randomUUID();
+  const userEmitter3Id = randomUUID();
+  const userEmitter4Id = randomUUID();
+  const userEmitter5Id = randomUUID();
   const userKth1Id = randomUUID();
   const userBuyerId = randomUUID();
 
@@ -139,6 +142,42 @@ async function main() {
       role: Role.emitter,
       status: UserStatus.ACTIVE,
       walletAddress: '0x9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D',
+    },
+  });
+
+  const userEmitter3 = await prisma.user.create({
+    data: {
+      id: userEmitter3Id,
+      email: 'sustainability@pertamina-ru4.co.id',
+      passwordHash: defaultPasswordHash,
+      fullName: 'Budi Santoso (HSE Manager Pertamina RU IV)',
+      role: Role.emitter,
+      status: UserStatus.ACTIVE,
+      walletAddress: '0x1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C',
+    },
+  });
+
+  const userEmitter4 = await prisma.user.create({
+    data: {
+      id: userEmitter4Id,
+      email: 'environment@pupukkaltim.com',
+      passwordHash: defaultPasswordHash,
+      fullName: 'Siti Aminah (VP Lingkungan Hidup Pupuk Kaltim)',
+      role: Role.emitter,
+      status: UserStatus.ACTIVE,
+      walletAddress: '0x2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D',
+    },
+  });
+
+  const userEmitter5 = await prisma.user.create({
+    data: {
+      id: userEmitter5Id,
+      email: 'esg@krakatausteel.com',
+      passwordHash: defaultPasswordHash,
+      fullName: 'Agus Wijaya (Direktur ESG Krakatau Steel)',
+      role: Role.emitter,
+      status: UserStatus.ACTIVE,
+      walletAddress: '0x3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E',
     },
   });
 
@@ -280,6 +319,75 @@ async function main() {
       picAuditor: 'Rian Hermawan, M.T (PT Sucofindo)',
       description:
         'Proses kalsinasi limestone menghasilkan emisi gas buang intensif.',
+    },
+  });
+
+  const companyPertamina = await prisma.company.create({
+    data: {
+      id: randomUUID(),
+      userId: userEmitter3.id,
+      name: 'PT Pertamina (Persero) RU IV Cilacap',
+      sector: 'Minyak & Gas Bumi (Kilang Pengolahan)',
+      region: 'Cilacap, Jawa Tengah',
+      latitude: -7.7303,
+      longitude: 109.0093,
+      emissionCapTco2e: 4500000.0,
+      actualEmissionTco2e: 4450000.0,
+      carbonDeficitTco2e: 0.0,
+      offsetCostIdr: 0.0,
+      complianceRating: ComplianceRating.COMPLIANT,
+      auditDate: new Date('2026-03-10'),
+      paymentDeadline: new Date('2026-12-31'),
+      stackSensorsDescription: '24 Flare & Stack CEMS Terintegrasi',
+      picAuditor: 'Tim Auditor Internal KLHK',
+      description:
+        'Kilang pengolahan minyak dengan efisiensi tinggi, memenuhi ambang batas emisi.',
+    },
+  });
+
+  const companyPupukKaltim = await prisma.company.create({
+    data: {
+      id: randomUUID(),
+      userId: userEmitter4.id,
+      name: 'PT Pupuk Kaltim',
+      sector: 'Industri Pupuk & Amonia',
+      region: 'Bontang, Kalimantan Timur',
+      latitude: 0.1654,
+      longitude: 117.4819,
+      emissionCapTco2e: 2800000.0,
+      actualEmissionTco2e: 3100000.0,
+      carbonDeficitTco2e: 300000.0,
+      offsetCostIdr: 9000000000.0,
+      complianceRating: ComplianceRating.NON_COMPLIANT,
+      auditDate: new Date('2026-03-20'),
+      paymentDeadline: new Date('2026-12-31'),
+      stackSensorsDescription: '15 Cerobong Pabrik Amonia & Urea',
+      picAuditor: 'Rian Hermawan, M.T (PT Sucofindo)',
+      description:
+        'Pabrik pupuk dengan emisi CO2 dari proses reforming gas alam.',
+    },
+  });
+
+  const companyKrakatauSteel = await prisma.company.create({
+    data: {
+      id: randomUUID(),
+      userId: userEmitter5.id,
+      name: 'PT Krakatau Steel (Persero) Tbk',
+      sector: 'Industri Baja & Logam',
+      region: 'Cilegon, Banten',
+      latitude: -6.0125,
+      longitude: 105.9922,
+      emissionCapTco2e: 3200000.0,
+      actualEmissionTco2e: 3200000.0,
+      carbonDeficitTco2e: 0.0,
+      offsetCostIdr: 0.0,
+      complianceRating: ComplianceRating.COMPLIANT,
+      auditDate: new Date('2026-04-05'),
+      paymentDeadline: new Date('2026-12-31'),
+      stackSensorsDescription: '10 Cerobong Blast Furnace',
+      picAuditor: 'Dr. Ir. Rian Hermawan (PT Sucofindo Verifier)',
+      description:
+        'Pabrik baja terpadu dengan emisi pas di batas kuota.',
     },
   });
 
@@ -659,6 +767,40 @@ async function main() {
       signedAt: new Date('2026-02-19T14:30:00.000Z'),
     },
   });
+
+  // --- 10 TEST EMITTERS ---
+  console.log('🏭 Seeding 10 Emitter users for testing...');
+  for (let i = 1; i <= 10; i++) {
+    const uId = randomUUID();
+    await prisma.user.create({
+      data: {
+        id: uId,
+        email: `tester${i}@emitter.com`,
+        passwordHash: defaultPasswordHash,
+        fullName: `Tester Emitter ${i}`,
+        role: Role.emitter,
+        status: UserStatus.ACTIVE,
+        walletAddress: `0xTESTERWALLET${i.toString().padStart(4, '0')}`,
+      }
+    });
+    await prisma.company.create({
+      data: {
+        id: randomUUID(),
+        userId: uId,
+        name: `PT Tester Emitter ${i}`,
+        sector: 'Manufaktur Umum',
+        region: 'Jawa Barat',
+        latitude: -6.0 + i * 0.01,
+        longitude: 106.0 + i * 0.01,
+        emissionCapTco2e: 500000.0,
+        actualEmissionTco2e: 450000.0,
+        carbonDeficitTco2e: 0.0,
+        offsetCostIdr: 0.0,
+        complianceRating: ComplianceRating.COMPLIANT,
+        auditDate: new Date('2026-05-01'),
+      }
+    });
+  }
 
   // 15. Seed DJP Carbon Tax Assessments & STP Invoices
   console.log('🏛️ Seeding DJP Carbon Tax Assessments & STP Invoices...');

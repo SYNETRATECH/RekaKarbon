@@ -35,9 +35,13 @@ export class CertificatesController {
     description: 'Certificates retrieved successfully.',
   })
   @Get()
-  async getCertificates(@Query() _query: CertificateQueryDto) {
+  async getCertificates(
+    @Req() req: AuthenticatedRequest,
+    @Query() _query: CertificateQueryDto,
+  ) {
+    const userId = req.user.userId || 'mock-user-id';
     const certificates =
-      await this.certificatesService.getPurchasedCertificates();
+      await this.certificatesService.getPurchasedCertificates(userId);
     return {
       success: true,
       data: certificates,

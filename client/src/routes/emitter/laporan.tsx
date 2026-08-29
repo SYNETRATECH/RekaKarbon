@@ -1,11 +1,12 @@
-import { useState, FormEvent } from 'react';
-import { useLoaderData } from 'react-router';
+import { useState, useEffect, FormEvent, useRef } from 'react';
+import { useLoaderData, useRevalidator, useNavigate } from 'react-router';
 import { formatFileSize, formatPercent } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
 import DownloadNoticeModal from '../../components/modals/DownloadNoticeModal';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
@@ -40,6 +41,11 @@ import {
   Check,
   ChevronRight,
   ArrowLeft,
+  Calculator,
+  Landmark,
+  HardHat,
+  Hotel,
+  Tractor,
 } from 'lucide-react';
 
 import { reportRepository } from '../../repositories';
@@ -65,11 +71,27 @@ export function meta() {
 
 export default function EmissionReportsSector() {
   const { emissionReports: reports } = useLoaderData<typeof clientLoader>();
+  const { revalidate } = useRevalidator();
 
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
 
+  // ── Sector & Method Selection (Step 0) ──
+  const [selectedSector, setSelectedSector] = useState<string | null>(null);
+  const [reportingMethod, setReportingMethod] = useState<'upload' | 'kalkulator' | null>(null);
+
+  const SECTOR_OPTIONS = [
+    { id: 'manufaktur', name: 'Manufaktur & Industri', desc: 'Pabrik, pengolahan, produksi barang', icon: <Factory className="w-5 h-5" /> },
+    { id: 'pertambangan', name: 'Pertambangan & Energi', desc: 'Mineral, batu bara, minyak & gas', icon: <HardHat className="w-5 h-5" /> },
+    { id: 'perbankan', name: 'Perbankan & Jasa Keuangan', desc: 'Bank, asuransi, fintech', icon: <Landmark className="w-5 h-5" /> },
+    { id: 'konstruksi', name: 'Konstruksi & Properti', desc: 'Kontraktor, pengembang, infrastruktur', icon: <Building2 className="w-5 h-5" /> },
+    { id: 'pertanian', name: 'Pertanian & Perkebunan', desc: 'Sawah, kebun sawit, peternakan', icon: <Tractor className="w-5 h-5" /> },
+    { id: 'perhotelan', name: 'Perhotelan & Pariwisata', desc: 'Hotel, resort, restoran', icon: <Hotel className="w-5 h-5" /> },
+  ];
+
   const [selectedYear, setSelectedYear] = useState(2026);
   const [activeTabCategory, setActiveTabCategory] = useState(1); // 1 | 2 | 3
+  const isSubmittingRef = useRef(false);
+  const [isSubmittedLocal, setIsSubmittedLocal] = useState(false);
 
   // Category 1: Activity-Based Fuel & Biomassa
   const [cat1StationaryFuel, setCat1StationaryFuel] = useState('4850000');
@@ -95,16 +117,31 @@ export default function EmissionReportsSector() {
   const [auditStep, setAuditStep] = useState(0); // 0: init, 1: e-faktur check, 2: physical vs finance, 3: ipcc & multi-var, 4: complete
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditComplete, setAuditComplete] = useState(false);
+  
+  const navigate = useNavigate();
 
-  const activeReport = reports.find((r) => r.year === selectedYear) ||
-    reports[0] || {
+  // ──────────────────────────────────────────────────────────
+  // Reset ALL wizard state when the user switches compliance year
+  // so each year starts with a clean Tab-1 form.
+  // ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    setActiveTabCategory(1);
+    setIsSubmittedLocal(false);
+    setAuditComplete(false);
+    setAuditStep(0);
+    setIsAuditing(false);
+    isSubmittingRef.current = false;
+  }, [selectedYear]);
+
+  const exactReport = reports.find((r: any) => r.year === selectedYear);
+  const activeReport = exactReport || {
       id: 'empty',
       year: selectedYear,
       title: 'Belum Ada Laporan',
       fileName: 'Tidak ada file',
       fileSizeBytes: 0,
       uploadDate: '-',
-      status: 'draft',
+      status: 'pending',
       totalEmissionsTCO2e: 0,
       blockchainTxHash: null,
       blockchainReportId: null,
@@ -112,21 +149,45 @@ export default function EmissionReportsSector() {
       sectors: [],
     };
 
+  // ──────────────────────────────────────────────────────────
+  // FLOW CONTROL: When to show form vs "Telah Disubmit"
+  //
+  // Show "Telah Disubmit" ONLY when:
+  //   1. isSubmittedLocal = true  (user just completed submit in THIS session)
+  //   2. OR exactReport exists   (report already in DB from a PREVIOUS session)
+  //
+  // The wizard form (Tab 1→2→3) is shown in ALL other cases.
+  // ──────────────────────────────────────────────────────────
+  const hasExistingReport = exactReport !== undefined || isSubmittedLocal;
+
   const handleStartAIAudit = async (e: FormEvent) => {
     e.preventDefault();
+
+    // ── FLOW GUARD: Only allow submit from Tab 3 ──
+    if (activeTabCategory !== 3) {
+      // User somehow triggered submit from Tab 1 or 2 — just navigate forward
+      setActiveTabCategory((prev) => Math.min(3, prev + 1));
+      return;
+    }
+
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
     setIsAuditModalOpen(true);
     setIsAuditing(true);
     setAuditStep(1);
 
     try {
       const files = [cat1File, cat2File, cat3File].filter((f): f is File => f !== null);
-      // Hardcode totalEmissions for demo based on form logic or just pass a number
       const totalEmissions =
         (parseInt(cat1StationaryFuel || '0') / 1000) * 2.5 +
         (parseInt(cat1VehicleFuel || '0') / 1000) * 2.3;
+
+      // ── STEP 1: Submit to backend FIRST ──
+      // API call happens here. If it fails, we abort the entire audit flow.
       await reportRepository.submitReport(selectedYear, totalEmissions || 45000, files);
 
-      // Step-by-step AI simulation timer
+      // ── STEP 2: API succeeded → play the audit animation ──
       setTimeout(() => {
         setAuditStep(2);
         setTimeout(() => {
@@ -135,6 +196,9 @@ export default function EmissionReportsSector() {
             setAuditStep(4);
             setIsAuditing(false);
             setAuditComplete(true);
+            setIsSubmittedLocal(true);
+            isSubmittingRef.current = false;
+            revalidate(); // Re-fetch reports to get the updated data
           }, 1500);
         }, 1500);
       }, 1500);
@@ -142,12 +206,25 @@ export default function EmissionReportsSector() {
       console.error('Submit report error:', error);
       setIsAuditModalOpen(false);
       setIsAuditing(false);
+      setAuditStep(0);
+      isSubmittingRef.current = false;
 
-      const backendMessage =
-        error?.response?.data?.message || error?.message || 'Gagal mengirim laporan emisi.';
-      alert(`⚠️ Peringatan Sistem Anti-Duplikat / Error:\n\n${backendMessage}`);
+      const msg = error?.message || '';
+
+      if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
+        alert('⚠️ Sesi Anda telah berakhir.\n\nSilakan login ulang untuk melanjutkan.');
+      } else if (msg.includes('503') || msg.toLowerCase().includes('service unavailable')) {
+        alert('⚠️ Layanan sedang tidak tersedia.\n\nPastikan server backend dan blockchain node sedang berjalan, lalu coba lagi.');
+      } else if (msg.includes('sudah pernah dikirimkan')) {
+        alert(`⚠️ Laporan Duplikat\n\n${msg}`);
+        setIsSubmittedLocal(true); // Mark as submitted since it already exists
+        revalidate();
+      } else {
+        alert(`⚠️ Error Sistem:\n\n${msg || 'Gagal mengirim laporan emisi.'}`);
+      }
     }
   };
+
 
   const getSectorIcon = (scope: string) => {
     if (scope.includes('Scope 1')) return <Factory className="w-5 h-5 text-status-danger-fg" />;
@@ -165,8 +242,8 @@ export default function EmissionReportsSector() {
             Pelaporan & Audit Otomatis Emisi Industri
           </h2>
           <p className="text-xs text-slate-500 font-semibold mt-1 max-w-3xl">
-            Sistem pengunggahan data 3 kategori wajib terintegrasi AI dMRV yang menganalisis
-            korelasi fisik, e-Faktur Pajak DJP, dan parameter operasional pabrik.
+            Pilih sektor industri perusahaan Anda, lalu pilih metode pelaporan emisi
+            yang sesuai — unggah dokumen bukti atau gunakan Kalkulator Hijau BI.
           </p>
         </div>
 
@@ -192,7 +269,106 @@ export default function EmissionReportsSector() {
         </div>
       </div>
 
-      {/* MAIN FORM CONTAINER: 3 CATEGORY STEPPED / TABBED WIZARD */}
+      {/* ── STEP 0: Sector Selection ─────────────────────────── */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0 font-black text-xs">1</div>
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900">Pilih Sektor Industri</h3>
+            <p className="text-[10px] text-slate-500 font-semibold">Form pelaporan emisi akan disesuaikan berdasarkan sektor usaha Anda</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {SECTOR_OPTIONS.map((sector) => (
+            <button
+              key={sector.id}
+              type="button"
+              onClick={() => { setSelectedSector(sector.id); setReportingMethod(null); }}
+              className={`p-4 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-3 border ${
+                selectedSector === sector.id
+                  ? 'bg-emerald-50 border-emerald-500 shadow-sm'
+                  : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+              }`}
+            >
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                selectedSector === sector.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {sector.icon}
+              </div>
+              <div>
+                <h4 className={`text-xs font-extrabold leading-snug ${selectedSector === sector.id ? 'text-emerald-900' : 'text-slate-700'}`}>
+                  {sector.name}
+                </h4>
+                <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{sector.desc}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── STEP 0b: Method Selection (after sector chosen) ── */}
+      {selectedSector && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0 font-black text-xs">2</div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900">Pilih Metode Pelaporan</h3>
+              <p className="text-[10px] text-slate-500 font-semibold">Laporkan emisi dengan mengunggah dokumen bukti atau mengisi form kalkulator</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Option A: Upload */}
+            <button
+              type="button"
+              onClick={() => setReportingMethod('upload')}
+              className={`p-6 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-4 border ${
+                reportingMethod === 'upload'
+                  ? 'bg-blue-50 border-blue-500 shadow-sm'
+                  : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+              }`}
+            >
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                reportingMethod === 'upload' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                <UploadCloud className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className={`text-sm font-extrabold leading-snug ${reportingMethod === 'upload' ? 'text-blue-900' : 'text-slate-700'}`}>
+                  Upload Dokumen Bukti
+                </h4>
+                <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">
+                  Unggah data fisik, e-Faktur Pajak DJP, dan parameter operasional.<br/>
+                  Diaudit otomatis oleh AI dMRV untuk verifikasi dan scoring.
+                </p>
+              </div>
+            </button>
+
+            {/* Option B: Kalkulator */}
+            <button
+              type="button"
+              onClick={() => navigate(`/kalkulator?sector=${selectedSector}`)}
+              className="p-6 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-4 border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300"
+            >
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-emerald-100 text-emerald-700">
+                <Calculator className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-extrabold leading-snug text-slate-700">
+                  Kalkulator Hijau BI
+                </h4>
+                <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">
+                  Isi form aktivitas emisi berdasarkan Scope 1, 2, dan 3<br/>
+                  tanpa perlu mengunggah dokumen bukti.
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MAIN FORM CONTAINER: 3 CATEGORY STEPPED / TABBED WIZARD (only shown when Upload is selected) */}
+      {reportingMethod === 'upload' && (
+      <>
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
         {/* WIZARD TABS HEADER */}
         <div className="bg-slate-50/80 border-b border-slate-200 p-3 sm:p-4 grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -250,7 +426,7 @@ export default function EmissionReportsSector() {
               <h4
                 className={`text-xs font-extrabold leading-snug ${activeTabCategory === 2 ? 'text-slate-900' : 'text-slate-600'}`}
               >
-                Keuangan Utilitas & e-Faktur
+                Scope 2 (Listrik & e-Faktur)
               </h4>
               <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
                 Solar, Batubara, Gas, PLN & No. DJP
@@ -281,7 +457,7 @@ export default function EmissionReportsSector() {
               <h4
                 className={`text-xs font-extrabold leading-snug ${activeTabCategory === 3 ? 'text-slate-900' : 'text-slate-600'}`}
               >
-                Parameter Operasional Riil
+                Scope 3 (Operasional & Historis)
               </h4>
               <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
                 Kapasitas Produksi & Histori Emisi
@@ -291,20 +467,25 @@ export default function EmissionReportsSector() {
         </div>
 
         {/* WIZARD CONTENT BODY */}
-        <form onSubmit={handleStartAIAudit} className="p-6 sm:p-8 space-y-6">
-          {/* ================= CATEGORY 1 ================= */}
+        {!hasExistingReport ? (
+          <form 
+            onSubmit={handleStartAIAudit} 
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.preventDefault();
+            }}
+            className="p-6 sm:p-8 space-y-6"
+          >
+            {/* ================= CATEGORY 1 ================= */}
           {activeTabCategory === 1 && (
             <div className="space-y-6 animate-fade-in">
               <Alert variant="mint">
                 <Flame className="w-5 h-5 text-emerald-600 shrink-0" />
                 <div>
                   <AlertTitle className="text-[#003E29]">
-                    1. Laporan Aktivitas Emisi Tahunan (Activity-Based Template Standar)
+                    Scope 1 (Emisi Langsung)
                   </AlertTitle>
                   <AlertDescription className="text-slate-600">
-                    Perusahaan menginput data aktivitas fisik emisi menggunakan templat standar yang
-                    memisahkan kategori emisi berdasarkan metodologi inventarisasi emisi global
-                    (Greenhouse Gas Protocol & Kaidah IPCC).
+                    Masukkan pengeluaran biaya bahan bakar stasioner (genset/mesin) dan kendaraan bermotor.
                   </AlertDescription>
                 </div>
               </Alert>
@@ -412,12 +593,10 @@ export default function EmissionReportsSector() {
                 <Receipt className="w-5 h-5 text-amber-600 shrink-0" />
                 <div>
                   <AlertTitle className="text-amber-950">
-                    2. Data Keuangan Utilitas Energi Agregat Tahunan (Integrasi e-Faktur DJP)
+                    Scope 2 (Energi Tidak Langsung & Tagihan Finansial)
                   </AlertTitle>
                   <AlertDescription className="text-slate-600">
-                    Sebagai pembanding logis yang dianalisis oleh AI untuk mendeteksi kejujuran
-                    pelaporan tanpa mengekspos margin keuntungan internal, sertakan pos pengeluaran
-                    utilitas yang terhubung langsung dengan nomor e-Faktur Pajak resmi DJP.
+                    Masukkan beban utilitas listrik PLN, tagihan energi lainnya, serta nomor e-Faktur pajak.
                   </AlertDescription>
                 </div>
               </Alert>
@@ -546,12 +725,10 @@ export default function EmissionReportsSector() {
                 <BarChart3 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div className="text-xs space-y-1">
                   <h4 className="font-extrabold text-blue-950">
-                    3. Parameter Operasional & Produksi Riil (Korelasi Multi-Variabel)
+                    Scope 3 (Rantai Pasok & Lainnya)
                   </h4>
                   <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                    Guna menghitung korelasi multi-variabel intensitas emisi per unit produk,
-                    masukkan data kapasitas produksi riil pabrik pada tahun kepatuhan berjalan
-                    beserta jejak karbon historis periode sebelumnya.
+                    Masukkan estimasi kapasitas produksi dan parameter historis emisi perusahaan Anda.
                   </p>
                 </div>
               </div>
@@ -652,7 +829,8 @@ export default function EmissionReportsSector() {
               ) : (
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-primary-gradient hover:opacity-95 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-950/10 transition-all active:scale-98"
+                  disabled={isAuditing}
+                  className="px-6 py-3 bg-primary-gradient hover:opacity-95 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-950/10 transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Cpu className="w-4 h-4 text-[#00C48C]" />
                   <span>Kirim & Jalankan Audit Otomatis AI dMRV</span>
@@ -661,6 +839,15 @@ export default function EmissionReportsSector() {
             </div>
           </div>
         </form>
+        ) : (
+          <div className="p-10 text-center space-y-3 bg-slate-50 rounded-b-3xl">
+            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+            <h3 className="text-lg font-black text-slate-800">Laporan Tahun {selectedYear} Telah Disubmit</h3>
+            <p className="text-sm text-slate-500">
+              Anda sudah mengirimkan laporan emisi untuk tahun kepatuhan ini. Silakan lihat status di bawah.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* SUMMARY OVERVIEW CARDS */}
@@ -786,6 +973,8 @@ export default function EmissionReportsSector() {
           ))}
         </div>
       </div>
+      </>
+      )}
 
       {/* HISTORY TABLE OF UPLOADED REPORTS */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-4">
@@ -868,8 +1057,12 @@ export default function EmissionReportsSector() {
         scoreBBM={98.4}
         scoreCEMS={99.8}
       />
-
-      <DownloadNoticeModal fileName={downloadNotice} onClose={() => setDownloadNotice(null)} />
+      {downloadNotice && (
+        <DownloadNoticeModal
+          title={downloadNotice}
+          onClose={() => setDownloadNotice(null)}
+        />
+      )}
     </div>
   );
 }

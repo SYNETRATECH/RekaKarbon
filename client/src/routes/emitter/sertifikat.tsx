@@ -1,10 +1,12 @@
-import { useLoaderData } from 'react-router';
+import { useLoaderData, useRevalidator } from 'react-router';
+import { useState } from 'react';
 import { certificateRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { formatCurrency, formatCompactCurrency } from '../../lib/formatters';
 import { Award, ShieldCheck, TreePine, Coins } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import CertificateCard from '../../components/cards/CertificateCard';
+import RetireTokenModal from '../../components/modals/RetireTokenModal';
 
 export async function clientLoader() {
   const certs = await certificateRepository.getPurchasedCertificates().catch(() => []);
@@ -26,6 +28,8 @@ export function meta() {
 
 export default function PurchasedCertificatesProjects() {
   const { certs = [] } = (useLoaderData<typeof clientLoader>() || {}) as any;
+  const revalidator = useRevalidator();
+  const [selectedCertToRetire, setSelectedCertToRetire] = useState<any>(null);
 
   const totalVolume = certs.reduce((acc: number, c: any) => acc + c.purchasedVolumeTCO2e, 0);
   const totalValueIDR = certs.reduce(
@@ -138,10 +142,22 @@ export default function PurchasedCertificatesProjects() {
 
         <div className="space-y-6">
           {certs.map((cert: any) => (
-            <CertificateCard key={cert.id} cert={cert} />
+            <CertificateCard key={cert.id} cert={cert} onRetireClick={(c) => setSelectedCertToRetire(c)} />
           ))}
         </div>
       </div>
+
+      {selectedCertToRetire && (
+        <RetireTokenModal
+          cert={selectedCertToRetire}
+          onClose={(success) => {
+            setSelectedCertToRetire(null);
+            if (success) {
+              revalidator.revalidate();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

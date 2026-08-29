@@ -8,10 +8,13 @@ export class MockCertificateRepository implements CertificateRepository {
   }
 
   async retireCertificate(
-    assetId: number,
-    volume: number,
-    certNumber: string
-  ): Promise<{ txHash: string }> {
-    return Promise.resolve({ txHash: '0xmockretirehash123' });
+    tokenId: string,
+    volumeTco2e: number,
+  ): Promise<{ txHash: string; certificateNumber: string }> {
+    console.log(`[MOCK] Retire Carbon Token ${tokenId} volume ${volumeTco2e}`);
+    return Promise.resolve({
+      txHash: '0xmocktransactionhash123',
+      certificateNumber: `SPE-RET-${Date.now()}`
+    });
   }
 }

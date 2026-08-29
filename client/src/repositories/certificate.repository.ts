@@ -4,10 +4,9 @@ import { api } from '../lib/api';
 export interface CertificateRepository {
   getPurchasedCertificates(): Promise<PurchasedCertificate[]>;
   retireCertificate(
-    assetId: number,
-    volume: number,
-    certNumber: string
-  ): Promise<{ txHash: string }>;
+    tokenId: string,
+    volumeTco2e: number,
+  ): Promise<{ txHash: string; certificateNumber: string }>;
 }
 
 export class ApiCertificateRepository implements CertificateRepository {
@@ -16,14 +15,12 @@ export class ApiCertificateRepository implements CertificateRepository {
   }
 
   async retireCertificate(
-    assetId: number,
-    volume: number,
-    certNumber: string
-  ): Promise<{ txHash: string }> {
-    return api.post<{ txHash: string }>('/emitter/certificates/retire', {
-      assetId,
-      volume,
-      certNumber,
+    tokenId: string,
+    volumeTco2e: number,
+  ): Promise<{ txHash: string; certificateNumber: string }> {
+    return api.post<{ txHash: string; certificateNumber: string }>('/emitter/certificates/retire', {
+      tokenId,
+      volumeTco2e,
     });
   }
 }

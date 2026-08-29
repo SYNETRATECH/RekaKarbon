@@ -12,7 +12,6 @@ import { Card } from '@/components/ui/card';
 import { formatCurrency, formatCompactCurrency } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import { useState } from 'react';
-import { certificateRepository } from '../../repositories';
 
 interface CertificateCardProps {
   cert: {
@@ -34,35 +33,15 @@ interface CertificateCardProps {
       droneAuditStatus: string;
     };
   };
+  onRetireClick?: (cert: any) => void;
 }
 
-export default function CertificateCard({ cert }: CertificateCardProps) {
-  const [isRetiring, setIsRetiring] = useState(false);
-  const [hasRetired, setHasRetired] = useState(false);
+export default function CertificateCard({ cert, onRetireClick }: CertificateCardProps) {
+  const [hasRetired, setHasRetired] = useState(false); // Can be driven by props later if needed
 
   const handleRetire = async () => {
-    if (
-      confirm(
-        'Apakah Anda yakin ingin membakar/retire sertifikat ini untuk pelaporan pajak? Aksi ini tidak dapat dibatalkan.'
-      )
-    ) {
-      setIsRetiring(true);
-      try {
-        // Here we parse cert.id as assetId or assume 1 for mockup
-        const assetId = parseInt(cert.id.replace(/\D/g, '') || '1');
-        await certificateRepository.retireCertificate(
-          assetId,
-          cert.purchasedVolumeTCO2e,
-          cert.certificateNumber
-        );
-        setHasRetired(true);
-        alert('Sertifikat berhasil dibakar (Retire). Transaksi tercatat di Blockchain.');
-      } catch (error) {
-        console.error('Failed to retire certificate:', error);
-        alert('Gagal melakukan retire sertifikat.');
-      } finally {
-        setIsRetiring(false);
-      }
+    if (onRetireClick) {
+      onRetireClick(cert);
     }
   };
 
@@ -112,14 +91,9 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
           {!hasRetired && (
             <button
               onClick={handleRetire}
-              disabled={isRetiring}
               className="bg-status-danger-bg hover:bg-status-danger-border text-status-danger-fg border border-status-danger-border px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             >
-              {isRetiring ? (
-                <Activity className="w-4 h-4 animate-spin" />
-              ) : (
-                <Flame className="w-4 h-4" />
-              )}
+              <Flame className="w-4 h-4" />
               Bakar (Retire) Token
             </button>
           )}
