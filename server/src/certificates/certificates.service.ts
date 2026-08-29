@@ -17,21 +17,23 @@ export class CertificatesService {
     private readonly blockchainService: BlockchainService,
   ) {}
 
-  async getPurchasedCertificates(userId: string): Promise<PurchasedCertificate[]> {
+  async getPurchasedCertificates(
+    userId: string,
+  ): Promise<PurchasedCertificate[]> {
     const orders = await this.prisma.bursaOrder.findMany({
-      where: { 
+      where: {
         buyerUserId: userId,
         status: 'COMPLETED',
-        volumeTco2e: { gt: 0 } // Don't show fully burned ones if we deduct
+        volumeTco2e: { gt: 0 }, // Don't show fully burned ones if we deduct
       },
       include: {
         listing: {
           include: {
             carbonToken: {
-              include: { project: true }
-            }
-          }
-        }
+              include: { project: true },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -119,7 +121,7 @@ export class CertificatesService {
         buyerUserId: userId,
         listing: { carbonTokenId: tokenId },
         status: 'COMPLETED',
-        volumeTco2e: { gt: 0 }
+        volumeTco2e: { gt: 0 },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -128,12 +130,12 @@ export class CertificatesService {
       if (remainingToDeduct <= 0) break;
       const orderVol = Number(order.volumeTco2e);
       const deduct = Math.min(orderVol, remainingToDeduct);
-      
+
       await this.prisma.bursaOrder.update({
         where: { id: order.id },
-        data: { volumeTco2e: orderVol - deduct }
+        data: { volumeTco2e: orderVol - deduct },
       });
-      
+
       remainingToDeduct -= deduct;
     }
 

@@ -1,15 +1,16 @@
-import type {
-  CalculationData,
-  CalculatorReportSubmission,
-  EmissionReport,
-} from '../types';
+import type { CalculationData, CalculatorReportSubmission, EmissionReport } from '../types';
 import { api } from '../lib/api';
 import { MockReportRepository } from './report.mock.repository';
 
 export interface ReportRepository {
   getLatestReport(year: number): Promise<EmissionReport | null>;
   getEmissionReports(): Promise<EmissionReport[]>;
-  submitReport(year: number, sector: string, totalEmissions: number, files: File[]): Promise<{ txHash: string }>;
+  submitReport(
+    year: number,
+    sector: string,
+    totalEmissions: number,
+    files: File[]
+  ): Promise<{ txHash: string }>;
   submitCalculatorReport(
     year: number,
     sector: string,
@@ -51,10 +52,12 @@ export class ApiReportRepository implements ReportRepository {
     totalEmissions: number,
     calculationData: CalculationData
   ): Promise<CalculatorReportSubmission> {
-    return api.post<CalculatorReportSubmission>(
-      '/emitter/reports/submit-calculator',
-      { year, sector, totalEmissions, calculationData }
-    );
+    return api.post<CalculatorReportSubmission>('/emitter/reports/submit-calculator', {
+      year,
+      sector,
+      totalEmissions,
+      calculationData,
+    });
   }
 }
 

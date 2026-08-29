@@ -19,8 +19,8 @@ export class BursaService {
 
   async getBursaItems(): Promise<BursaItem[]> {
     const listings = await this.prisma.bursaListing.findMany({
-      where: { 
-        status: { in: ['ACTIVE', 'PARTIALLY_FILLED'] }
+      where: {
+        status: { in: ['ACTIVE', 'PARTIALLY_FILLED'] },
       },
       include: { carbonToken: { include: { project: true } } },
       orderBy: { createdAt: 'desc' },

@@ -142,7 +142,11 @@ export default function PurchasedCertificatesProjects() {
 
         <div className="space-y-6">
           {certs.map((cert: any) => (
-            <CertificateCard key={cert.id} cert={cert} onRetireClick={(c) => setSelectedCertToRetire(c)} />
+            <CertificateCard
+              key={cert.id}
+              cert={cert}
+              onRetireClick={(c) => setSelectedCertToRetire(c)}
+            />
           ))}
         </div>
       </div>

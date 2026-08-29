@@ -386,8 +386,7 @@ async function main() {
       paymentDeadline: new Date('2026-12-31'),
       stackSensorsDescription: '10 Cerobong Blast Furnace',
       picAuditor: 'Dr. Ir. Rian Hermawan (PT Sucofindo Verifier)',
-      description:
-        'Pabrik baja terpadu dengan emisi pas di batas kuota.',
+      description: 'Pabrik baja terpadu dengan emisi pas di batas kuota.',
     },
   });
 
@@ -781,7 +780,7 @@ async function main() {
         role: Role.emitter,
         status: UserStatus.ACTIVE,
         walletAddress: `0xTESTERWALLET${i.toString().padStart(4, '0')}`,
-      }
+      },
     });
     await prisma.company.create({
       data: {
@@ -798,7 +797,7 @@ async function main() {
         offsetCostIdr: 0.0,
         complianceRating: ComplianceRating.COMPLIANT,
         auditDate: new Date('2026-05-01'),
-      }
+      },
     });
   }
 

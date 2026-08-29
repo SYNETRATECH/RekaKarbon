@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   await prisma.carbonToken.updateMany({
-    data: { blockchainTokenId: 4 }
+    data: { blockchainTokenId: 4 },
   });
   console.log('Fixed blockchainTokenId in CarbonToken');
 }

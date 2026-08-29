@@ -1,6 +1,12 @@
 import { useState, useEffect, FormEvent, useRef } from 'react';
 import { useLoaderData, useRevalidator, useNavigate } from 'react-router';
-import { formatCarbon, formatFileSize, formatNumber, formatPercent, parseNumeric } from '@/lib/formatters';
+import {
+  formatCarbon,
+  formatFileSize,
+  formatNumber,
+  formatPercent,
+  parseNumeric,
+} from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
 import { Input } from '@/components/ui/input';
@@ -82,12 +88,42 @@ export default function EmissionReportsSector() {
   const [reportingMethod, setReportingMethod] = useState<'upload' | 'kalkulator' | null>(null);
 
   const SECTOR_OPTIONS = [
-    { id: 'manufaktur', name: 'Manufaktur & Industri', desc: 'Pabrik, pengolahan, produksi barang', icon: <Factory className="w-5 h-5" /> },
-    { id: 'pertambangan', name: 'Pertambangan & Energi', desc: 'Mineral, batu bara, minyak & gas', icon: <HardHat className="w-5 h-5" /> },
-    { id: 'perbankan', name: 'Perbankan & Jasa Keuangan', desc: 'Bank, asuransi, fintech', icon: <Landmark className="w-5 h-5" /> },
-    { id: 'konstruksi', name: 'Konstruksi & Properti', desc: 'Kontraktor, pengembang, infrastruktur', icon: <Building2 className="w-5 h-5" /> },
-    { id: 'pertanian', name: 'Pertanian & Perkebunan', desc: 'Sawah, kebun sawit, peternakan', icon: <Tractor className="w-5 h-5" /> },
-    { id: 'perhotelan', name: 'Perhotelan & Pariwisata', desc: 'Hotel, resort, restoran', icon: <Hotel className="w-5 h-5" /> },
+    {
+      id: 'manufaktur',
+      name: 'Manufaktur & Industri',
+      desc: 'Pabrik, pengolahan, produksi barang',
+      icon: <Factory className="w-5 h-5" />,
+    },
+    {
+      id: 'pertambangan',
+      name: 'Pertambangan & Energi',
+      desc: 'Mineral, batu bara, minyak & gas',
+      icon: <HardHat className="w-5 h-5" />,
+    },
+    {
+      id: 'perbankan',
+      name: 'Perbankan & Jasa Keuangan',
+      desc: 'Bank, asuransi, fintech',
+      icon: <Landmark className="w-5 h-5" />,
+    },
+    {
+      id: 'konstruksi',
+      name: 'Konstruksi & Properti',
+      desc: 'Kontraktor, pengembang, infrastruktur',
+      icon: <Building2 className="w-5 h-5" />,
+    },
+    {
+      id: 'pertanian',
+      name: 'Pertanian & Perkebunan',
+      desc: 'Sawah, kebun sawit, peternakan',
+      icon: <Tractor className="w-5 h-5" />,
+    },
+    {
+      id: 'perhotelan',
+      name: 'Perhotelan & Pariwisata',
+      desc: 'Hotel, resort, restoran',
+      icon: <Hotel className="w-5 h-5" />,
+    },
   ];
 
   const [selectedYear, setSelectedYear] = useState(2026);
@@ -96,7 +132,7 @@ export default function EmissionReportsSector() {
 
   // Upload Document State
   const [documentFile, setDocumentFile] = useState<File | null>(null);
-  
+
   // Total is entered from the uploaded source document. The upload flow does
   // not parse arbitrary PDF/XLSX contents yet, so it must not invent a total.
   const [uploadedTotalEmissions, setUploadedTotalEmissions] = useState('');
@@ -105,7 +141,7 @@ export default function EmissionReportsSector() {
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [auditStep, setAuditStep] = useState(0);
   const [isAuditing, setIsAuditing] = useState(false);
-  
+
   const navigate = useNavigate();
 
   // ──────────────────────────────────────────────────────────
@@ -122,17 +158,17 @@ export default function EmissionReportsSector() {
 
   const exactReport = reports.find((report) => report.year === selectedYear);
   const activeReport: EmissionReport = exactReport || {
-      id: 'empty',
-      year: selectedYear,
-      title: 'Belum Ada Laporan',
-      fileName: 'Tidak ada file',
-      fileSizeBytes: 0,
-      uploadDate: '-',
-      status: 'draft',
-      totalEmissionsTCO2e: 0,
-      blockchainTxHash: null,
-      blockchainReportId: null,
-      merkleRoot: null,
+    id: 'empty',
+    year: selectedYear,
+    title: 'Belum Ada Laporan',
+    fileName: 'Tidak ada file',
+    fileSizeBytes: 0,
+    uploadDate: '-',
+    status: 'draft',
+    totalEmissionsTCO2e: 0,
+    blockchainTxHash: null,
+    blockchainReportId: null,
+    merkleRoot: null,
     sectors: [],
   };
 
@@ -210,7 +246,9 @@ export default function EmissionReportsSector() {
     try {
       // ── STEP 1: Submit to backend FIRST ──
       // API call happens here. If it fails, we abort the entire audit flow.
-      await reportRepository.submitReport(selectedYear, selectedSector, totalEmissions, [documentFile]);
+      await reportRepository.submitReport(selectedYear, selectedSector, totalEmissions, [
+        documentFile,
+      ]);
 
       // ── STEP 2: API succeeded → play the audit animation ──
       setTimeout(() => {
@@ -238,7 +276,9 @@ export default function EmissionReportsSector() {
       if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
         alert('⚠️ Sesi Anda telah berakhir.\n\nSilakan login ulang untuk melanjutkan.');
       } else if (msg.includes('503') || msg.toLowerCase().includes('service unavailable')) {
-        alert('⚠️ Layanan sedang tidak tersedia.\n\nPastikan server backend dan blockchain node sedang berjalan, lalu coba lagi.');
+        alert(
+          '⚠️ Layanan sedang tidak tersedia.\n\nPastikan server backend dan blockchain node sedang berjalan, lalu coba lagi.'
+        );
       } else if (msg.includes('sudah pernah dikirimkan')) {
         alert(`⚠️ Laporan Duplikat\n\n${msg}`);
         setIsSubmittedLocal(true); // Mark as submitted since it already exists
@@ -248,7 +288,6 @@ export default function EmissionReportsSector() {
       }
     }
   };
-
 
   const getSectorIcon = (scope: string) => {
     if (scope.includes('Scope 1')) return <Factory className="w-5 h-5 text-status-danger-fg" />;
@@ -266,8 +305,8 @@ export default function EmissionReportsSector() {
             Pelaporan Emisi Industri
           </h2>
           <p className="text-xs text-slate-500 font-semibold mt-1 max-w-3xl">
-            Pilih sektor industri perusahaan Anda, lalu pilih metode pelaporan emisi
-            yang sesuai — unggah dokumen bukti atau gunakan Kalkulator Hijau BI.
+            Pilih sektor industri perusahaan Anda, lalu pilih metode pelaporan emisi yang sesuai —
+            unggah dokumen bukti atau gunakan Kalkulator Hijau BI.
           </p>
         </div>
 
@@ -293,162 +332,200 @@ export default function EmissionReportsSector() {
         </div>
       </div>
 
-
-
       {/* ── ONLY SHOW SELECTION IF REPORT NOT EXISTS ── */}
       {!hasExistingReport ? (
         <>
           {/* ── STEP 1: Sector Selection ─────────────────────────── */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0 font-black text-xs">1</div>
-          <div>
-            <h3 className="text-sm font-extrabold text-slate-900">Pilih Sektor Industri</h3>
-            <p className="text-[10px] text-slate-500 font-semibold">Form pelaporan emisi akan disesuaikan berdasarkan sektor usaha Anda</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {SECTOR_OPTIONS.map((sector) => (
-            <button
-              key={sector.id}
-              type="button"
-              onClick={() => { setSelectedSector(sector.id); setReportingMethod(null); }}
-              className={`p-4 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-3 border ${
-                selectedSector === sector.id
-                  ? 'bg-emerald-50 border-emerald-500 shadow-sm'
-                  : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-              }`}
-            >
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                selectedSector === sector.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'
-              }`}>
-                {sector.icon}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0 font-black text-xs">
+                1
               </div>
               <div>
-                <h4 className={`text-xs font-extrabold leading-snug ${selectedSector === sector.id ? 'text-emerald-900' : 'text-slate-700'}`}>
-                  {sector.name}
-                </h4>
-                <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{sector.desc}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── STEP 0b: Method Selection (after sector chosen) ── */}
-      {selectedSector && (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0 font-black text-xs">2</div>
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Pilih Metode Pelaporan</h3>
-              <p className="text-[10px] text-slate-500 font-semibold">Laporkan emisi dengan mengunggah dokumen bukti atau mengisi form kalkulator</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Option A: Upload */}
-            <button
-              type="button"
-              onClick={() => setReportingMethod('upload')}
-              className={`p-6 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-4 border ${
-                reportingMethod === 'upload'
-                  ? 'bg-blue-50 border-blue-500 shadow-sm'
-                  : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                reportingMethod === 'upload' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-              }`}>
-                <UploadCloud className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className={`text-sm font-extrabold leading-snug ${reportingMethod === 'upload' ? 'text-blue-900' : 'text-slate-700'}`}>
-                  Upload Dokumen Bukti
-                </h4>
-                <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">
-                  Unggah dokumen sumber emisi dan masukkan total emisi yang tercantum di dalamnya.<br/>
-                  Rincian Scope mengikuti data yang tersedia pada dokumen.
+                <h3 className="text-sm font-extrabold text-slate-900">Pilih Sektor Industri</h3>
+                <p className="text-[10px] text-slate-500 font-semibold">
+                  Form pelaporan emisi akan disesuaikan berdasarkan sektor usaha Anda
                 </p>
               </div>
-            </button>
-
-            {/* Option B: Kalkulator */}
-            <button
-              type="button"
-              onClick={() => navigate(`/kalkulator?sector=${selectedSector}`)}
-              className="p-6 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-4 border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300"
-            >
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-emerald-100 text-emerald-700">
-                <Calculator className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-extrabold leading-snug text-slate-700">
-                  Kalkulator Hijau BI
-                </h4>
-                <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">
-                  Isi form aktivitas emisi berdasarkan Scope 1, 2, dan 3<br/>
-                  tanpa perlu mengunggah dokumen bukti.
-                </p>
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* MAIN FORM CONTAINER: 3 CATEGORY STEPPED / TABBED WIZARD (only shown when Upload is selected) */}
-      {reportingMethod === 'upload' && (
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* WIZARD CONTENT BODY */}
-          <form onSubmit={handleStartAIAudit} className="p-8 sm:p-12 space-y-6">
-            <div className="text-center space-y-2 mb-8">
-              <h3 className="text-xl font-black text-slate-800">Unggah Laporan Emisi</h3>
-              <p className="text-sm text-slate-500">Silakan unggah dokumen laporan emisi (PDF/ZIP/XLSX).</p>
             </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {SECTOR_OPTIONS.map((sector) => (
+                <button
+                  key={sector.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedSector(sector.id);
+                    setReportingMethod(null);
+                  }}
+                  className={`p-4 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-3 border ${
+                    selectedSector === sector.id
+                      ? 'bg-emerald-50 border-emerald-500 shadow-sm'
+                      : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      selectedSector === sector.id
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {sector.icon}
+                  </div>
+                  <div>
+                    <h4
+                      className={`text-xs font-extrabold leading-snug ${selectedSector === sector.id ? 'text-emerald-900' : 'text-slate-700'}`}
+                    >
+                      {sector.name}
+                    </h4>
+                    <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
+                      {sector.desc}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
 
-            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-emerald-50/50 hover:border-emerald-300 transition-colors group cursor-pointer relative">
-              <input type="file" id="docFile" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => setDocumentFile(e.target.files?.[0] || null)} />
-              <div className="flex flex-col items-center pointer-events-none">
-                <div className="w-16 h-16 bg-white shadow-sm border border-slate-200 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <UploadCloud className="w-8 h-8 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+          {/* ── STEP 0b: Method Selection (after sector chosen) ── */}
+          {selectedSector && (
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0 font-black text-xs">
+                  2
                 </div>
-                <span className="font-bold text-slate-700">Klik atau seret file ke sini</span>
-                <span className="text-xs font-semibold text-slate-400 mt-1">{documentFile ? documentFile.name : "Belum ada file terpilih"}</span>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Pilih Metode Pelaporan</h3>
+                  <p className="text-[10px] text-slate-500 font-semibold">
+                    Laporkan emisi dengan mengunggah dokumen bukti atau mengisi form kalkulator
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Option A: Upload */}
+                <button
+                  type="button"
+                  onClick={() => setReportingMethod('upload')}
+                  className={`p-6 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-4 border ${
+                    reportingMethod === 'upload'
+                      ? 'bg-blue-50 border-blue-500 shadow-sm'
+                      : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                      reportingMethod === 'upload'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    <UploadCloud className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4
+                      className={`text-sm font-extrabold leading-snug ${reportingMethod === 'upload' ? 'text-blue-900' : 'text-slate-700'}`}
+                    >
+                      Upload Dokumen Bukti
+                    </h4>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">
+                      Unggah dokumen sumber emisi dan masukkan total emisi yang tercantum di
+                      dalamnya.
+                      <br />
+                      Rincian Scope mengikuti data yang tersedia pada dokumen.
+                    </p>
+                  </div>
+                </button>
+
+                {/* Option B: Kalkulator */}
+                <button
+                  type="button"
+                  onClick={() => navigate(`/kalkulator?sector=${selectedSector}`)}
+                  className="p-6 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-4 border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300"
+                >
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-emerald-100 text-emerald-700">
+                    <Calculator className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-extrabold leading-snug text-slate-700">
+                      Kalkulator Hijau BI
+                    </h4>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">
+                      Isi form aktivitas emisi berdasarkan Scope 1, 2, dan 3<br />
+                      tanpa perlu mengunggah dokumen bukti.
+                    </p>
+                  </div>
+                </button>
               </div>
             </div>
+          )}
 
-            <div className="max-w-sm">
-              <label htmlFor="uploadedTotalEmissions" className="text-xs font-extrabold text-slate-700 block mb-2">
-                Total emisi pada dokumen (tCO2e)
-              </label>
-              <Input
-                id="uploadedTotalEmissions"
-                type="number"
-                min="0"
-                step="0.1"
-                value={uploadedTotalEmissions}
-                onChange={(event) => setUploadedTotalEmissions(event.target.value)}
-                placeholder="Contoh: 1250.5"
-                required
-              />
-              <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                Nilai ini digunakan sebagai total laporan; sistem tidak mengarang pembagian Scope.
-              </p>
-            </div>
+          {/* MAIN FORM CONTAINER: 3 CATEGORY STEPPED / TABBED WIZARD (only shown when Upload is selected) */}
+          {reportingMethod === 'upload' && (
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+              {/* WIZARD CONTENT BODY */}
+              <form onSubmit={handleStartAIAudit} className="p-8 sm:p-12 space-y-6">
+                <div className="text-center space-y-2 mb-8">
+                  <h3 className="text-xl font-black text-slate-800">Unggah Laporan Emisi</h3>
+                  <p className="text-sm text-slate-500">
+                    Silakan unggah dokumen laporan emisi (PDF/ZIP/XLSX).
+                  </p>
+                </div>
 
-            <div className="pt-6 mt-6 border-t border-slate-100 flex justify-end">
-              <button
-                type="submit"
-                disabled={isAuditing || !documentFile}
-                className="px-6 py-3 bg-primary-gradient hover:opacity-95 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-950/10 transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Cpu className="w-4 h-4 text-[#00C48C]" />
-                <span>Unggah & Kirim Laporan</span>
-              </button>
+                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-emerald-50/50 hover:border-emerald-300 transition-colors group cursor-pointer relative">
+                  <input
+                    type="file"
+                    id="docFile"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onChange={(e) => setDocumentFile(e.target.files?.[0] || null)}
+                  />
+                  <div className="flex flex-col items-center pointer-events-none">
+                    <div className="w-16 h-16 bg-white shadow-sm border border-slate-200 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <UploadCloud className="w-8 h-8 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                    </div>
+                    <span className="font-bold text-slate-700">Klik atau seret file ke sini</span>
+                    <span className="text-xs font-semibold text-slate-400 mt-1">
+                      {documentFile ? documentFile.name : 'Belum ada file terpilih'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="max-w-sm">
+                  <label
+                    htmlFor="uploadedTotalEmissions"
+                    className="text-xs font-extrabold text-slate-700 block mb-2"
+                  >
+                    Total emisi pada dokumen (tCO2e)
+                  </label>
+                  <Input
+                    id="uploadedTotalEmissions"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={uploadedTotalEmissions}
+                    onChange={(event) => setUploadedTotalEmissions(event.target.value)}
+                    placeholder="Contoh: 1250.5"
+                    required
+                  />
+                  <p className="text-[10px] text-slate-400 font-semibold mt-1">
+                    Nilai ini digunakan sebagai total laporan; sistem tidak mengarang pembagian
+                    Scope.
+                  </p>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isAuditing || !documentFile}
+                    className="px-6 py-3 bg-primary-gradient hover:opacity-95 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-950/10 transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Cpu className="w-4 h-4 text-[#00C48C]" />
+                    <span>Unggah & Kirim Laporan</span>
+                  </button>
+                </div>
+              </form>
             </div>
-          </form>
-      </div>
-      )}
-      </>
+          )}
+        </>
       ) : (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="p-10 text-center space-y-5 bg-slate-50 rounded-b-3xl flex flex-col items-center">
@@ -493,14 +570,18 @@ export default function EmissionReportsSector() {
               Ringkasan Laporan & Status Proses
             </h3>
           </div>
-          <span className={`text-xs font-extrabold px-3 py-1 rounded-xl flex items-center gap-1.5 ${
-            reportIsVerified
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-              : 'bg-amber-50 text-amber-700 border border-amber-200'
-          }`}>
-            {reportIsVerified
-              ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              : <Clock3 className="w-3.5 h-3.5 text-amber-600" />}
+          <span
+            className={`text-xs font-extrabold px-3 py-1 rounded-xl flex items-center gap-1.5 ${
+              reportIsVerified
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : 'bg-amber-50 text-amber-700 border border-amber-200'
+            }`}
+          >
+            {reportIsVerified ? (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            ) : (
+              <Clock3 className="w-3.5 h-3.5 text-amber-600" />
+            )}
             {reportStatusLabel}
           </span>
         </div>
@@ -535,7 +616,8 @@ export default function EmissionReportsSector() {
               Identitas Blockchain
             </span>
             <p className="text-base font-black text-slate-900 mt-1">
-              {activeReport.blockchainReportId !== null && activeReport.blockchainReportId !== undefined
+              {activeReport.blockchainReportId !== null &&
+              activeReport.blockchainReportId !== undefined
                 ? `Laporan #${activeReport.blockchainReportId}`
                 : 'Belum tersedia'}
             </p>
@@ -546,26 +628,29 @@ export default function EmissionReportsSector() {
         </div>
 
         {/* Quick Progress Visualizer for Sectors */}
-        {activeReport.sectors.length > 0 ? <div className="space-y-2 pt-2 border-t border-slate-100">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-            Proporsi Alokasi Emisi per Sektor Industri
-          </span>
-          <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200">
-            {activeReport.sectors?.map((sector) => (
-              <div
-                key={sector.id}
-                className="h-full transition-all"
-                style={{
-                  width: `${sector.percentage}%`,
-                  backgroundColor: sector.color || '#10B981',
-                }}
-                title={`${sector.name || sector.scope}: ${formatPercent(sector.percentage)}`}
-              />
-            ))}
+        {activeReport.sectors.length > 0 ? (
+          <div className="space-y-2 pt-2 border-t border-slate-100">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+              Proporsi Alokasi Emisi per Sektor Industri
+            </span>
+            <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200">
+              {activeReport.sectors?.map((sector) => (
+                <div
+                  key={sector.id}
+                  className="h-full transition-all"
+                  style={{
+                    width: `${sector.percentage}%`,
+                    backgroundColor: sector.color || '#10B981',
+                  }}
+                  title={`${sector.name || sector.scope}: ${formatPercent(sector.percentage)}`}
+                />
+              ))}
+            </div>
           </div>
-        </div> : (
+        ) : (
           <p className="pt-3 border-t border-slate-100 text-xs text-slate-400 font-semibold">
-            Rincian proporsi Scope belum tersedia pada laporan ini. Sistem hanya menampilkan total yang diterima.
+            Rincian proporsi Scope belum tersedia pada laporan ini. Sistem hanya menampilkan total
+            yang diterima.
           </p>
         )}
       </div>
@@ -574,53 +659,52 @@ export default function EmissionReportsSector() {
       <div>
         <div className="flex items-center gap-2 mb-4">
           <PieChart className="w-5 h-5 text-emerald-600" />
-          <h3 className="text-lg font-black text-slate-900">
-            Rincian Total Emisi per Kategori
-          </h3>
+          <h3 className="text-lg font-black text-slate-900">Rincian Total Emisi per Kategori</h3>
         </div>
 
-        {activeReport.sectors.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {activeReport.sectors.map((sec) => (
-            <div
-              key={sec.id}
-              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs space-y-3 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
-                    {sec.scope}
-                  </span>
-                  {getSectorIcon(sec.scope)}
+        {activeReport.sectors.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {activeReport.sectors.map((sec) => (
+              <div
+                key={sec.id}
+                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs space-y-3 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                      {sec.scope}
+                    </span>
+                    {getSectorIcon(sec.scope)}
+                  </div>
+                  <h4 className="text-sm font-extrabold text-slate-900 leading-snug">{sec.name}</h4>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">{sec.description}</p>
                 </div>
-                <h4 className="text-sm font-extrabold text-slate-900 leading-snug">{sec.name}</h4>
-                <p className="text-[10px] text-slate-400 font-medium mt-1">{sec.description}</p>
-              </div>
 
-              <div className="pt-3 border-t border-slate-100 space-y-1.5">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-2xl font-black text-slate-900">
-                    {formatNumber(sec.emissionsTCO2e)}
-                  </span>
-                  <span className="text-xs font-black" style={{ color: sec.color }}>
-                    {formatPercent(sec.percentage)}
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${sec.percentage}%`, backgroundColor: sec.color }}
-                  ></div>
+                <div className="pt-3 border-t border-slate-100 space-y-1.5">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-2xl font-black text-slate-900">
+                      {formatNumber(sec.emissionsTCO2e)}
+                    </span>
+                    <span className="text-xs font-black" style={{ color: sec.color }}>
+                      {formatPercent(sec.percentage)}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${sec.percentage}%`, backgroundColor: sec.color }}
+                    ></div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div> : (
+            ))}
+          </div>
+        ) : (
           <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 text-sm text-slate-500">
             Data kategori emisi belum tersedia dari laporan sumber yang diunggah.
           </div>
         )}
       </div>
-
 
       {/* HISTORY TABLE OF UPLOADED REPORTS */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-4">
@@ -669,14 +753,18 @@ export default function EmissionReportsSector() {
                   {formatCarbon(rep.totalEmissionsTCO2e)}
                 </TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold ${
-                    isVerifiedReport(rep.status)
-                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                      : 'bg-amber-50 text-amber-800 border border-amber-200'
-                  }`}>
-                    {isVerifiedReport(rep.status)
-                      ? <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      : <Clock3 className="w-3 h-3 text-amber-600" />}
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold ${
+                      isVerifiedReport(rep.status)
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        : 'bg-amber-50 text-amber-800 border border-amber-200'
+                    }`}
+                  >
+                    {isVerifiedReport(rep.status) ? (
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    ) : (
+                      <Clock3 className="w-3 h-3 text-amber-600" />
+                    )}
                     {getReportStatusLabel(rep.status)}
                   </span>
                 </TableCell>

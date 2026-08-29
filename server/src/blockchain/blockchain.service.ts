@@ -141,8 +141,16 @@ export class BlockchainService implements OnModuleInit {
         address,
         '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
       );
-      const filterIn = contract.filters.TransferSingle(null, null, validAddress);
-      const filterOut = contract.filters.TransferSingle(null, validAddress, null);
+      const filterIn = contract.filters.TransferSingle(
+        null,
+        null,
+        validAddress,
+      );
+      const filterOut = contract.filters.TransferSingle(
+        null,
+        validAddress,
+        null,
+      );
 
       const [eventsIn, eventsOut] = await Promise.all([
         contract.queryFilter(filterIn, 0, 'latest'),
@@ -205,9 +213,15 @@ export class BlockchainService implements OnModuleInit {
   ): Promise<string> {
     const contract = this.ensureRekaKarbon();
     try {
-      const validBuyer = this.sanitizeAddress(buyer, '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266');
-      const validSeller = this.sanitizeAddress(seller, '0x70997970C51812dc3A010C7d01b50e0d17dc79C8');
-      
+      const validBuyer = this.sanitizeAddress(
+        buyer,
+        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+      );
+      const validSeller = this.sanitizeAddress(
+        seller,
+        '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+      );
+
       const tx = await contract.executeBursaPurchase(
         validBuyer,
         validSeller,

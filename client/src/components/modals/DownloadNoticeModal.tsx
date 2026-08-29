@@ -34,18 +34,18 @@ export default function DownloadNoticeModal({
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(14);
           doc.text('REKAKARBON — ARSIP DOKUMEN', 14, 13);
-          
+
           doc.setTextColor(30, 41, 59); // Slate 800
           doc.setFontSize(12);
           doc.text('Keterangan Dokumen', 14, 35);
-          
+
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(10);
           doc.setTextColor(100, 116, 139); // Slate 500
           doc.text(`Nama Berkas: ${fileName}`, 14, 45);
           doc.text(`Diunduh pada: ${new Date().toLocaleString('id-ID')}`, 14, 52);
           doc.text('Status: Arsip Laporan Historis (File Asli tidak tersedia di Demo)', 14, 59);
-          
+
           doc.save(fileName);
         } catch (err) {
           console.error('Error generating PDF placeholder', err);

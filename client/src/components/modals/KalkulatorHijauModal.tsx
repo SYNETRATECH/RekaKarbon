@@ -17,14 +17,14 @@ export default function KalkulatorHijauModal({
   onApply,
 }: KalkulatorHijauModalProps) {
   const [step, setStep] = useState(1); // 1: Scope 1, 2: Scope 2, 3: Scope 3
-  
+
   // Scope 1 (Direct)
   const [gensetLiter, setGensetLiter] = useState('0');
   const [vehicleLiter, setVehicleLiter] = useState('0');
-  
+
   // Scope 2 (Indirect - Electricity)
   const [plnKwh, setPlnKwh] = useState('0');
-  
+
   // Scope 3 (Indirect - Other)
   const [flightKm, setFlightKm] = useState('0');
 
@@ -47,7 +47,7 @@ export default function KalkulatorHijauModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="p-0 max-w-sm border-slate-200 bg-white shadow-2xl rounded-3xl overflow-hidden">
         <DialogTitle className="sr-only">Kalkulator Hijau</DialogTitle>
-        
+
         {/* Header - BI Style Green */}
         <div className="bg-emerald-600 p-5 text-white flex flex-col items-center justify-center text-center space-y-2">
           <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -80,7 +80,9 @@ export default function KalkulatorHijauModal({
           {step === 1 && (
             <div className="space-y-4 animate-in slide-in-from-right-4 fade-in duration-300">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Pemakaian Genset/Boiler (Liter)</label>
+                <label className="text-xs font-bold text-slate-700">
+                  Pemakaian Genset/Boiler (Liter)
+                </label>
                 <Input
                   type="number"
                   value={gensetLiter}
@@ -90,7 +92,9 @@ export default function KalkulatorHijauModal({
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">BBM Kendaraan Operasional (Liter)</label>
+                <label className="text-xs font-bold text-slate-700">
+                  BBM Kendaraan Operasional (Liter)
+                </label>
                 <Input
                   type="number"
                   value={vehicleLiter}
@@ -105,7 +109,9 @@ export default function KalkulatorHijauModal({
           {step === 2 && (
             <div className="space-y-4 animate-in slide-in-from-right-4 fade-in duration-300">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Konsumsi Listrik PLN (kWh)</label>
+                <label className="text-xs font-bold text-slate-700">
+                  Konsumsi Listrik PLN (kWh)
+                </label>
                 <Input
                   type="number"
                   value={plnKwh}
@@ -120,7 +126,9 @@ export default function KalkulatorHijauModal({
           {step === 3 && (
             <div className="space-y-4 animate-in slide-in-from-right-4 fade-in duration-300">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Perjalanan Dinas Pesawat (Km)</label>
+                <label className="text-xs font-bold text-slate-700">
+                  Perjalanan Dinas Pesawat (Km)
+                </label>
                 <Input
                   type="number"
                   value={flightKm}
@@ -135,7 +143,9 @@ export default function KalkulatorHijauModal({
           {/* Results preview */}
           <div className="bg-emerald-50 rounded-2xl p-4 flex items-center justify-between border border-emerald-100">
             <div>
-              <span className="text-[10px] font-bold text-emerald-600 block uppercase">Estimasi Total</span>
+              <span className="text-[10px] font-bold text-emerald-600 block uppercase">
+                Estimasi Total
+              </span>
               <span className="text-sm font-black text-emerald-950">
                 {formatCarbon(totalEmissions)} tCO₂e
               </span>
@@ -150,11 +160,17 @@ export default function KalkulatorHijauModal({
             Batal
           </Button>
           {step < 3 ? (
-            <Button className="flex-1 rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleNext}>
+            <Button
+              className="flex-1 rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleNext}
+            >
               Lanjut <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
-            <Button className="flex-1 rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleApply}>
+            <Button
+              className="flex-1 rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleApply}
+            >
               <Save className="w-4 h-4 mr-1" /> Terapkan
             </Button>
           )}

@@ -10,50 +10,170 @@ import { formatDate, formatDateTime } from '@/lib/dates';
 import type { SectorBreakdown } from '@/types';
 
 // Inline field definitions to avoid circular dependency with kalkulator.tsx
-interface PdfFormField { id: string; label: string; unit: string; emissionFactorKey: string; }
-interface PdfCategory { title: string; scope: 1 | 2 | 3; fields: PdfFormField[]; }
+interface PdfFormField {
+  id: string;
+  label: string;
+  unit: string;
+  emissionFactorKey: string;
+}
+interface PdfCategory {
+  title: string;
+  scope: 1 | 2 | 3;
+  fields: PdfFormField[];
+}
 
 const PDF_CATEGORIES: PdfCategory[] = [
-  { title: 'Scope 1: Pembakaran Stasioner', scope: 1, fields: [
-    { id: 'genset_diesel', label: 'Solar Genset/Boiler', unit: 'Liter', emissionFactorKey: 'diesel_liter' },
-    { id: 'natural_gas', label: 'Gas Alam', unit: 'm3', emissionFactorKey: 'natural_gas_m3' },
-    { id: 'coal', label: 'Batu Bara', unit: 'kg', emissionFactorKey: 'coal_kg' },
-    { id: 'lpg', label: 'LPG', unit: 'kg', emissionFactorKey: 'lpg_kg' },
-  ]},
-  { title: 'Scope 1: Pembakaran Bergerak', scope: 1, fields: [
-    { id: 'vehicle_diesel', label: 'Solar Kendaraan', unit: 'Liter', emissionFactorKey: 'diesel_liter' },
-    { id: 'vehicle_gasoline', label: 'Bensin/Petrol', unit: 'Liter', emissionFactorKey: 'gasoline_liter' },
-  ]},
-  { title: 'Scope 1: Emisi Fugitif', scope: 1, fields: [
-    { id: 'refrigerant_kg', label: 'Refrigeran R-410A', unit: 'kg', emissionFactorKey: 'refrigerant_kg' },
-    { id: 'co2_fire_ext_kg', label: 'CO2 Pemadam Api', unit: 'kg', emissionFactorKey: 'co2_fire_ext_kg' },
-  ]},
-  { title: 'Scope 1: Proses Industri', scope: 1, fields: [
-    { id: 'cement_clinker_ton', label: 'Produksi Clinker Semen', unit: 'ton', emissionFactorKey: 'cement_clinker_ton' },
-    { id: 'lime_ton', label: 'Produksi Kapur', unit: 'ton', emissionFactorKey: 'lime_ton' },
-  ]},
-  { title: 'Scope 1: Aktivitas Pertanian', scope: 1, fields: [
-    { id: 'fertilizer_urea_kg', label: 'Pupuk Urea', unit: 'kg', emissionFactorKey: 'fertilizer_urea_kg' },
-    { id: 'rice_paddy_ha', label: 'Lahan Sawah', unit: 'ha', emissionFactorKey: 'rice_paddy_ha' },
-    { id: 'livestock_cattle_head', label: 'Ternak Sapi', unit: 'ekor', emissionFactorKey: 'livestock_cattle_head' },
-  ]},
-  { title: 'Scope 2: Konsumsi Listrik', scope: 2, fields: [
-    { id: 'electricity', label: 'Listrik PLN', unit: 'kWh', emissionFactorKey: 'electricity_kwh' },
-  ]},
-  { title: 'Scope 3: Perjalanan Dinas', scope: 3, fields: [
-    { id: 'flight', label: 'Penerbangan Domestik', unit: 'passenger-km', emissionFactorKey: 'flight_km' },
-    { id: 'car_travel', label: 'Perjalanan Darat (Mobil)', unit: 'km', emissionFactorKey: 'car_km' },
-  ]},
-  { title: 'Scope 3: Barang dan Utilitas', scope: 3, fields: [
-    { id: 'paper_kg', label: 'Kertas dan Kardus', unit: 'kg', emissionFactorKey: 'paper_kg' },
-    { id: 'water_m3', label: 'Air Suplai', unit: 'm3', emissionFactorKey: 'water_m3' },
-    { id: 'waste_landfill_ton', label: 'Limbah ke TPA', unit: 'ton', emissionFactorKey: 'waste_landfill_ton' },
-    { id: 'waste_incineration_ton', label: 'Limbah Insinerasi', unit: 'ton', emissionFactorKey: 'waste_incineration_ton' },
-    { id: 'freight_tkm', label: 'Logistik Barang', unit: 'ton-km', emissionFactorKey: 'freight_tkm' },
-  ]},
-  { title: 'Scope 3: Emisi yang Dibiayai', scope: 3, fields: [
-    { id: 'financed_emissions', label: 'Estimasi Emisi Portofolio', unit: 'tCO2e', emissionFactorKey: 'direct_tco2e' },
-  ]},
+  {
+    title: 'Scope 1: Pembakaran Stasioner',
+    scope: 1,
+    fields: [
+      {
+        id: 'genset_diesel',
+        label: 'Solar Genset/Boiler',
+        unit: 'Liter',
+        emissionFactorKey: 'diesel_liter',
+      },
+      { id: 'natural_gas', label: 'Gas Alam', unit: 'm3', emissionFactorKey: 'natural_gas_m3' },
+      { id: 'coal', label: 'Batu Bara', unit: 'kg', emissionFactorKey: 'coal_kg' },
+      { id: 'lpg', label: 'LPG', unit: 'kg', emissionFactorKey: 'lpg_kg' },
+    ],
+  },
+  {
+    title: 'Scope 1: Pembakaran Bergerak',
+    scope: 1,
+    fields: [
+      {
+        id: 'vehicle_diesel',
+        label: 'Solar Kendaraan',
+        unit: 'Liter',
+        emissionFactorKey: 'diesel_liter',
+      },
+      {
+        id: 'vehicle_gasoline',
+        label: 'Bensin/Petrol',
+        unit: 'Liter',
+        emissionFactorKey: 'gasoline_liter',
+      },
+    ],
+  },
+  {
+    title: 'Scope 1: Emisi Fugitif',
+    scope: 1,
+    fields: [
+      {
+        id: 'refrigerant_kg',
+        label: 'Refrigeran R-410A',
+        unit: 'kg',
+        emissionFactorKey: 'refrigerant_kg',
+      },
+      {
+        id: 'co2_fire_ext_kg',
+        label: 'CO2 Pemadam Api',
+        unit: 'kg',
+        emissionFactorKey: 'co2_fire_ext_kg',
+      },
+    ],
+  },
+  {
+    title: 'Scope 1: Proses Industri',
+    scope: 1,
+    fields: [
+      {
+        id: 'cement_clinker_ton',
+        label: 'Produksi Clinker Semen',
+        unit: 'ton',
+        emissionFactorKey: 'cement_clinker_ton',
+      },
+      { id: 'lime_ton', label: 'Produksi Kapur', unit: 'ton', emissionFactorKey: 'lime_ton' },
+    ],
+  },
+  {
+    title: 'Scope 1: Aktivitas Pertanian',
+    scope: 1,
+    fields: [
+      {
+        id: 'fertilizer_urea_kg',
+        label: 'Pupuk Urea',
+        unit: 'kg',
+        emissionFactorKey: 'fertilizer_urea_kg',
+      },
+      { id: 'rice_paddy_ha', label: 'Lahan Sawah', unit: 'ha', emissionFactorKey: 'rice_paddy_ha' },
+      {
+        id: 'livestock_cattle_head',
+        label: 'Ternak Sapi',
+        unit: 'ekor',
+        emissionFactorKey: 'livestock_cattle_head',
+      },
+    ],
+  },
+  {
+    title: 'Scope 2: Konsumsi Listrik',
+    scope: 2,
+    fields: [
+      {
+        id: 'electricity',
+        label: 'Listrik PLN',
+        unit: 'kWh',
+        emissionFactorKey: 'electricity_kwh',
+      },
+    ],
+  },
+  {
+    title: 'Scope 3: Perjalanan Dinas',
+    scope: 3,
+    fields: [
+      {
+        id: 'flight',
+        label: 'Penerbangan Domestik',
+        unit: 'passenger-km',
+        emissionFactorKey: 'flight_km',
+      },
+      {
+        id: 'car_travel',
+        label: 'Perjalanan Darat (Mobil)',
+        unit: 'km',
+        emissionFactorKey: 'car_km',
+      },
+    ],
+  },
+  {
+    title: 'Scope 3: Barang dan Utilitas',
+    scope: 3,
+    fields: [
+      { id: 'paper_kg', label: 'Kertas dan Kardus', unit: 'kg', emissionFactorKey: 'paper_kg' },
+      { id: 'water_m3', label: 'Air Suplai', unit: 'm3', emissionFactorKey: 'water_m3' },
+      {
+        id: 'waste_landfill_ton',
+        label: 'Limbah ke TPA',
+        unit: 'ton',
+        emissionFactorKey: 'waste_landfill_ton',
+      },
+      {
+        id: 'waste_incineration_ton',
+        label: 'Limbah Insinerasi',
+        unit: 'ton',
+        emissionFactorKey: 'waste_incineration_ton',
+      },
+      {
+        id: 'freight_tkm',
+        label: 'Logistik Barang',
+        unit: 'ton-km',
+        emissionFactorKey: 'freight_tkm',
+      },
+    ],
+  },
+  {
+    title: 'Scope 3: Emisi yang Dibiayai',
+    scope: 3,
+    fields: [
+      {
+        id: 'financed_emissions',
+        label: 'Estimasi Emisi Portofolio',
+        unit: 'tCO2e',
+        emissionFactorKey: 'direct_tco2e',
+      },
+    ],
+  },
 ];
 
 interface PdfReportParams {
@@ -79,21 +199,25 @@ interface PdfReportParams {
 
 // ─── Color constants (RGB) ─────────────────────────────────
 type RGB = [number, number, number];
-const EMERALD: RGB  = [4, 120, 87];     // emerald-700
+const EMERALD: RGB = [4, 120, 87]; // emerald-700
 const EMERALD_LIGHT: RGB = [16, 185, 129]; // emerald-500
-const EMERALD_BG: RGB = [236, 253, 245];   // emerald-50
+const EMERALD_BG: RGB = [236, 253, 245]; // emerald-50
 const SLATE_800: RGB = [30, 41, 59];
 const SLATE_500: RGB = [100, 116, 139];
 const SLATE_300: RGB = [203, 213, 225];
 const SLATE_100: RGB = [241, 245, 249];
-const WHITE: RGB     = [255, 255, 255];
-const RED_600: RGB   = [220, 38, 38];
+const WHITE: RGB = [255, 255, 255];
+const RED_600: RGB = [220, 38, 38];
 const AMBER_600: RGB = [217, 119, 6];
-const BLUE_600: RGB  = [37, 99, 235];
+const BLUE_600: RGB = [37, 99, 235];
 
 function drawRoundedRect(
   doc: jsPDF,
-  x: number, y: number, w: number, h: number, r: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
   style: 'S' | 'F' | 'FD' = 'F'
 ) {
   doc.roundedRect(x, y, w, h, r, r, style);
@@ -114,7 +238,13 @@ function drawParagraph(
   return y + lines.length * lineHeight;
 }
 
-function drawPageHeader(doc: jsPDF, pageW: number, marginX: number, title: string, subtitle: string) {
+function drawPageHeader(
+  doc: jsPDF,
+  pageW: number,
+  marginX: number,
+  title: string,
+  subtitle: string
+) {
   doc.setFillColor(...EMERALD);
   doc.rect(0, 0, pageW, 18, 'F');
   doc.setFontSize(11);
@@ -171,14 +301,28 @@ function getDocumentLabel(status?: string) {
 
 export function generateEmissionReportPDF(params: PdfReportParams) {
   const {
-    year, sectorName, reportTitle, reportDate, reportId, reportMethod, reportStatus,
-    total, scope1, scope2, scope3, merkleRoot, txHash, blockchainReportId,
-    thresholdTCO2e, sectorBreakdown, fieldValues,
+    year,
+    sectorName,
+    reportTitle,
+    reportDate,
+    reportId,
+    reportMethod,
+    reportStatus,
+    total,
+    scope1,
+    scope2,
+    scope3,
+    merkleRoot,
+    txHash,
+    blockchainReportId,
+    thresholdTCO2e,
+    sectorBreakdown,
+    fieldValues,
   } = params;
 
   const doc = new jsPDF('p', 'mm', 'a4');
   doc.setCharSpace(0);
-  const pageW = doc.internal.pageSize.getWidth();  // 210
+  const pageW = doc.internal.pageSize.getWidth(); // 210
   const pageH = doc.internal.pageSize.getHeight(); // 297
   const marginX = 20;
   const contentW = pageW - marginX * 2; // 170
@@ -238,7 +382,9 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   doc.setFontSize(9);
   doc.setFont('times', 'normal');
   doc.setTextColor(...SLATE_500);
-  doc.text('Kerangka Scope 1-3 - Referensi Buku Panduan Hijau Bank Indonesia', pageW / 2, y, { align: 'center' });
+  doc.text('Kerangka Scope 1-3 - Referensi Buku Panduan Hijau Bank Indonesia', pageW / 2, y, {
+    align: 'center',
+  });
   y += 4;
   doc.text(`Dibuat pada: ${formatDateTime(new Date())}`, pageW / 2, y, { align: 'center' });
   y += 10;
@@ -425,9 +571,11 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
     row.value > largest.value ? row : largest
   );
   const breakdownRows = sectorBreakdown?.filter((sector) => sector.emissionsTCO2e > 0) ?? [];
-  const dominantScopePercentage = hasScopeData && total > 0 ? (dominantScope.value / total) * 100 : 0;
+  const dominantScopePercentage =
+    hasScopeData && total > 0 ? (dominantScope.value / total) * 100 : 0;
   const dominantSector = breakdownRows.reduce<SectorBreakdown | null>(
-    (largest, sector) => (!largest || sector.emissionsTCO2e > largest.emissionsTCO2e ? sector : largest),
+    (largest, sector) =>
+      !largest || sector.emissionsTCO2e > largest.emissionsTCO2e ? sector : largest,
     null
   );
 
@@ -449,13 +597,7 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   const executiveSummary = hasScopeData
     ? `Laporan ini menyajikan ringkasan data emisi gas rumah kaca yang dilaporkan untuk sektor ${sectorName} pada tahun ${year}. Total emisi yang tercatat adalah ${formatPdfCarbon(total)}. Berdasarkan rincian yang tersedia, ${dominantScope.label.toLowerCase()} menjadi kontributor terbesar dengan nilai ${formatPdfCarbon(dominantScope.value)} atau ${formatPercent(dominantScopePercentage)} dari total emisi.`
     : `Laporan ini menyajikan ringkasan data emisi gas rumah kaca yang dilaporkan untuk sektor ${sectorName} pada tahun ${year}. Total emisi yang tercatat adalah ${formatPdfCarbon(total)}. Rincian Scope belum tersedia secara lengkap pada data yang diterima, sehingga interpretasi sumber emisi perlu dilengkapi melalui pemeriksaan data aktivitas atau dokumen sumber.`;
-  y = drawParagraph(
-    doc,
-    executiveSummary,
-    marginX,
-    y,
-    contentW
-  );
+  y = drawParagraph(doc, executiveSummary, marginX, y, contentW);
   y += 5;
 
   // Key metrics
@@ -464,7 +606,11 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   const cardY = y;
   const metricCards = [
     ['TOTAL EMISI', formatPdfCarbon(total), EMERALD],
-    ['KONTRIBUTOR TERBESAR', hasScopeData ? formatPercent(dominantScopePercentage) : '-', dominantScope.color],
+    [
+      'KONTRIBUTOR TERBESAR',
+      hasScopeData ? formatPercent(dominantScopePercentage) : '-',
+      dominantScope.color,
+    ],
     ['STATUS VERIFIKASI', getStatusLabel(reportStatus), EMERALD_LIGHT],
   ] as const;
   metricCards.forEach(([label, value, color], index) => {
@@ -506,10 +652,15 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
       const label = doc.splitTextToSize(sector.name, 100)[0];
       doc.text(label, marginX + 4, y + 5.5);
       doc.setFont('times', 'bold');
-      doc.text(formatPdfCarbon(sector.emissionsTCO2e), pageW - marginX - 34, y + 5.5, { align: 'right' });
+      doc.text(formatPdfCarbon(sector.emissionsTCO2e), pageW - marginX - 34, y + 5.5, {
+        align: 'right',
+      });
       doc.setTextColor(...EMERALD);
-      const percentage = sector.percentage || (total > 0 ? (sector.emissionsTCO2e / total) * 100 : 0);
-      doc.text(formatPercent(percentage, percentage < 1 ? 2 : 1), pageW - marginX - 4, y + 5.5, { align: 'right' });
+      const percentage =
+        sector.percentage || (total > 0 ? (sector.emissionsTCO2e / total) * 100 : 0);
+      doc.text(formatPercent(percentage, percentage < 1 ? 2 : 1), pageW - marginX - 4, y + 5.5, {
+        align: 'right',
+      });
       y += 8;
     });
   } else {
@@ -531,9 +682,10 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   doc.setFontSize(8);
   doc.setFont('times', 'normal');
   doc.setTextColor(...SLATE_800);
-  const methodDescription = reportMethod === 'CALCULATOR'
-    ? `Metode pengumpulan laporan adalah Kalkulator Hijau. Untuk data aktivitas yang diisi, emisi dihitung dengan rumus: emisi (kg CO2e) = jumlah aktivitas x faktor emisi, kemudian dikonversi menjadi tCO2e dengan membagi 1.000.`
-    : `Metode pengumpulan laporan adalah Unggah Dokumen. Total emisi diambil dari data submit dan dokumen sumber yang diterima sistem. Rincian formula per aktivitas tidak ditampilkan jika data mentah belum tersedia pada laporan ini.`;
+  const methodDescription =
+    reportMethod === 'CALCULATOR'
+      ? `Metode pengumpulan laporan adalah Kalkulator Hijau. Untuk data aktivitas yang diisi, emisi dihitung dengan rumus: emisi (kg CO2e) = jumlah aktivitas x faktor emisi, kemudian dikonversi menjadi tCO2e dengan membagi 1.000.`
+      : `Metode pengumpulan laporan adalah Unggah Dokumen. Total emisi diambil dari data submit dan dokumen sumber yang diterima sistem. Rincian formula per aktivitas tidak ditampilkan jika data mentah belum tersedia pada laporan ini.`;
   const methodology = [
     `Klasifikasi emisi menggunakan Scope 1 untuk emisi langsung dari aktivitas yang dikendalikan organisasi, Scope 2 untuk energi yang dibeli, dan Scope 3 untuk emisi tidak langsung seperti perjalanan, rantai pasok, serta emisi yang dibiayai.`,
     methodDescription,
@@ -559,7 +711,8 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
     );
   }
 
-  const caveat = 'Catatan: laporan ini merupakan keluaran sistem dMRV RekaKarbon. Interpretasi dan keputusan kepatuhan tetap memerlukan pemeriksaan auditor terhadap dokumen sumber, batas organisasi, periode pelaporan, dan faktor emisi yang digunakan.';
+  const caveat =
+    'Catatan: laporan ini merupakan keluaran sistem dMRV RekaKarbon. Interpretasi dan keputusan kepatuhan tetap memerlukan pemeriksaan auditor terhadap dokumen sumber, batas organisasi, periode pelaporan, dan faktor emisi yang digunakan.';
   doc.setFont('times', 'italic');
   doc.setTextColor(...SLATE_500);
   const caveatLines = doc.splitTextToSize(caveat, contentW);
@@ -576,28 +729,28 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   // 7. DETAIL BREAKDOWN TABLE WITH FORMULAS
   // ═══════════════════════════════════════════════════════════════════
   const EMISSION_FACTOR_MAP: Record<string, { factor: number; factorLabel: string }> = {
-    diesel_liter:     { factor: 2.512,  factorLabel: '2,512 kg CO2e/L' },
-    gasoline_liter:   { factor: 2.105,  factorLabel: '2,105 kg CO2e/L' },
-    lpg_kg:           { factor: 2.939,  factorLabel: '2,939 kg CO2e/kg' },
-    natural_gas_m3:   { factor: 2.023,  factorLabel: '2,023 kg CO2e/m3' },
-    coal_kg:          { factor: 2.531,  factorLabel: '2,531 kg CO2e/kg' },
+    diesel_liter: { factor: 2.512, factorLabel: '2,512 kg CO2e/L' },
+    gasoline_liter: { factor: 2.105, factorLabel: '2,105 kg CO2e/L' },
+    lpg_kg: { factor: 2.939, factorLabel: '2,939 kg CO2e/kg' },
+    natural_gas_m3: { factor: 2.023, factorLabel: '2,023 kg CO2e/m3' },
+    coal_kg: { factor: 2.531, factorLabel: '2,531 kg CO2e/kg' },
     heavy_fuel_oil_liter: { factor: 3.168, factorLabel: '3,168 kg CO2e/L' },
-    refrigerant_kg:   { factor: 2088, factorLabel: '2.088 kg CO2e/kg' },
-    co2_fire_ext_kg:  { factor: 1, factorLabel: '1 kg CO2e/kg' },
+    refrigerant_kg: { factor: 2088, factorLabel: '2.088 kg CO2e/kg' },
+    co2_fire_ext_kg: { factor: 1, factorLabel: '1 kg CO2e/kg' },
     cement_clinker_ton: { factor: 525, factorLabel: '525 kg CO2e/ton' },
-    lime_ton:          { factor: 750, factorLabel: '750 kg CO2e/ton' },
+    lime_ton: { factor: 750, factorLabel: '750 kg CO2e/ton' },
     fertilizer_urea_kg: { factor: 0.733, factorLabel: '0,733 kg CO2e/kg' },
-    rice_paddy_ha:    { factor: 5110, factorLabel: '5.110 kg CO2e/ha' },
+    rice_paddy_ha: { factor: 5110, factorLabel: '5.110 kg CO2e/ha' },
     livestock_cattle_head: { factor: 2070, factorLabel: '2.070 kg CO2e/ekor' },
-    electricity_kwh:  { factor: 0.207,  factorLabel: '0,207 kg CO2e/kWh' },
-    flight_km:        { factor: 0.244,  factorLabel: '0,244 kg CO2e/pkm' },
-    car_km:           { factor: 0.171,  factorLabel: '0,171 kg CO2e/km' },
-    paper_kg:         { factor: 0.895, factorLabel: '0,895 kg CO2e/kg' },
-    water_m3:         { factor: 0.149, factorLabel: '0,149 kg CO2e/m3' },
+    electricity_kwh: { factor: 0.207, factorLabel: '0,207 kg CO2e/kWh' },
+    flight_km: { factor: 0.244, factorLabel: '0,244 kg CO2e/pkm' },
+    car_km: { factor: 0.171, factorLabel: '0,171 kg CO2e/km' },
+    paper_kg: { factor: 0.895, factorLabel: '0,895 kg CO2e/kg' },
+    water_m3: { factor: 0.149, factorLabel: '0,149 kg CO2e/m3' },
     waste_landfill_ton: { factor: 588.9, factorLabel: '588,9 kg CO2e/ton' },
     waste_incineration_ton: { factor: 21.3, factorLabel: '21,3 kg CO2e/ton' },
-    freight_tkm:      { factor: 0.119, factorLabel: '0,119 kg CO2e/ton-km' },
-    direct_tco2e:     { factor: 1000,   factorLabel: '1.000 kg CO2e/tCO2e' },
+    freight_tkm: { factor: 0.119, factorLabel: '0,119 kg CO2e/ton-km' },
+    direct_tco2e: { factor: 1000, factorLabel: '1.000 kg CO2e/tCO2e' },
   };
 
   if (fieldValues && Object.keys(fieldValues).length > 0) {
@@ -628,7 +781,11 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
     doc.setFontSize(7);
     doc.setFont('times', 'italic');
     doc.setTextColor(...SLATE_500);
-    doc.text('Rumus: Emisi (kg CO2e) = Konsumsi (unit) x Faktor Emisi (kg CO2e/unit)   |   Faktor: konfigurasi Kalkulator Hijau RekaKarbon', marginX, y + 3);
+    doc.text(
+      'Rumus: Emisi (kg CO2e) = Konsumsi (unit) x Faktor Emisi (kg CO2e/unit)   |   Faktor: konfigurasi Kalkulator Hijau RekaKarbon',
+      marginX,
+      y + 3
+    );
     y += 8;
 
     for (const cat of PDF_CATEGORIES) {
@@ -710,7 +867,9 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
         // Result
         doc.setFont('times', 'bold');
         doc.setTextColor(...EMERALD);
-        doc.text(formatNumber(emissionKg, 0, 1), contentW + marginX - 3, y + 5.5, { align: 'right' });
+        doc.text(formatNumber(emissionKg, 0, 1), contentW + marginX - 3, y + 5.5, {
+          align: 'right',
+        });
 
         y += 8;
       }
@@ -724,7 +883,12 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
       doc.setFont('times', 'bold');
       doc.setTextColor(...EMERALD);
       doc.text(`Subtotal ${cat.title}`, marginX + 3, y + 5.5);
-      doc.text(`${formatNumber(catTotal, 0, 1)} kg CO2e  (${formatPdfCarbon(catTotal / 1000)})`, contentW + marginX - 3, y + 5.5, { align: 'right' });
+      doc.text(
+        `${formatNumber(catTotal, 0, 1)} kg CO2e  (${formatPdfCarbon(catTotal / 1000)})`,
+        contentW + marginX - 3,
+        y + 5.5,
+        { align: 'right' }
+      );
       y += 12;
     }
 
@@ -772,7 +936,9 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   const txLines = txHash ? doc.splitTextToSize(txHash, contentW - 52) : [];
   const verificationLineHeight = 4.5;
   const verificationContentHeight =
-    7 + verificationLineHeight + rootLines.length * verificationLineHeight +
+    7 +
+    verificationLineHeight +
+    rootLines.length * verificationLineHeight +
     (txHash ? 2 + verificationLineHeight + txLines.length * verificationLineHeight : 0);
   const verificationHeight = verificationContentHeight + 5;
 
@@ -834,15 +1000,18 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   doc.setTextColor(...SLATE_500);
   doc.text(
     'Dokumen ini dihasilkan secara otomatis oleh sistem RekaKarbon. Data laporan diringkas',
-    marginX, footerY + 5
+    marginX,
+    footerY + 5
   );
   doc.text(
     'menggunakan hashing dMRV (digital Measurement, Reporting, and Verification).',
-    marginX, footerY + 9
+    marginX,
+    footerY + 9
   );
   doc.text(
     'Referensi struktur: Buku Panduan Hijau Bank Indonesia dan konfigurasi metodologi RekaKarbon.',
-    marginX, footerY + 13
+    marginX,
+    footerY + 13
   );
 
   // Stamp
@@ -853,7 +1022,9 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   doc.setFontSize(8);
   doc.setFont('times', 'bold');
   doc.setTextColor(...EMERALD);
-  doc.text(getStatusLabel(reportStatus).toUpperCase(), pageW - marginX - 22, footerY + 10, { align: 'center' });
+  doc.text(getStatusLabel(reportStatus).toUpperCase(), pageW - marginX - 22, footerY + 10, {
+    align: 'center',
+  });
   doc.setFontSize(7);
   doc.text('dMRV Blockchain', pageW - marginX - 22, footerY + 15, { align: 'center' });
 

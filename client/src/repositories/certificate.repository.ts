@@ -5,7 +5,7 @@ export interface CertificateRepository {
   getPurchasedCertificates(): Promise<PurchasedCertificate[]>;
   retireCertificate(
     tokenId: string,
-    volumeTco2e: number,
+    volumeTco2e: number
   ): Promise<{ txHash: string; certificateNumber: string }>;
 }
 
@@ -16,7 +16,7 @@ export class ApiCertificateRepository implements CertificateRepository {
 
   async retireCertificate(
     tokenId: string,
-    volumeTco2e: number,
+    volumeTco2e: number
   ): Promise<{ txHash: string; certificateNumber: string }> {
     return api.post<{ txHash: string; certificateNumber: string }>('/emitter/certificates/retire', {
       tokenId,

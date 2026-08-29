@@ -26,21 +26,22 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
       // Pass the UUID directly to the repository
       const listingId = token.id;
       await bursaRepository.buyCarbonToken(listingId, buyQuantity);
-      
+
       toast({
         title: 'Transaksi Berhasil 🎉',
         description: `Pembelian token ${token.name} sukses dan telah dicatat permanen ke dalam Blockchain.`,
         variant: 'default',
         className: 'bg-emerald-600 text-white border-none',
       });
-      
+
       onClose();
     } catch (error) {
       console.error('Bursa purchase error:', error);
-      
+
       toast({
         title: 'Transaksi Gagal ❌',
-        description: 'Gagal melakukan pembelian token karbon. Pastikan saldo wallet dan koneksi blockchain stabil.',
+        description:
+          'Gagal melakukan pembelian token karbon. Pastikan saldo wallet dan koneksi blockchain stabil.',
         variant: 'destructive',
       });
     } finally {
@@ -79,7 +80,11 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
               type="number"
               max={token.volumeAvailableTco2e || 100000}
               value={buyQuantity}
-              onChange={(e) => setBuyQuantity(Math.min(token.volumeAvailableTco2e || 100000, Number(e.target.value)))}
+              onChange={(e) =>
+                setBuyQuantity(
+                  Math.min(token.volumeAvailableTco2e || 100000, Number(e.target.value))
+                )
+              }
               className="font-mono text-xs rounded-xl"
             />
             <span className="text-[9px] text-slate-500 font-bold block">

@@ -23,11 +23,7 @@ const AUDIT_STEPS = [
   },
 ];
 
-export default function LaporanAuditModal({
-  isOpen,
-  onClose,
-  auditStep,
-}: LaporanAuditModalProps) {
+export default function LaporanAuditModal({ isOpen, onClose, auditStep }: LaporanAuditModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="p-6 sm:p-7 max-w-xl border-slate-200 bg-white shadow-2xl space-y-6 text-left">
@@ -38,9 +34,7 @@ export default function LaporanAuditModal({
             <Cpu className="w-5 h-5 text-emerald-600 animate-pulse" />
           </div>
           <div>
-            <h3 className="font-extrabold text-base text-slate-900">
-              Pengiriman Laporan Emisi
-            </h3>
+            <h3 className="font-extrabold text-base text-slate-900">Pengiriman Laporan Emisi</h3>
             <span className="text-[11px] text-emerald-700 font-extrabold inline-flex items-center gap-1 mt-0.5">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               Validasi berkas dan pencatatan dMRV
@@ -87,7 +81,8 @@ export default function LaporanAuditModal({
           <div className="p-4 rounded-2xl border bg-emerald-50 border-emerald-200 text-emerald-900 text-xs space-y-2">
             <div className="font-black text-sm">LAPORAN BERHASIL DIKIRIM</div>
             <p className="text-[11px] font-medium leading-relaxed">
-              Laporan tersimpan dengan status Menunggu Audit. Sidik jari blockchain menjadi jejak integritas data, bukan bukti bahwa laporan sudah diverifikasi auditor.
+              Laporan tersimpan dengan status Menunggu Audit. Sidik jari blockchain menjadi jejak
+              integritas data, bukan bukti bahwa laporan sudah diverifikasi auditor.
             </p>
           </div>
         )}

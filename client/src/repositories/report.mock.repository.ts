@@ -1,9 +1,5 @@
 import type { ReportRepository } from './report.repository';
-import type {
-  CalculationData,
-  CalculatorReportSubmission,
-  EmissionReport,
-} from '../types';
+import type { CalculationData, CalculatorReportSubmission, EmissionReport } from '../types';
 import { MOCK_EMISSION_REPORTS } from '../lib/mock/reports';
 
 export class MockReportRepository implements ReportRepository {
@@ -34,7 +30,7 @@ export class MockReportRepository implements ReportRepository {
     return {
       merkleRoot: '0xmockmerkle123',
       txHash: '0xmocktxhash123',
-      blockchainReportId: 999
+      blockchainReportId: 999,
     };
   }
 }

@@ -44,40 +44,40 @@ import type { CalculationData, CalculatorReportSubmission } from '@/types';
 // ─── Constants & Emission Factors (DEFRA 2023 Standard) ────────────────
 const EMISSION_FACTORS: Record<string, number> = {
   // Scope 1 - Combustion
-  diesel_liter: 2.512,           // Solar/Diesel (kg CO₂e/L)
-  gasoline_liter: 2.105,         // Bensin/Petrol (kg CO₂e/L) 
-  lpg_kg: 2.939,                 // LPG (kg CO₂e/kg)
-  natural_gas_m3: 2.023,         // Gas alam (kg CO₂e/m³)
-  coal_kg: 2.531,                // Batu bara (kg CO₂e/kg)
-  heavy_fuel_oil_liter: 3.168,   // MFO/Heavy Fuel Oil (kg CO₂e/L)
-  
+  diesel_liter: 2.512, // Solar/Diesel (kg CO₂e/L)
+  gasoline_liter: 2.105, // Bensin/Petrol (kg CO₂e/L)
+  lpg_kg: 2.939, // LPG (kg CO₂e/kg)
+  natural_gas_m3: 2.023, // Gas alam (kg CO₂e/m³)
+  coal_kg: 2.531, // Batu bara (kg CO₂e/kg)
+  heavy_fuel_oil_liter: 3.168, // MFO/Heavy Fuel Oil (kg CO₂e/L)
+
   // Scope 1 - Fugitive
-  refrigerant_kg: 2088,          // Refrigerant R-410A (kg CO₂e/kg)
-  co2_fire_ext_kg: 1.000,        // CO₂ pemadam (kg CO₂/kg)
-  
+  refrigerant_kg: 2088, // Refrigerant R-410A (kg CO₂e/kg)
+  co2_fire_ext_kg: 1.0, // CO₂ pemadam (kg CO₂/kg)
+
   // Scope 1 - Process (Industrial Averages)
-  cement_clinker_ton: 525,       // Semen clinker (kg CO₂/ton)
-  lime_ton: 750,                 // Kapur (kg CO₂/ton)
-  
+  cement_clinker_ton: 525, // Semen clinker (kg CO₂/ton)
+  lime_ton: 750, // Kapur (kg CO₂/ton)
+
   // Scope 1 - Agriculture (IPCC Averages)
-  fertilizer_urea_kg: 0.733,     // Urea - N₂O (kg CO₂e/kg)
-  rice_paddy_ha: 5110,           // Padi sawah - CH₄ (kg CO₂e/ha/season)
-  livestock_cattle_head: 2070,   // Sapi potong - CH₄ (kg CO₂e/head/year)
-  
+  fertilizer_urea_kg: 0.733, // Urea - N₂O (kg CO₂e/kg)
+  rice_paddy_ha: 5110, // Padi sawah - CH₄ (kg CO₂e/ha/season)
+  livestock_cattle_head: 2070, // Sapi potong - CH₄ (kg CO₂e/head/year)
+
   // Scope 2 (Grid Electricity)
-  electricity_kwh: 0.207,        // Listrik (kg CO₂e/kWh) - Grid Average 2023
-  
+  electricity_kwh: 0.207, // Listrik (kg CO₂e/kWh) - Grid Average 2023
+
   // Scope 3
-  flight_km: 0.244,             // Penerbangan domestik (kg CO₂e/passenger-km)
-  car_km: 0.171,                // Mobil penumpang rata-rata (kg CO₂e/km)
-  paper_kg: 0.895,              // Kertas & kardus (kg CO₂e/kg)
-  water_m3: 0.149,              // Air suplai (kg CO₂e/m³)
-  waste_landfill_ton: 588.9,    // Limbah komersial ke TPA (kg CO₂e/ton)
+  flight_km: 0.244, // Penerbangan domestik (kg CO₂e/passenger-km)
+  car_km: 0.171, // Mobil penumpang rata-rata (kg CO₂e/km)
+  paper_kg: 0.895, // Kertas & kardus (kg CO₂e/kg)
+  water_m3: 0.149, // Air suplai (kg CO₂e/m³)
+  waste_landfill_ton: 588.9, // Limbah komersial ke TPA (kg CO₂e/ton)
   waste_incineration_ton: 21.3, // Limbah pembakaran/insinerasi (kg CO₂e/ton)
-  freight_tkm: 0.119,           // Truk logistik HGV rata-rata (kg CO₂e/ton-km)
-  
+  freight_tkm: 0.119, // Truk logistik HGV rata-rata (kg CO₂e/ton-km)
+
   // Direct Input (Financed Emissions)
-  direct_tco2e: 1000,           // 1 tCO2e = 1000 kg CO2e
+  direct_tco2e: 1000, // 1 tCO2e = 1000 kg CO2e
 };
 
 // ─── Sector Definitions with Dynamic Form Fields ─────────────────────
@@ -95,52 +95,153 @@ interface CategoryDef {
   title: string;
   description: string;
   scope: 1 | 2 | 3;
-  icon: 'factory' | 'zap' | 'truck' | 'flame' | 'droplets' | 'wind' | 'recycle' | 'trees' | 'thermometer' | 'landmark' | 'plane';
+  icon:
+    | 'factory'
+    | 'zap'
+    | 'truck'
+    | 'flame'
+    | 'droplets'
+    | 'wind'
+    | 'recycle'
+    | 'trees'
+    | 'thermometer'
+    | 'landmark'
+    | 'plane';
   color: string;
   fields: FormField[];
 }
 
 export const UNIVERSAL_CATEGORIES: CategoryDef[] = [
   {
-    id: 's1_stationary', title: 'Scope 1: Pembakaran Stasioner', description: 'Genset, boiler, kompor, oven gas',
-    scope: 1, icon: 'flame', color: 'bg-red-100 text-red-700',
+    id: 's1_stationary',
+    title: 'Scope 1: Pembakaran Stasioner',
+    description: 'Genset, boiler, kompor, oven gas',
+    scope: 1,
+    icon: 'flame',
+    color: 'bg-red-100 text-red-700',
     fields: [
-      { id: 'genset_diesel', label: 'Solar Genset/Boiler', unit: 'Liter', placeholder: '500', emissionFactorKey: 'diesel_liter', scope: 1 },
-      { id: 'natural_gas', label: 'Gas Alam', unit: 'm³', placeholder: '1200', emissionFactorKey: 'natural_gas_m3', scope: 1 },
-      { id: 'coal', label: 'Batu Bara', unit: 'kg', placeholder: '3000', emissionFactorKey: 'coal_kg', scope: 1 },
-      { id: 'lpg', label: 'LPG', unit: 'kg', placeholder: '300', emissionFactorKey: 'lpg_kg', scope: 1 },
+      {
+        id: 'genset_diesel',
+        label: 'Solar Genset/Boiler',
+        unit: 'Liter',
+        placeholder: '500',
+        emissionFactorKey: 'diesel_liter',
+        scope: 1,
+      },
+      {
+        id: 'natural_gas',
+        label: 'Gas Alam',
+        unit: 'm³',
+        placeholder: '1200',
+        emissionFactorKey: 'natural_gas_m3',
+        scope: 1,
+      },
+      {
+        id: 'coal',
+        label: 'Batu Bara',
+        unit: 'kg',
+        placeholder: '3000',
+        emissionFactorKey: 'coal_kg',
+        scope: 1,
+      },
+      {
+        id: 'lpg',
+        label: 'LPG',
+        unit: 'kg',
+        placeholder: '300',
+        emissionFactorKey: 'lpg_kg',
+        scope: 1,
+      },
     ],
   },
   {
-    id: 's1_mobile', title: 'Scope 1: Pembakaran Bergerak', description: 'Mobil operasional, motor, alat berat',
-    scope: 1, icon: 'truck', color: 'bg-orange-100 text-orange-700',
+    id: 's1_mobile',
+    title: 'Scope 1: Pembakaran Bergerak',
+    description: 'Mobil operasional, motor, alat berat',
+    scope: 1,
+    icon: 'truck',
+    color: 'bg-orange-100 text-orange-700',
     fields: [
-      { id: 'vehicle_diesel', label: 'Solar Kendaraan', unit: 'Liter', placeholder: '800', emissionFactorKey: 'diesel_liter', scope: 1 },
-      { id: 'vehicle_gasoline', label: 'Bensin/Petrol', unit: 'Liter', placeholder: '300', emissionFactorKey: 'gasoline_liter', scope: 1 },
+      {
+        id: 'vehicle_diesel',
+        label: 'Solar Kendaraan',
+        unit: 'Liter',
+        placeholder: '800',
+        emissionFactorKey: 'diesel_liter',
+        scope: 1,
+      },
+      {
+        id: 'vehicle_gasoline',
+        label: 'Bensin/Petrol',
+        unit: 'Liter',
+        placeholder: '300',
+        emissionFactorKey: 'gasoline_liter',
+        scope: 1,
+      },
     ],
   },
   {
-    id: 's2_electricity', title: 'Scope 2: Konsumsi Listrik', description: 'Penggunaan listrik PLN',
-    scope: 2, icon: 'zap', color: 'bg-amber-100 text-amber-700',
+    id: 's2_electricity',
+    title: 'Scope 2: Konsumsi Listrik',
+    description: 'Penggunaan listrik PLN',
+    scope: 2,
+    icon: 'zap',
+    color: 'bg-amber-100 text-amber-700',
     fields: [
-      { id: 'electricity', label: 'Listrik PLN', unit: 'kWh', placeholder: '50000', emissionFactorKey: 'electricity_kwh', scope: 2 },
+      {
+        id: 'electricity',
+        label: 'Listrik PLN',
+        unit: 'kWh',
+        placeholder: '50000',
+        emissionFactorKey: 'electricity_kwh',
+        scope: 2,
+      },
     ],
   },
   {
-    id: 's3_business_travel', title: 'Scope 3: Perjalanan Dinas', description: 'Business travel, tiket penerbangan',
-    scope: 3, icon: 'plane', color: 'bg-blue-100 text-blue-700',
+    id: 's3_business_travel',
+    title: 'Scope 3: Perjalanan Dinas',
+    description: 'Business travel, tiket penerbangan',
+    scope: 3,
+    icon: 'plane',
+    color: 'bg-blue-100 text-blue-700',
     fields: [
-      { id: 'flight', label: 'Penerbangan Domestik', unit: 'passenger-km', placeholder: '5000', emissionFactorKey: 'flight_km', scope: 3 },
-      { id: 'car_travel', label: 'Perjalanan Darat (Mobil)', unit: 'km', placeholder: '1000', emissionFactorKey: 'car_km', scope: 3 },
+      {
+        id: 'flight',
+        label: 'Penerbangan Domestik',
+        unit: 'passenger-km',
+        placeholder: '5000',
+        emissionFactorKey: 'flight_km',
+        scope: 3,
+      },
+      {
+        id: 'car_travel',
+        label: 'Perjalanan Darat (Mobil)',
+        unit: 'km',
+        placeholder: '1000',
+        emissionFactorKey: 'car_km',
+        scope: 3,
+      },
     ],
   },
   {
-    id: 's3_financed', title: 'Scope 3: Emisi yang Dibiayai', description: 'Financed emissions (investasi, portofolio)',
-    scope: 3, icon: 'landmark', color: 'bg-purple-100 text-purple-700',
+    id: 's3_financed',
+    title: 'Scope 3: Emisi yang Dibiayai',
+    description: 'Financed emissions (investasi, portofolio)',
+    scope: 3,
+    icon: 'landmark',
+    color: 'bg-purple-100 text-purple-700',
     fields: [
-      { id: 'financed_emissions', label: 'Estimasi Emisi Portofolio', unit: 'tCO₂e', placeholder: '500', emissionFactorKey: 'direct_tco2e', scope: 3 },
+      {
+        id: 'financed_emissions',
+        label: 'Estimasi Emisi Portofolio',
+        unit: 'tCO₂e',
+        placeholder: '500',
+        emissionFactorKey: 'direct_tco2e',
+        scope: 3,
+      },
     ],
-  }
+  },
 ];
 
 interface SectorDef {
@@ -151,14 +252,43 @@ interface SectorDef {
 }
 
 const SECTORS: SectorDef[] = [
-  { id: 'manufaktur', name: 'Manufaktur & Industri', description: 'Pabrik, pengolahan, dan produksi barang', thresholdTCO2e: 50000 },
-  { id: 'pertambangan', name: 'Pertambangan & Energi', description: 'Pertambangan mineral, batu bara, minyak & gas', thresholdTCO2e: 100000 },
-  { id: 'perbankan', name: 'Perbankan & Jasa Keuangan', description: 'Bank, asuransi, fintech, sekuritas', thresholdTCO2e: 5000 },
-  { id: 'konstruksi', name: 'Konstruksi & Properti', description: 'Kontraktor, pengembang, infrastruktur', thresholdTCO2e: 25000 },
-  { id: 'pertanian', name: 'Pertanian & Perkebunan', description: 'Sawah, kebun sawit, peternakan, perikanan', thresholdTCO2e: 15000 },
-  { id: 'perhotelan', name: 'Perhotelan & Pariwisata', description: 'Hotel, resort, restoran, wisata', thresholdTCO2e: 10000 },
+  {
+    id: 'manufaktur',
+    name: 'Manufaktur & Industri',
+    description: 'Pabrik, pengolahan, dan produksi barang',
+    thresholdTCO2e: 50000,
+  },
+  {
+    id: 'pertambangan',
+    name: 'Pertambangan & Energi',
+    description: 'Pertambangan mineral, batu bara, minyak & gas',
+    thresholdTCO2e: 100000,
+  },
+  {
+    id: 'perbankan',
+    name: 'Perbankan & Jasa Keuangan',
+    description: 'Bank, asuransi, fintech, sekuritas',
+    thresholdTCO2e: 5000,
+  },
+  {
+    id: 'konstruksi',
+    name: 'Konstruksi & Properti',
+    description: 'Kontraktor, pengembang, infrastruktur',
+    thresholdTCO2e: 25000,
+  },
+  {
+    id: 'pertanian',
+    name: 'Pertanian & Perkebunan',
+    description: 'Sawah, kebun sawit, peternakan, perikanan',
+    thresholdTCO2e: 15000,
+  },
+  {
+    id: 'perhotelan',
+    name: 'Perhotelan & Pariwisata',
+    description: 'Hotel, resort, restoran, wisata',
+    thresholdTCO2e: 10000,
+  },
 ];
-
 
 // ─── Icon Mapper ─────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -200,7 +330,7 @@ export default function KalkulatorHijauPage() {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(sectorFromUrl);
   const [activeCategoryIdx, setActiveCategoryIdx] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
-  
+
   const [selectedYear, setSelectedYear] = useState(2026);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -229,7 +359,9 @@ export default function KalkulatorHijauPage() {
   const { scope1, scope2, scope3, total } = useMemo(() => {
     if (!selectedSector) return { scope1: 0, scope2: 0, scope3: 0, total: 0 };
 
-    let s1 = 0, s2 = 0, s3 = 0;
+    let s1 = 0,
+      s2 = 0,
+      s3 = 0;
     for (const cat of UNIVERSAL_CATEGORIES) {
       for (const field of cat.fields) {
         const raw = Number(values[field.id] || 0);
@@ -249,9 +381,9 @@ export default function KalkulatorHijauPage() {
 
   const handleApply = async () => {
     if (!selectedSectorId) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Kumpulkan data kalkulasi
       const calculationData: CalculationData = {
@@ -278,7 +410,6 @@ export default function KalkulatorHijauPage() {
         setSubmitSuccess(true);
         setGeneratedPdfData(res);
       }, 3000);
-
     } catch (error: unknown) {
       console.error(error);
       setIsSubmitting(false);
@@ -320,9 +451,10 @@ export default function KalkulatorHijauPage() {
           </div>
           <h2 className="text-2xl font-black text-slate-900 mb-2">Laporan Emisi Berhasil Dibuat</h2>
           <p className="text-sm text-slate-500 mb-8 max-w-md">
-            Data kalkulator hijau Anda telah dikonversi menjadi laporan emisi dan diamankan di jaringan blockchain (dMRV).
+            Data kalkulator hijau Anda telah dikonversi menjadi laporan emisi dan diamankan di
+            jaringan blockchain (dMRV).
           </p>
-          
+
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 w-full text-left space-y-4 mb-8">
             <div className="flex justify-between items-center pb-4 border-b border-slate-200">
               <span className="text-xs font-bold text-slate-500 uppercase">Tahun Kepatuhan</span>
@@ -330,10 +462,14 @@ export default function KalkulatorHijauPage() {
             </div>
             <div className="flex justify-between items-center pb-4 border-b border-slate-200">
               <span className="text-xs font-bold text-slate-500 uppercase">Total Emisi</span>
-              <span className="text-lg font-black text-emerald-700 font-mono">{formatCarbon(total)} tCO₂e</span>
+              <span className="text-lg font-black text-emerald-700 font-mono">
+                {formatCarbon(total)} tCO₂e
+              </span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Sidik Jari Merkle Root</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">
+                Sidik Jari Merkle Root
+              </span>
               <span className="text-xs font-mono text-slate-700 break-all bg-slate-200/50 p-2 rounded-lg border border-slate-200">
                 {generatedPdfData.merkleRoot}
               </span>
@@ -371,8 +507,8 @@ export default function KalkulatorHijauPage() {
             Kalkulator Hijau Bank Indonesia
           </h2>
           <p className="text-xs text-slate-500 font-semibold mt-1 max-w-3xl">
-            Alat bantu perhitungan estimasi emisi GRK berbasis sektor industri. Pilih sektor usaha Anda,
-            lalu isi data aktivitas per kategori emisi (Scope 1, 2, 3).
+            Alat bantu perhitungan estimasi emisi GRK berbasis sektor industri. Pilih sektor usaha
+            Anda, lalu isi data aktivitas per kategori emisi (Scope 1, 2, 3).
           </p>
         </div>
 
@@ -396,10 +532,15 @@ export default function KalkulatorHijauPage() {
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-slate-900">Tahun Kepatuhan</h3>
-              <p className="text-[10px] text-slate-500 font-semibold">Pilih tahun laporan emisi ini</p>
+              <p className="text-[10px] text-slate-500 font-semibold">
+                Pilih tahun laporan emisi ini
+              </p>
             </div>
           </div>
-          <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+          <Select
+            value={String(selectedYear)}
+            onValueChange={(val) => setSelectedYear(Number(val))}
+          >
             <SelectTrigger className="h-12 rounded-xl text-sm font-bold w-full border-slate-200">
               <SelectValue placeholder="— Pilih Tahun —" />
             </SelectTrigger>
@@ -419,7 +560,9 @@ export default function KalkulatorHijauPage() {
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-slate-900">Sektor Industri</h3>
-              <p className="text-[10px] text-slate-500 font-semibold">Menyesuaikan form kategori emisi</p>
+              <p className="text-[10px] text-slate-500 font-semibold">
+                Menyesuaikan form kategori emisi
+              </p>
             </div>
           </div>
           <Select value={selectedSectorId ?? ''} onValueChange={handleSectorChange}>
@@ -432,7 +575,9 @@ export default function KalkulatorHijauPage() {
                   <span className="flex items-center gap-2">
                     {SECTOR_ICONS[s.id]}
                     <span className="font-bold">{s.name}</span>
-                    <span className="text-slate-400 text-xs ml-1 hidden sm:inline">— {s.description}</span>
+                    <span className="text-slate-400 text-xs ml-1 hidden sm:inline">
+                      — {s.description}
+                    </span>
                   </span>
                 </SelectItem>
               ))}
@@ -444,7 +589,6 @@ export default function KalkulatorHijauPage() {
       {/* ── Main Form (only shown when sector selected) ────────── */}
       {selectedSector && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden flex flex-col md:flex-row">
-
           {/* LEFT PANEL: Category Navigation */}
           <div className="md:w-72 bg-slate-50/80 border-r border-slate-200 p-4 space-y-2 shrink-0">
             {categories.map((cat, idx) => (
@@ -457,13 +601,17 @@ export default function KalkulatorHijauPage() {
                     : 'border-transparent text-slate-500 hover:bg-slate-100/70'
                 }`}
               >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                  activeCategoryIdx === idx ? cat.color : 'bg-slate-200 text-slate-500'
-                }`}>
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                    activeCategoryIdx === idx ? cat.color : 'bg-slate-200 text-slate-500'
+                  }`}
+                >
                   {ICON_MAP[cat.icon]}
                 </div>
                 <div>
-                  <h4 className={`text-xs font-extrabold leading-snug ${activeCategoryIdx === idx ? 'text-slate-900' : 'text-slate-600'}`}>
+                  <h4
+                    className={`text-xs font-extrabold leading-snug ${activeCategoryIdx === idx ? 'text-slate-900' : 'text-slate-600'}`}
+                  >
                     {cat.title}
                   </h4>
                   <span className="text-[10px] font-semibold block mt-0.5 opacity-80">
@@ -477,14 +625,21 @@ export default function KalkulatorHijauPage() {
           {/* RIGHT PANEL: Form Details */}
           <div className="flex-1 p-6 md:p-10 bg-white min-h-[400px] flex flex-col justify-between">
             {activeCategory && (
-              <div className="space-y-8 max-w-xl animate-in slide-in-from-right-4 fade-in duration-300" key={activeCategory.id}>
+              <div
+                className="space-y-8 max-w-xl animate-in slide-in-from-right-4 fade-in duration-300"
+                key={activeCategory.id}
+              >
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      activeCategory.scope === 1 ? 'bg-red-100 text-red-700'
-                      : activeCategory.scope === 2 ? 'bg-amber-100 text-amber-700'
-                      : 'bg-blue-100 text-blue-700'
-                    }`}>
+                    <span
+                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                        activeCategory.scope === 1
+                          ? 'bg-red-100 text-red-700'
+                          : activeCategory.scope === 2
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-blue-100 text-blue-700'
+                      }`}
+                    >
                       Scope {activeCategory.scope}
                     </span>
                   </div>
@@ -496,7 +651,8 @@ export default function KalkulatorHijauPage() {
                   {activeCategory.fields.map((field) => (
                     <div key={field.id} className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-700">
-                        {field.label} <span className="text-slate-400 font-semibold">({field.unit})</span>
+                        {field.label}{' '}
+                        <span className="text-slate-400 font-semibold">({field.unit})</span>
                       </label>
                       <Input
                         type="number"
@@ -517,22 +673,34 @@ export default function KalkulatorHijauPage() {
               <div className="flex flex-wrap gap-3">
                 <div className="bg-red-50 rounded-xl py-2 px-4 border border-red-100 text-center min-w-[120px]">
                   <span className="text-[9px] font-bold text-red-500 block uppercase">Scope 1</span>
-                  <span className="text-sm font-black text-red-900 font-mono">{formatCarbon(scope1)}</span>
+                  <span className="text-sm font-black text-red-900 font-mono">
+                    {formatCarbon(scope1)}
+                  </span>
                 </div>
                 <div className="bg-amber-50 rounded-xl py-2 px-4 border border-amber-100 text-center min-w-[120px]">
-                  <span className="text-[9px] font-bold text-amber-500 block uppercase">Scope 2</span>
-                  <span className="text-sm font-black text-amber-900 font-mono">{formatCarbon(scope2)}</span>
+                  <span className="text-[9px] font-bold text-amber-500 block uppercase">
+                    Scope 2
+                  </span>
+                  <span className="text-sm font-black text-amber-900 font-mono">
+                    {formatCarbon(scope2)}
+                  </span>
                 </div>
                 <div className="bg-blue-50 rounded-xl py-2 px-4 border border-blue-100 text-center min-w-[120px]">
-                  <span className="text-[9px] font-bold text-blue-500 block uppercase">Scope 3</span>
-                  <span className="text-sm font-black text-blue-900 font-mono">{formatCarbon(scope3)}</span>
+                  <span className="text-[9px] font-bold text-blue-500 block uppercase">
+                    Scope 3
+                  </span>
+                  <span className="text-sm font-black text-blue-900 font-mono">
+                    {formatCarbon(scope3)}
+                  </span>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
                 <div className="bg-emerald-50 rounded-2xl py-3 px-5 flex items-center justify-between border border-emerald-100 w-full sm:w-auto shrink-0 gap-8">
                   <div>
-                    <span className="text-[10px] font-bold text-emerald-600 block uppercase tracking-wide">Total Emisi GRK</span>
+                    <span className="text-[10px] font-bold text-emerald-600 block uppercase tracking-wide">
+                      Total Emisi GRK
+                    </span>
                     <span className="text-2xl font-black text-emerald-950 mt-0.5 block font-mono">
                       {formatCarbon(total)}
                     </span>
@@ -557,7 +725,8 @@ export default function KalkulatorHijauPage() {
                     >
                       {isSubmitting ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Mengonversi form ke PDF...
+                          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Mengonversi form ke
+                          PDF...
                         </>
                       ) : (
                         <>
@@ -579,9 +748,11 @@ export default function KalkulatorHijauPage() {
                   </span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
-                  <div 
+                  <div
                     className={`h-full rounded-full transition-all duration-500 ${total > selectedSector.thresholdTCO2e ? 'bg-red-500' : 'bg-emerald-500'}`}
-                    style={{ width: `${Math.min((total / selectedSector.thresholdTCO2e) * 100, 100)}%` }}
+                    style={{
+                      width: `${Math.min((total / selectedSector.thresholdTCO2e) * 100, 100)}%`,
+                    }}
                   />
                 </div>
                 {total > selectedSector.thresholdTCO2e && (
@@ -604,13 +775,13 @@ export default function KalkulatorHijauPage() {
           <div>
             <h3 className="text-sm font-bold text-slate-600">Pilih Sektor Industri</h3>
             <p className="text-xs text-slate-400 font-medium mt-1">
-              Silakan pilih sektor usaha perusahaan Anda di atas untuk menampilkan<br />
+              Silakan pilih sektor usaha perusahaan Anda di atas untuk menampilkan
+              <br />
               formulir perhitungan emisi yang sesuai.
             </p>
           </div>
         </div>
       )}
-
     </div>
   );
 }

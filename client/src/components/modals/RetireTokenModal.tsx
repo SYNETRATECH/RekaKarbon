@@ -30,11 +30,8 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
     setIsSubmitting(true);
     try {
       // Pass the UUID directly as expected by our updated DTO
-      const result = await certificateRepository.retireCertificate(
-        cert.id,
-        retireQuantity
-      );
-      
+      const result = await certificateRepository.retireCertificate(cert.id, retireQuantity);
+
       setSuccessData(result);
     } catch (error) {
       console.error('Retire error:', error);
@@ -62,20 +59,27 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
             Sertifikat Diterbitkan!
           </DialogTitle>
           <p className="text-slate-500 text-sm font-medium mb-6">
-            Token karbon berhasil dibakar dan Sertifikat Offset (Retirement) telah tercatat secara permanen.
+            Token karbon berhasil dibakar dan Sertifikat Offset (Retirement) telah tercatat secara
+            permanen.
           </p>
-          
+
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-3 mb-6">
             <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Nomor Sertifikat</span>
-              <span className="text-sm font-mono font-bold text-slate-900">{successData.certificateNumber}</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                Nomor Sertifikat
+              </span>
+              <span className="text-sm font-mono font-bold text-slate-900">
+                {successData.certificateNumber}
+              </span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Tx Hash</span>
-              <span className="text-xs font-mono font-medium text-blue-600 break-all">{successData.txHash}</span>
+              <span className="text-xs font-mono font-medium text-blue-600 break-all">
+                {successData.txHash}
+              </span>
             </div>
           </div>
-          
+
           <Button
             onClick={handleFinish}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-6 font-bold shadow-lg shadow-emerald-200"
@@ -94,11 +98,13 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
           <Flame className="w-6 h-6 text-orange-500" />
           Burn / Retire Token
         </DialogTitle>
-        
+
         <div className="bg-orange-50 text-orange-800 p-4 rounded-xl text-xs font-medium mb-6 leading-relaxed">
-          Membakar token karbon (Retirement) akan menghapus token ini dari sirkulasi dan menghasilkan sertifikat offset (SPE-GRK) yang dapat digunakan untuk pelaporan pajak karbon Anda. Aksi ini <b>tidak dapat dibatalkan</b>.
+          Membakar token karbon (Retirement) akan menghapus token ini dari sirkulasi dan
+          menghasilkan sertifikat offset (SPE-GRK) yang dapat digunakan untuk pelaporan pajak karbon
+          Anda. Aksi ini <b>tidak dapat dibatalkan</b>.
         </div>
-        
+
         <div className="space-y-4">
           <div>
             <label className="text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wider">
