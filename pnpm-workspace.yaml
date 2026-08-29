@@ -11,5 +11,5 @@ allowBuilds:
   prisma: true
   unrs-resolver: true
   onnxruntime-node: true
-  core-js: set this to true or false
+  core-js: false
 engineStrict: true
