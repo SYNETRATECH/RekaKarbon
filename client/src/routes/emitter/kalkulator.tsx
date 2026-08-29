@@ -33,36 +33,40 @@ import {
 } from 'lucide-react';
 import { formatCarbon } from '@/lib/formatters';
 
-// ─── Emission Factor Database (kg CO₂e per unit) ────────────────────
-// Sources: IPCC 2006, GHG Protocol, Kementerian ESDM RI, PLN RI
+// ─── Constants & Emission Factors (DEFRA 2023 Standard) ────────────────
 const EMISSION_FACTORS: Record<string, number> = {
   // Scope 1 - Combustion
-  diesel_liter: 2.676,           // Solar/Diesel (kg CO₂/L)
-  gasoline_liter: 2.392,         // Bensin (kg CO₂/L)
-  lpg_kg: 2.983,                 // LPG (kg CO₂/kg)
-  natural_gas_m3: 2.02,          // Gas alam (kg CO₂/m³)
-  coal_kg: 2.42,                 // Batu bara (kg CO₂/kg)
-  heavy_fuel_oil_liter: 3.114,   // MFO (kg CO₂/L)
+  diesel_liter: 2.512,           // Solar/Diesel (kg CO₂e/L)
+  gasoline_liter: 2.105,         // Bensin/Petrol (kg CO₂e/L) 
+  lpg_kg: 2.939,                 // LPG (kg CO₂e/kg)
+  natural_gas_m3: 2.023,         // Gas alam (kg CO₂e/m³)
+  coal_kg: 2.531,                // Batu bara (kg CO₂e/kg)
+  heavy_fuel_oil_liter: 3.168,   // MFO/Heavy Fuel Oil (kg CO₂e/L)
+  
   // Scope 1 - Fugitive
-  refrigerant_kg: 1810,          // R-410A (kg CO₂e/kg) - typical HFC
-  co2_fire_ext_kg: 1,            // CO₂ pemadam (kg CO₂/kg)
-  // Scope 1 - Process
+  refrigerant_kg: 2088,          // Refrigerant R-410A (kg CO₂e/kg)
+  co2_fire_ext_kg: 1.000,        // CO₂ pemadam (kg CO₂/kg)
+  
+  // Scope 1 - Process (Industrial Averages)
   cement_clinker_ton: 525,       // Semen clinker (kg CO₂/ton)
   lime_ton: 750,                 // Kapur (kg CO₂/ton)
-  // Scope 1 - Agriculture
-  fertilizer_urea_kg: 0.733,    // Urea - N₂O (kg CO₂e/kg)
-  rice_paddy_ha: 5110,          // Padi sawah - CH₄ (kg CO₂e/ha/season)
+  
+  // Scope 1 - Agriculture (IPCC Averages)
+  fertilizer_urea_kg: 0.733,     // Urea - N₂O (kg CO₂e/kg)
+  rice_paddy_ha: 5110,           // Padi sawah - CH₄ (kg CO₂e/ha/season)
   livestock_cattle_head: 2070,   // Sapi potong - CH₄ (kg CO₂e/head/year)
-  // Scope 2
-  electricity_kwh: 0.794,       // Grid emission factor Indonesia (kg CO₂/kWh) - PLN 2023
+  
+  // Scope 2 (Grid Electricity)
+  electricity_kwh: 0.207,        // Listrik (kg CO₂e/kWh) - Grid Average 2023
+  
   // Scope 3
-  flight_km: 0.255,             // Penerbangan domestik (kg CO₂/passenger-km)
-  car_km: 0.21,                 // Mobil penumpang (kg CO₂/km)
-  paper_kg: 1.84,               // Kertas (kg CO₂/kg)
-  water_m3: 0.344,              // Air PDAM (kg CO₂/m³)
-  waste_landfill_ton: 1290,     // Limbah TPA (kg CO₂e/ton)
-  waste_incineration_ton: 960,  // Insinerasi (kg CO₂e/ton)
-  freight_tkm: 0.107,           // Truk logistik (kg CO₂/ton-km)
+  flight_km: 0.244,             // Penerbangan domestik (kg CO₂e/passenger-km)
+  car_km: 0.171,                // Mobil penumpang rata-rata (kg CO₂e/km)
+  paper_kg: 0.895,              // Kertas & kardus (kg CO₂e/kg)
+  water_m3: 0.149,              // Air suplai (kg CO₂e/m³)
+  waste_landfill_ton: 588.9,    // Limbah komersial ke TPA (kg CO₂e/ton)
+  waste_incineration_ton: 21.3, // Limbah pembakaran/insinerasi (kg CO₂e/ton)
+  freight_tkm: 0.119,           // Truk logistik HGV rata-rata (kg CO₂e/ton-km)
 };
 
 // ─── Sector Definitions with Dynamic Form Fields ─────────────────────

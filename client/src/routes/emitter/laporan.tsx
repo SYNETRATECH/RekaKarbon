@@ -93,24 +93,11 @@ export default function EmissionReportsSector() {
   const isSubmittingRef = useRef(false);
   const [isSubmittedLocal, setIsSubmittedLocal] = useState(false);
 
-  // Category 1: Activity-Based Fuel & Biomassa
-  const [cat1StationaryFuel, setCat1StationaryFuel] = useState('4850000');
-  const [cat1VehicleFuel, setCat1VehicleFuel] = useState('1240000');
-  const [cat1BiomassResidue, setCat1BiomassResidue] = useState('15200');
-  const [cat1File, setCat1File] = useState<File | null>(null);
-
-  // Category 2: Financial Utility & e-Faktur DJP
-  const [cat2CostSolar, setCat2CostSolar] = useState('4250000000');
-  const [cat2CostBatubara, setCat2CostBatubara] = useState('12800000000');
-  const [cat2CostGas, setCat2CostGas] = useState('3100000000');
-  const [cat2CostPLN, setCat2CostPLN] = useState('8950000000');
+  // Upload Document State
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  
+  // Keep EFakturDJP for the mock audit logic if needed
   const [cat2EFakturDJP, setCat2EFakturDJP] = useState('010.000-26.88765432');
-  const [cat2File, setCat2File] = useState<File | null>(null);
-
-  // Category 3: Operational & Historical Parameters
-  const [cat3ProductionCapacity, setCat3ProductionCapacity] = useState('450000');
-  const [cat3HistoricalEmissions, setCat3HistoricalEmissions] = useState('13500');
-  const [cat3File, setCat3File] = useState<File | null>(null);
 
   // AI Audit Simulation Modal State
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
@@ -163,10 +150,8 @@ export default function EmissionReportsSector() {
   const handleStartAIAudit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // ── FLOW GUARD: Only allow submit from Tab 3 ──
-    if (activeTabCategory !== 3) {
-      // User somehow triggered submit from Tab 1 or 2 — just navigate forward
-      setActiveTabCategory((prev) => Math.min(3, prev + 1));
+    if (!documentFile) {
+      alert("Harap unggah dokumen laporan emisi Anda terlebih dahulu!");
       return;
     }
 
@@ -178,14 +163,9 @@ export default function EmissionReportsSector() {
     setAuditStep(1);
 
     try {
-      const files = [cat1File, cat2File, cat3File].filter((f): f is File => f !== null);
-      const totalEmissions =
-        (parseInt(cat1StationaryFuel || '0') / 1000) * 2.5 +
-        (parseInt(cat1VehicleFuel || '0') / 1000) * 2.3;
-
       // ── STEP 1: Submit to backend FIRST ──
       // API call happens here. If it fails, we abort the entire audit flow.
-      await reportRepository.submitReport(selectedYear, totalEmissions || 45000, files);
+      await reportRepository.submitReport(selectedYear, 45000, [documentFile]);
 
       // ── STEP 2: API succeeded → play the audit animation ──
       setTimeout(() => {
@@ -370,475 +350,36 @@ export default function EmissionReportsSector() {
       {reportingMethod === 'upload' && (
       <>
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* WIZARD TABS HEADER */}
-        <div className="bg-slate-50/80 border-b border-slate-200 p-3 sm:p-4 grid grid-cols-1 md:grid-cols-3 gap-2">
-          {/* TAB 1 */}
-          <button
-            type="button"
-            onClick={() => setActiveTabCategory(1)}
-            className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-3 border ${
-              activeTabCategory === 1
-                ? 'bg-white border-[var(--color-primary)] shadow-sm'
-                : 'border-transparent text-slate-500 hover:bg-slate-100/70'
-            }`}
-          >
-            <div
-              className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
-                activeTabCategory === 1
-                  ? 'bg-emerald-100 text-[#003E29]'
-                  : 'bg-slate-200 text-slate-600'
-              }`}
-            >
-              1
-            </div>
-            <div>
-              <h4
-                className={`text-xs font-extrabold leading-snug ${activeTabCategory === 1 ? 'text-slate-900' : 'text-slate-600'}`}
-              >
-                Aktivitas Emisi Tahunan
-              </h4>
-              <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                Stasioner, Armada & Biomassa (IPCC / GHG)
-              </span>
-            </div>
-          </button>
-
-          {/* TAB 2 */}
-          <button
-            type="button"
-            onClick={() => setActiveTabCategory(2)}
-            className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-3 border ${
-              activeTabCategory === 2
-                ? 'bg-white border-[var(--color-primary)] shadow-sm'
-                : 'border-transparent text-slate-500 hover:bg-slate-100/70'
-            }`}
-          >
-            <div
-              className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
-                activeTabCategory === 2
-                  ? 'bg-amber-100 text-amber-800'
-                  : 'bg-slate-200 text-slate-600'
-              }`}
-            >
-              2
-            </div>
-            <div>
-              <h4
-                className={`text-xs font-extrabold leading-snug ${activeTabCategory === 2 ? 'text-slate-900' : 'text-slate-600'}`}
-              >
-                Scope 2 (Listrik & e-Faktur)
-              </h4>
-              <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                Solar, Batubara, Gas, PLN & No. DJP
-              </span>
-            </div>
-          </button>
-
-          {/* TAB 3 */}
-          <button
-            type="button"
-            onClick={() => setActiveTabCategory(3)}
-            className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-3 border ${
-              activeTabCategory === 3
-                ? 'bg-white border-[var(--color-primary)] shadow-sm'
-                : 'border-transparent text-slate-500 hover:bg-slate-100/70'
-            }`}
-          >
-            <div
-              className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
-                activeTabCategory === 3
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-slate-200 text-slate-600'
-              }`}
-            >
-              3
-            </div>
-            <div>
-              <h4
-                className={`text-xs font-extrabold leading-snug ${activeTabCategory === 3 ? 'text-slate-900' : 'text-slate-600'}`}
-              >
-                Scope 3 (Operasional & Historis)
-              </h4>
-              <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                Kapasitas Produksi & Histori Emisi
-              </span>
-            </div>
-          </button>
-        </div>
-
         {/* WIZARD CONTENT BODY */}
         {!hasExistingReport ? (
-          <form 
-            onSubmit={handleStartAIAudit} 
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') e.preventDefault();
-            }}
-            className="p-6 sm:p-8 space-y-6"
-          >
-            {/* ================= CATEGORY 1 ================= */}
-          {activeTabCategory === 1 && (
-            <div className="space-y-6 animate-fade-in">
-              <Alert variant="mint">
-                <Flame className="w-5 h-5 text-emerald-600 shrink-0" />
-                <div>
-                  <AlertTitle className="text-[#003E29]">
-                    Scope 1 (Emisi Langsung)
-                  </AlertTitle>
-                  <AlertDescription className="text-slate-600">
-                    Masukkan pengeluaran biaya bahan bakar stasioner (genset/mesin) dan kendaraan bermotor.
-                  </AlertDescription>
-                </div>
-              </Alert>
+          <form onSubmit={handleStartAIAudit} className="p-8 sm:p-12 space-y-6">
+            <div className="text-center space-y-2 mb-8">
+              <h3 className="text-xl font-black text-slate-800">Unggah Laporan Emisi</h3>
+              <p className="text-sm text-slate-500">Silakan unggah dokumen laporan emisi (PDF/ZIP/XLSX).</p>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
-                {/* Field 1: Mesin Stasioner */}
-                <div className="space-y-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <label className="font-extrabold text-slate-800 flex items-center justify-between">
-                    <span>Konsumsi BBM Mesin Stasioner</span>
-                    <span className="text-[9px] bg-emerald-100 text-[#003E29] font-bold px-1.5 py-0.5 rounded">
-                      GHG Protocol
-                    </span>
-                  </label>
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Boiler, Kiln, Generator Fired Heaters
-                  </p>
-                  <div className="relative mt-2">
-                    <Input
-                      type="number"
-                      value={cat1StationaryFuel}
-                      onChange={(e) => setCat1StationaryFuel(e.target.value)}
-                      placeholder="Contoh: 4.850.000"
-                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
-                    />
-                    <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
-                      Liter / Tahun
-                    </span>
-                  </div>
+            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-emerald-50/50 hover:border-emerald-300 transition-colors group cursor-pointer relative">
+              <input type="file" id="docFile" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => setDocumentFile(e.target.files?.[0] || null)} />
+              <div className="flex flex-col items-center pointer-events-none">
+                <div className="w-16 h-16 bg-white shadow-sm border border-slate-200 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <UploadCloud className="w-8 h-8 text-slate-400 group-hover:text-emerald-500 transition-colors" />
                 </div>
-
-                {/* Field 2: Kendaraan & Armada */}
-                <div className="space-y-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <label className="font-extrabold text-slate-800 flex items-center justify-between">
-                    <span>BBM Armada Operasional Pabrik</span>
-                    <span className="text-[9px] bg-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded">
-                      Mobile Scope 1
-                    </span>
-                  </label>
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Truk Logistik Internal & Alat Berat
-                  </p>
-                  <div className="relative mt-2">
-                    <Input
-                      type="number"
-                      value={cat1VehicleFuel}
-                      onChange={(e) => setCat1VehicleFuel(e.target.value)}
-                      placeholder="Contoh: 1.240.000"
-                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
-                    />
-                    <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
-                      Liter / Tahun
-                    </span>
-                  </div>
-                </div>
-
-                {/* Field 3: Biomassa & Residu Pertanian */}
-                <div className="space-y-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <label className="font-extrabold text-slate-800 flex items-center justify-between">
-                    <span>Biomassa & Residu Pertanian</span>
-                    <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">
-                      Kaidah IPCC
-                    </span>
-                  </label>
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Pembakaran cangkang sawit / limbah kayu
-                  </p>
-                  <div className="relative mt-2">
-                    <Input
-                      type="number"
-                      value={cat1BiomassResidue}
-                      onChange={(e) => setCat1BiomassResidue(e.target.value)}
-                      placeholder="Contoh: 15.200"
-                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
-                    />
-                    <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
-                      Ton / Tahun
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Upload Attachment Box */}
-              <div className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-2xl p-5 text-center transition-all bg-slate-50/50 relative cursor-pointer group">
-                <input
-                  type="file"
-                  accept=".xlsx,.csv,.pdf"
-                  onChange={(e) => e.target.files && setCat1File(e.target.files[0])}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                />
-                <UploadCloud className="w-7 h-7 text-slate-400 group-hover:text-emerald-600 mx-auto transition-colors" />
-                <span className="text-xs font-bold text-slate-700 block mt-1.5">
-                  {cat1File ? cat1File.name : 'Unggah File Templat Aktivitas Emisi (.XLSX / .CSV)'}
-                </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">
-                  Gunakan format standar inventarisasi emisi GHG Protocol / IPCC
-                </span>
+                <span className="font-bold text-slate-700">Klik atau seret file ke sini</span>
+                <span className="text-xs font-semibold text-slate-400 mt-1">{documentFile ? documentFile.name : "Belum ada file terpilih"}</span>
               </div>
             </div>
-          )}
 
-          {/* ================= CATEGORY 2 ================= */}
-          {activeTabCategory === 2 && (
-            <div className="space-y-6 animate-fade-in">
-              <Alert variant="warning">
-                <Receipt className="w-5 h-5 text-amber-600 shrink-0" />
-                <div>
-                  <AlertTitle className="text-amber-950">
-                    Scope 2 (Energi Tidak Langsung & Tagihan Finansial)
-                  </AlertTitle>
-                  <AlertDescription className="text-slate-600">
-                    Masukkan beban utilitas listrik PLN, tagihan energi lainnya, serta nomor e-Faktur pajak.
-                  </AlertDescription>
-                </div>
-              </Alert>
-
-              {/* 4 Financial Utility Cost Positions */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  POS BIAYA UTILITAS AGREGAT TAHUNAN (RP / TAHUN):
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-500 block">
-                      Biaya Solar / HSD
-                    </span>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
-                        Rp
-                      </span>
-                      <Input
-                        type="number"
-                        value={cat2CostSolar}
-                        onChange={(e) => setCat2CostSolar(e.target.value)}
-                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-500 block">
-                      Biaya Batubara
-                    </span>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
-                        Rp
-                      </span>
-                      <Input
-                        type="number"
-                        value={cat2CostBatubara}
-                        onChange={(e) => setCat2CostBatubara(e.target.value)}
-                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-500 block">
-                      Biaya Gas Bumi / PGN
-                    </span>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
-                        Rp
-                      </span>
-                      <Input
-                        type="number"
-                        value={cat2CostGas}
-                        onChange={(e) => setCat2CostGas(e.target.value)}
-                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-500 block">
-                      Biaya Listrik PLN
-                    </span>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-[10px] font-bold text-slate-400">
-                        Rp
-                      </span>
-                      <Input
-                        type="number"
-                        value={cat2CostPLN}
-                        onChange={(e) => setCat2CostPLN(e.target.value)}
-                        className="bg-white pl-8 font-mono font-bold text-xs rounded-xl"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* e-Faktur DJP Input & Upload */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-                <div className="space-y-1.5 bg-amber-50/40 p-4 rounded-2xl border border-amber-200/60">
-                  <label className="font-extrabold text-amber-950 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-amber-600" />
-                    <span>Nomor e-Faktur Pajak Resmi (DJP)</span>
-                  </label>
-                  <p className="text-[10px] text-slate-500 font-medium">
-                    Nomor faktur resmi Direktorat Jenderal Pajak untuk verifikasi keuangan utilitas
-                    energi.
-                  </p>
-                  <Input
-                    type="text"
-                    value={cat2EFakturDJP}
-                    onChange={(e) => setCat2EFakturDJP(e.target.value)}
-                    placeholder="Contoh: 010.000-26.88765432"
-                    className="bg-white border-amber-300 font-mono font-extrabold rounded-xl mt-2"
-                  />
-                </div>
-
-                <div className="border-2 border-dashed border-slate-200 hover:border-amber-500 rounded-2xl p-4 text-center transition-all bg-slate-50/50 relative cursor-pointer group flex flex-col justify-center">
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => e.target.files && setCat2File(e.target.files[0])}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  />
-                  <FileText className="w-6 h-6 text-slate-400 group-hover:text-amber-600 mx-auto transition-colors" />
-                  <span className="text-xs font-bold text-slate-700 block mt-1">
-                    {cat2File
-                      ? cat2File.name
-                      : 'Unggah Laporan Keuangan Utilitas & e-Faktur (.PDF)'}
-                  </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    Dokumen pendukung laporan audit keuangan utilitas pabrik
-                  </span>
-                </div>
-              </div>
+            <div className="pt-6 mt-6 border-t border-slate-100 flex justify-end">
+              <button
+                type="submit"
+                disabled={isAuditing || !documentFile}
+                className="px-6 py-3 bg-primary-gradient hover:opacity-95 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-950/10 transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Cpu className="w-4 h-4 text-[#00C48C]" />
+                <span>Unggah & Jalankan Audit Otomatis AI</span>
+              </button>
             </div>
-          )}
-
-          {/* ================= CATEGORY 3 ================= */}
-          {activeTabCategory === 3 && (
-            <div className="space-y-6 animate-fade-in">
-              <div className="bg-blue-50/70 border border-blue-200/80 p-4 rounded-2xl flex items-start gap-3 text-left">
-                <BarChart3 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <div className="text-xs space-y-1">
-                  <h4 className="font-extrabold text-blue-950">
-                    Scope 3 (Rantai Pasok & Lainnya)
-                  </h4>
-                  <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                    Masukkan estimasi kapasitas produksi dan parameter historis emisi perusahaan Anda.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-                {/* Field 1: Production Capacity */}
-                <div className="space-y-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <label className="font-extrabold text-slate-800 block">
-                    Kapasitas Produksi Riil Pabrik (Tahun Berjalan)
-                  </label>
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Total tonase volume hasil produksi akhir pabrik
-                  </p>
-                  <div className="relative mt-2">
-                    <Input
-                      type="number"
-                      value={cat3ProductionCapacity}
-                      onChange={(e) => setCat3ProductionCapacity(e.target.value)}
-                      placeholder="Contoh: 450.000"
-                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
-                    />
-                    <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
-                      Ton Produk / Tahun
-                    </span>
-                  </div>
-                </div>
-
-                {/* Field 2: Historical Carbon Footprint */}
-                <div className="space-y-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <label className="font-extrabold text-slate-800 block">
-                    Jejak Karbon Historis Periode Sebelumnya
-                  </label>
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Total estimasi / laporan emisi historis tahun sebelumnya
-                  </p>
-                  <div className="relative mt-2">
-                    <Input
-                      type="number"
-                      value={cat3HistoricalEmissions}
-                      onChange={(e) => setCat3HistoricalEmissions(e.target.value)}
-                      placeholder="Contoh: 13.500"
-                      className="bg-white font-mono font-extrabold pr-24 rounded-xl"
-                    />
-                    <span className="absolute right-3 top-2.5 text-[10px] font-bold text-slate-400">
-                      tCO₂e / Tahun
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Upload Attachment Box */}
-              <div className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-2xl p-5 text-center transition-all bg-slate-50/50 relative cursor-pointer group">
-                <input
-                  type="file"
-                  accept=".pdf,.xlsx"
-                  onChange={(e) => e.target.files && setCat3File(e.target.files[0])}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                />
-                <UploadCloud className="w-7 h-7 text-slate-400 group-hover:text-blue-600 mx-auto transition-colors" />
-                <span className="text-xs font-bold text-slate-700 block mt-1.5">
-                  {cat3File
-                    ? cat3File.name
-                    : 'Unggah Dokumen Log Operasional & Histori Karbon (.PDF / .XLSX)'}
-                </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">
-                  Dokumen verifikasi kapasitas riil pabrik dan catatan histori emisi
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* WIZARD FOOTER NAVIGATION & SUBMIT BUTTON */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
-            <button
-              type="button"
-              disabled={activeTabCategory === 1}
-              onClick={() => setActiveTabCategory((prev) => Math.max(1, prev - 1))}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                activeTabCategory === 1
-                  ? 'text-slate-300 cursor-not-allowed'
-                  : 'text-slate-600 hover:bg-slate-100 cursor-pointer'
-              }`}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Sebelumnya</span>
-            </button>
-
-            <div className="flex items-center gap-3">
-              {activeTabCategory < 3 ? (
-                <button
-                  type="button"
-                  onClick={() => setActiveTabCategory((prev) => Math.min(3, prev + 1))}
-                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-xs transition-all"
-                >
-                  <span>Lanjut ke Kategori {activeTabCategory + 1}</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={isAuditing}
-                  className="px-6 py-3 bg-primary-gradient hover:opacity-95 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-950/10 transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Cpu className="w-4 h-4 text-[#00C48C]" />
-                  <span>Kirim & Jalankan Audit Otomatis AI dMRV</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </form>
+          </form>
         ) : (
           <div className="p-10 text-center space-y-3 bg-slate-50 rounded-b-3xl">
             <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
