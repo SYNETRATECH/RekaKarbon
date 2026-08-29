@@ -9,6 +9,8 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
     fileSizeBytes: 5033165,
     uploadDate: '2026-01-10',
     status: 'verified',
+    method: 'UPLOAD',
+    sectorId: 'manufaktur',
     totalEmissionsTCO2e: 14830,
     sectors: [
       {
@@ -57,6 +59,8 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
     fileSizeBytes: 4089446,
     uploadDate: '2025-12-15',
     status: 'verified',
+    method: 'UPLOAD',
+    sectorId: 'manufaktur',
     totalEmissionsTCO2e: 13500,
     sectors: [
       {

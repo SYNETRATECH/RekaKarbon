@@ -30,8 +30,16 @@ import {
   Hotel,
   Landmark,
   BarChart3,
+  CheckCircle2,
+  Download,
+  Loader2,
+  Filter,
+  Plane,
 } from 'lucide-react';
 import { formatCarbon } from '@/lib/formatters';
+import { reportRepository } from '../../repositories';
+import { generateEmissionReportPDF } from '@/lib/generateEmissionReportPDF';
+import type { CalculationData, CalculatorReportSubmission } from '@/types';
 
 // ─── Constants & Emission Factors (DEFRA 2023 Standard) ────────────────
 const EMISSION_FACTORS: Record<string, number> = {
@@ -67,6 +75,9 @@ const EMISSION_FACTORS: Record<string, number> = {
   waste_landfill_ton: 588.9,    // Limbah komersial ke TPA (kg CO₂e/ton)
   waste_incineration_ton: 21.3, // Limbah pembakaran/insinerasi (kg CO₂e/ton)
   freight_tkm: 0.119,           // Truk logistik HGV rata-rata (kg CO₂e/ton-km)
+  
+  // Direct Input (Financed Emissions)
+  direct_tco2e: 1000,           // 1 tCO2e = 1000 kg CO2e
 };
 
 // ─── Sector Definitions with Dynamic Form Fields ─────────────────────
@@ -84,254 +95,70 @@ interface CategoryDef {
   title: string;
   description: string;
   scope: 1 | 2 | 3;
-  icon: 'factory' | 'zap' | 'truck' | 'flame' | 'droplets' | 'wind' | 'recycle' | 'trees' | 'thermometer';
+  icon: 'factory' | 'zap' | 'truck' | 'flame' | 'droplets' | 'wind' | 'recycle' | 'trees' | 'thermometer' | 'landmark' | 'plane';
   color: string;
   fields: FormField[];
 }
+
+export const UNIVERSAL_CATEGORIES: CategoryDef[] = [
+  {
+    id: 's1_stationary', title: 'Scope 1: Pembakaran Stasioner', description: 'Genset, boiler, kompor, oven gas',
+    scope: 1, icon: 'flame', color: 'bg-red-100 text-red-700',
+    fields: [
+      { id: 'genset_diesel', label: 'Solar Genset/Boiler', unit: 'Liter', placeholder: '500', emissionFactorKey: 'diesel_liter', scope: 1 },
+      { id: 'natural_gas', label: 'Gas Alam', unit: 'm³', placeholder: '1200', emissionFactorKey: 'natural_gas_m3', scope: 1 },
+      { id: 'coal', label: 'Batu Bara', unit: 'kg', placeholder: '3000', emissionFactorKey: 'coal_kg', scope: 1 },
+      { id: 'lpg', label: 'LPG', unit: 'kg', placeholder: '300', emissionFactorKey: 'lpg_kg', scope: 1 },
+    ],
+  },
+  {
+    id: 's1_mobile', title: 'Scope 1: Pembakaran Bergerak', description: 'Mobil operasional, motor, alat berat',
+    scope: 1, icon: 'truck', color: 'bg-orange-100 text-orange-700',
+    fields: [
+      { id: 'vehicle_diesel', label: 'Solar Kendaraan', unit: 'Liter', placeholder: '800', emissionFactorKey: 'diesel_liter', scope: 1 },
+      { id: 'vehicle_gasoline', label: 'Bensin/Petrol', unit: 'Liter', placeholder: '300', emissionFactorKey: 'gasoline_liter', scope: 1 },
+    ],
+  },
+  {
+    id: 's2_electricity', title: 'Scope 2: Konsumsi Listrik', description: 'Penggunaan listrik PLN',
+    scope: 2, icon: 'zap', color: 'bg-amber-100 text-amber-700',
+    fields: [
+      { id: 'electricity', label: 'Listrik PLN', unit: 'kWh', placeholder: '50000', emissionFactorKey: 'electricity_kwh', scope: 2 },
+    ],
+  },
+  {
+    id: 's3_business_travel', title: 'Scope 3: Perjalanan Dinas', description: 'Business travel, tiket penerbangan',
+    scope: 3, icon: 'plane', color: 'bg-blue-100 text-blue-700',
+    fields: [
+      { id: 'flight', label: 'Penerbangan Domestik', unit: 'passenger-km', placeholder: '5000', emissionFactorKey: 'flight_km', scope: 3 },
+      { id: 'car_travel', label: 'Perjalanan Darat (Mobil)', unit: 'km', placeholder: '1000', emissionFactorKey: 'car_km', scope: 3 },
+    ],
+  },
+  {
+    id: 's3_financed', title: 'Scope 3: Emisi yang Dibiayai', description: 'Financed emissions (investasi, portofolio)',
+    scope: 3, icon: 'landmark', color: 'bg-purple-100 text-purple-700',
+    fields: [
+      { id: 'financed_emissions', label: 'Estimasi Emisi Portofolio', unit: 'tCO₂e', placeholder: '500', emissionFactorKey: 'direct_tco2e', scope: 3 },
+    ],
+  }
+];
 
 interface SectorDef {
   id: string;
   name: string;
   description: string;
-  categories: CategoryDef[];
+  thresholdTCO2e: number;
 }
 
 const SECTORS: SectorDef[] = [
-  {
-    id: 'manufaktur',
-    name: 'Manufaktur & Industri',
-    description: 'Pabrik, pengolahan, dan produksi barang',
-    categories: [
-      {
-        id: 'man_s1_combustion', title: 'Pembakaran Stasioner', description: 'Genset, boiler, furnace di area pabrik',
-        scope: 1, icon: 'flame', color: 'bg-red-100 text-red-700',
-        fields: [
-          { id: 'genset_diesel', label: 'Solar Genset/Boiler', unit: 'Liter', placeholder: '500', emissionFactorKey: 'diesel_liter', scope: 1 },
-          { id: 'natural_gas', label: 'Gas Alam (Furnace/Dryer)', unit: 'm³', placeholder: '1200', emissionFactorKey: 'natural_gas_m3', scope: 1 },
-          { id: 'coal', label: 'Batu Bara (Boiler)', unit: 'kg', placeholder: '3000', emissionFactorKey: 'coal_kg', scope: 1 },
-          { id: 'heavy_fuel', label: 'Minyak Bakar (MFO/HFO)', unit: 'Liter', placeholder: '200', emissionFactorKey: 'heavy_fuel_oil_liter', scope: 1 },
-        ],
-      },
-      {
-        id: 'man_s1_mobile', title: 'Armada & Kendaraan Operasional', description: 'Forklift, truk internal, kendaraan dinas',
-        scope: 1, icon: 'truck', color: 'bg-orange-100 text-orange-700',
-        fields: [
-          { id: 'vehicle_diesel', label: 'Solar Kendaraan/Forklift', unit: 'Liter', placeholder: '800', emissionFactorKey: 'diesel_liter', scope: 1 },
-          { id: 'vehicle_gasoline', label: 'Bensin Kendaraan Dinas', unit: 'Liter', placeholder: '300', emissionFactorKey: 'gasoline_liter', scope: 1 },
-          { id: 'lpg_forklift', label: 'LPG Forklift', unit: 'kg', placeholder: '150', emissionFactorKey: 'lpg_kg', scope: 1 },
-        ],
-      },
-      {
-        id: 'man_s1_fugitive', title: 'Emisi Fugitif', description: 'Kebocoran refrigerant AC, APAR CO₂',
-        scope: 1, icon: 'wind', color: 'bg-sky-100 text-sky-700',
-        fields: [
-          { id: 'refrigerant', label: 'Isi Ulang Refrigerant (AC/Chiller)', unit: 'kg', placeholder: '5', emissionFactorKey: 'refrigerant_kg', scope: 1 },
-          { id: 'co2_extinguisher', label: 'APAR CO₂ (Pemadam)', unit: 'kg', placeholder: '10', emissionFactorKey: 'co2_fire_ext_kg', scope: 1 },
-        ],
-      },
-      {
-        id: 'man_s2', title: 'Konsumsi Listrik', description: 'Daya dari PLN atau penyedia listrik lain',
-        scope: 2, icon: 'zap', color: 'bg-amber-100 text-amber-700',
-        fields: [
-          { id: 'electricity', label: 'Listrik PLN (Total Pabrik + Kantor)', unit: 'kWh', placeholder: '50000', emissionFactorKey: 'electricity_kwh', scope: 2 },
-        ],
-      },
-      {
-        id: 'man_s3', title: 'Rantai Pasok & Lainnya', description: 'Logistik, perjalanan dinas, limbah',
-        scope: 3, icon: 'recycle', color: 'bg-blue-100 text-blue-700',
-        fields: [
-          { id: 'freight', label: 'Logistik Bahan Baku/Produk', unit: 'ton-km', placeholder: '20000', emissionFactorKey: 'freight_tkm', scope: 3 },
-          { id: 'flight', label: 'Perjalanan Dinas (Pesawat)', unit: 'passenger-km', placeholder: '5000', emissionFactorKey: 'flight_km', scope: 3 },
-          { id: 'waste', label: 'Limbah ke TPA', unit: 'ton', placeholder: '50', emissionFactorKey: 'waste_landfill_ton', scope: 3 },
-          { id: 'water', label: 'Konsumsi Air PDAM', unit: 'm³', placeholder: '1000', emissionFactorKey: 'water_m3', scope: 3 },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'pertambangan',
-    name: 'Pertambangan & Energi',
-    description: 'Pertambangan mineral, batu bara, minyak & gas',
-    categories: [
-      {
-        id: 'mine_s1_heavy', title: 'Alat Berat & Genset', description: 'Excavator, dump truck, genset tambang',
-        scope: 1, icon: 'factory', color: 'bg-red-100 text-red-700',
-        fields: [
-          { id: 'heavy_diesel', label: 'Solar Alat Berat (Excavator, Dump Truck)', unit: 'Liter', placeholder: '50000', emissionFactorKey: 'diesel_liter', scope: 1 },
-          { id: 'genset_mine', label: 'Solar Genset Tambang', unit: 'Liter', placeholder: '10000', emissionFactorKey: 'diesel_liter', scope: 1 },
-        ],
-      },
-      {
-        id: 'mine_s1_fugitive', title: 'Emisi Fugitif & Proses', description: 'Debu, gas metana, peledakan',
-        scope: 1, icon: 'wind', color: 'bg-sky-100 text-sky-700',
-        fields: [
-          { id: 'explosive', label: 'Bahan Peledak (ANFO)', unit: 'kg', placeholder: '500', emissionFactorKey: 'diesel_liter', scope: 1 },
-          { id: 'refrigerant_mine', label: 'Isi Ulang Refrigerant', unit: 'kg', placeholder: '10', emissionFactorKey: 'refrigerant_kg', scope: 1 },
-        ],
-      },
-      {
-        id: 'mine_s2', title: 'Konsumsi Listrik', description: 'Daya PLN untuk processing plant',
-        scope: 2, icon: 'zap', color: 'bg-amber-100 text-amber-700',
-        fields: [
-          { id: 'electricity_mine', label: 'Listrik PLN (Processing Plant)', unit: 'kWh', placeholder: '200000', emissionFactorKey: 'electricity_kwh', scope: 2 },
-        ],
-      },
-      {
-        id: 'mine_s3', title: 'Transportasi & Limbah', description: 'Hauling, logistik material',
-        scope: 3, icon: 'truck', color: 'bg-blue-100 text-blue-700',
-        fields: [
-          { id: 'hauling', label: 'Transportasi Material (Hauling)', unit: 'ton-km', placeholder: '100000', emissionFactorKey: 'freight_tkm', scope: 3 },
-          { id: 'waste_mine', label: 'Limbah Tambang ke TPA', unit: 'ton', placeholder: '200', emissionFactorKey: 'waste_landfill_ton', scope: 3 },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'perbankan',
-    name: 'Perbankan & Jasa Keuangan',
-    description: 'Bank, asuransi, fintech, sekuritas',
-    categories: [
-      {
-        id: 'bank_s1', title: 'Kendaraan Dinas & Refrigerant', description: 'Mobil dinas, AC gedung kantor',
-        scope: 1, icon: 'flame', color: 'bg-red-100 text-red-700',
-        fields: [
-          { id: 'vehicle_bank', label: 'BBM Kendaraan Dinas', unit: 'Liter', placeholder: '500', emissionFactorKey: 'gasoline_liter', scope: 1 },
-          { id: 'genset_bank', label: 'Solar Genset Kantor', unit: 'Liter', placeholder: '200', emissionFactorKey: 'diesel_liter', scope: 1 },
-          { id: 'refrigerant_bank', label: 'Isi Ulang Refrigerant AC', unit: 'kg', placeholder: '3', emissionFactorKey: 'refrigerant_kg', scope: 1 },
-        ],
-      },
-      {
-        id: 'bank_s2', title: 'Konsumsi Listrik Gedung', description: 'AC, server, penerangan, lift',
-        scope: 2, icon: 'zap', color: 'bg-amber-100 text-amber-700',
-        fields: [
-          { id: 'electricity_bank', label: 'Listrik PLN (Gedung Kantor + Cabang)', unit: 'kWh', placeholder: '80000', emissionFactorKey: 'electricity_kwh', scope: 2 },
-        ],
-      },
-      {
-        id: 'bank_s3', title: 'Perjalanan & Operasional Kantor', description: 'Penerbangan, komuter, kertas, air',
-        scope: 3, icon: 'truck', color: 'bg-blue-100 text-blue-700',
-        fields: [
-          { id: 'flight_bank', label: 'Perjalanan Dinas (Pesawat)', unit: 'passenger-km', placeholder: '10000', emissionFactorKey: 'flight_km', scope: 3 },
-          { id: 'commute_bank', label: 'Komuter Karyawan (Mobil)', unit: 'km', placeholder: '50000', emissionFactorKey: 'car_km', scope: 3 },
-          { id: 'paper_bank', label: 'Konsumsi Kertas', unit: 'kg', placeholder: '500', emissionFactorKey: 'paper_kg', scope: 3 },
-          { id: 'water_bank', label: 'Konsumsi Air PDAM', unit: 'm³', placeholder: '300', emissionFactorKey: 'water_m3', scope: 3 },
-          { id: 'waste_bank', label: 'Limbah Kantor ke TPA', unit: 'ton', placeholder: '5', emissionFactorKey: 'waste_landfill_ton', scope: 3 },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'konstruksi',
-    name: 'Konstruksi & Properti',
-    description: 'Kontraktor, pengembang, infrastruktur',
-    categories: [
-      {
-        id: 'con_s1', title: 'Alat Berat & Genset Proyek', description: 'Crane, excavator, concrete mixer',
-        scope: 1, icon: 'factory', color: 'bg-red-100 text-red-700',
-        fields: [
-          { id: 'heavy_con', label: 'Solar Alat Berat', unit: 'Liter', placeholder: '20000', emissionFactorKey: 'diesel_liter', scope: 1 },
-          { id: 'genset_con', label: 'Solar Genset Proyek', unit: 'Liter', placeholder: '5000', emissionFactorKey: 'diesel_liter', scope: 1 },
-          { id: 'vehicle_con', label: 'BBM Kendaraan Operasional', unit: 'Liter', placeholder: '1000', emissionFactorKey: 'diesel_liter', scope: 1 },
-        ],
-      },
-      {
-        id: 'con_s1_process', title: 'Emisi Proses Material', description: 'Semen, kapur, aspal',
-        scope: 1, icon: 'thermometer', color: 'bg-orange-100 text-orange-700',
-        fields: [
-          { id: 'cement', label: 'Penggunaan Site-Mix Semen', unit: 'ton', placeholder: '500', emissionFactorKey: 'cement_clinker_ton', scope: 1 },
-          { id: 'lime', label: 'Penggunaan Kapur', unit: 'ton', placeholder: '100', emissionFactorKey: 'lime_ton', scope: 1 },
-        ],
-      },
-      {
-        id: 'con_s2', title: 'Konsumsi Listrik', description: 'Listrik proyek & kantor',
-        scope: 2, icon: 'zap', color: 'bg-amber-100 text-amber-700',
-        fields: [
-          { id: 'electricity_con', label: 'Listrik PLN (Proyek + Kantor)', unit: 'kWh', placeholder: '30000', emissionFactorKey: 'electricity_kwh', scope: 2 },
-        ],
-      },
-      {
-        id: 'con_s3', title: 'Transportasi & Limbah', description: 'Logistik material, limbah konstruksi',
-        scope: 3, icon: 'recycle', color: 'bg-blue-100 text-blue-700',
-        fields: [
-          { id: 'freight_con', label: 'Transportasi Material', unit: 'ton-km', placeholder: '50000', emissionFactorKey: 'freight_tkm', scope: 3 },
-          { id: 'waste_con', label: 'Limbah Konstruksi', unit: 'ton', placeholder: '100', emissionFactorKey: 'waste_landfill_ton', scope: 3 },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'pertanian',
-    name: 'Pertanian & Perkebunan',
-    description: 'Sawah, kebun sawit, peternakan, perikanan',
-    categories: [
-      {
-        id: 'agri_s1_mobile', title: 'Mesin & Kendaraan Pertanian', description: 'Traktor, pompa irigasi, kendaraan kebun',
-        scope: 1, icon: 'flame', color: 'bg-red-100 text-red-700',
-        fields: [
-          { id: 'tractor_diesel', label: 'Solar Traktor/Mesin Pertanian', unit: 'Liter', placeholder: '2000', emissionFactorKey: 'diesel_liter', scope: 1 },
-          { id: 'pump_diesel', label: 'Solar Pompa Irigasi', unit: 'Liter', placeholder: '500', emissionFactorKey: 'diesel_liter', scope: 1 },
-        ],
-      },
-      {
-        id: 'agri_s1_bio', title: 'Emisi Biologis & Pupuk', description: 'Metana sawah, N₂O pupuk, ternak',
-        scope: 1, icon: 'trees', color: 'bg-green-100 text-green-700',
-        fields: [
-          { id: 'urea', label: 'Penggunaan Pupuk Urea', unit: 'kg', placeholder: '5000', emissionFactorKey: 'fertilizer_urea_kg', scope: 1 },
-          { id: 'rice_paddy', label: 'Luas Sawah Padi (per musim)', unit: 'ha', placeholder: '20', emissionFactorKey: 'rice_paddy_ha', scope: 1 },
-          { id: 'cattle', label: 'Jumlah Sapi Potong/Perah', unit: 'ekor', placeholder: '50', emissionFactorKey: 'livestock_cattle_head', scope: 1 },
-        ],
-      },
-      {
-        id: 'agri_s2', title: 'Konsumsi Listrik', description: 'Cold storage, irigasi elektrik, kantor',
-        scope: 2, icon: 'zap', color: 'bg-amber-100 text-amber-700',
-        fields: [
-          { id: 'electricity_agri', label: 'Listrik PLN', unit: 'kWh', placeholder: '15000', emissionFactorKey: 'electricity_kwh', scope: 2 },
-        ],
-      },
-      {
-        id: 'agri_s3', title: 'Distribusi & Limbah', description: 'Logistik hasil panen, limbah organik',
-        scope: 3, icon: 'truck', color: 'bg-blue-100 text-blue-700',
-        fields: [
-          { id: 'freight_agri', label: 'Logistik Hasil Panen', unit: 'ton-km', placeholder: '10000', emissionFactorKey: 'freight_tkm', scope: 3 },
-          { id: 'waste_agri', label: 'Limbah Organik', unit: 'ton', placeholder: '30', emissionFactorKey: 'waste_landfill_ton', scope: 3 },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'perhotelan',
-    name: 'Perhotelan & Pariwisata',
-    description: 'Hotel, resort, restoran, wisata',
-    categories: [
-      {
-        id: 'hotel_s1', title: 'Genset, LPG & Refrigerant', description: 'Genset cadangan, dapur LPG, AC/Chiller',
-        scope: 1, icon: 'flame', color: 'bg-red-100 text-red-700',
-        fields: [
-          { id: 'genset_hotel', label: 'Solar Genset', unit: 'Liter', placeholder: '500', emissionFactorKey: 'diesel_liter', scope: 1 },
-          { id: 'lpg_hotel', label: 'LPG Dapur', unit: 'kg', placeholder: '300', emissionFactorKey: 'lpg_kg', scope: 1 },
-          { id: 'refrigerant_hotel', label: 'Isi Ulang Refrigerant (AC/Chiller)', unit: 'kg', placeholder: '8', emissionFactorKey: 'refrigerant_kg', scope: 1 },
-          { id: 'vehicle_hotel', label: 'BBM Kendaraan Shuttle', unit: 'Liter', placeholder: '200', emissionFactorKey: 'diesel_liter', scope: 1 },
-        ],
-      },
-      {
-        id: 'hotel_s2', title: 'Konsumsi Listrik', description: 'AC, laundry, lift, penerangan',
-        scope: 2, icon: 'zap', color: 'bg-amber-100 text-amber-700',
-        fields: [
-          { id: 'electricity_hotel', label: 'Listrik PLN (Seluruh Properti)', unit: 'kWh', placeholder: '100000', emissionFactorKey: 'electricity_kwh', scope: 2 },
-        ],
-      },
-      {
-        id: 'hotel_s3', title: 'Operasional & Limbah', description: 'Laundry, limbah F&B, konsumsi air',
-        scope: 3, icon: 'recycle', color: 'bg-blue-100 text-blue-700',
-        fields: [
-          { id: 'water_hotel', label: 'Konsumsi Air PDAM', unit: 'm³', placeholder: '3000', emissionFactorKey: 'water_m3', scope: 3 },
-          { id: 'waste_hotel', label: 'Limbah F&B/Organik', unit: 'ton', placeholder: '20', emissionFactorKey: 'waste_landfill_ton', scope: 3 },
-          { id: 'flight_hotel', label: 'Perjalanan Dinas (Pesawat)', unit: 'passenger-km', placeholder: '3000', emissionFactorKey: 'flight_km', scope: 3 },
-        ],
-      },
-    ],
-  },
+  { id: 'manufaktur', name: 'Manufaktur & Industri', description: 'Pabrik, pengolahan, dan produksi barang', thresholdTCO2e: 50000 },
+  { id: 'pertambangan', name: 'Pertambangan & Energi', description: 'Pertambangan mineral, batu bara, minyak & gas', thresholdTCO2e: 100000 },
+  { id: 'perbankan', name: 'Perbankan & Jasa Keuangan', description: 'Bank, asuransi, fintech, sekuritas', thresholdTCO2e: 5000 },
+  { id: 'konstruksi', name: 'Konstruksi & Properti', description: 'Kontraktor, pengembang, infrastruktur', thresholdTCO2e: 25000 },
+  { id: 'pertanian', name: 'Pertanian & Perkebunan', description: 'Sawah, kebun sawit, peternakan, perikanan', thresholdTCO2e: 15000 },
+  { id: 'perhotelan', name: 'Perhotelan & Pariwisata', description: 'Hotel, resort, restoran, wisata', thresholdTCO2e: 10000 },
 ];
+
 
 // ─── Icon Mapper ─────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -344,6 +171,8 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   recycle: <Recycle className="w-4 h-4" />,
   trees: <Trees className="w-4 h-4" />,
   thermometer: <Thermometer className="w-4 h-4" />,
+  landmark: <Landmark className="w-4 h-4" />,
+  plane: <Plane className="w-4 h-4" />,
 };
 
 const SECTOR_ICONS: Record<string, React.ReactNode> = {
@@ -370,16 +199,19 @@ export default function KalkulatorHijauPage() {
   const sectorFromUrl = searchParams.get('sector');
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(sectorFromUrl);
   const [activeCategoryIdx, setActiveCategoryIdx] = useState(0);
-
-  // All field values stored as { [fieldId]: string }
   const [values, setValues] = useState<Record<string, string>>({});
+  
+  const [selectedYear, setSelectedYear] = useState(2026);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [generatedPdfData, setGeneratedPdfData] = useState<CalculatorReportSubmission | null>(null);
 
   const selectedSector = useMemo(
     () => SECTORS.find((s) => s.id === selectedSectorId) ?? null,
     [selectedSectorId]
   );
 
-  const categories = selectedSector?.categories ?? [];
+  const categories = UNIVERSAL_CATEGORIES;
   const activeCategory = categories[activeCategoryIdx] ?? null;
 
   // Reset form when sector changes
@@ -398,7 +230,7 @@ export default function KalkulatorHijauPage() {
     if (!selectedSector) return { scope1: 0, scope2: 0, scope3: 0, total: 0 };
 
     let s1 = 0, s2 = 0, s3 = 0;
-    for (const cat of selectedSector.categories) {
+    for (const cat of UNIVERSAL_CATEGORIES) {
       for (const field of cat.fields) {
         const raw = Number(values[field.id] || 0);
         const factor = EMISSION_FACTORS[field.emissionFactorKey] ?? 0;
@@ -415,19 +247,120 @@ export default function KalkulatorHijauPage() {
     if (activeCategoryIdx < categories.length - 1) setActiveCategoryIdx(activeCategoryIdx + 1);
   };
 
-  const handleApply = () => {
-    alert(
-      `Ringkasan Emisi (${selectedSector?.name}):\n\n` +
-      `Scope 1: ${scope1.toFixed(4)} tCO₂e\n` +
-      `Scope 2: ${scope2.toFixed(4)} tCO₂e\n` +
-      `Scope 3: ${scope3.toFixed(4)} tCO₂e\n\n` +
-      `TOTAL: ${total.toFixed(4)} tCO₂e\n\n` +
-      `Data ini dapat digunakan sebagai referensi untuk laporan emisi Anda.`
-    );
-    navigate('/laporan');
+  const handleApply = async () => {
+    if (!selectedSectorId) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Kumpulkan data kalkulasi
+      const calculationData: CalculationData = {
+        scope1,
+        scope2,
+        scope3,
+        entries: Object.entries(values).map(([id, val]) => ({
+          id,
+          value: Number(val),
+        })),
+      };
+
+      // 1. Submit ke backend
+      const res = await reportRepository.submitCalculatorReport(
+        selectedYear,
+        selectedSectorId,
+        total,
+        calculationData
+      );
+
+      // 2. Animasi "Convert to PDF" selama 3 detik
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setSubmitSuccess(true);
+        setGeneratedPdfData(res);
+      }, 3000);
+
+    } catch (error: unknown) {
+      console.error(error);
+      setIsSubmitting(false);
+      alert(error instanceof Error ? error.message : 'Gagal menyimpan laporan kalkulator.');
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    try {
+      generateEmissionReportPDF({
+        year: selectedYear,
+        sectorName: selectedSector?.name || '-',
+        reportTitle: `Laporan Emisi ${selectedSector?.name || ''} Tahun ${selectedYear}`.trim(),
+        reportMethod: 'CALCULATOR',
+        reportStatus: 'submitted',
+        total,
+        scope1,
+        scope2,
+        scope3,
+        merkleRoot: generatedPdfData?.merkleRoot || '-',
+        txHash: generatedPdfData?.txHash,
+        blockchainReportId: generatedPdfData?.blockchainReportId,
+        thresholdTCO2e: selectedSector?.thresholdTCO2e,
+        fieldValues: values,
+      });
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+      alert('Terjadi kesalahan saat membuat PDF.');
+    }
   };
 
   // ─── Render ──────────────────────────────────────────────────────
+  if (submitSuccess && generatedPdfData) {
+    return (
+      <div className="space-y-8 animate-fade-in text-center py-12 max-w-2xl mx-auto">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-10 flex flex-col items-center">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
+            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2">Laporan Emisi Berhasil Dibuat</h2>
+          <p className="text-sm text-slate-500 mb-8 max-w-md">
+            Data kalkulator hijau Anda telah dikonversi menjadi laporan emisi dan diamankan di jaringan blockchain (dMRV).
+          </p>
+          
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 w-full text-left space-y-4 mb-8">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-200">
+              <span className="text-xs font-bold text-slate-500 uppercase">Tahun Kepatuhan</span>
+              <span className="text-sm font-black text-slate-900">{selectedYear}</span>
+            </div>
+            <div className="flex justify-between items-center pb-4 border-b border-slate-200">
+              <span className="text-xs font-bold text-slate-500 uppercase">Total Emisi</span>
+              <span className="text-lg font-black text-emerald-700 font-mono">{formatCarbon(total)} tCO₂e</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Sidik Jari Merkle Root</span>
+              <span className="text-xs font-mono text-slate-700 break-all bg-slate-200/50 p-2 rounded-lg border border-slate-200">
+                {generatedPdfData.merkleRoot}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-4 w-full">
+            <Button
+              onClick={() => navigate('/laporan')}
+              variant="outline"
+              className="flex-1 h-12 rounded-xl border-slate-200 text-slate-600 font-bold"
+            >
+              Kembali ke Beranda
+            </Button>
+            <Button
+              onClick={handleDownloadPDF}
+              className="flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center justify-center gap-2"
+            >
+              <Download className="w-5 h-5" />
+              Download PDF Laporan
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-fade-in text-left pb-12">
       {/* ── Header ─────────────────────────────────────────────── */}
@@ -453,33 +386,59 @@ export default function KalkulatorHijauPage() {
         </Button>
       </div>
 
-      {/* ── Sector Selector ────────────────────────────────────── */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0">
-            <Building2 className="w-4 h-4" />
+      {/* ── Year Selector & Sector Selector ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Year Selector */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center shrink-0">
+              <Filter className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900">Tahun Kepatuhan</h3>
+              <p className="text-[10px] text-slate-500 font-semibold">Pilih tahun laporan emisi ini</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-extrabold text-slate-900">Sektor Industri</h3>
-            <p className="text-[10px] text-slate-500 font-semibold">Pilih sektor usaha perusahaan Anda untuk menampilkan form yang relevan</p>
-          </div>
+          <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+            <SelectTrigger className="h-12 rounded-xl text-sm font-bold w-full border-slate-200">
+              <SelectValue placeholder="— Pilih Tahun —" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2026">FY 2026 (Aktif)</SelectItem>
+              <SelectItem value="2025">FY 2025 (Arsip)</SelectItem>
+              <SelectItem value="2024">FY 2024 (Arsip)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={selectedSectorId ?? ''} onValueChange={handleSectorChange}>
-          <SelectTrigger className="h-12 rounded-xl text-sm font-bold max-w-lg border-slate-200">
-            <SelectValue placeholder="— Pilih Sektor Industri —" />
-          </SelectTrigger>
-          <SelectContent>
-            {SECTORS.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                <span className="flex items-center gap-2">
-                  {SECTOR_ICONS[s.id]}
-                  <span className="font-bold">{s.name}</span>
-                  <span className="text-slate-400 text-xs ml-1">— {s.description}</span>
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Sector Selector */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900">Sektor Industri</h3>
+              <p className="text-[10px] text-slate-500 font-semibold">Menyesuaikan form kategori emisi</p>
+            </div>
+          </div>
+          <Select value={selectedSectorId ?? ''} onValueChange={handleSectorChange}>
+            <SelectTrigger className="h-12 rounded-xl text-sm font-bold w-full border-slate-200">
+              <SelectValue placeholder="— Pilih Sektor Industri —" />
+            </SelectTrigger>
+            <SelectContent>
+              {SECTORS.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  <span className="flex items-center gap-2">
+                    {SECTOR_ICONS[s.id]}
+                    <span className="font-bold">{s.name}</span>
+                    <span className="text-slate-400 text-xs ml-1 hidden sm:inline">— {s.description}</span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* ── Main Form (only shown when sector selected) ────────── */}
@@ -586,6 +545,7 @@ export default function KalkulatorHijauPage() {
                     <Button
                       className="w-full sm:w-auto px-6 rounded-xl h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md"
                       onClick={handleNext}
+                      disabled={isSubmitting}
                     >
                       Selanjutnya <ArrowRight className="w-4 h-4 ml-1.5" />
                     </Button>
@@ -593,11 +553,42 @@ export default function KalkulatorHijauPage() {
                     <Button
                       className="w-full sm:w-auto px-6 rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md"
                       onClick={handleApply}
+                      disabled={isSubmitting}
                     >
-                      <Save className="w-4 h-4 mr-1.5" /> Selesai & Simpan Data
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Mengonversi form ke PDF...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-1.5" /> Selesai & Simpan Data
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>
+              </div>
+              {/* Progress bar vs threshold */}
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <div className="flex justify-between items-end mb-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                    Batas Maksimal Sektor {selectedSector.name}
+                  </span>
+                  <span className="text-xs font-black text-slate-700 font-mono">
+                    {formatCarbon(selectedSector.thresholdTCO2e)} tCO₂e
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${total > selectedSector.thresholdTCO2e ? 'bg-red-500' : 'bg-emerald-500'}`}
+                    style={{ width: `${Math.min((total / selectedSector.thresholdTCO2e) * 100, 100)}%` }}
+                  />
+                </div>
+                {total > selectedSector.thresholdTCO2e && (
+                  <p className="text-[10px] font-bold text-red-600 mt-1.5 flex items-center gap-1">
+                    <Flame className="w-3 h-3" /> Emisi melebihi batas (threshold) sektor!
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -619,6 +610,7 @@ export default function KalkulatorHijauPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

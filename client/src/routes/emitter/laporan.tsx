@@ -1,12 +1,9 @@
 import { useState, useEffect, FormEvent, useRef } from 'react';
 import { useLoaderData, useRevalidator, useNavigate } from 'react-router';
-import { formatFileSize, formatPercent } from '@/lib/formatters';
+import { formatCarbon, formatFileSize, formatNumber, formatPercent, parseNumeric } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
-import DownloadNoticeModal from '../../components/modals/DownloadNoticeModal';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
@@ -33,14 +30,8 @@ import {
   Factory,
   PieChart,
   Filter,
-  ShieldCheck,
-  Flame,
-  Receipt,
-  BarChart3,
   Cpu,
-  Check,
-  ChevronRight,
-  ArrowLeft,
+  Clock3,
   Calculator,
   Landmark,
   HardHat,
@@ -50,6 +41,8 @@ import {
 
 import { reportRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+import { generateEmissionReportPDF } from '@/lib/generateEmissionReportPDF';
+import type { EmissionReport } from '@/types';
 
 export async function clientLoader() {
   const emissionReports = await reportRepository.getEmissionReports().catch(() => []);
@@ -69,11 +62,20 @@ export function meta() {
   ];
 }
 
+function getReportStatusLabel(status: EmissionReport['status']) {
+  if (status === 'approved' || status === 'verified') return 'Terverifikasi';
+  if (status === 'submitted' || status === 'audit_in_progress') return 'Menunggu Audit';
+  if (status === 'rejected') return 'Ditolak';
+  return 'Draf';
+}
+
+function isVerifiedReport(status: EmissionReport['status']) {
+  return status === 'approved' || status === 'verified';
+}
+
 export default function EmissionReportsSector() {
   const { emissionReports: reports } = useLoaderData<typeof clientLoader>();
   const { revalidate } = useRevalidator();
-
-  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
 
   // ── Sector & Method Selection (Step 0) ──
   const [selectedSector, setSelectedSector] = useState<string | null>(null);
@@ -89,21 +91,20 @@ export default function EmissionReportsSector() {
   ];
 
   const [selectedYear, setSelectedYear] = useState(2026);
-  const [activeTabCategory, setActiveTabCategory] = useState(1); // 1 | 2 | 3
   const isSubmittingRef = useRef(false);
   const [isSubmittedLocal, setIsSubmittedLocal] = useState(false);
 
   // Upload Document State
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   
-  // Keep EFakturDJP for the mock audit logic if needed
-  const [cat2EFakturDJP, setCat2EFakturDJP] = useState('010.000-26.88765432');
+  // Total is entered from the uploaded source document. The upload flow does
+  // not parse arbitrary PDF/XLSX contents yet, so it must not invent a total.
+  const [uploadedTotalEmissions, setUploadedTotalEmissions] = useState('');
 
-  // AI Audit Simulation Modal State
+  // Submission progress modal state
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
-  const [auditStep, setAuditStep] = useState(0); // 0: init, 1: e-faktur check, 2: physical vs finance, 3: ipcc & multi-var, 4: complete
+  const [auditStep, setAuditStep] = useState(0);
   const [isAuditing, setIsAuditing] = useState(false);
-  const [auditComplete, setAuditComplete] = useState(false);
   
   const navigate = useNavigate();
 
@@ -112,29 +113,72 @@ export default function EmissionReportsSector() {
   // so each year starts with a clean Tab-1 form.
   // ──────────────────────────────────────────────────────────
   useEffect(() => {
-    setActiveTabCategory(1);
     setIsSubmittedLocal(false);
-    setAuditComplete(false);
     setAuditStep(0);
     setIsAuditing(false);
+    setUploadedTotalEmissions('');
     isSubmittingRef.current = false;
   }, [selectedYear]);
 
-  const exactReport = reports.find((r: any) => r.year === selectedYear);
-  const activeReport = exactReport || {
+  const exactReport = reports.find((report) => report.year === selectedYear);
+  const activeReport: EmissionReport = exactReport || {
       id: 'empty',
       year: selectedYear,
       title: 'Belum Ada Laporan',
       fileName: 'Tidak ada file',
       fileSizeBytes: 0,
       uploadDate: '-',
-      status: 'pending',
+      status: 'draft',
       totalEmissionsTCO2e: 0,
       blockchainTxHash: null,
       blockchainReportId: null,
       merkleRoot: null,
-      sectors: [],
-    };
+    sectors: [],
+  };
+
+  const getSectorName = (sectorId?: string | null) =>
+    SECTOR_OPTIONS.find((sector) => sector.id === sectorId)?.name || sectorId || 'Tidak ditentukan';
+
+  const reportStatusLabel = getReportStatusLabel(activeReport.status);
+  const reportIsVerified = isVerifiedReport(activeReport.status);
+  const reportIsRejected = activeReport.status === 'rejected';
+
+  const handleDownloadReport = (report: EmissionReport) => {
+    const scopeTotals = report.sectors.reduce(
+      (totals, sector) => {
+        if (sector.scope.includes('Scope 1') || sector.scope.toLowerCase() === 'proses industri') {
+          totals.scope1 += sector.emissionsTCO2e;
+        }
+        if (sector.scope.includes('Scope 2')) totals.scope2 += sector.emissionsTCO2e;
+        if (sector.scope.includes('Scope 3')) totals.scope3 += sector.emissionsTCO2e;
+        return totals;
+      },
+      { scope1: 0, scope2: 0, scope3: 0 }
+    );
+
+    try {
+      generateEmissionReportPDF({
+        year: report.year,
+        sectorName: getSectorName(report.sectorId),
+        reportTitle: report.title,
+        reportDate: report.uploadDate,
+        reportId: report.id,
+        reportMethod: report.method,
+        reportStatus: report.status,
+        total: report.totalEmissionsTCO2e,
+        scope1: scopeTotals.scope1,
+        scope2: scopeTotals.scope2,
+        scope3: scopeTotals.scope3,
+        merkleRoot: report.merkleRoot || '-',
+        txHash: report.blockchainTxHash || undefined,
+        blockchainReportId: report.blockchainReportId,
+        sectorBreakdown: report.sectors,
+      });
+    } catch (error) {
+      console.error('Failed to generate emission report PDF:', error);
+      alert('Terjadi kesalahan saat membuat PDF laporan emisi.');
+    }
+  };
 
   // ──────────────────────────────────────────────────────────
   // FLOW CONTROL: When to show form vs "Telah Disubmit"
@@ -150,8 +194,9 @@ export default function EmissionReportsSector() {
   const handleStartAIAudit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!documentFile) {
-      alert("Harap unggah dokumen laporan emisi Anda terlebih dahulu!");
+    const totalEmissions = parseNumeric(uploadedTotalEmissions);
+    if (!documentFile || !selectedSector || totalEmissions <= 0) {
+      alert('Harap unggah dokumen dan masukkan total emisi dari dokumen tersebut.');
       return;
     }
 
@@ -165,7 +210,7 @@ export default function EmissionReportsSector() {
     try {
       // ── STEP 1: Submit to backend FIRST ──
       // API call happens here. If it fails, we abort the entire audit flow.
-      await reportRepository.submitReport(selectedYear, 45000, [documentFile]);
+      await reportRepository.submitReport(selectedYear, selectedSector, totalEmissions, [documentFile]);
 
       // ── STEP 2: API succeeded → play the audit animation ──
       setTimeout(() => {
@@ -175,21 +220,20 @@ export default function EmissionReportsSector() {
           setTimeout(() => {
             setAuditStep(4);
             setIsAuditing(false);
-            setAuditComplete(true);
             setIsSubmittedLocal(true);
             isSubmittingRef.current = false;
             revalidate(); // Re-fetch reports to get the updated data
           }, 1500);
         }, 1500);
       }, 1500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Submit report error:', error);
       setIsAuditModalOpen(false);
       setIsAuditing(false);
       setAuditStep(0);
       isSubmittingRef.current = false;
 
-      const msg = error?.message || '';
+      const msg = error instanceof Error ? error.message : '';
 
       if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
         alert('⚠️ Sesi Anda telah berakhir.\n\nSilakan login ulang untuk melanjutkan.');
@@ -219,7 +263,7 @@ export default function EmissionReportsSector() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
-            Pelaporan & Audit Otomatis Emisi Industri
+            Pelaporan Emisi Industri
           </h2>
           <p className="text-xs text-slate-500 font-semibold mt-1 max-w-3xl">
             Pilih sektor industri perusahaan Anda, lalu pilih metode pelaporan emisi
@@ -249,7 +293,12 @@ export default function EmissionReportsSector() {
         </div>
       </div>
 
-      {/* ── STEP 0: Sector Selection ─────────────────────────── */}
+
+
+      {/* ── ONLY SHOW SELECTION IF REPORT NOT EXISTS ── */}
+      {!hasExistingReport ? (
+        <>
+          {/* ── STEP 1: Sector Selection ─────────────────────────── */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0 font-black text-xs">1</div>
@@ -317,8 +366,8 @@ export default function EmissionReportsSector() {
                   Upload Dokumen Bukti
                 </h4>
                 <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">
-                  Unggah data fisik, e-Faktur Pajak DJP, dan parameter operasional.<br/>
-                  Diaudit otomatis oleh AI dMRV untuk verifikasi dan scoring.
+                  Unggah dokumen sumber emisi dan masukkan total emisi yang tercantum di dalamnya.<br/>
+                  Rincian Scope mengikuti data yang tersedia pada dokumen.
                 </p>
               </div>
             </button>
@@ -348,10 +397,8 @@ export default function EmissionReportsSector() {
 
       {/* MAIN FORM CONTAINER: 3 CATEGORY STEPPED / TABBED WIZARD (only shown when Upload is selected) */}
       {reportingMethod === 'upload' && (
-      <>
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
         {/* WIZARD CONTENT BODY */}
-        {!hasExistingReport ? (
           <form onSubmit={handleStartAIAudit} className="p-8 sm:p-12 space-y-6">
             <div className="text-center space-y-2 mb-8">
               <h3 className="text-xl font-black text-slate-800">Unggah Laporan Emisi</h3>
@@ -369,6 +416,25 @@ export default function EmissionReportsSector() {
               </div>
             </div>
 
+            <div className="max-w-sm">
+              <label htmlFor="uploadedTotalEmissions" className="text-xs font-extrabold text-slate-700 block mb-2">
+                Total emisi pada dokumen (tCO2e)
+              </label>
+              <Input
+                id="uploadedTotalEmissions"
+                type="number"
+                min="0"
+                step="0.1"
+                value={uploadedTotalEmissions}
+                onChange={(event) => setUploadedTotalEmissions(event.target.value)}
+                placeholder="Contoh: 1250.5"
+                required
+              />
+              <p className="text-[10px] text-slate-400 font-semibold mt-1">
+                Nilai ini digunakan sebagai total laporan; sistem tidak mengarang pembagian Scope.
+              </p>
+            </div>
+
             <div className="pt-6 mt-6 border-t border-slate-100 flex justify-end">
               <button
                 type="submit"
@@ -376,20 +442,45 @@ export default function EmissionReportsSector() {
                 className="px-6 py-3 bg-primary-gradient hover:opacity-95 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-950/10 transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Cpu className="w-4 h-4 text-[#00C48C]" />
-                <span>Unggah & Jalankan Audit Otomatis AI</span>
+                <span>Unggah & Kirim Laporan</span>
               </button>
             </div>
           </form>
-        ) : (
-          <div className="p-10 text-center space-y-3 bg-slate-50 rounded-b-3xl">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-            <h3 className="text-lg font-black text-slate-800">Laporan Tahun {selectedYear} Telah Disubmit</h3>
-            <p className="text-sm text-slate-500">
-              Anda sudah mengirimkan laporan emisi untuk tahun kepatuhan ini. Silakan lihat status di bawah.
-            </p>
-          </div>
-        )}
       </div>
+      )}
+      </>
+      ) : (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="p-10 text-center space-y-5 bg-slate-50 rounded-b-3xl flex flex-col items-center">
+            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-2">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-900">
+                {reportIsVerified
+                  ? `Laporan Tahun ${selectedYear} Telah Diverifikasi`
+                  : reportIsRejected
+                    ? `Laporan Tahun ${selectedYear} Ditolak`
+                    : `Laporan Tahun ${selectedYear} Telah Disubmit`}
+              </h3>
+              <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto leading-relaxed">
+                {reportIsVerified
+                  ? 'Laporan telah melewati proses verifikasi. PDF memuat ringkasan data, metodologi, dan jejak integritas blockchain.'
+                  : reportIsRejected
+                    ? 'Laporan ditolak pada proses audit. Periksa kembali data dan dokumen sumber sebelum mengirimkan laporan baru.'
+                    : 'Laporan telah tersimpan dan dikirim ke alur audit. Status saat ini masih menunggu pemeriksaan auditor.'}
+              </p>
+            </div>
+            <button
+              onClick={() => handleDownloadReport(activeReport)}
+              className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-2 transition-colors shadow-md shadow-blue-900/10"
+            >
+              <Download className="w-4 h-4" />
+              Unduh PDF Laporan
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* SUMMARY OVERVIEW CARDS */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-2xs space-y-4">
@@ -399,23 +490,28 @@ export default function EmissionReportsSector() {
               SUMMARY FY {selectedYear}
             </span>
             <h3 className="text-lg font-black text-slate-900 mt-1">
-              Status Hasil Audit & Alokasi Sektor Karbon
+              Ringkasan Laporan & Status Proses
             </h3>
           </div>
-          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-extrabold px-3 py-1 rounded-xl flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            Terverifikasi AI dMRV (Kepercayaan 99.4%)
+          <span className={`text-xs font-extrabold px-3 py-1 rounded-xl flex items-center gap-1.5 ${
+            reportIsVerified
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              : 'bg-amber-50 text-amber-700 border border-amber-200'
+          }`}>
+            {reportIsVerified
+              ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              : <Clock3 className="w-3.5 h-3.5 text-amber-600" />}
+            {reportStatusLabel}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
             <span className="text-[10px] font-bold text-slate-400 uppercase block">
-              Total Jejak Emisi Terverifikasi
+              {reportIsVerified ? 'Total Jejak Emisi Terverifikasi' : 'Total Jejak Emisi Tercatat'}
             </span>
             <p className="text-3xl font-black text-status-danger-fg mt-1">
-              {activeReport.totalEmissionsTCO2e.toLocaleString('id-ID')}{' '}
-              <span className="text-xs font-extrabold text-slate-500">tCO₂e</span>
+              {formatCarbon(activeReport.totalEmissionsTCO2e)}
             </p>
             <span className="text-[10px] font-bold text-slate-400 mt-1 block">
               Tahun Kepatuhan {selectedYear}
@@ -424,36 +520,38 @@ export default function EmissionReportsSector() {
 
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
             <span className="text-[10px] font-bold text-slate-400 uppercase block">
-              Integrasi DJP e-Faktur
+              Metode Pelaporan
             </span>
-            <p className="text-base font-black text-slate-900 font-mono mt-1">
-              010.000-26.88765432
+            <p className="text-base font-black text-slate-900 mt-1">
+              {activeReport.method === 'CALCULATOR' ? 'Kalkulator Hijau' : 'Unggah Dokumen'}
             </p>
-            <span className="text-[10px] font-extrabold text-emerald-600 mt-1 flex items-center gap-1">
-              <Check className="w-3 h-3 text-emerald-600" /> 100% Sesuai Pos Keuangan Utilitas
+            <span className="text-[10px] font-semibold text-slate-400 mt-1 block">
+              Rincian ditampilkan sesuai data yang diterima sistem
             </span>
           </div>
 
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 sm:col-span-2 lg:col-span-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase block">
-              Intensitas Emisi Per Ton Produk
+              Identitas Blockchain
             </span>
-            <p className="text-xl font-black text-slate-900 mt-1">
-              0,0329 <span className="text-xs font-bold text-slate-500">tCO₂e / Ton Produk</span>
+            <p className="text-base font-black text-slate-900 mt-1">
+              {activeReport.blockchainReportId !== null && activeReport.blockchainReportId !== undefined
+                ? `Laporan #${activeReport.blockchainReportId}`
+                : 'Belum tersedia'}
             </p>
-            <span className="text-[10px] font-extrabold text-blue-600 mt-1 block">
-              Kapasitas Riil: 450.000 Ton / Tahun
+            <span className="text-[10px] font-semibold text-slate-400 mt-1 block">
+              {activeReport.merkleRoot ? 'Merkle Root tercatat' : 'Hash belum tersedia'}
             </span>
           </div>
         </div>
 
         {/* Quick Progress Visualizer for Sectors */}
-        <div className="space-y-2 pt-2 border-t border-slate-100">
+        {activeReport.sectors.length > 0 ? <div className="space-y-2 pt-2 border-t border-slate-100">
           <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
             Proporsi Alokasi Emisi per Sektor Industri
           </span>
           <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200">
-            {activeReport.sectors?.map((sector: any) => (
+            {activeReport.sectors?.map((sector) => (
               <div
                 key={sector.id}
                 className="h-full transition-all"
@@ -465,7 +563,11 @@ export default function EmissionReportsSector() {
               />
             ))}
           </div>
-        </div>
+        </div> : (
+          <p className="pt-3 border-t border-slate-100 text-xs text-slate-400 font-semibold">
+            Rincian proporsi Scope belum tersedia pada laporan ini. Sistem hanya menampilkan total yang diterima.
+          </p>
+        )}
       </div>
 
       {/* SECTORAL BREAKDOWN CARDS */}
@@ -473,12 +575,12 @@ export default function EmissionReportsSector() {
         <div className="flex items-center gap-2 mb-4">
           <PieChart className="w-5 h-5 text-emerald-600" />
           <h3 className="text-lg font-black text-slate-900">
-            Rincian Total Emisi per Sektor Industri
+            Rincian Total Emisi per Kategori
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {activeReport.sectors.map((sec: any) => (
+        {activeReport.sectors.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {activeReport.sectors.map((sec) => (
             <div
               key={sec.id}
               className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs space-y-3 flex flex-col justify-between"
@@ -497,10 +599,10 @@ export default function EmissionReportsSector() {
               <div className="pt-3 border-t border-slate-100 space-y-1.5">
                 <div className="flex justify-between items-baseline">
                   <span className="text-2xl font-black text-slate-900">
-                    {sec.emissionsTCO2e.toLocaleString('id-ID')}
+                    {formatNumber(sec.emissionsTCO2e)}
                   </span>
                   <span className="text-xs font-black" style={{ color: sec.color }}>
-                    {sec.percentage}%
+                    {formatPercent(sec.percentage)}
                   </span>
                 </div>
                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
@@ -512,10 +614,13 @@ export default function EmissionReportsSector() {
               </div>
             </div>
           ))}
-        </div>
+        </div> : (
+          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 text-sm text-slate-500">
+            Data kategori emisi belum tersedia dari laporan sumber yang diunggah.
+          </div>
+        )}
       </div>
-      </>
-      )}
+
 
       {/* HISTORY TABLE OF UPLOADED REPORTS */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-4">
@@ -525,7 +630,7 @@ export default function EmissionReportsSector() {
               Riwayat Berkas Audit Laporan Emisi
             </h3>
             <p className="text-xs text-slate-400 font-semibold mt-0.5">
-              Daftar laporan emisi tahunan yang telah lolos verifikasi AI dMRV & terdaftar di KLHK.
+              Daftar laporan emisi tahunan dengan status sesuai proses pengiriman dan audit.
             </p>
           </div>
         </div>
@@ -544,7 +649,7 @@ export default function EmissionReportsSector() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reports.map((rep: any, index: number) => (
+            {reports.map((rep, index) => (
               <TableRow key={rep.id}>
                 <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
                   {index + 1}
@@ -558,24 +663,28 @@ export default function EmissionReportsSector() {
                   {formatDate(rep.uploadDate)}
                 </TableCell>
                 <TableCell className="text-slate-500 font-mono text-[11px]">
-                  {formatFileSize(
-                    typeof rep.fileSizeBytes === 'number' ? rep.fileSizeBytes : rep.fileSize
-                  )}
+                  {formatFileSize(rep.fileSizeBytes)}
                 </TableCell>
                 <TableCell className="font-black text-status-danger-fg font-mono">
-                  {rep.totalEmissionsTCO2e.toLocaleString('id-ID')} tCO₂e
+                  {formatCarbon(rep.totalEmissionsTCO2e)}
                 </TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                    Lolos Audit AI dMRV
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold ${
+                    isVerifiedReport(rep.status)
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      : 'bg-amber-50 text-amber-800 border border-amber-200'
+                  }`}>
+                    {isVerifiedReport(rep.status)
+                      ? <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      : <Clock3 className="w-3 h-3 text-amber-600" />}
+                    {getReportStatusLabel(rep.status)}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
                   <button
-                    onClick={() => setDownloadNotice(rep.fileName)}
+                    onClick={() => handleDownloadReport(rep)}
                     className="p-2 rounded-xl text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer inline-flex items-center gap-1 font-extrabold text-xs"
-                    title="Unduh Berkas PDF Resmi"
+                    title="Unduh Laporan PDF"
                   >
                     <Download className="w-4 h-4" />
                     <span>Unduh</span>
@@ -592,18 +701,7 @@ export default function EmissionReportsSector() {
         isOpen={isAuditModalOpen}
         onClose={() => setIsAuditModalOpen(false)}
         auditStep={auditStep}
-        cat2EFakturDJP={cat2EFakturDJP}
-        isAuditPass={true}
-        scoreDJP={100}
-        scoreBBM={98.4}
-        scoreCEMS={99.8}
       />
-      {downloadNotice && (
-        <DownloadNoticeModal
-          title={downloadNotice}
-          onClose={() => setDownloadNotice(null)}
-        />
-      )}
     </div>
   );
 }

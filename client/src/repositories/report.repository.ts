@@ -1,11 +1,21 @@
-import type { EmissionReport } from '../types';
+import type {
+  CalculationData,
+  CalculatorReportSubmission,
+  EmissionReport,
+} from '../types';
 import { api } from '../lib/api';
 import { MockReportRepository } from './report.mock.repository';
 
 export interface ReportRepository {
   getLatestReport(year: number): Promise<EmissionReport | null>;
   getEmissionReports(): Promise<EmissionReport[]>;
-  submitReport(year: number, totalEmissions: number, files: File[]): Promise<{ txHash: string }>;
+  submitReport(year: number, sector: string, totalEmissions: number, files: File[]): Promise<{ txHash: string }>;
+  submitCalculatorReport(
+    year: number,
+    sector: string,
+    totalEmissions: number,
+    calculationData: CalculationData
+  ): Promise<CalculatorReportSubmission>;
 }
 
 export class ApiReportRepository implements ReportRepository {
@@ -19,11 +29,13 @@ export class ApiReportRepository implements ReportRepository {
 
   async submitReport(
     year: number,
+    sector: string,
     totalEmissions: number,
     files: File[]
   ): Promise<{ txHash: string }> {
     const formData = new FormData();
     formData.append('year', String(year));
+    formData.append('sector', sector);
     formData.append('totalEmissions', String(totalEmissions));
 
     files.forEach((file) => {
@@ -31,6 +43,18 @@ export class ApiReportRepository implements ReportRepository {
     });
 
     return api.upload<{ txHash: string }>('/emitter/reports/submit', formData);
+  }
+
+  async submitCalculatorReport(
+    year: number,
+    sector: string,
+    totalEmissions: number,
+    calculationData: CalculationData
+  ): Promise<CalculatorReportSubmission> {
+    return api.post<CalculatorReportSubmission>(
+      '/emitter/reports/submit-calculator',
+      { year, sector, totalEmissions, calculationData }
+    );
   }
 }
 

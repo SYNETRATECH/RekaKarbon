@@ -18,7 +18,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
-import { ReportQueryDto, SubmitReportDto } from './dto';
+import { ReportQueryDto, SubmitReportDto, SubmitCalculatorDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -70,8 +70,33 @@ export class ReportsController {
     const result = await this.reportsService.submitReport(
       userId,
       Number(dto.year),
+      dto.sector,
       Number(dto.totalEmissions),
       files || [],
+    );
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @ApiOperation({ summary: 'Submit emission report via calculator' })
+  @ApiResponse({
+    status: 201,
+    description: 'Calculator report successfully submitted.',
+  })
+  @Post('submit-calculator')
+  async submitCalculator(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: SubmitCalculatorDto,
+  ) {
+    const userId = req.user.userId;
+    const result = await this.reportsService.submitCalculatorReport(
+      userId,
+      Number(dto.year),
+      dto.sector,
+      Number(dto.totalEmissions),
+      dto.calculationData,
     );
     return {
       success: true,

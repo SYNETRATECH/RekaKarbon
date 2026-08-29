@@ -629,6 +629,11 @@ enum EmissionReportStatus {
   REJECTED
 }
 
+enum ReportMethod {
+  UPLOAD
+  CALCULATOR
+}
+
 model EmissionReport {
   id                   String               @id @default(uuid()) @db.Uuid
   companyId            String               @map("company_id") @db.Uuid
@@ -638,6 +643,9 @@ model EmissionReport {
   blockchainTxHash     String?              @map("blockchain_tx_hash") @db.Text
   blockchainReportId   BigInt?              @map("blockchain_report_id")
   status               EmissionReportStatus @default(SUBMITTED)
+  reportMethod         ReportMethod         @default(UPLOAD) @map("report_method")
+  sector               String?              @db.Text
+  calculationData      Json?                @map("calculation_data")
   submittedAt          DateTime             @default(now()) @map("submitted_at") @db.Timestamptz
   auditedByUserId      String?              @map("audited_by_user_id") @db.Uuid
   auditorNotes         String?              @map("auditor_notes") @db.Text
