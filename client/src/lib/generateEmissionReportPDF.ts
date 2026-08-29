@@ -8,6 +8,7 @@ import { jsPDF } from 'jspdf';
 import { formatNumber, formatPercent } from '@/lib/formatters';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import type { SectorBreakdown } from '@/types';
+import pdfBrandIcon from '@/assets/icon-pdf.png?inline';
 
 // Inline field definitions to avoid circular dependency with kalkulator.tsx
 interface PdfFormField {
@@ -299,6 +300,101 @@ function getDocumentLabel(status?: string) {
   return 'DOKUMEN LAPORAN';
 }
 
+function splitPdfLines(doc: jsPDF, text: string, width: number) {
+  const initialLines = doc.splitTextToSize(text, width) as string[];
+
+  return initialLines.flatMap((line) => {
+    if (doc.getTextWidth(line) <= width) return [line];
+
+    const chunks: string[] = [];
+    let chunk = '';
+    for (const character of line) {
+      const nextChunk = chunk + character;
+      if (chunk && doc.getTextWidth(nextChunk) > width) {
+        chunks.push(chunk);
+        chunk = character;
+      } else {
+        chunk = nextChunk;
+      }
+    }
+    if (chunk) chunks.push(chunk);
+    return chunks;
+  });
+}
+
+function drawBlockchainVerification(
+  doc: jsPDF,
+  pageW: number,
+  pageH: number,
+  marginX: number,
+  contentW: number,
+  y: number,
+  merkleRoot: string,
+  txHash: string | undefined,
+  subtitle: string
+) {
+  const verificationLineHeight = 3.8;
+  doc.setFontSize(7.5);
+  doc.setFont('times', 'bold');
+  const rootLines = splitPdfLines(doc, merkleRoot || '-', contentW - 12);
+  const txLines = txHash ? splitPdfLines(doc, txHash, contentW - 12) : [];
+  const rootLabelHeight = 6 + verificationLineHeight;
+  const transactionHeight = txHash
+    ? 2 + verificationLineHeight + txLines.length * verificationLineHeight
+    : 0;
+  const verificationContentHeight =
+    rootLabelHeight + rootLines.length * verificationLineHeight + transactionHeight;
+  const verificationHeight = verificationContentHeight + 4;
+
+  if (y + 2 + 10 + verificationHeight + 6 > pageH - 48) {
+    doc.addPage();
+    y = 20;
+    drawPageHeader(doc, pageW, marginX, 'Analisis dan Metodologi Laporan', subtitle);
+    y = 40;
+  }
+
+  y += 2;
+  doc.setFillColor(...EMERALD);
+  doc.rect(marginX, y, 3, 7, 'F');
+  doc.setFontSize(12);
+  doc.setFont('times', 'bold');
+  doc.setTextColor(...SLATE_800);
+  doc.text('Verifikasi Blockchain (dMRV)', marginX + 7, y + 5.5);
+  y += 10;
+
+  doc.setFillColor(...SLATE_100);
+  drawRoundedRect(doc, marginX, y, contentW, verificationHeight, 3, 'F');
+  doc.setDrawColor(...SLATE_300);
+  drawRoundedRect(doc, marginX, y, contentW, verificationHeight, 3, 'S');
+
+  const rootLabelY = y + 7;
+  const rootY = rootLabelY + verificationLineHeight;
+  doc.setFontSize(7.5);
+  doc.setFont('times', 'normal');
+  doc.setTextColor(...SLATE_500);
+  doc.text('Merkle Root Hash:', marginX + 6, rootLabelY);
+  doc.setFont('times', 'bold');
+  doc.setTextColor(...SLATE_800);
+  rootLines.forEach((line, index) => {
+    doc.text(line, marginX + 6, rootY + index * verificationLineHeight);
+  });
+
+  if (txHash) {
+    const txLabelY = rootY + rootLines.length * verificationLineHeight + 3;
+    const txY = txLabelY + verificationLineHeight;
+    doc.setFont('times', 'normal');
+    doc.setTextColor(...SLATE_500);
+    doc.text('Transaction Hash:', marginX + 6, txLabelY);
+    doc.setFont('times', 'bold');
+    doc.setTextColor(...SLATE_800);
+    txLines.forEach((line, index) => {
+      doc.text(line, marginX + 6, txY + index * verificationLineHeight);
+    });
+  }
+
+  return y + verificationHeight + 6;
+}
+
 export function generateEmissionReportPDF(params: PdfReportParams) {
   const {
     year,
@@ -335,13 +431,10 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   doc.setFillColor(...EMERALD);
   doc.rect(0, 0, pageW, 36, 'F');
 
-  // Logo circle
+  // Website logo
   doc.setFillColor(...WHITE);
   doc.circle(marginX + 10, 18, 8, 'F');
-  doc.setFontSize(14);
-  doc.setFont('times', 'bold');
-  doc.setTextColor(...EMERALD);
-  doc.text('RK', marginX + 5.5, 21);
+  doc.addImage(pdfBrandIcon, 'PNG', marginX + 2, 10, 16, 16, 'rekakarbon-pdf-logo', 'FAST');
 
   // Brand name
   doc.setFontSize(20);
@@ -597,8 +690,8 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   const executiveSummary = hasScopeData
     ? `Laporan ini menyajikan ringkasan data emisi gas rumah kaca yang dilaporkan untuk sektor ${sectorName} pada tahun ${year}. Total emisi yang tercatat adalah ${formatPdfCarbon(total)}. Berdasarkan rincian yang tersedia, ${dominantScope.label.toLowerCase()} menjadi kontributor terbesar dengan nilai ${formatPdfCarbon(dominantScope.value)} atau ${formatPercent(dominantScopePercentage)} dari total emisi.`
     : `Laporan ini menyajikan ringkasan data emisi gas rumah kaca yang dilaporkan untuk sektor ${sectorName} pada tahun ${year}. Total emisi yang tercatat adalah ${formatPdfCarbon(total)}. Rincian Scope belum tersedia secara lengkap pada data yang diterima, sehingga interpretasi sumber emisi perlu dilengkapi melalui pemeriksaan data aktivitas atau dokumen sumber.`;
-  y = drawParagraph(doc, executiveSummary, marginX, y, contentW);
-  y += 5;
+  y = drawParagraph(doc, executiveSummary, marginX, y, contentW, 4);
+  y += 3;
 
   // Key metrics
   const cardGap = 4;
@@ -629,39 +722,39 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
     doc.setTextColor(...SLATE_800);
     doc.text(value, cardX + 7, cardY + 18);
   });
-  y = cardY + 34;
+  y = cardY + 30;
 
   y = drawSectionTitle(doc, 'Distribusi Emisi Berdasarkan Data Laporan', marginX, y);
   if (breakdownRows.length > 0) {
     doc.setFillColor(...EMERALD);
-    doc.rect(marginX, y, contentW, 8, 'F');
+    doc.rect(marginX, y, contentW, 7, 'F');
     doc.setFontSize(8);
     doc.setFont('times', 'bold');
     doc.setTextColor(...WHITE);
-    doc.text('Kategori / Sumber Emisi', marginX + 4, y + 5.5);
-    doc.text('Nilai', pageW - marginX - 34, y + 5.5, { align: 'right' });
-    doc.text('Proporsi', pageW - marginX - 4, y + 5.5, { align: 'right' });
-    y += 8;
+    doc.text('Kategori / Sumber Emisi', marginX + 4, y + 5);
+    doc.text('Nilai', pageW - marginX - 34, y + 5, { align: 'right' });
+    doc.text('Proporsi', pageW - marginX - 4, y + 5, { align: 'right' });
+    y += 7;
 
     breakdownRows.slice(0, 6).forEach((sector, index) => {
       doc.setFillColor(...(index % 2 === 0 ? WHITE : SLATE_100));
-      doc.rect(marginX, y, contentW, 8, 'F');
+      doc.rect(marginX, y, contentW, 7, 'F');
       doc.setFontSize(7.5);
       doc.setFont('times', 'normal');
       doc.setTextColor(...SLATE_800);
       const label = doc.splitTextToSize(sector.name, 100)[0];
-      doc.text(label, marginX + 4, y + 5.5);
+      doc.text(label, marginX + 4, y + 5);
       doc.setFont('times', 'bold');
-      doc.text(formatPdfCarbon(sector.emissionsTCO2e), pageW - marginX - 34, y + 5.5, {
+      doc.text(formatPdfCarbon(sector.emissionsTCO2e), pageW - marginX - 34, y + 5, {
         align: 'right',
       });
       doc.setTextColor(...EMERALD);
       const percentage =
         sector.percentage || (total > 0 ? (sector.emissionsTCO2e / total) * 100 : 0);
-      doc.text(formatPercent(percentage, percentage < 1 ? 2 : 1), pageW - marginX - 4, y + 5.5, {
+      doc.text(formatPercent(percentage, percentage < 1 ? 2 : 1), pageW - marginX - 4, y + 5, {
         align: 'right',
       });
-      y += 8;
+      y += 7;
     });
   } else {
     doc.setFontSize(8);
@@ -676,7 +769,7 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
       4
     );
   }
-  y += 4;
+  y += 2;
 
   y = drawSectionTitle(doc, 'Metodologi Pengukuran, Pelaporan, dan Verifikasi', marginX, y);
   doc.setFontSize(8);
@@ -694,8 +787,8 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   for (const paragraph of methodology) {
     doc.setFillColor(...EMERALD_LIGHT);
     doc.circle(marginX + 2, y - 1.5, 1, 'F');
-    y = drawParagraph(doc, paragraph, marginX + 7, y, contentW - 7, 3.8);
-    y += 2;
+    y = drawParagraph(doc, paragraph, marginX + 7, y, contentW - 7, 3.3);
+    y += 1;
   }
 
   if (dominantSector) {
@@ -707,7 +800,7 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
       marginX,
       y + 1,
       contentW,
-      3.8
+      3.3
     );
   }
 
@@ -716,17 +809,29 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   doc.setFont('times', 'italic');
   doc.setTextColor(...SLATE_500);
   const caveatLines = doc.splitTextToSize(caveat, contentW);
-  const caveatHeight = caveatLines.length * 3.8;
-  if (y + 2 + caveatHeight > pageH - 48) {
+  const caveatHeight = caveatLines.length * 3.3;
+  if (y + 1 + caveatHeight > pageH - 48) {
     doc.addPage();
     y = 20;
     drawPageHeader(doc, pageW, marginX, 'Catatan Laporan', `Tahun ${year} | ${sectorName}`);
     y = 40;
   }
-  y = drawParagraph(doc, caveat, marginX, y + 2, contentW, 3.8) + 2;
+  y = drawParagraph(doc, caveat, marginX, y + 1, contentW, 3.3) + 1;
+
+  y = drawBlockchainVerification(
+    doc,
+    pageW,
+    pageH,
+    marginX,
+    contentW,
+    y,
+    merkleRoot,
+    txHash,
+    `Tahun ${year} | ${sectorName}`
+  );
 
   // ═══════════════════════════════════════════════════════════════════
-  // 7. DETAIL BREAKDOWN TABLE WITH FORMULAS
+  // 8. DETAIL BREAKDOWN TABLE WITH FORMULAS
   // ═══════════════════════════════════════════════════════════════════
   const EMISSION_FACTOR_MAP: Record<string, { factor: number; factorLabel: string }> = {
     diesel_liter: { factor: 2.512, factorLabel: '2,512 kg CO2e/L' },
@@ -929,64 +1034,7 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // 7. BLOCKCHAIN VERIFICATION SECTION
-  // ═══════════════════════════════════════════════════════════════════
-  doc.setFontSize(8);
-  const rootLines = doc.splitTextToSize(merkleRoot || '-', contentW - 12);
-  const txLines = txHash ? doc.splitTextToSize(txHash, contentW - 52) : [];
-  const verificationLineHeight = 4.5;
-  const verificationContentHeight =
-    7 +
-    verificationLineHeight +
-    rootLines.length * verificationLineHeight +
-    (txHash ? 2 + verificationLineHeight + txLines.length * verificationLineHeight : 0);
-  const verificationHeight = verificationContentHeight + 5;
-
-  if (y + 4 + 12 + verificationHeight + 8 > pageH - 48) {
-    doc.addPage();
-    y = 20;
-  }
-
-  y += 4;
-  doc.setFillColor(...EMERALD);
-  doc.rect(marginX, y, 3, 7, 'F');
-  doc.setFontSize(12);
-  doc.setFont('times', 'bold');
-  doc.setTextColor(...SLATE_800);
-  doc.text('Verifikasi Blockchain (dMRV)', marginX + 7, y + 5.5);
-  y += 12;
-
-  doc.setFillColor(...SLATE_100);
-  drawRoundedRect(doc, marginX, y, contentW, verificationHeight, 3, 'F');
-  doc.setDrawColor(...SLATE_300);
-  drawRoundedRect(doc, marginX, y, contentW, verificationHeight, 3, 'S');
-
-  doc.setFont('times', 'normal');
-  doc.setTextColor(...SLATE_500);
-  doc.text('Merkle Root Hash:', marginX + 6, y + 7);
-  doc.setFont('times', 'bold');
-  doc.setTextColor(...SLATE_800);
-  const rootY = y + 7 + verificationLineHeight;
-  rootLines.forEach((line: string, index: number) => {
-    doc.text(line, marginX + 6, rootY + index * verificationLineHeight);
-  });
-
-  if (txHash) {
-    const txLabelY = rootY + rootLines.length * verificationLineHeight + 2;
-    doc.setFont('times', 'normal');
-    doc.setTextColor(...SLATE_500);
-    doc.text('Transaction Hash:', marginX + 6, txLabelY);
-    doc.setFont('times', 'bold');
-    doc.setTextColor(...SLATE_800);
-    txLines.forEach((line: string, index: number) => {
-      doc.text(line, marginX + 40, txLabelY + index * verificationLineHeight);
-    });
-  }
-
-  y += verificationHeight + 8;
-
-  // ═══════════════════════════════════════════════════════════════════
-  // 8. FOOTER / PENGESAHAN
+  // 9. FOOTER / PENGESAHAN
   // ═══════════════════════════════════════════════════════════════════
   // Push to bottom of page
   const footerY = pageH - 40;
