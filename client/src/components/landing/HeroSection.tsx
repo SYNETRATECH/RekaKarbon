@@ -1,7 +1,6 @@
 import {
   Play,
   ArrowUpRight,
-  Leaf,
   Globe,
   TreePine,
   LayoutDashboard,
@@ -247,7 +246,12 @@ function DashboardMockup() {
   );
 }
 
-export default function HeroSection({ onOpenPortal }: { onOpenPortal: () => void }) {
+import { useNavigate } from 'react-router';
+
+export default function HeroSection({ onOpenPortal }: { onOpenPortal?: () => void } = {}) {
+  const navigate = useNavigate();
+  const handleOpenPortal = onOpenPortal || (() => navigate('/portal-transparansi'));
+  const handleLogin = () => navigate('/login');
   const kpis = [
     { val: '48.200+', unit: 'tCO2e', label: 'Total Kredit Karbon Terverifikasi dMRV' },
     { val: '14.250', unit: 'Ha', label: 'Kawasan Konservasi & Perhutanan Sosial Terlindungi' },
@@ -341,14 +345,14 @@ export default function HeroSection({ onOpenPortal }: { onOpenPortal: () => void
         {/* Dual CTA */}
         <div className="flex flex-col sm:flex-row items-center gap-3 mb-10">
           <button
-            onClick={onOpenPortal}
+            onClick={handleOpenPortal}
             className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-container hover:text-on-primary-container transition-colors text-sm shadow-lg shadow-black/20 cursor-pointer"
           >
             Eksplorasi Portal Transparansi
             <ArrowUpRight size={15} />
           </button>
           <button
-            onClick={onOpenPortal}
+            onClick={handleLogin}
             className="flex items-center gap-2 px-6 py-3 border border-slate-300/70 bg-white/50 backdrop-blur text-slate-700 font-semibold rounded-xl hover:bg-white/70 transition-colors text-sm cursor-pointer"
           >
             <div className="w-5 h-5 rounded-full border border-slate-400/60 flex items-center justify-center">

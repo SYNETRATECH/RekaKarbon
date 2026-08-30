@@ -1,28 +1,15 @@
-import { useState } from 'react';
-import { projectRepository, companyRepository } from '../repositories';
-import { useMapStore } from '../store/useMapStore';
-import MapCanvas from '../components/MapCanvas';
-import RightDrawer from '../components/RightDrawer';
-import ConservationModule from '../components/ConservationModule';
-import CorporateModule from '../components/CorporateModule';
-import LogoutDialog from '../components/LogoutDialog';
+import { projectRepository, companyRepository } from '../../repositories';
+import { useMapStore } from '../../store/useMapStore';
+import MapCanvas from '../../components/MapCanvas';
+import RightDrawer from '../../components/RightDrawer';
+import ConservationModule from '../../components/ConservationModule';
+import CorporateModule from '../../components/CorporateModule';
+import LogoutDialog from '../../components/LogoutDialog';
+import Navbar from '../../components/landing/Navbar';
 import { Globe, Building2 } from 'lucide-react';
 
-import Navbar from '../components/landing/Navbar';
-import HeroSection from '../components/landing/HeroSection';
-import ComplianceStripSection from '../components/landing/ComplianceStripSection';
-import ProblemSolutionSection from '../components/landing/ProblemSolutionSection';
-import EcosystemSection from '../components/landing/EcosystemSection';
-import DMRVSection from '../components/landing/DMRVSection';
-import TokenomicsSection from '../components/landing/TokenomicsSection';
-import MapTeaserSection from '../components/landing/MapTeaserSection';
-import CommitmentSection from '../components/landing/CommitmentSection';
-import FAQSection from '../components/landing/FAQSection';
-import CTASectionBottom from '../components/landing/CTASectionBottom';
-import Footer from '../components/landing/Footer';
-
 /**
- * Landing page clientLoader — fetches public project + company data for the map.
+ * Public Portal Transparansi clientLoader — fetches public project + company data for the map.
  */
 export async function clientLoader() {
   const [projects, companies] = await Promise.all([
@@ -41,48 +28,23 @@ clientLoader.hydrate = true as const;
 
 export function HydrateFallback() {
   return (
-    <div className="flex h-screen items-center justify-center bg-slate-50 text-slate-500 font-bold text-sm">
-      Memuat Data RekaKarbon...
+    <div className="flex h-screen items-center justify-center bg-slate-900 text-slate-400 font-bold text-sm">
+      Memuat Peta Transparansi RekaKarbon...
     </div>
   );
 }
 
 export function meta() {
   return [
-    { title: 'RekaKarbon - Platform Verifikasi Emisi & Konservasi' },
-    { name: 'description', content: 'Transparency Portal RekaKarbon' },
+    { title: 'Portal Transparansi - RekaKarbon' },
+    { name: 'description', content: 'Portal Transparansi Spasial & Kepatuhan Emisi RekaKarbon' },
   ];
 }
 
-export default function LandingPageRoute() {
-  const [page, setPage] = useState<'home' | 'maps'>('home');
-
+export default function PortalTransparansiRoute() {
   const { activeModule, setActiveModule, companies } = useMapStore();
-
   const unpaidCount = companies.filter((c) => c.paymentStatus === 'unpaid').length;
 
-  if (page === 'home') {
-    return (
-      <div className="font-sans text-slate-800 antialiased relative min-h-screen">
-        <Navbar page={page} setPage={setPage} />
-        <main>
-          <HeroSection onOpenPortal={() => setPage('maps')} />
-          <ComplianceStripSection />
-          <ProblemSolutionSection />
-          <EcosystemSection />
-          <DMRVSection />
-          <TokenomicsSection />
-          <MapTeaserSection />
-          <CommitmentSection />
-          <FAQSection />
-          <CTASectionBottom onOpenPortal={() => setPage('maps')} />
-          <Footer />
-        </main>
-      </div>
-    );
-  }
-
-  // Maps / Portal View
   return (
     <div className="font-sans text-slate-800 antialiased relative h-screen w-screen overflow-hidden flex flex-col bg-slate-900">
       {/* MAP LAYER (Absolute Background) */}
@@ -94,7 +56,7 @@ export default function LandingPageRoute() {
       <div className="absolute inset-0 z-10 pointer-events-none flex flex-col">
         {/* Navbar */}
         <div className="pointer-events-auto shrink-0 relative z-50">
-          <Navbar page={page} setPage={setPage} />
+          <Navbar />
         </div>
 
         {/* Main Content Area */}
