@@ -52,6 +52,7 @@ async function main() {
   console.log('🧹 Purging existing database tables...');
   await prisma.systemNotification.deleteMany();
   await prisma.droneMission.deleteMany();
+  await prisma.ptbaeApplicationDocument.deleteMany();
   await prisma.storedFile.deleteMany();
   await prisma.stpInvoice.deleteMany();
   await prisma.carbonTaxAssessment.deleteMany();
@@ -69,6 +70,7 @@ async function main() {
   await prisma.kthGroup.deleteMany();
   await prisma.cemsTelemetryLog.deleteMany();
   await prisma.smokestack.deleteMany();
+  await prisma.ptbaeApplication.deleteMany();
   await prisma.ptbaeAllocation.deleteMany();
   await prisma.company.deleteMany();
   await prisma.kybProfile.deleteMany();
@@ -78,6 +80,7 @@ async function main() {
   const userAdminId = randomUUID();
   const userRegulatorId = randomUUID();
   const userAuditorId = randomUUID();
+  const userMinistryId = randomUUID();
   const userEmitter1Id = randomUUID();
   const userEmitter2Id = randomUUID();
   const userEmitter3Id = randomUUID();
@@ -120,6 +123,18 @@ async function main() {
       role: Role.auditor,
       status: UserStatus.ACTIVE,
       walletAddress: '0x5E6F7A8B9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F',
+    },
+  });
+
+  const userMinistry = await prisma.user.create({
+    data: {
+      id: userMinistryId,
+      email: 'kementerian@rekakarbon.go.id',
+      passwordHash: defaultPasswordHash,
+      fullName: 'Direktorat Penetapan PTBAE-PU',
+      role: Role.ministry,
+      status: UserStatus.ACTIVE,
+      walletAddress: '0x4F5A6B7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2F3A',
     },
   });
 
@@ -899,6 +914,7 @@ async function main() {
   console.log('• SUPER_ADMIN:        admin@rekakarbon.id');
   console.log('• REGULATOR_KLHK:     regulator@klhk.go.id');
   console.log('• AUDITOR_VERIFIER:   auditor@sucofindo.co.id');
+  console.log('• KEMENTERIAN_PTBAE:  kementerian@rekakarbon.go.id');
   console.log('• CORPORATE_EMITTER:  director@suralaya.co.id');
   console.log('• CORPORATE_EMITTER:  sustainability@sementuban.co.id');
   console.log('• KTH_COMMUNITY:      kth.tuban@perhutanan.id');

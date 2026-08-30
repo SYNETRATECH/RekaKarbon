@@ -13,12 +13,13 @@ async function main(): Promise<void> {
 
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log('Saldo ETH Akun Deployer:', ethers.formatEther(balance));
+  const transactionOverrides = { gasPrice: 0 };
 
   const RekaKarbon = await ethers.getContractFactory('RekaKarbon');
-  const rekaKarbon = await RekaKarbon.deploy();
+  const rekaKarbon = await RekaKarbon.deploy(transactionOverrides);
 
   const EmissionReportRegistry = await ethers.getContractFactory('EmissionReportRegistry');
-  const registry = await EmissionReportRegistry.deploy();
+  const registry = await EmissionReportRegistry.deploy(transactionOverrides);
 
   console.log('Menunggu proses deployment ke blockchain...');
   await rekaKarbon.waitForDeployment();
@@ -38,13 +39,13 @@ async function main(): Promise<void> {
   const DEPOSIT_ROLE: string = await rekaKarbon.DEPOSIT_ROLE();
   const AUDITOR_ROLE: string = await registry.AUDITOR_ROLE();
 
-  await rekaKarbon.grantRole(ORACLE_ROLE, deployer.address);
+  await rekaKarbon.grantRole(ORACLE_ROLE, deployer.address, transactionOverrides);
   console.log('✅ ORACLE_ROLE (RekaKarbon) diberikan kepada Backend.');
 
-  await rekaKarbon.grantRole(DEPOSIT_ROLE, deployer.address);
+  await rekaKarbon.grantRole(DEPOSIT_ROLE, deployer.address, transactionOverrides);
   console.log('✅ DEPOSIT_ROLE (RekaKarbon) diberikan kepada Backend.');
 
-  await registry.grantRole(AUDITOR_ROLE, deployer.address);
+  await registry.grantRole(AUDITOR_ROLE, deployer.address, transactionOverrides);
   console.log('✅ AUDITOR_ROLE (EmissionReportRegistry) diberikan kepada Backend.');
 
   // 2. SIMPAN CONTRACT ADDRESS KE FILE JSON

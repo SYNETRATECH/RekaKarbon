@@ -9,6 +9,7 @@ import * as RekaKarbonABI from './config/RekaKarbon.json';
 import * as EmissionRegistryABI from './config/EmissionReportRegistry.json';
 import type {
   BlockchainEvent,
+  BlockchainHealth,
   CarbonTokenContract,
   EmissionRegistryContract,
 } from './types';
@@ -75,6 +76,112 @@ export class BlockchainService implements OnModuleInit {
     return this.registryContract;
   }
 
+  async getHealth(): Promise<BlockchainHealth> {
+    const configuredChainId = this.getConfiguredChainId();
+    const contractAddress =
+      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+
+    if (
+      !this.provider ||
+      !this.wallet ||
+      !this.rekaKarbonContract ||
+      !configuredChainId ||
+      !contractAddress
+    ) {
+      return {
+        status: 'unconfigured',
+        network: 'Hyperledger Besu / EVM Private Network',
+        configuredChainId,
+        contractAddress,
+        reason: 'RPC, signer, chain ID, or contract address is not configured.',
+      };
+    }
+
+    try {
+      const network = await this.provider.getNetwork();
+      const connectedChainId = Number(network.chainId);
+      const bytecode = await this.provider.getCode(contractAddress);
+      const contractDeployed = bytecode !== '0x';
+      const chainMatches = connectedChainId === configuredChainId;
+
+      const reasons: string[] = [];
+      if (!chainMatches) {
+        reasons.push(
+          `Connected chain ID ${connectedChainId} does not match configured chain ID ${configuredChainId}.`,
+        );
+      }
+      if (!contractDeployed) {
+        reasons.push(
+          'The configured carbon contract has no bytecode at its address.',
+        );
+      }
+
+      if (!chainMatches || !contractDeployed) {
+        return {
+          status: 'degraded',
+          network: 'Hyperledger Besu / EVM Private Network',
+          configuredChainId,
+          connectedChainId,
+          contractAddress,
+          contractDeployed,
+          reason: reasons.join(' '),
+        };
+      }
+
+      const ministryRole = await this.rekaKarbonContract.MINISTRY_ROLE();
+      const ministryRoleGrantedToSigner = await this.rekaKarbonContract.hasRole(
+        ministryRole,
+        this.wallet.address,
+      );
+
+      if (ministryRoleGrantedToSigner) {
+        return {
+          status: 'ready',
+          network: 'Hyperledger Besu / EVM Private Network',
+          configuredChainId,
+          connectedChainId,
+          contractAddress,
+          contractDeployed,
+          ministryRoleGrantedToSigner,
+        };
+      }
+
+      if (!ministryRoleGrantedToSigner) {
+        reasons.push('The backend signer does not have MINISTRY_ROLE.');
+      }
+
+      return {
+        status: 'degraded',
+        network: 'Hyperledger Besu / EVM Private Network',
+        configuredChainId,
+        connectedChainId,
+        contractAddress,
+        contractDeployed,
+        ministryRoleGrantedToSigner,
+        reason: reasons.join(' '),
+      };
+    } catch (error: unknown) {
+      const reason =
+        error instanceof Error ? error.message : 'RPC health check failed.';
+      return {
+        status: 'offline',
+        network: 'Hyperledger Besu / EVM Private Network',
+        configuredChainId,
+        contractAddress,
+        reason,
+      };
+    }
+  }
+
+  private getConfiguredChainId(): number | undefined {
+    const configuredValue =
+      process.env.BESU_CHAIN_ID || process.env.CHAIN_ID || '1337';
+    const configuredChainId = Number(configuredValue);
+    return Number.isInteger(configuredChainId) && configuredChainId > 0
+      ? configuredChainId
+      : undefined;
+  }
+
   async getCarbonBalance(address: string, tokenId: number): Promise<number> {
     const contract = this.ensureRekaKarbon();
     try {
@@ -108,6 +215,39 @@ export class BlockchainService implements OnModuleInit {
     } catch (error) {
       this.logger.error('Error minting offset credit:', error);
       throw new InternalServerErrorException('Failed to mint certificate');
+    }
+  }
+
+  async issueQuota(toAddress: string, quotaTCO2e: number): Promise<string> {
+    const contract = this.ensureRekaKarbon();
+    if (!Number.isFinite(quotaTCO2e) || quotaTCO2e <= 0) {
+      throw new InternalServerErrorException('Invalid PTBAE-PU quota');
+    }
+
+    let validAddress: string;
+    try {
+      validAddress = ethers.getAddress(toAddress);
+    } catch {
+      throw new InternalServerErrorException(
+        'Company wallet address is not a valid EVM address',
+      );
+    }
+
+    try {
+      // PTBAE-PU keeps two decimal places in the database. The ERC-1155
+      // quantity is stored in centi-tCO2e units to avoid losing precision.
+      const amount = ethers.parseUnits(quotaTCO2e.toFixed(2), 2);
+      const tx = await contract.issueQuota(validAddress, amount, {
+        gasPrice: 0,
+      });
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+      return receipt.hash;
+    } catch (error: unknown) {
+      this.logger.error('Error issuing PTBAE-PU quota:', error);
+      throw new InternalServerErrorException(
+        'Failed to issue PTBAE-PU quota on-chain',
+      );
     }
   }
 

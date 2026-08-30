@@ -42,10 +42,27 @@ describe('PtbaeService', () => {
     await expect(
       service.resolveForCompany('company-id', 2026),
     ).resolves.toMatchObject({
-      quotaTCO2e: 500000,
+      quotaTCO2e: null,
       status: 'LEGACY',
       isOfficial: false,
     });
+  });
+
+  it('does not use a pending allocation as an active quota', async () => {
+    findAllocation.mockResolvedValue({
+      quotaTco2e: 100000,
+      status: PtbaeStatus.PENDING,
+      sourceDocument: 'Pengajuan belum disahkan',
+    });
+
+    await expect(
+      service.resolveForCompany('company-id', 2026),
+    ).resolves.toMatchObject({
+      quotaTCO2e: null,
+      status: 'PENDING',
+      isOfficial: false,
+    });
+    expect(findCompany).not.toHaveBeenCalled();
   });
 
   it('returns null deficit when the PTBAE-PU quota is unavailable', () => {

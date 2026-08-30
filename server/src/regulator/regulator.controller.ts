@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -83,6 +91,16 @@ export class RegulatorController {
   })
   @Post('ptbae-allocations')
   async upsertPtbaeAllocation(@Body() dto: UpsertPtbaeAllocationDto) {
+    if (dto.status === 'VERIFIED') {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'PTBAE_MINISTRY_ONLY',
+          message:
+            'Status PTBAE-PU VERIFIED hanya dapat diterbitkan melalui proses Kementerian.',
+        },
+      });
+    }
     const data = await this.ptbaeService.upsertAllocation(dto);
     return { success: true, data };
   }

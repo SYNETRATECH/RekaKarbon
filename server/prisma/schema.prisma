@@ -16,6 +16,7 @@ enum Role {
   superadmin
   regulator
   auditor
+  ministry
   emitter
   kth
   buyer
@@ -46,6 +47,27 @@ enum PtbaeStatus {
   VERIFIED
   REJECTED
   EXPIRED
+}
+
+enum PtbaeApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_AUDIT
+  REVISION_REQUIRED
+  MINISTRY_REVIEW
+  APPROVAL_PROCESSING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum PtbaeDocumentType {
+  TECHNICAL_DATA
+  PRODUCTION_PLAN
+  BASELINE_EMISSION
+  MITIGATION_PLAN
+  SUPPORTING_DOCUMENT
+  DECISION_DOCUMENT
 }
 
 enum ComplianceRating {
@@ -151,6 +173,8 @@ enum PaymentStatus {
 
 enum FileCategory {
   EMISSION_REPORT
+  PTBAE_APPLICATION
+  PTBAE_DECISION
   LEGAL_SK
   DRONE_ORTHO
   DRONE_LIDAR
@@ -199,6 +223,10 @@ model User {
   systemNotifications   SystemNotification[]
   pushSubscriptions     WebPushSubscription[]
   auditedReports        EmissionReport[]        @relation("AuditorReports")
+  submittedPtbaeApplications PtbaeApplication[] @relation("PtbaeApplicationSubmitter")
+  auditedPtbaeApplications   PtbaeApplication[] @relation("PtbaeApplicationAuditor")
+  decidedPtbaeApplications   PtbaeApplication[] @relation("PtbaeApplicationDecider")
+  issuedPtbaeAllocations     PtbaeAllocation[]   @relation("PtbaeAllocationIssuer")
 
   @@map("users")
 }
@@ -257,6 +285,7 @@ model Company {
   stpInvoices            StpInvoice[]
   emissionReports        EmissionReport[]
   ptbaeAllocations       PtbaeAllocation[]
+  ptbaeApplications      PtbaeApplication[]
 
   @@index([complianceRating])
   @@index([region])
@@ -266,21 +295,83 @@ model Company {
 model PtbaeAllocation {
   id               String      @id @default(uuid()) @db.Uuid
   companyId        String      @map("company_id") @db.Uuid
+  applicationId    String?     @unique @map("application_id") @db.Uuid
   complianceYear   Int         @map("compliance_year")
   quotaTco2e       Decimal     @map("quota_tco2e") @db.Decimal(14, 2)
   sourceDocument   String?     @map("source_document") @db.Text
   status           PtbaeStatus @default(PENDING)
   assignedAt       DateTime?   @map("assigned_at") @db.Timestamptz
   verifiedAt       DateTime?   @map("verified_at") @db.Timestamptz
+  documentNumber   String?     @map("document_number") @db.Text
+  issuedByUserId   String?     @map("issued_by_user_id") @db.Uuid
+  effectiveFrom    DateTime?   @map("effective_from") @db.Date
+  effectiveUntil   DateTime?   @map("effective_until") @db.Date
+  blockchainTxHash String?     @map("blockchain_tx_hash") @db.Text
   notes            String?     @db.Text
   createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz
 
   company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  application      PtbaeApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  issuedBy         User?       @relation("PtbaeAllocationIssuer", fields: [issuedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([companyId, complianceYear])
   @@index([complianceYear, status])
+  @@index([issuedByUserId])
   @@map("ptbae_allocations")
+}
+
+model PtbaeApplication {
+  id                      String                 @id @default(uuid()) @db.Uuid
+  companyId               String                 @map("company_id") @db.Uuid
+  emissionReportId        String?                @map("emission_report_id") @db.Uuid
+  submittedByUserId       String                 @map("submitted_by_user_id") @db.Uuid
+  complianceYear          Int                    @map("compliance_year")
+  status                  PtbaeApplicationStatus @default(DRAFT)
+  facilityName            String                 @map("facility_name") @db.Text
+  technicalData           Json                   @map("technical_data")
+  productionData          Json                   @map("production_data")
+  baselineEmissionTco2e   Decimal                @map("baseline_emission_tco2e") @db.Decimal(14, 2)
+  mitigationPlan          String                 @map("mitigation_plan") @db.Text
+  emitterNotes            String?                @map("emitter_notes") @db.Text
+  submittedAt             DateTime?              @map("submitted_at") @db.Timestamptz
+  auditedByUserId         String?                @map("audited_by_user_id") @db.Uuid
+  auditedAt               DateTime?              @map("audited_at") @db.Timestamptz
+  auditorNotes            String?                @map("auditor_notes") @db.Text
+  ministryDecisionByUserId String?               @map("ministry_decision_by_user_id") @db.Uuid
+  ministryDecidedAt       DateTime?              @map("ministry_decided_at") @db.Timestamptz
+  ministryNotes           String?                @map("ministry_notes") @db.Text
+  createdAt               DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime               @updatedAt @map("updated_at") @db.Timestamptz
+
+  company                 Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  emissionReport          EmissionReport?        @relation(fields: [emissionReportId], references: [id], onDelete: SetNull)
+  submittedBy             User                   @relation("PtbaeApplicationSubmitter", fields: [submittedByUserId], references: [id], onDelete: Restrict)
+  auditedBy               User?                  @relation("PtbaeApplicationAuditor", fields: [auditedByUserId], references: [id], onDelete: SetNull)
+  ministryDecisionBy      User?                  @relation("PtbaeApplicationDecider", fields: [ministryDecisionByUserId], references: [id], onDelete: SetNull)
+  documents               PtbaeApplicationDocument[]
+  allocation              PtbaeAllocation?
+
+  @@unique([companyId, complianceYear])
+  @@index([status, complianceYear])
+  @@index([submittedByUserId])
+  @@index([auditedByUserId])
+  @@index([ministryDecisionByUserId])
+  @@map("ptbae_applications")
+}
+
+model PtbaeApplicationDocument {
+  id              String            @id @default(uuid()) @db.Uuid
+  applicationId   String            @map("application_id") @db.Uuid
+  storedFileId    String            @unique @map("stored_file_id") @db.Uuid
+  documentType    PtbaeDocumentType @map("document_type")
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
+
+  application     PtbaeApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  storedFile      StoredFile       @relation(fields: [storedFileId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, documentType])
+  @@map("ptbae_application_documents")
 }
 
 model Smokestack {
@@ -684,6 +775,7 @@ model EmissionReport {
   company              Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   auditor              User?                @relation("AuditorReports", fields: [auditedByUserId], references: [id])
   files                StoredFile[]
+  ptbaeApplications    PtbaeApplication[]
 
   @@unique([companyId, year])
   @@index([status])
@@ -706,6 +798,7 @@ model StoredFile {
   emissionReport   EmissionReport? @relation(fields: [emissionReportId], references: [id], onDelete: SetNull)
   missionOrthos    DroneMission[] @relation("MissionOrthoFile")
   missionPointclouds DroneMission[] @relation("MissionPointcloudFile")
+  ptbaeApplicationDocuments PtbaeApplicationDocument[]
 
   @@index([uploadedByUserId])
   @@index([emissionReportId])

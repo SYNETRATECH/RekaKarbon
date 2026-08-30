@@ -20,6 +20,7 @@ import { DjpModule } from './integrations/djp/djp.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { WalletModule } from './wallet/wallet.module';
 import { XenditModule } from './integrations/xendit/xendit.module';
+import { PtbaeModule } from './ptbae/ptbae.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { XenditModule } from './integrations/xendit/xendit.module';
     NotificationsModule,
     WalletModule,
     XenditModule,
+    PtbaeModule,
   ],
   controllers: [AppController],
   providers: [],

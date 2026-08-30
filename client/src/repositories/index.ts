@@ -14,6 +14,8 @@ export { complianceRepository } from './compliance.repository';
 export type { ComplianceRepository } from './compliance.repository';
 export { ptbaeRepository } from './ptbae.repository';
 export type { PtbaeRepository } from './ptbae.repository';
+export { ptbaeApplicationRepository } from './ptbae-application.repository';
+export type { PtbaeApplicationRepository } from './ptbae-application.repository';
 
 export { reportRepository } from './report.repository';
 export type { ReportRepository } from './report.repository';

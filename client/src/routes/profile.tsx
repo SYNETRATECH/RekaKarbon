@@ -28,6 +28,12 @@ export default function ProfileRoute() {
         return (
           <Badge className="bg-amber-100 text-amber-900 border-amber-200">Auditor Independen</Badge>
         );
+      case 'ministry':
+        return (
+          <Badge className="bg-emerald-100 text-emerald-900 border-emerald-200">
+            Kementerian PTBAE-PU
+          </Badge>
+        );
       case 'kth':
         return (
           <Badge className="bg-emerald-100 text-emerald-900 border-emerald-200">
@@ -54,6 +60,7 @@ export default function ProfileRoute() {
     admin: '0x1a2B...F9A0',
     regulator: '0x8114...1945',
     auditor: '0x9942...2026',
+    ministry: '0x4F5A...E2F3',
     kth: '0x7120...0024',
     buyer: '0x0D1E...7C8D',
     emitter: '0x003e...Bud1',

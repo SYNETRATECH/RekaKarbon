@@ -7,6 +7,21 @@ export interface BlockchainTransaction {
   wait(): Promise<BlockchainTransactionReceipt | null>;
 }
 
+export interface BlockchainTransactionOverrides {
+  gasPrice?: number | bigint;
+}
+
+export interface BlockchainHealth {
+  status: 'ready' | 'degraded' | 'offline' | 'unconfigured';
+  network: string;
+  configuredChainId?: number;
+  connectedChainId?: number;
+  contractAddress?: string;
+  contractDeployed?: boolean;
+  ministryRoleGrantedToSigner?: boolean;
+  reason?: string;
+}
+
 export interface BlockchainEvent {
   args: readonly [string, string, string, bigint, bigint];
   getBlock(): Promise<{ timestamp: number }>;
@@ -22,6 +37,13 @@ export interface BlockchainLog {
 
 export interface CarbonTokenContract {
   balanceOf(address: string, tokenId: number): Promise<bigint>;
+  issueQuota(
+    toAddress: string,
+    amount: bigint,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
+  MINISTRY_ROLE(): Promise<string>;
+  hasRole(role: string, account: string): Promise<boolean>;
   mintOffsetCredit(
     toAddress: string,
     amount: number,

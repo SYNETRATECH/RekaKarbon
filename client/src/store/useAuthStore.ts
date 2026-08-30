@@ -3,7 +3,20 @@ import { authRepository } from '../repositories';
 import type { AuthCredentials } from '../repositories';
 
 export type ClientUserRole =
-  'superadmin' | 'admin' | 'regulator' | 'auditor' | 'emitter' | 'kth' | 'buyer';
+  'superadmin' | 'admin' | 'regulator' | 'auditor' | 'ministry' | 'emitter' | 'kth' | 'buyer';
+
+export function isClientUserRole(value: string): value is ClientUserRole {
+  return [
+    'superadmin',
+    'admin',
+    'regulator',
+    'auditor',
+    'ministry',
+    'emitter',
+    'kth',
+    'buyer',
+  ].includes(value);
+}
 
 export interface UserProfile {
   name: string;
@@ -52,6 +65,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     if (res.role === 'superadmin' || res.role === 'admin') defaultTab = 'dashboard';
     else if (res.role === 'regulator') defaultTab = 'forest';
     else if (res.role === 'auditor') defaultTab = 'audit';
+    else if (res.role === 'ministry') defaultTab = 'ministry';
     else if (res.role === 'kth') defaultTab = 'polygon';
 
     set({

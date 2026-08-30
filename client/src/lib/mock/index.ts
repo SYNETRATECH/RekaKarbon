@@ -9,3 +9,4 @@ export * from './certificates';
 export * from './bursa';
 export * from './regulator';
 export * from './auth';
+export * from './ptbae-applications';

@@ -1,6 +1,6 @@
 import { redirect } from 'react-router';
 import { authRepository } from '../repositories';
-import { useAuthStore } from '../store/useAuthStore';
+import { isClientUserRole, useAuthStore } from '../store/useAuthStore';
 import PortalLayout from '@/components/layout/PortalLayout';
 
 /**
@@ -15,8 +15,9 @@ export async function clientLoader() {
     throw redirect('/login');
   }
 
+  const normalizedRole = user.role.toLowerCase();
   useAuthStore.setState({
-    userRole: user.role as any,
+    userRole: isClientUserRole(normalizedRole) ? normalizedRole : 'emitter',
     userProfile: {
       name: user.name,
       roleTitle: user.roleTitle,

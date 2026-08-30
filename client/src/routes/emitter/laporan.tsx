@@ -11,6 +11,7 @@ import { formatDate } from '@/lib/dates';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
@@ -334,6 +335,15 @@ export default function EmissionReportsSector() {
             unggah dokumen bukti atau gunakan Kalkulator Hijau BI.
           </p>
         </div>
+
+        <Button
+          type="button"
+          onClick={() => navigate('/pengajuan-ptbae')}
+          className="self-start rounded-xl bg-primary-gradient text-xs font-black text-white md:self-auto"
+        >
+          <Landmark className="mr-2 h-4 w-4" />
+          Ajukan PTBAE-PU
+        </Button>
 
         {/* Year Selector Filter Dropdown */}
         <div className="flex items-center gap-2 self-start md:self-auto bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-2xs">

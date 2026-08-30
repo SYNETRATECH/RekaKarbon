@@ -28,6 +28,7 @@ export default [
       route('spatial', 'routes/auditor/spatial.tsx'),
       route('drone', 'routes/auditor/drone.tsx'),
       route('gate', 'routes/auditor/gate.tsx'),
+      route('audit/ptbae', 'routes/auditor/ptbae.tsx'),
     ]),
 
     // KTH Protected Routes
@@ -40,9 +41,15 @@ export default [
     layout('routes/guards/emitter.tsx', [
       route('bursa', 'routes/emitter/bursa.tsx'),
       route('laporan', 'routes/emitter/laporan.tsx'),
+      route('pengajuan-ptbae', 'routes/emitter/ptbae.tsx'),
       route('kalkulator', 'routes/emitter/kalkulator.tsx'),
       route('sertifikat', 'routes/emitter/sertifikat.tsx'),
       route('dompet', 'routes/emitter/wallet.tsx'),
+    ]),
+
+    // Ministry PTBAE-PU Protected Routes
+    layout('routes/guards/ministry.tsx', [
+      route('ministry/applications', 'routes/ministry/applications.tsx'),
     ]),
   ]),
 

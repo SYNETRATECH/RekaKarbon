@@ -17,6 +17,7 @@ import {
   Coins,
   Camera,
   Settings,
+  Landmark,
   type LucideIcon,
 } from 'lucide-react';
 import brandIcon from '@/assets/icon.png';
@@ -149,6 +150,12 @@ export default function PortalSidebar() {
           items: [
             { id: 'audit', label: 'Audit Verifikasi AI', icon: Activity, targetPath: '/dashboard' },
             { id: 'gate', label: 'Gerbang Otorisasi', icon: ShieldCheck, targetPath: '/gate' },
+            {
+              id: 'ptbae-audit',
+              label: 'Audit Pengajuan PTBAE-PU',
+              icon: FileUp,
+              targetPath: '/audit/ptbae',
+            },
           ],
         },
         {
@@ -187,6 +194,27 @@ export default function PortalSidebar() {
           ],
         },
       ];
+    } else if (currentRole === 'ministry') {
+      return [
+        {
+          id: 'penetapan',
+          label: 'PENETAPAN PTBAE-PU',
+          items: [
+            {
+              id: 'ministry-dashboard',
+              label: 'Dashboard Kementerian',
+              icon: LayoutDashboard,
+              targetPath: '/dashboard',
+            },
+            {
+              id: 'ministry-applications',
+              label: 'Pengajuan Masuk',
+              icon: Landmark,
+              targetPath: '/ministry/applications',
+            },
+          ],
+        },
+      ];
     } else {
       // Default: Emitter / Buyer
       return [
@@ -213,6 +241,12 @@ export default function PortalSidebar() {
           label: 'LAPORAN & ASET',
           items: [
             { id: 'laporan', label: 'Laporan Emisi', icon: FileUp, targetPath: '/laporan' },
+            {
+              id: 'ptbae-application',
+              label: 'Pengajuan PTBAE-PU',
+              icon: Landmark,
+              targetPath: '/pengajuan-ptbae',
+            },
             {
               id: 'sertifikat',
               label: 'Sertifikat Karbon',
@@ -251,7 +285,9 @@ export default function PortalSidebar() {
                     ? 'AUDITOR PORTAL'
                     : currentRole === 'kth'
                       ? 'KTH PORTAL'
-                      : 'EMITTER PORTAL'}
+                      : currentRole === 'ministry'
+                        ? 'KEMENTERIAN PORTAL'
+                        : 'EMITTER PORTAL'}
             </span>
           </div>
         </div>

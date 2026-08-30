@@ -31,6 +31,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         return 'Auditor Portal';
       case 'kth':
         return 'KTH Portal';
+      case 'ministry':
+        return 'Kementerian Portal';
       case 'buyer':
         return 'Buyer Portal';
       case 'emitter':

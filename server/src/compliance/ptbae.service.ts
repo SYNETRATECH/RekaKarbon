@@ -29,8 +29,7 @@ export class PtbaeService {
       const quotaTCO2e = Number(allocation.quotaTco2e);
       const status = allocation.status as PtbaeQuotaStatus;
       const isUnavailable =
-        allocation.status === PtbaeStatus.REJECTED ||
-        allocation.status === PtbaeStatus.EXPIRED ||
+        allocation.status !== PtbaeStatus.VERIFIED ||
         !Number.isFinite(quotaTCO2e) ||
         quotaTCO2e <= 0;
 
@@ -52,7 +51,7 @@ export class PtbaeService {
     if (Number.isFinite(legacyQuotaTCO2e) && legacyQuotaTCO2e > 0) {
       return {
         complianceYear,
-        quotaTCO2e: legacyQuotaTCO2e,
+        quotaTCO2e: null,
         status: 'LEGACY',
         sourceDocument:
           'Company.emissionCapTco2e (data legacy; belum terhubung ke dokumen PTBAE-PU)',
