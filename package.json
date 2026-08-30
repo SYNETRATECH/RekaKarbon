@@ -35,6 +35,7 @@
     "ml:typecheck": "poetry --directory ./ml run mypy src tests app.py",
     "ml:test": "poetry --directory ./ml run pytest",
     "ml:train": "poetry --directory ./ml run python -m rekakarbon_ml.pipeline.build_pipeline",
+    "ml:preprocess": "poetry --directory ./ml run python -m rekakarbon_ml.data.preprocess",
     "db:generate": "pnpm --filter ./server prisma:generate",
     "db:migrate": "pnpm --filter ./server prisma:migrate",
     "db:deploy": "pnpm --filter ./server prisma:migrate:deploy",
