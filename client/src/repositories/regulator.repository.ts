@@ -6,6 +6,14 @@ import type {
   RegulationDocumentUploadItem,
   Project,
 } from '../types';
+import {
+  NationalForestRegionSchema,
+  ForestProjectItemSchema,
+  KTHGroupItemSchema,
+  KTHTransactionItemSchema,
+  RegulationDocumentUploadItemSchema,
+} from '../schemas';
+import { z } from 'zod';
 import { api } from '../lib/api';
 
 export interface RegulatorRepository {
@@ -19,24 +27,36 @@ export interface RegulatorRepository {
 
 export class ApiRegulatorRepository implements RegulatorRepository {
   async getNationalForestRegions(): Promise<NationalForestRegion[]> {
-    return api.get<NationalForestRegion[]>('/regulator/forest-regions');
+    return api.get<NationalForestRegion[]>(
+      '/regulator/forest-regions',
+      z.array(NationalForestRegionSchema)
+    );
   }
   async getForestProjects(): Promise<ForestProjectItem[]> {
-    return api.get<ForestProjectItem[]>('/regulator/forest-projects');
+    return api.get<ForestProjectItem[]>(
+      '/regulator/forest-projects',
+      z.array(ForestProjectItemSchema)
+    );
   }
   async getKTHGroups(): Promise<KTHGroupItem[]> {
-    return api.get<KTHGroupItem[]>('/regulator/kth-groups');
+    return api.get<KTHGroupItem[]>('/regulator/kth-groups', z.array(KTHGroupItemSchema));
   }
   async getKTHTransactions(): Promise<KTHTransactionItem[]> {
-    return api.get<KTHTransactionItem[]>('/regulator/kth-transactions');
+    return api.get<KTHTransactionItem[]>(
+      '/regulator/kth-transactions',
+      z.array(KTHTransactionItemSchema)
+    );
   }
   async getRegulationUploads(): Promise<RegulationDocumentUploadItem[]> {
-    return api.get<RegulationDocumentUploadItem[]>('/regulator/regulation-uploads');
+    return api.get<RegulationDocumentUploadItem[]>(
+      '/regulator/regulation-uploads',
+      z.array(RegulationDocumentUploadItemSchema)
+    );
   }
   async searchVerichainLedger(
     query: string,
-    projects: Project[],
-    fallbackProject: Project
+    _projects: Project[],
+    _fallbackProject: Project
   ): Promise<any> {
     return api.post<any>('/regulator/search', { query });
   }

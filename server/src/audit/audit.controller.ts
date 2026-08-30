@@ -18,6 +18,7 @@ import {
 import {
   AuthorizeMintingDto,
   AuditQueryDto,
+  DroneQueryDto,
   VerifyAnomalyDto,
   AuditEmissionReportDto,
 } from './dto';
@@ -112,16 +113,16 @@ export class AuditController {
   @ApiOperation({ summary: 'Retrieve drone survey archive layers' })
   @ApiResponse({ status: 200, description: 'Drone archive retrieved.' })
   @Get('drone-archive')
-  async getDroneArchive() {
-    const data = await this.auditService.getDroneArchive();
+  async getDroneArchive(@Query() query: DroneQueryDto) {
+    const data = await this.auditService.getDroneArchive(query.projectId);
     return { success: true, data };
   }
 
   @ApiOperation({ summary: 'Retrieve scheduled drone flyover timeline' })
   @ApiResponse({ status: 200, description: 'Drone schedules retrieved.' })
   @Get('drone-schedules')
-  async getDroneSchedules() {
-    const data = await this.auditService.getDroneSchedules();
+  async getDroneSchedules(@Query() query: DroneQueryDto) {
+    const data = await this.auditService.getDroneSchedules(query.projectId);
     return { success: true, data };
   }
 

@@ -1,28 +1,37 @@
 import { useState } from 'react';
-import { useLoaderData } from 'react-router';
+import { useLoaderData, useNavigate, type LoaderFunctionArgs } from 'react-router';
 import { toast } from '@/hooks/use-toast';
-import {
-  Upload,
-  Camera,
-  Layers,
-  Activity,
-  FlaskConical,
-  Calendar,
-  CheckCircle2,
-} from 'lucide-react';
+import { Upload, Camera, Layers, Activity, FlaskConical, Calendar, MapPin } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { formatMonthNumber } from '@/lib/dates';
 
 import { auditRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
-export async function clientLoader() {
-  const [droneArchive, droneSchedules] = await Promise.all([
-    auditRepository.getDroneArchive().catch(() => null),
-    auditRepository.getDroneSchedules().catch(() => null),
+export async function clientLoader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const projectId = url.searchParams.get('projectId') || undefined;
+
+  const [droneArchive, droneSchedules, conservationAreas] = await Promise.all([
+    auditRepository.getDroneArchive(projectId).catch(() => null),
+    auditRepository.getDroneSchedules(projectId).catch(() => null),
+    auditRepository.getConservationAreas().catch(() => []),
   ]);
-  return { droneArchive, droneSchedules };
+  return {
+    droneArchive,
+    droneSchedules,
+    conservationAreas,
+    selectedProjectId: projectId || conservationAreas[0]?.id || '',
+  };
 }
 
 clientLoader.hydrate = true as const;
@@ -38,14 +47,54 @@ export function meta() {
   ];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Display Maps — all UI label derivation is the frontend's responsibility
+// ─────────────────────────────────────────────────────────────────────────────
+const LAYER_TITLES: Record<string, string> = {
+  orto: 'Ortofoto',
+  canopy: 'Canopy Height',
+  dsm: 'DSM/DEM',
+};
+
+const LAYER_STATUS_LABELS: Record<string, string> = {
+  ready: 'Tersedia',
+  processing: 'Proses...',
+  queued: 'Antrian',
+};
+
+const SLOT_STATUS_LABELS: Record<string, string> = {
+  done: '✓ Selesai',
+  scheduled: '• Terjadwal',
+  upcoming: '○ Mendatang',
+};
+
+const FREQUENCY_STAGE_LABELS: Record<string, { title: string; subTitle: string; badge: string }> = {
+  quarterly: { title: 'Tahun Pertama', subTitle: '4× / tahun (Triwulanan)', badge: '4× / tahun' },
+  triannual: { title: 'Tahun Kedua', subTitle: '3× / tahun (Caturwulanan)', badge: '3× / tahun' },
+  annual: { title: 'Tahun Ketiga–Kelima', subTitle: '1× / tahun', badge: '1× / tahun' },
+};
+
 export default function DroneMappingController() {
-  const { droneArchive, droneSchedules } = useLoaderData<typeof clientLoader>();
+  const { droneArchive, droneSchedules, conservationAreas, selectedProjectId } =
+    useLoaderData<typeof clientLoader>();
+  const navigate = useNavigate();
 
   const [activeLayer, setActiveLayer] = useState('canopy');
   const [isUploading, setIsUploading] = useState(false);
 
-  const archive = droneArchive;
-  const schedules = droneSchedules;
+  const archive = droneArchive || {
+    areaName: 'Restorasi Gambut Katingan',
+    location: 'Katingan, Kalimantan Tengah',
+    cloudCoverPercent: 67,
+    layers: [],
+  };
+  const schedules = droneSchedules || {
+    startYear: 2025,
+    endYear: 2030,
+    year1: { frequencyPerYear: 4, frequency: 'quarterly' as const, slots: [] },
+    year2: { frequencyPerYear: 3, frequency: 'triannual' as const, slots: [] },
+    year3to5: { frequencyPerYear: 1, frequency: 'annual' as const, slots: [] },
+  };
 
   const handleUploadSim = () => {
     setIsUploading(true);
@@ -59,6 +108,10 @@ export default function DroneMappingController() {
     }, 1500);
   };
 
+  const handleProjectChange = (newProjectId: string) => {
+    navigate(`/drone?projectId=${newProjectId}`);
+  };
+
   const renderLayerIcon = (type: string) => {
     if (type === 'camera' || type === 'orto') return <Camera className="w-3.5 h-3.5" />;
     if (type === 'layers' || type === 'canopy') return <Layers className="w-3.5 h-3.5" />;
@@ -67,15 +120,40 @@ export default function DroneMappingController() {
 
   return (
     <div className="flex-1 overflow-y-auto min-h-0 space-y-6 animate-fade-in text-left pr-1 pb-8">
-      {/* HEADER SECTION */}
-      <div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-          Modul Validasi Hibrida Drone
-        </h2>
-        <p className="text-xs text-slate-500 font-medium mt-1">
-          Diaktifkan untuk kawasan dengan tutupan awan &gt;50% — penggantian citra satelit dengan
-          ortofoto drone
-        </p>
+      {/* HEADER SECTION WITH PROJECT SELECTOR */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            Modul Validasi Hibrida Drone
+          </h2>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Diaktifkan untuk kawasan dengan tutupan awan &gt;50% — penggantian citra satelit dengan
+            ortofoto drone
+          </p>
+        </div>
+
+        {conservationAreas.length > 0 && (
+          <div className="w-full md:w-72 shrink-0">
+            <Select
+              value={selectedProjectId || conservationAreas[0]?.id}
+              onValueChange={handleProjectChange}
+            >
+              <SelectTrigger className="bg-white border-slate-200 shadow-2xs font-bold text-xs h-10">
+                <div className="flex items-center gap-2 truncate">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <SelectValue placeholder="Pilih Kawasan Konservasi" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {conservationAreas.map((area: any) => (
+                  <SelectItem key={area.id} value={area.id} className="text-xs">
+                    {area.name} ({area.location})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {/* MAIN TWO-COLUMN WORKSPACE */}
@@ -100,7 +178,7 @@ export default function DroneMappingController() {
             </Button>
           </div>
 
-          {/* Area Card: Restorasi Gambut Katingan */}
+          {/* Area Card */}
           <div className="p-5 rounded-2xl border-2 border-emerald-500/30 bg-emerald-50/20 space-y-4">
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold text-slate-500">Kawasan Terpilih:</span>
@@ -115,10 +193,10 @@ export default function DroneMappingController() {
             {/* Cloud warning badge */}
             <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-xl text-xs font-bold border border-amber-200">
               <FlaskConical className="w-3.5 h-3.5" />
-              <span>{archive?.cloudCover ?? ''}</span>
+              <span>{archive?.cloudCoverPercent ?? 0}% awan</span>
             </div>
 
-            {/* Layer Cards mapped dynamically from mock */}
+            {/* Layer Cards mapped dynamically from API */}
             <div className="grid grid-cols-3 gap-2.5 pt-1">
               {archive?.layers?.map((layer: any) => {
                 const isSelected = activeLayer === layer.id;
@@ -154,10 +232,10 @@ export default function DroneMappingController() {
                       {renderLayerIcon(layer.icon || layer.id)}
                     </div>
                     <p className="text-[11px] font-extrabold text-slate-900 leading-none">
-                      {layer.title}
+                      {LAYER_TITLES[layer.id] ?? layer.id}
                     </p>
                     <span className={`text-[9px] font-bold block ${statusColor}`}>
-                      {layer.status}
+                      {LAYER_STATUS_LABELS[layer.statusType] ?? layer.statusType}
                     </span>
                   </div>
                 );
@@ -195,28 +273,31 @@ export default function DroneMappingController() {
 
             <Badge variant="outline" className="text-xs font-black">
               <Calendar className="w-3.5 h-3.5 text-slate-500 mr-1" />
-              {schedules.period}
+              {schedules ? `${schedules.startYear}–${schedules.endYear}` : '2025–2030'}
             </Badge>
           </div>
 
-          {/* Schedule Stages mapped from mock */}
+          {/* Schedule Stages mapped from API data */}
           <div className="space-y-4">
-            {/* Stage 1: Tahun Pertama */}
+            {/* Stage 1: Year 1 */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <h6 className="text-xs font-black text-slate-900">{schedules.year1.title}</h6>
+                  <h6 className="text-xs font-black text-slate-900">
+                    {FREQUENCY_STAGE_LABELS[schedules?.year1?.frequency]?.title ?? 'Tahun Pertama'}
+                  </h6>
                   <span className="text-[10px] text-slate-400 font-medium block">
-                    {schedules.year1.subTitle}
+                    {FREQUENCY_STAGE_LABELS[schedules?.year1?.frequency]?.subTitle ??
+                      '4× / tahun (Triwulanan)'}
                   </span>
                 </div>
                 <Badge variant="mint" className="text-[9px] font-black">
-                  {schedules.year1.badge}
+                  {FREQUENCY_STAGE_LABELS[schedules?.year1?.frequency]?.badge ?? '4× / tahun'}
                 </Badge>
               </div>
 
               <div className="grid grid-cols-4 gap-2">
-                {schedules.year1.slots.map((slot: any, i: number) => (
+                {schedules?.year1?.slots?.map((slot: any, i: number) => (
                   <div
                     key={i}
                     className={`p-2.5 rounded-xl border text-center ${
@@ -230,7 +311,7 @@ export default function DroneMappingController() {
                     <p
                       className={`text-xs font-black ${slot.status === 'upcoming' ? 'text-slate-600' : 'text-slate-900'}`}
                     >
-                      {slot.month}
+                      {formatMonthNumber(slot.month)}
                     </p>
                     <span
                       className={`text-[9px] block mt-0.5 ${
@@ -241,62 +322,72 @@ export default function DroneMappingController() {
                             : 'font-bold text-slate-400'
                       }`}
                     >
-                      {slot.label}
+                      {SLOT_STATUS_LABELS[slot.status] ?? slot.status}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Stage 2: Tahun Kedua */}
+            {/* Stage 2: Year 2 */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <h6 className="text-xs font-black text-slate-900">{schedules.year2.title}</h6>
+                  <h6 className="text-xs font-black text-slate-900">
+                    {FREQUENCY_STAGE_LABELS[schedules?.year2?.frequency]?.title ?? 'Tahun Kedua'}
+                  </h6>
                   <span className="text-[10px] text-slate-400 font-medium block">
-                    {schedules.year2.subTitle}
+                    {FREQUENCY_STAGE_LABELS[schedules?.year2?.frequency]?.subTitle ??
+                      '3× / tahun (Caturwulanan)'}
                   </span>
                 </div>
                 <Badge variant="secondary" className="text-[9px] font-black">
-                  {schedules.year2.badge}
+                  {FREQUENCY_STAGE_LABELS[schedules?.year2?.frequency]?.badge ?? '3× / tahun'}
                 </Badge>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
-                {schedules.year2.slots.map((slot: any, i: number) => (
+                {schedules?.year2?.slots?.map((slot: any, i: number) => (
                   <div
                     key={i}
                     className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center"
                   >
-                    <p className="text-xs font-black text-slate-600">{slot.month}</p>
+                    <p className="text-xs font-black text-slate-600">
+                      {formatMonthNumber(slot.month)}
+                    </p>
                     <span className="text-[9px] font-bold text-slate-400 block mt-0.5">
-                      {slot.label}
+                      {SLOT_STATUS_LABELS[slot.status] ?? slot.status}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Stage 3: Tahun Ketiga-Kelima */}
+            {/* Stage 3: Year 3–5 */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <h6 className="text-xs font-black text-slate-900">{schedules.year3to5.title}</h6>
+                  <h6 className="text-xs font-black text-slate-900">
+                    {FREQUENCY_STAGE_LABELS[schedules?.year3to5?.frequency]?.title ??
+                      'Tahun Ketiga–Kelima'}
+                  </h6>
                   <span className="text-[10px] text-slate-400 font-medium block">
-                    {schedules.year3to5.subTitle}
+                    {FREQUENCY_STAGE_LABELS[schedules?.year3to5?.frequency]?.subTitle ??
+                      '1× / tahun'}
                   </span>
                 </div>
                 <Badge variant="outline" className="text-[9px] font-black">
-                  {schedules.year3to5.badge}
+                  {FREQUENCY_STAGE_LABELS[schedules?.year3to5?.frequency]?.badge ?? '1× / tahun'}
                 </Badge>
               </div>
 
               <div className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
                 <p className="text-xs font-black text-slate-600">
-                  {schedules.year3to5.slots[0]?.month || 'Jun'}
+                  {formatMonthNumber(schedules?.year3to5?.slots?.[0]?.month ?? 6)}
                 </p>
                 <span className="text-[9px] font-bold text-slate-400 block mt-0.5">
-                  {schedules.year3to5.slots[0]?.label || '○ Mendatang'}
+                  {SLOT_STATUS_LABELS[schedules?.year3to5?.slots?.[0]?.status ?? 'upcoming'] ??
+                    '○ Mendatang'}
                 </span>
               </div>
             </div>

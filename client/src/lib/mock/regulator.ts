@@ -149,7 +149,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
           tCO2e: 4500,
           sector: 'Semen & Manufaktur',
           speCertificateId: 'SPE-GRK-2026-0891',
-          txHash: '0x9b1a8f2c0091e4a5d8b7...',
+          txHash: '0x9b1a8f2c0091e4a5d8b7a1b2c3d4e5f6',
           date: '2025-07-12',
         },
         {
@@ -158,7 +158,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
           tCO2e: 3200,
           sector: 'Energi & Petrokimia',
           speCertificateId: 'SPE-GRK-2026-0892',
-          txHash: '0x3f7a1c8901b2c3d4e5f6...',
+          txHash: '0x3f7a1c8901b2c3d4e5f6a1b2c3d4e5f6',
           date: '2025-06-04',
         },
         {
@@ -167,7 +167,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
           tCO2e: 2800,
           sector: 'Ketenagalistrikan PLTU',
           speCertificateId: 'SPE-GRK-2026-0893',
-          txHash: '0x7e2d1c0b9a8f7e6d5c4...',
+          txHash: '0x7e2d1c0b9a8f7e6d5c4a1b2c3d4e5f6',
           date: '2025-05-18',
         },
         {
@@ -176,7 +176,7 @@ export const INITIAL_FOREST_PROJECTS: ForestProjectItem[] = [
           tCO2e: 1900,
           sector: 'Pertambangan Nikel',
           speCertificateId: 'SPE-GRK-2026-0894',
-          txHash: '0x1a2b3c4d5e6f7a8b9c0...',
+          txHash: '0x1a2b3c4d5e6f7a8b9c0a1b2c3d4e5f6',
           date: '2025-04-02',
         },
       ],

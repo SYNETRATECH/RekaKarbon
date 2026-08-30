@@ -1,5 +1,6 @@
 import { api } from '../lib/api';
 import type { User, AuthCredentials, AuthResponse, RegistrationData } from '../types';
+import { AuthResponseSchema, UserSchema } from '../schemas';
 
 export interface AuthRepository {
   login(credentials: AuthCredentials): Promise<AuthResponse>;
@@ -10,7 +11,7 @@ export interface AuthRepository {
 
 export class ApiAuthRepository implements AuthRepository {
   async login(credentials: AuthCredentials): Promise<AuthResponse> {
-    const res = await api.post<AuthResponse>('/auth/login', credentials);
+    const res = await api.post<AuthResponse>('/auth/login', credentials, AuthResponseSchema);
     const token = res?.token || res?.accessToken;
     if (token && typeof window !== 'undefined') {
       localStorage.setItem('rekakarbon_token', token);
@@ -19,7 +20,7 @@ export class ApiAuthRepository implements AuthRepository {
   }
 
   async register(data: RegistrationData): Promise<AuthResponse> {
-    return api.post<AuthResponse>('/auth/register', data);
+    return api.post<AuthResponse>('/auth/register', data, AuthResponseSchema);
   }
 
   async getCurrentUser(): Promise<User | null> {
@@ -28,7 +29,7 @@ export class ApiAuthRepository implements AuthRepository {
     if (!token) return null;
 
     try {
-      const user = await api.get<User>('/auth/me');
+      const user = await api.get<User | null>('/auth/me', UserSchema.nullable());
       // Ensure user object is valid and contains essential identity properties
       if (!user || !user.id || !user.email || !user.role) {
         localStorage.removeItem('rekakarbon_token');

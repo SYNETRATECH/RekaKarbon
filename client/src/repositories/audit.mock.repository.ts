@@ -36,10 +36,21 @@ export class MockAuditRepository implements AuditRepository {
   async getConservationAreas() {
     return mockConservationAreas;
   }
-  async getDroneArchive() {
+  async getDroneArchive(projectId?: string) {
+    if (projectId) {
+      const area = mockConservationAreas.find((a) => a.id === projectId);
+      if (area) {
+        return {
+          ...mockDroneArchive,
+          areaName: area.name,
+          location: area.location,
+          cloudCoverPercent: area.cloudCoverPercent,
+        };
+      }
+    }
     return mockDroneArchive;
   }
-  async getDroneSchedules() {
+  async getDroneSchedules(_projectId?: string) {
     return mockDroneSchedules;
   }
   async getCertificationPreview() {

@@ -1,4 +1,6 @@
 import type { CalculationData, CalculatorReportSubmission, EmissionReport } from '../types';
+import { EmissionReportSchema, CalculatorReportSubmissionSchema } from '../schemas';
+import { z } from 'zod';
 import { api } from '../lib/api';
 import { MockReportRepository } from './report.mock.repository';
 
@@ -21,11 +23,14 @@ export interface ReportRepository {
 
 export class ApiReportRepository implements ReportRepository {
   async getLatestReport(year: number): Promise<EmissionReport | null> {
-    return api.get<EmissionReport | null>(`/emitter/reports/${year}`);
+    return api.get<EmissionReport | null>(
+      `/emitter/reports/${year}`,
+      EmissionReportSchema.nullable()
+    );
   }
 
   async getEmissionReports(): Promise<EmissionReport[]> {
-    return api.get<EmissionReport[]>('/emitter/reports');
+    return api.get<EmissionReport[]>('/emitter/reports', z.array(EmissionReportSchema));
   }
 
   async submitReport(
@@ -43,7 +48,11 @@ export class ApiReportRepository implements ReportRepository {
       formData.append('files', file);
     });
 
-    return api.upload<{ txHash: string }>('/emitter/reports/submit', formData);
+    return api.upload<{ txHash: string }>(
+      '/emitter/reports/submit',
+      formData,
+      z.object({ txHash: z.string() })
+    );
   }
 
   async submitCalculatorReport(
@@ -52,12 +61,16 @@ export class ApiReportRepository implements ReportRepository {
     totalEmissions: number,
     calculationData: CalculationData
   ): Promise<CalculatorReportSubmission> {
-    return api.post<CalculatorReportSubmission>('/emitter/reports/submit-calculator', {
-      year,
-      sector,
-      totalEmissions,
-      calculationData,
-    });
+    return api.post<CalculatorReportSubmission>(
+      '/emitter/reports/submit-calculator',
+      {
+        year,
+        sector,
+        totalEmissions,
+        calculationData,
+      },
+      CalculatorReportSubmissionSchema
+    );
   }
 }
 
