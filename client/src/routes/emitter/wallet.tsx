@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLoaderData, useNavigate } from 'react-router';
+import { useLoaderData } from 'react-router';
 import { walletRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { formatCurrency } from '../../lib/formatters';
@@ -15,6 +15,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 export async function clientLoader() {
   const balance = await walletRepository.getBalance().catch(() => 0);
@@ -39,6 +40,7 @@ export default function EmitterWallet() {
   const { balance, history } = useLoaderData<typeof clientLoader>();
   const [depositAmount, setDepositAmount] = useState<number>(10000000);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +51,22 @@ export default function EmitterWallet() {
       if (res.invoiceUrl) {
         // Open Xendit checkout in new tab or redirect
         window.open(res.invoiceUrl, '_blank');
-        // You might want to show a toast or wait for webhook here
+        toast({
+          variant: 'mint',
+          title: 'Invoice Deposit Dibuat',
+          description: 'Halaman pembayaran telah dibuka di tab baru.',
+        });
       }
     } catch (error) {
       console.error('Failed to create deposit invoice:', error);
-      alert('Gagal membuat invoice deposit.');
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Membuat Invoice Deposit',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Terjadi kendala saat menghubungi gateway pembayaran.',
+      });
     } finally {
       setIsSubmitting(false);
     }
