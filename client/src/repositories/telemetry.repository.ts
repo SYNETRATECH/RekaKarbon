@@ -5,6 +5,8 @@ import type {
   CemsTelemetryDto,
   ForestSensorTelemetryDto,
 } from '../types/telemetry';
+import { CemsReadingSchema, ForestSensorReadingSchema } from '../schemas';
+import { z } from 'zod';
 
 export interface TelemetryRepository {
   getCemsReadings(companyId?: string): Promise<CemsReading[]>;
@@ -16,20 +18,23 @@ export interface TelemetryRepository {
 export class ApiTelemetryRepository implements TelemetryRepository {
   async getCemsReadings(companyId?: string): Promise<CemsReading[]> {
     const query = companyId ? `?companyId=${companyId}` : '';
-    return api.get<CemsReading[]>(`/telemetry/cems${query}`);
+    return api.get<CemsReading[]>(`/telemetry/cems${query}`, z.array(CemsReadingSchema));
   }
 
   async getForestReadings(projectId?: string): Promise<ForestSensorReading[]> {
     const query = projectId ? `?projectId=${projectId}` : '';
-    return api.get<ForestSensorReading[]>(`/telemetry/forest${query}`);
+    return api.get<ForestSensorReading[]>(
+      `/telemetry/forest${query}`,
+      z.array(ForestSensorReadingSchema)
+    );
   }
 
   async ingestCems(data: CemsTelemetryDto): Promise<CemsReading> {
-    return api.post<CemsReading>('/telemetry/cems', data);
+    return api.post<CemsReading>('/telemetry/cems', data, CemsReadingSchema);
   }
 
   async ingestForest(data: ForestSensorTelemetryDto): Promise<ForestSensorReading> {
-    return api.post<ForestSensorReading>('/telemetry/forest', data);
+    return api.post<ForestSensorReading>('/telemetry/forest', data, ForestSensorReadingSchema);
   }
 }
 

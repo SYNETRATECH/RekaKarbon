@@ -379,6 +379,10 @@ describe('Architecture — Directory Structure', () => {
       description: 'src/repositories — Data access abstraction (Repository Layer)',
     },
     {
+      path: path.join(SRC, 'schemas'),
+      description: 'src/schemas — Zod runtime schemas & contracts (Schema Layer)',
+    },
+    {
       path: path.join(SRC, 'store'),
       description: 'src/store — Zustand global state (Store Layer)',
     },
@@ -412,5 +416,223 @@ describe('Architecture — Directory Structure', () => {
       fs.existsSync(indexPath),
       'src/lib/mock/index.ts is required as the single export point for mock data.'
     ).toBe(true);
+  });
+
+  it('src/schemas/index.ts (barrel export) must exist', () => {
+    const indexPath = path.join(SRC, 'schemas', 'index.ts');
+    expect(
+      fs.existsSync(indexPath),
+      'src/schemas/index.ts is required as the single export point for Zod schemas.'
+    ).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test Suite 4: Schema Conformity for Mock Fixtures
+// ---------------------------------------------------------------------------
+
+import { z } from 'zod';
+import {
+  ProjectSchema,
+  CompanySchema,
+  BursaItemSchema,
+  ComplianceDataSchema,
+  EmissionReportSchema,
+  PurchasedCertificateSchema,
+  MultiSigRequestSchema,
+  KybQueueItemSchema,
+  DjpLogItemSchema,
+  NationalForestRegionSchema,
+  ForestProjectItemSchema,
+  KTHGroupItemSchema,
+  KTHTransactionItemSchema,
+  RegulationDocumentUploadItemSchema,
+  AiAnomalyLogSchema,
+  AnomalySummarySchema,
+  EnergyCorrelationItemSchema,
+  SpatialSummarySchema,
+  ConservationAreaSchema,
+  DroneScanSchema,
+  KthPolygonSchema,
+  KthLogSchema,
+  UserSchema,
+} from '../schemas';
+import {
+  PROJECTS_DATA,
+  COMPANIES_DATA,
+  MOCK_BURSA_ITEMS,
+  COMPLIANCE_DATA,
+  MOCK_EMISSION_REPORTS,
+  MOCK_PURCHASED_CERTIFICATES,
+  mockMultiSigRequests,
+  mockKybQueue,
+  mockDjpLogs,
+  NATIONAL_FOREST_REGIONS,
+  INITIAL_FOREST_PROJECTS,
+  INITIAL_KTH_GROUPS,
+  MOCK_KTH_TRANSACTIONS,
+  INITIAL_REGULATION_UPLOADS,
+  mockAiAnomalyLogs,
+  mockAnomalySummary,
+  mockEnergyCorrelationData,
+  mockSpatialSummary,
+  mockConservationAreas,
+  mockDroneScans,
+  mockKthPolygons,
+  mockKthLogs,
+  mockUsers,
+} from '../lib/mock';
+
+describe('Architecture — Mock Fixture Schema Conformity', () => {
+  it('PROJECTS_DATA adheres to ProjectSchema', () => {
+    const res = z.array(ProjectSchema).safeParse(PROJECTS_DATA);
+    expect(res.success, res.success ? undefined : JSON.stringify(res.error?.issues)).toBe(true);
+  });
+
+  it('COMPANIES_DATA adheres to CompanySchema', () => {
+    const res = z.array(CompanySchema).safeParse(COMPANIES_DATA);
+    expect(res.success, res.success ? undefined : JSON.stringify(res.error?.issues)).toBe(true);
+  });
+
+  it('MOCK_BURSA_ITEMS adheres to BursaItemSchema', () => {
+    const res = z.array(BursaItemSchema).safeParse(MOCK_BURSA_ITEMS);
+    expect(res.success, res.success ? undefined : JSON.stringify(res.error?.issues)).toBe(true);
+  });
+
+  it('COMPLIANCE_DATA adheres to ComplianceDataSchema', () => {
+    const res = ComplianceDataSchema.safeParse(COMPLIANCE_DATA);
+    expect(res.success, res.success ? undefined : JSON.stringify(res.error?.issues)).toBe(true);
+  });
+
+  it('MOCK_EMISSION_REPORTS adheres to EmissionReportSchema', () => {
+    const res = z.array(EmissionReportSchema).safeParse(MOCK_EMISSION_REPORTS);
+    expect(res.success, res.success ? undefined : JSON.stringify(res.error?.issues)).toBe(true);
+  });
+
+  it('MOCK_PURCHASED_CERTIFICATES adheres to PurchasedCertificateSchema', () => {
+    const res = z.array(PurchasedCertificateSchema).safeParse(MOCK_PURCHASED_CERTIFICATES);
+    expect(res.success, res.success ? undefined : JSON.stringify(res.error?.issues)).toBe(true);
+  });
+
+  it('Governance mocks adhere to respective schemas', () => {
+    expect(z.array(MultiSigRequestSchema).safeParse(mockMultiSigRequests).success).toBe(true);
+    expect(z.array(KybQueueItemSchema).safeParse(mockKybQueue).success).toBe(true);
+    expect(z.array(DjpLogItemSchema).safeParse(mockDjpLogs).success).toBe(true);
+  });
+
+  it('Regulator mocks adhere to respective schemas', () => {
+    expect(z.array(NationalForestRegionSchema).safeParse(NATIONAL_FOREST_REGIONS).success).toBe(
+      true
+    );
+    expect(z.array(ForestProjectItemSchema).safeParse(INITIAL_FOREST_PROJECTS).success).toBe(true);
+    expect(z.array(KTHGroupItemSchema).safeParse(INITIAL_KTH_GROUPS).success).toBe(true);
+    expect(z.array(KTHTransactionItemSchema).safeParse(MOCK_KTH_TRANSACTIONS).success).toBe(true);
+    expect(
+      z.array(RegulationDocumentUploadItemSchema).safeParse(INITIAL_REGULATION_UPLOADS).success
+    ).toBe(true);
+  });
+
+  it('Audit and Spatial mocks adhere to respective schemas', () => {
+    expect(z.array(AiAnomalyLogSchema).safeParse(mockAiAnomalyLogs).success).toBe(true);
+    expect(AnomalySummarySchema.safeParse(mockAnomalySummary).success).toBe(true);
+    expect(z.array(EnergyCorrelationItemSchema).safeParse(mockEnergyCorrelationData).success).toBe(
+      true
+    );
+    expect(SpatialSummarySchema.safeParse(mockSpatialSummary).success).toBe(true);
+    expect(z.array(ConservationAreaSchema).safeParse(mockConservationAreas).success).toBe(true);
+    expect(z.array(DroneScanSchema).safeParse(mockDroneScans).success).toBe(true);
+    expect(z.array(KthPolygonSchema).safeParse(mockKthPolygons).success).toBe(true);
+    expect(z.array(KthLogSchema).safeParse(mockKthLogs).success).toBe(true);
+  });
+
+  it('Auth mock users adhere to UserSchema', () => {
+    expect(z.array(UserSchema).safeParse(Object.values(mockUsers)).success).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test Suite 5: Negative Semantic Invariant Enforcement Tests
+// ---------------------------------------------------------------------------
+
+import {
+  UuidSchema,
+  EmailSchema,
+  WalletAddressSchema,
+  TxHashSchema,
+  NpwpSchema,
+  IdrAmountSchema,
+  CarbonVolumeSchema,
+  VegetationIndexSchema,
+  PercentageSchema,
+  LatitudeSchema,
+  LongitudeSchema,
+} from '../schemas';
+
+describe('Architecture — Semantic Invariant Validation Rules', () => {
+  it('UuidSchema rejects non-UUID strings', () => {
+    expect(UuidSchema.safeParse('12345').success).toBe(false);
+    expect(UuidSchema.safeParse('invalid-uuid-string').success).toBe(false);
+    expect(UuidSchema.safeParse('c0a80001-0001-4000-8000-000000000001').success).toBe(true);
+  });
+
+  it('EmailSchema rejects invalid email formats', () => {
+    expect(EmailSchema.safeParse('plainaddress').success).toBe(false);
+    expect(EmailSchema.safeParse('missing@domain').success).toBe(false);
+    expect(EmailSchema.safeParse('admin@rekakarbon.id').success).toBe(true);
+  });
+
+  it('WalletAddressSchema requires standard 20-byte 0x-hex format', () => {
+    expect(WalletAddressSchema.safeParse('0x123').success).toBe(false);
+    expect(WalletAddressSchema.safeParse('8f2a948571029485710294857102948571029485').success).toBe(
+      false
+    );
+    expect(
+      WalletAddressSchema.safeParse('0x8f2a948571029485710294857102948571029485').success
+    ).toBe(true);
+  });
+
+  it('TxHashSchema validates hex transaction hash strings', () => {
+    expect(TxHashSchema.safeParse('not-a-hash').success).toBe(false);
+    expect(
+      TxHashSchema.safeParse('0x8a1c94857102948571029485710294857102948571029485').success
+    ).toBe(true);
+  });
+
+  it('NpwpSchema enforces standard Indonesian 15-digit notation', () => {
+    expect(NpwpSchema.safeParse('123456789012345').success).toBe(false);
+    expect(NpwpSchema.safeParse('01.234.567.8-012.000').success).toBe(true);
+  });
+
+  it('Financial and Carbon schemas reject negative numbers', () => {
+    expect(IdrAmountSchema.safeParse(-50000).success).toBe(false);
+    expect(IdrAmountSchema.safeParse(0).success).toBe(true);
+    expect(IdrAmountSchema.safeParse(1500000).success).toBe(true);
+
+    expect(CarbonVolumeSchema.safeParse(-10.5).success).toBe(false);
+    expect(CarbonVolumeSchema.safeParse(0).success).toBe(true);
+    expect(CarbonVolumeSchema.safeParse(4500).success).toBe(true);
+  });
+
+  it('VegetationIndexSchema strictly constrains NDVI and EVI between -1.0 and 1.0', () => {
+    expect(VegetationIndexSchema.safeParse(-1.5).success).toBe(false);
+    expect(VegetationIndexSchema.safeParse(1.5).success).toBe(false);
+    expect(VegetationIndexSchema.safeParse(0.84).success).toBe(true);
+    expect(VegetationIndexSchema.safeParse(-0.2).success).toBe(true);
+  });
+
+  it('PercentageSchema constrains values between 0 and 100', () => {
+    expect(PercentageSchema.safeParse(-5).success).toBe(false);
+    expect(PercentageSchema.safeParse(105).success).toBe(false);
+    expect(PercentageSchema.safeParse(87.5).success).toBe(true);
+  });
+
+  it('Coordinates strictly enforce latitude [-90, 90] and longitude [-180, 180]', () => {
+    expect(LatitudeSchema.safeParse(-95).success).toBe(false);
+    expect(LatitudeSchema.safeParse(95).success).toBe(false);
+    expect(LatitudeSchema.safeParse(-6.8947).success).toBe(true);
+
+    expect(LongitudeSchema.safeParse(-185).success).toBe(false);
+    expect(LongitudeSchema.safeParse(185).success).toBe(false);
+    expect(LongitudeSchema.safeParse(112.0454).success).toBe(true);
   });
 });

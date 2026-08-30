@@ -1,11 +1,24 @@
+import type { ZodType } from 'zod';
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
+export class ApiValidationError extends Error {
+  constructor(
+    public readonly path: string,
+    public readonly issues: unknown,
+    message?: string
+  ) {
+    super(message || `API Schema Validation Failed for ${path}`);
+    this.name = 'ApiValidationError';
+  }
+}
 
 function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('rekakarbon_token');
 }
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+async function apiFetch<T>(path: string, options?: RequestInit, schema?: ZodType<T>): Promise<T> {
   const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -31,20 +44,35 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   const json = await res.json();
-  if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
-    return json.data as T;
+  const rawData =
+    json && typeof json === 'object' && 'success' in json && 'data' in json ? json.data : json;
+
+  if (schema) {
+    const result = schema.safeParse(rawData);
+    if (!result.success) {
+      if (import.meta.env.DEV) {
+        console.error(`[API Schema Error] ${path}:`, result.error.format());
+      }
+      throw new ApiValidationError(
+        path,
+        result.error.issues,
+        `Data validation failed for ${path}: ${result.error.issues[0]?.message || 'Invalid data schema'}`
+      );
+    }
+    return result.data;
   }
-  return json as T;
+
+  return rawData as T;
 }
 
 export const api = {
-  get: <T>(path: string) => apiFetch<T>(path, { method: 'GET' }),
-  post: <T>(path: string, body?: unknown) =>
-    apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }),
-  patch: <T>(path: string, body?: unknown) =>
-    apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
-  delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
-  upload: async <T>(path: string, formData: FormData): Promise<T> => {
+  get: <T>(path: string, schema?: ZodType<T>) => apiFetch<T>(path, { method: 'GET' }, schema),
+  post: <T>(path: string, body?: unknown, schema?: ZodType<T>) =>
+    apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }, schema),
+  patch: <T>(path: string, body?: unknown, schema?: ZodType<T>) =>
+    apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }, schema),
+  delete: <T>(path: string, schema?: ZodType<T>) => apiFetch<T>(path, { method: 'DELETE' }, schema),
+  upload: async <T>(path: string, formData: FormData, schema?: ZodType<T>): Promise<T> => {
     const token = getAuthToken();
     const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -62,9 +90,23 @@ export const api = {
       throw new Error(errorMessage);
     }
     const json = await res.json();
-    if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
-      return json.data as T;
+    const rawData =
+      json && typeof json === 'object' && 'success' in json && 'data' in json ? json.data : json;
+
+    if (schema) {
+      const result = schema.safeParse(rawData);
+      if (!result.success) {
+        if (import.meta.env.DEV) {
+          console.error(`[Upload Schema Error] ${path}:`, result.error.format());
+        }
+        throw new ApiValidationError(
+          path,
+          result.error.issues,
+          `Data validation failed for ${path}: ${result.error.issues[0]?.message || 'Invalid data schema'}`
+        );
+      }
+      return result.data;
     }
-    return json as T;
+    return rawData as T;
   },
 };

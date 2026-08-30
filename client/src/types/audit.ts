@@ -30,51 +30,70 @@ export interface AiAnomalyLog {
 }
 
 export interface SpatialSummary {
-  areaHectares: number;
-  totalTreeCount: number;
-  avgCanopyDensity: number;
-  estimatedBiomassTCO2e: number;
-  droneAuditCoveragePercent: number;
-  lastFlyoverDate: string;
+  totalAreaTerverifikasi?: string;
+  subArea?: string;
+  totalKreditKarbon?: string;
+  subKredit?: string;
+  blokadeAwan?: string;
+  subAwan?: string;
+  areaHectares?: number;
+  totalTreeCount?: number;
+  avgCanopyDensity?: number;
+  estimatedBiomassTCO2e?: number;
+  droneAuditCoveragePercent?: number;
+  lastFlyoverDate?: string;
 }
 
 export interface ConservationArea {
   id: string;
   name: string;
-  region: string;
-  hectares: number;
-  canopyDensityPercent: number;
-  estimatedCarbonTCO2e: number;
-  coordinates: [number, number];
+  location: string;
+  areaHectares: number;
+  ndvi: number;
+  evi: number;
+  carbonCredit: number;
+  cloudCover: string;
+  status: string;
+  statusLabel: string;
+  coordinates: any;
 }
 
 export interface DroneScan {
   id: string;
   date: string;
   location: string;
-  areaCoveredHa: number;
-  resolutionGSD: string;
-  chmDensityPercent: number;
-  biomassEstimateTCO2e: number;
-  operator: string;
+  avgHeightMeters: number;
   status: string;
+  areaCoveredHa?: number;
+  resolutionGSD?: string;
+  chmDensityPercent?: number;
+  biomassEstimateTCO2e?: number;
+  operator?: string;
 }
 
 export interface KthPolygon {
   id: string;
-  kthName: string;
-  areaHa: number;
-  color: string;
-  coordinates: Array<[number, number]>;
+  name: string;
+  areaHectares: number;
+  estimatedCO2e: number;
+  status: string;
+  kthName?: string;
+  areaHa?: number;
+  color?: string;
+  coordinates?: any;
 }
 
 export interface KthLog {
   id: string;
-  timestamp: string;
-  kthName: string;
-  action: string;
-  detail: string;
-  status: string;
+  date: string;
+  type: string;
+  desc: string;
+  verified: boolean;
+  timestamp?: string;
+  kthName?: string;
+  action?: string;
+  detail?: string;
+  status?: string;
 }
 
 export interface MlAuditResult {

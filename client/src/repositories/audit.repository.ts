@@ -5,67 +5,98 @@ import type {
   AiAnomalyLog,
   MlAuditResult,
   AuditEmissionReportParams,
+  SpatialSummary,
+  ConservationArea,
+  DroneScan,
+  KthPolygon,
+  KthLog,
 } from '../types';
+import {
+  AiAnomalyLogSchema,
+  AnomalySummarySchema,
+  EnergyCorrelationItemSchema,
+  SpatialSummarySchema,
+  ConservationAreaSchema,
+  DroneScanSchema,
+  KthPolygonSchema,
+  KthLogSchema,
+  MlAuditResultSchema,
+} from '../schemas';
+import { z } from 'zod';
 
 export interface AuditRepository {
   getAiAnomalyLogs(): Promise<AiAnomalyLog[]>;
   getAnomalySummary(): Promise<AnomalySummary>;
   getEnergyCorrelationData(): Promise<EnergyCorrelationItem[]>;
   verifyAnomalyRecord(id: string): Promise<{ success: boolean; id: string }>;
-  getSpatialSummary(): Promise<any>;
-  getConservationAreas(): Promise<any[]>;
+  getSpatialSummary(): Promise<SpatialSummary>;
+  getConservationAreas(): Promise<ConservationArea[]>;
   getDroneArchive(): Promise<any>;
   getDroneSchedules(): Promise<any>;
   getCertificationPreview(): Promise<any>;
   authorizeMintingCredit(data: any): Promise<{ success: boolean; txHash: string }>;
-  getDroneScans(): Promise<any[]>;
-  getKthPolygons(): Promise<any[]>;
-  getKthLogs(): Promise<any[]>;
+  getDroneScans(): Promise<DroneScan[]>;
+  getKthPolygons(): Promise<KthPolygon[]>;
+  getKthLogs(): Promise<KthLog[]>;
   evaluateEmissionReport(params: AuditEmissionReportParams): Promise<MlAuditResult>;
 }
 
 export class ApiAuditRepository implements AuditRepository {
-  async getAiAnomalyLogs() {
-    return api.get<AiAnomalyLog[]>('/audit/anomaly-logs');
+  async getAiAnomalyLogs(): Promise<AiAnomalyLog[]> {
+    return api.get<AiAnomalyLog[]>('/audit/anomaly-logs', z.array(AiAnomalyLogSchema));
   }
-  async getAnomalySummary() {
-    return api.get<AnomalySummary>('/audit/anomaly-summary');
+  async getAnomalySummary(): Promise<AnomalySummary> {
+    return api.get<AnomalySummary>('/audit/anomaly-summary', AnomalySummarySchema);
   }
-  async getEnergyCorrelationData() {
-    return api.get<EnergyCorrelationItem[]>('/audit/energy-correlation');
+  async getEnergyCorrelationData(): Promise<EnergyCorrelationItem[]> {
+    return api.get<EnergyCorrelationItem[]>(
+      '/audit/energy-correlation',
+      z.array(EnergyCorrelationItemSchema)
+    );
   }
-  async verifyAnomalyRecord(id: string) {
-    return api.post<{ success: boolean; id: string }>(`/audit/verify/${id}`, {});
+  async verifyAnomalyRecord(id: string): Promise<{ success: boolean; id: string }> {
+    return api.post<{ success: boolean; id: string }>(
+      `/audit/verify/${id}`,
+      {},
+      z.object({ success: z.boolean(), id: z.string() })
+    );
   }
-  async getSpatialSummary() {
-    return api.get<any>('/audit/spatial-summary');
+  async getSpatialSummary(): Promise<SpatialSummary> {
+    return api.get<SpatialSummary>('/audit/spatial-summary', SpatialSummarySchema);
   }
-  async getConservationAreas() {
-    return api.get<any[]>('/audit/conservation-areas');
+  async getConservationAreas(): Promise<ConservationArea[]> {
+    return api.get<ConservationArea[]>(
+      '/audit/conservation-areas',
+      z.array(ConservationAreaSchema)
+    );
   }
-  async getDroneArchive() {
+  async getDroneArchive(): Promise<any> {
     return api.get<any>('/audit/drone-archive');
   }
-  async getDroneSchedules() {
+  async getDroneSchedules(): Promise<any> {
     return api.get<any>('/audit/drone-schedules');
   }
-  async getCertificationPreview() {
+  async getCertificationPreview(): Promise<any> {
     return api.get<any>('/audit/certification-preview');
   }
-  async authorizeMintingCredit(data: any) {
-    return api.post<{ success: boolean; txHash: string }>('/audit/authorize-minting', data);
+  async authorizeMintingCredit(data: any): Promise<{ success: boolean; txHash: string }> {
+    return api.post<{ success: boolean; txHash: string }>(
+      '/audit/authorize-minting',
+      data,
+      z.object({ success: z.boolean(), txHash: z.string() })
+    );
   }
-  async getDroneScans() {
-    return api.get<any[]>('/audit/drone-scans');
+  async getDroneScans(): Promise<DroneScan[]> {
+    return api.get<DroneScan[]>('/audit/drone-scans', z.array(DroneScanSchema));
   }
-  async getKthPolygons() {
-    return api.get<any[]>('/audit/kth-polygons');
+  async getKthPolygons(): Promise<KthPolygon[]> {
+    return api.get<KthPolygon[]>('/audit/kth-polygons', z.array(KthPolygonSchema));
   }
-  async getKthLogs() {
-    return api.get<any[]>('/audit/kth-logs');
+  async getKthLogs(): Promise<KthLog[]> {
+    return api.get<KthLog[]>('/audit/kth-logs', z.array(KthLogSchema));
   }
-  async evaluateEmissionReport(params: AuditEmissionReportParams) {
-    return api.post<MlAuditResult>('/audit/evaluate-emission', params);
+  async evaluateEmissionReport(params: AuditEmissionReportParams): Promise<MlAuditResult> {
+    return api.post<MlAuditResult>('/audit/evaluate-emission', params, MlAuditResultSchema);
   }
 }
 
