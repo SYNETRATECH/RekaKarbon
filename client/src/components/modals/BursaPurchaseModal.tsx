@@ -1,26 +1,47 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatCurrency, formatCarbon } from '@/lib/formatters';
-import { PieChart, ShoppingCart } from 'lucide-react';
+import { Activity, AlertTriangle, PieChart, ShoppingCart } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { bursaRepository } from '../../repositories';
-import { Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { BursaItem } from '@/types';
 
 interface BursaPurchaseModalProps {
-  token: any | null;
+  token: BursaItem | null;
+  deficitTCO2e: number | null;
   onClose: () => void;
 }
 
-export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModalProps) {
-  const [buyQuantity, setBuyQuantity] = useState<number>(1250);
+export default function BursaPurchaseModal({
+  token,
+  deficitTCO2e,
+  onClose,
+}: BursaPurchaseModalProps) {
+  const [buyQuantity, setBuyQuantity] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
+  const availableTCO2e = token?.volumeAvailableTCO2e ?? 0;
+  const maxPurchaseTCO2e =
+    deficitTCO2e === null ? 0 : Math.min(Math.max(0, deficitTCO2e), availableTCO2e);
+
+  useEffect(() => {
+    if (!token) {
+      setBuyQuantity(0);
+      return;
+    }
+    setBuyQuantity(maxPurchaseTCO2e);
+  }, [maxPurchaseTCO2e, token]);
+
   if (!token) return null;
 
+  const isPurchaseDisabled = isSubmitting || buyQuantity <= 0 || buyQuantity > maxPurchaseTCO2e;
+
   const handlePurchase = async () => {
+    if (isPurchaseDisabled) return;
+
     setIsSubmitting(true);
     try {
       // Pass the UUID directly to the repository
@@ -50,8 +71,7 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
   };
 
   // Calculation Logic (3% Fee vs 97% Project Fund allocated to 5 environmental funds)
-  const pricePerTon = token.priceIDR || 260000;
-  const totalAmountIDR = buyQuantity * pricePerTon;
+  const totalAmountIDR = buyQuantity * token.pricePerTonIDR;
   const platformFeeIDR = totalAmountIDR * 0.03;
   const projectFundIDR = totalAmountIDR * 0.97;
 
@@ -78,18 +98,44 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
             <label className="font-bold text-slate-700">Jumlah Pembelian Token (tCO₂e):</label>
             <Input
               type="number"
-              max={token.volumeAvailableTco2e || 100000}
+              min={0}
+              max={maxPurchaseTCO2e}
+              step="0.1"
               value={buyQuantity}
-              onChange={(e) =>
+              onChange={(e) => {
+                const nextValue = Number(e.target.value);
                 setBuyQuantity(
-                  Math.min(token.volumeAvailableTco2e || 100000, Number(e.target.value))
-                )
-              }
+                  Number.isFinite(nextValue)
+                    ? Math.min(Math.max(0, nextValue), maxPurchaseTCO2e)
+                    : 0
+                );
+              }}
               className="font-mono text-xs rounded-xl"
             />
             <span className="text-[9px] text-slate-500 font-bold block">
-              Tersedia: {formatCarbon(token.volumeAvailableTco2e || 0)} tCO₂e di pasaran
+              Pasokan listing: {formatCarbon(availableTCO2e)}. Batas sesuai defisit:{' '}
+              {deficitTCO2e === null ? 'PTBAE-PU belum tersedia' : formatCarbon(deficitTCO2e)}.
             </span>
+            {deficitTCO2e === null ? (
+              <span className="text-[9px] text-amber-700 font-bold block">
+                Nilai pembelian belum dapat ditentukan tanpa PTBAE-PU resmi.
+              </span>
+            ) : (
+              <span className="text-[9px] text-emerald-700 font-bold block">
+                Nilai otomatis diisi sebesar {formatCarbon(maxPurchaseTCO2e)}.
+              </span>
+            )}
+            {deficitTCO2e !== null && deficitTCO2e > availableTCO2e && (
+              <span className="text-[9px] text-amber-700 font-bold block">
+                Pasokan listing ini belum mencukupi seluruh defisit.
+              </span>
+            )}
+            {deficitTCO2e !== null && maxPurchaseTCO2e <= 0 && (
+              <span className="text-[9px] text-status-danger-fg font-bold flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" /> Tidak ada volume yang dapat dibeli untuk
+                pelunasan.
+              </span>
+            )}
           </div>
 
           {/* PANEL TRANSPARANSI ALOKASI DANA (3% FEE vs 97% PROJECT FUND DIKURS KE 5 POS) */}
@@ -167,7 +213,7 @@ export default function BursaPurchaseModal({ token, onClose }: BursaPurchaseModa
 
         <Button
           onClick={handlePurchase}
-          disabled={isSubmitting}
+          disabled={isPurchaseDisabled}
           className="w-full bg-primary-gradient text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md cursor-pointer active:scale-95 flex items-center justify-center gap-2 h-11 transition-all"
         >
           {isSubmitting ? (

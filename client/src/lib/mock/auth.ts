@@ -34,6 +34,17 @@ export const mockUsers: Record<string, User> = {
     avatar: 'LV',
     token: 'mock-jwt-vch-auditor-token-44819',
   },
+  ministry: {
+    id: 'c0a80001-0001-4000-8000-000000000005',
+    email: 'kementerian@rekakarbon.go.id',
+    password: 'password123',
+    name: 'Direktorat Penetapan PTBAE-PU',
+    role: 'ministry',
+    roleTitle: 'Pejabat Penetapan PTBAE-PU',
+    agency: 'Kementerian Lingkungan Hidup dan Kehutanan',
+    avatar: 'KP',
+    token: 'mock-jwt-vch-ministry-token-55220',
+  },
   kth: {
     id: 'c0a80001-0001-4000-8000-000000000004',
     email: 'sutrisno@kthbaluran.org',

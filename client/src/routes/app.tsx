@@ -1,6 +1,6 @@
-import { redirect } from 'react-router';
+import { redirect, useLoaderData } from 'react-router';
 import { authRepository } from '../repositories';
-import { useAuthStore } from '../store/useAuthStore';
+import { isClientUserRole, useAuthStore, type ClientUserRole } from '../store/useAuthStore';
 import PortalLayout from '@/components/layout/PortalLayout';
 
 /**
@@ -15,8 +15,11 @@ export async function clientLoader() {
     throw redirect('/login');
   }
 
+  const normalizedRole = user.role.toLowerCase();
+  const role: ClientUserRole = isClientUserRole(normalizedRole) ? normalizedRole : 'emitter';
+
   useAuthStore.setState({
-    userRole: user.role as any,
+    userRole: role,
     userProfile: {
       name: user.name,
       roleTitle: user.roleTitle,
@@ -25,7 +28,7 @@ export async function clientLoader() {
     },
   });
 
-  return { user };
+  return { user, role };
 }
 
 // Required for prerendered routes: forces clientLoader to run after hydration
@@ -40,5 +43,7 @@ export function HydrateFallback() {
 }
 
 export default function AppLayoutRoute() {
-  return <PortalLayout />;
+  const { role } = useLoaderData<typeof clientLoader>();
+
+  return <PortalLayout authenticatedRole={role} />;
 }

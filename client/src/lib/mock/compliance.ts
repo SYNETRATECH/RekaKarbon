@@ -1,12 +1,15 @@
 import type { ComplianceData } from '../../types';
 
 export const COMPLIANCE_DATA: ComplianceData = {
+  complianceYear: 2026,
   emissionVsQuotaPercent: 118.6,
   emissionIntensity: 0.118,
   emissionIntensityStandard: 0.1,
   carbonDeficit: 2330,
   actualEmissions: 14830,
   quotaPTBAE: 12500,
+  quotaPTBAEStatus: 'VERIFIED',
+  quotaPTBAESourceDocument: 'SK Penetapan PTBAE-PU 2026',
   governedBy: 'UU 7/2021 & Permen LHK 21/22',
   administrativeSanction: 'Peringatan & Pembekuan Kuota',
   djpReportStatus: 'Draft e-Faktur Belum Terbit',

@@ -3,7 +3,7 @@ import type { ComplianceData } from '../types';
 import { COMPLIANCE_DATA } from '../lib/mock/compliance';
 
 export class MockComplianceRepository implements ComplianceRepository {
-  async getComplianceData(): Promise<ComplianceData> {
+  async getComplianceData(_year?: number): Promise<ComplianceData> {
     return COMPLIANCE_DATA;
   }
 }

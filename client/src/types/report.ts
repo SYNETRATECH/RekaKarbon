@@ -1,3 +1,5 @@
+import type { PtbaeQuotaStatus } from './compliance';
+
 export interface SectorBreakdown {
   id: string;
   name: string; // e.g. "Scope 1 - Pembakaran Langsung"
@@ -39,6 +41,9 @@ export interface EmissionReport {
   blockchainTxHash?: string | null;
   blockchainReportId?: number | null;
   merkleRoot?: string | null;
+  quotaPTBAETCO2e?: number | null;
+  quotaPTBAEStatus?: PtbaeQuotaStatus;
+  quotaPTBAESourceDocument?: string | null;
   method?: 'UPLOAD' | 'CALCULATOR';
   sectorId?: string | null;
 }

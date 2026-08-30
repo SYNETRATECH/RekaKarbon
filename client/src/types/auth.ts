@@ -17,6 +17,15 @@ export interface AuthCredentials {
   role?: string;
 }
 
+export interface RegistrationData {
+  email?: string;
+  identity?: string;
+  name?: string;
+  fullName?: string;
+  password?: string;
+  role?: string;
+}
+
 export interface AuthResponse {
   user: User;
   token: string;

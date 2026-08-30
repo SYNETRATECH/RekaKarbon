@@ -621,7 +621,7 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
     doc.setFontSize(8);
     doc.setFont('times', 'bold');
     doc.setTextColor(...SLATE_500);
-    doc.text(`Batas Maksimal Sektor: ${formatPdfCarbon(thresholdTCO2e)}`, marginX, y);
+    doc.text(`Ambang Referensi Sektor (Simulasi): ${formatPdfCarbon(thresholdTCO2e)}`, marginX, y);
     y += 4;
 
     // Background bar
@@ -644,7 +644,7 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
       doc.setFontSize(8);
       doc.setFont('times', 'bolditalic');
       doc.setTextColor(...RED_600);
-      doc.text('[PERINGATAN] Emisi Anda melebihi batas threshold sektor ini!', marginX, y);
+      doc.text('[PERINGATAN] Emisi melebihi ambang referensi simulasi sektor ini.', marginX, y);
       y += 6;
     }
     y += 4;

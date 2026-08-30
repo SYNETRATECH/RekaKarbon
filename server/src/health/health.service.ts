@@ -41,23 +41,12 @@ export class HealthService {
   }
 
   getBlockchainHealth() {
-    try {
-      if (this.blockchainService) {
-        return Promise.resolve({
-          status: 'ready',
-          network: 'Hyperledger Besu / EVM Private Network',
-          chainId: 1337,
+    return this.blockchainService
+      ? this.blockchainService.getHealth()
+      : Promise.resolve({
+          status: 'unconfigured' as const,
+          network: 'Besu Network Standby',
+          reason: 'Blockchain service is not registered.',
         });
-      }
-      return Promise.resolve({
-        status: 'unconfigured',
-        network: 'Besu Network Standby',
-      });
-    } catch {
-      return Promise.resolve({
-        status: 'offline',
-        network: 'EVM RPC Node Unreachable',
-      });
-    }
   }
 }

@@ -40,7 +40,7 @@ export default function PublicReportModal({
 
     projects.forEach((p) => {
       const buyers = p.tokenBuyers
-        ? p.tokenBuyers.map((b: any) => `${b.companyName} (${b.tCO2e} tCO₂e)`).join('; ')
+        ? p.tokenBuyers.map((b) => `${b.companyName} (${b.tCO2e} tCO₂e)`).join('; ')
         : 'Belum ada';
       csvContent += `Proyek Kehutanan,"${p.name}","${p.region}","${formatArea(p.rawAreaVal || p.area)}","${formatCarbon(p.rawCarbonVal || p.carbon)}","${p.reforestationStatus}","${buyers}","${p.tokenBuyers?.[0]?.speCertificateId || '-'}"\n`;
     });
@@ -246,7 +246,7 @@ export default function PublicReportModal({
                       <TableCell>
                         {p.tokenBuyers && p.tokenBuyers.length > 0 ? (
                           <div className="space-y-1">
-                            {p.tokenBuyers.map((tb: any) => (
+                            {p.tokenBuyers.map((tb) => (
                               <div key={tb.id} className="font-mono text-[9px] text-slate-800">
                                 <span className="font-bold text-slate-900">{tb.companyName}</span> (
                                 {tb.tCO2e.toLocaleString('id-ID')} tCO₂e)

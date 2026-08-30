@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouteLoaderData, useNavigate } from 'react-router';
+import type { clientLoader as dashboardClientLoader } from '../dashboard';
 import { formatCurrency } from '@/lib/formatters';
 import PublicReportModal from '../../components/modals/PublicReportModal';
 import { CheckCircle2, AlertTriangle, Info, ShoppingCart } from 'lucide-react';
@@ -24,7 +25,7 @@ export function meta() {
 export default function EmitterDashboard() {
   const navigate = useNavigate();
   // Get data from the parent dashboard route's clientLoader
-  const loaderData = useRouteLoaderData('routes/dashboard') as any;
+  const loaderData = useRouteLoaderData<typeof dashboardClientLoader>('routes/dashboard');
   const complianceData = loaderData?.complianceData ?? null;
   const projects = loaderData?.projects ?? [];
   const companies = loaderData?.companies ?? [];
@@ -49,6 +50,11 @@ export default function EmitterDashboard() {
 
   const deficitAmount = data?.carbonDeficit ?? 0;
   const hasDeficit = deficitAmount > 0;
+  const isQuotaUnavailable = data.carbonDeficit === null || data.quotaPTBAE === null;
+  const quotaProgressPercent =
+    data.quotaPTBAE !== null && data.quotaPTBAE > 0
+      ? Math.min((data.actualEmissions / data.quotaPTBAE) * 100, 100)
+      : 0;
   const remainingDays = hasDeficit ? remainingDaysCalculated : 0;
   const annualChartData = data?.annualHistory ?? [];
 
@@ -75,7 +81,7 @@ export default function EmitterDashboard() {
             </span>
             <div className="flex items-baseline gap-1.5">
               <h3
-                className={`text-3xl font-black ${hasDeficit ? 'text-amber-500' : 'text-emerald-600'}`}
+                className={`text-3xl font-black ${isQuotaUnavailable || hasDeficit ? 'text-amber-500' : 'text-emerald-600'}`}
               >
                 {data.emissionIntensity}
               </h3>
@@ -85,9 +91,11 @@ export default function EmitterDashboard() {
               standar industri: {data.emissionIntensityStandard} tCO₂e/ton
             </span>
           </div>
-          {hasDeficit ? (
+          {hasDeficit || isQuotaUnavailable ? (
             <div className="w-8 h-8 rounded-full bg-status-danger-bg flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-4.5 h-4.5 text-status-danger-fg" />
+              <AlertTriangle
+                className={`w-4.5 h-4.5 ${isQuotaUnavailable ? 'text-amber-600' : 'text-status-danger-fg'}`}
+              />
             </div>
           ) : (
             <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
@@ -104,21 +112,31 @@ export default function EmitterDashboard() {
             </span>
             <div className="flex items-baseline gap-1.5">
               <h3
-                className={`text-3xl font-black ${hasDeficit ? 'text-status-danger-fg' : 'text-emerald-600'}`}
+                className={`text-3xl font-black ${isQuotaUnavailable ? 'text-amber-500' : hasDeficit ? 'text-status-danger-fg' : 'text-emerald-600'}`}
               >
-                {hasDeficit ? data.carbonDeficit.toLocaleString('id-ID') : '0'}
+                {isQuotaUnavailable
+                  ? 'Belum tersedia'
+                  : hasDeficit
+                    ? deficitAmount.toLocaleString('id-ID')
+                    : '0'}
               </h3>
               <span className="text-xs font-extrabold text-slate-500">tCO₂e</span>
             </div>
             <span
               className={`text-[11px] font-bold block ${hasDeficit ? 'text-status-danger-fg' : 'text-emerald-500'}`}
             >
-              {hasDeficit ? 'perlu pelunasan offset' : 'kuota mencukupi / patuh'}
+              {isQuotaUnavailable
+                ? 'menunggu PTBAE-PU'
+                : hasDeficit
+                  ? 'perlu pelunasan offset'
+                  : 'kuota mencukupi / patuh'}
             </span>
           </div>
-          {hasDeficit ? (
+          {hasDeficit || isQuotaUnavailable ? (
             <div className="w-8 h-8 rounded-full bg-status-danger-bg flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-4.5 h-4.5 text-status-danger-fg" />
+              <AlertTriangle
+                className={`w-4.5 h-4.5 ${isQuotaUnavailable ? 'text-amber-600' : 'text-status-danger-fg'}`}
+              />
             </div>
           ) : (
             <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
@@ -137,7 +155,11 @@ export default function EmitterDashboard() {
               <h3 className="text-3xl font-black text-slate-800">{remainingDays}</h3>
             </div>
             <span className="text-[11px] font-bold text-slate-400 block">
-              {hasDeficit ? `hingga 31 Des ${currentYear}` : 'Kepatuhan Terpenuhi'}
+              {isQuotaUnavailable
+                ? 'Menunggu PTBAE-PU'
+                : hasDeficit
+                  ? `hingga 31 Des ${currentYear}`
+                  : 'Kepatuhan Terpenuhi'}
             </span>
           </div>
         </Card>
@@ -185,13 +207,25 @@ export default function EmitterDashboard() {
                     Kuota PTBAE-PU
                   </span>
                   <p className="text-2xl font-black text-slate-800 mt-1">
-                    {data.quotaPTBAE.toLocaleString('id-ID')}{' '}
-                    <span className="text-xs font-bold text-slate-500">tCO₂e</span>
+                    {data.quotaPTBAE === null ? (
+                      'Belum tersedia'
+                    ) : (
+                      <>
+                        {data.quotaPTBAE.toLocaleString('id-ID')}{' '}
+                        <span className="text-xs font-bold text-slate-500">tCO₂e</span>
+                      </>
+                    )}
                   </p>
                 </div>
                 <div className="text-[10px] font-semibold text-slate-500 flex items-center gap-1 mt-2">
                   <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>Ketentuan pemerintah & perusahaan</span>
+                  <span>
+                    {data.quotaPTBAEStatus === 'LEGACY'
+                      ? 'Data legacy, menunggu dokumen resmi'
+                      : data.quotaPTBAEStatus === 'UNAVAILABLE'
+                        ? 'PTBAE-PU belum tersedia'
+                        : 'Ketentuan pemerintah & perusahaan'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -201,17 +235,21 @@ export default function EmitterDashboard() {
           <div className="space-y-2 pt-4 border-t border-slate-200/80">
             <div className="flex justify-between text-[10px] font-extrabold text-slate-400">
               <span>0 tCO₂e</span>
-              <span>Kuota: {data.quotaPTBAE.toLocaleString('id-ID')} tCO₂e</span>
+              <span>
+                Kuota:{' '}
+                {data.quotaPTBAE === null
+                  ? 'Belum tersedia'
+                  : `${data.quotaPTBAE.toLocaleString('id-ID')} tCO₂e`}
+              </span>
             </div>
             <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200">
               <div
                 className="h-full bg-emerald-500 rounded-l-full"
-                style={{ width: '81.4%' }}
+                style={{ width: `${quotaProgressPercent}%` }}
               ></div>
-              <div
-                className="absolute right-0 top-0 bottom-0 bg-status-danger-fg rounded-r-full"
-                style={{ width: '18.6%' }}
-              ></div>
+              {data.quotaPTBAE !== null && data.actualEmissions > data.quotaPTBAE && (
+                <div className="absolute right-0 top-0 bottom-0 bg-status-danger-fg rounded-r-full" />
+              )}
             </div>
           </div>
         </div>
@@ -233,6 +271,11 @@ export default function EmitterDashboard() {
                   <AlertTriangle className="w-4 h-4 text-status-danger-fg" />
                   TIDAK PATUH
                 </span>
+              ) : isQuotaUnavailable ? (
+                <span className="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 shadow-2xs shrink-0">
+                  <Info className="w-4 h-4 text-amber-600" />
+                  MENUNGGU PTBAE
+                </span>
               ) : (
                 <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 shadow-2xs shrink-0">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -244,7 +287,9 @@ export default function EmitterDashboard() {
             <p className="text-[11px] text-slate-500 font-medium leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200 mt-1">
               {hasDeficit
                 ? 'Emisi melebihi kuota PTBAE-PU. Segera lakukan pelunasan token karbon.'
-                : 'Emisi industri berada dalam batas aman kuota PTBAE-PU.'}
+                : isQuotaUnavailable
+                  ? 'Status kepatuhan belum dapat dinilai karena PTBAE-PU belum tersedia.'
+                  : 'Emisi industri berada dalam batas aman kuota PTBAE-PU.'}
             </p>
           </div>
 

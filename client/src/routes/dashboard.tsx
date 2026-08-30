@@ -7,14 +7,16 @@ import {
   auditRepository,
   regulatorRepository,
   projectRepository,
+  companyRepository,
 } from '../repositories';
-import { useAuthStore } from '../store/useAuthStore';
+import { isClientUserRole, type ClientUserRole } from '../store/useAuthStore';
 import { RouteSkeletonLoader } from '../components/ui/RouteSkeletonLoader';
 
 const EmitterDashboard = lazy(() => import('./emitter/dashboard'));
 const RegulatorDashboard = lazy(() => import('./regulator/dashboard'));
 const AuditorDashboard = lazy(() => import('./auditor/dashboard'));
 const KTHDashboard = lazy(() => import('./kth/dashboard'));
+const MinistryDashboard = lazy(() => import('./ministry/dashboard'));
 
 const ViewLoader = () => (
   <div className="flex h-64 items-center justify-center text-xs font-bold text-slate-400 animate-pulse">
@@ -33,14 +35,17 @@ export async function clientLoader() {
     throw redirect('/login');
   }
 
-  const role = typeof user.role === 'string' ? (user.role.toLowerCase() as any) : null;
+  const normalizedRole = user.role.toLowerCase();
+  const role: ClientUserRole | null = isClientUserRole(normalizedRole) ? normalizedRole : null;
 
   if (role === 'emitter' || role === 'buyer') {
-    const [complianceData, emissionReports] = await Promise.all([
+    const [complianceData, emissionReports, projects, companies] = await Promise.all([
       complianceRepository.getComplianceData().catch(() => null),
       reportRepository.getEmissionReports().catch(() => []),
+      projectRepository.getProjects().catch(() => []),
+      companyRepository.getCompanies().catch(() => []),
     ]);
-    return { role, complianceData, emissionReports };
+    return { role, complianceData, emissionReports, projects, companies };
   } else if (role === 'regulator' || role === 'admin' || role === 'superadmin') {
     const [forestProjects, nationalForestRegions, kthGroups] = await Promise.all([
       regulatorRepository.getForestProjects().catch(() => []),
@@ -87,9 +92,8 @@ export function meta() {
 }
 
 export default function DashboardRoute() {
-  const { userRole } = useAuthStore();
   const loaderData = useLoaderData<typeof clientLoader>();
-  const currentRole = userRole || (loaderData as any)?.role;
+  const currentRole = loaderData.role;
 
   // Defensive: if role is somehow null after the loader chain, render nothing.
   // The app.tsx clientLoader should have already redirected to /login.
@@ -107,6 +111,8 @@ export default function DashboardRoute() {
         return <AuditorDashboard />;
       case 'kth':
         return <KTHDashboard />;
+      case 'ministry':
+        return <MinistryDashboard />;
       case 'emitter':
       case 'buyer':
       default:

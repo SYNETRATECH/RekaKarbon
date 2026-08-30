@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useState, useMemo, useEffect } from 'react';
+import { useLoaderData, useNavigate, useSearchParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -37,10 +37,17 @@ import {
   Plane,
 } from 'lucide-react';
 import { formatCarbon } from '@/lib/formatters';
-import { reportRepository } from '../../repositories';
+import { complianceRepository, reportRepository } from '../../repositories';
 import { generateEmissionReportPDF } from '@/lib/generateEmissionReportPDF';
 import { useToast } from '@/hooks/use-toast';
 import type { CalculationData, CalculatorReportSubmission } from '@/types';
+import { SECTOR_REFERENCE_THRESHOLDS_TCO2E } from '@/lib/emission-thresholds';
+
+export async function clientLoader() {
+  return complianceRepository.getComplianceData().catch(() => null);
+}
+
+clientLoader.hydrate = true as const;
 
 // ─── Constants & Emission Factors (DEFRA 2023 Standard) ────────────────
 const EMISSION_FACTORS: Record<string, number> = {
@@ -249,7 +256,7 @@ interface SectorDef {
   id: string;
   name: string;
   description: string;
-  thresholdTCO2e: number;
+  referenceThresholdTCO2e: number;
 }
 
 const SECTORS: SectorDef[] = [
@@ -257,37 +264,37 @@ const SECTORS: SectorDef[] = [
     id: 'manufaktur',
     name: 'Manufaktur & Industri',
     description: 'Pabrik, pengolahan, dan produksi barang',
-    thresholdTCO2e: 50000,
+    referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.manufaktur,
   },
   {
     id: 'pertambangan',
     name: 'Pertambangan & Energi',
     description: 'Pertambangan mineral, batu bara, minyak & gas',
-    thresholdTCO2e: 100000,
+    referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.pertambangan,
   },
   {
     id: 'perbankan',
     name: 'Perbankan & Jasa Keuangan',
     description: 'Bank, asuransi, fintech, sekuritas',
-    thresholdTCO2e: 5000,
+    referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.perbankan,
   },
   {
     id: 'konstruksi',
     name: 'Konstruksi & Properti',
     description: 'Kontraktor, pengembang, infrastruktur',
-    thresholdTCO2e: 25000,
+    referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.konstruksi,
   },
   {
     id: 'pertanian',
     name: 'Pertanian & Perkebunan',
     description: 'Sawah, kebun sawit, peternakan, perikanan',
-    thresholdTCO2e: 15000,
+    referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.pertanian,
   },
   {
     id: 'perhotelan',
     name: 'Perhotelan & Pariwisata',
     description: 'Hotel, resort, restoran, wisata',
-    thresholdTCO2e: 10000,
+    referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.perhotelan,
   },
 ];
 
@@ -326,6 +333,7 @@ export function meta() {
 // ─── Page Component ──────────────────────────────────────────────────
 export default function KalkulatorHijauPage() {
   const navigate = useNavigate();
+  const complianceData = useLoaderData<typeof clientLoader>();
   const [searchParams] = useSearchParams();
   const sectorFromUrl = searchParams.get('sector');
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(sectorFromUrl);
@@ -336,6 +344,8 @@ export default function KalkulatorHijauPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [generatedPdfData, setGeneratedPdfData] = useState<CalculatorReportSubmission | null>(null);
+  const [selectedComplianceData, setSelectedComplianceData] = useState(complianceData);
+  const [isQuotaLoading, setIsQuotaLoading] = useState(false);
   const { toast } = useToast();
 
   const selectedSector = useMemo(
@@ -345,6 +355,46 @@ export default function KalkulatorHijauPage() {
 
   const categories = UNIVERSAL_CATEGORIES;
   const activeCategory = categories[activeCategoryIdx] ?? null;
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (complianceData?.complianceYear === selectedYear) {
+      setSelectedComplianceData(complianceData);
+      setIsQuotaLoading(false);
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    setSelectedComplianceData(null);
+    setIsQuotaLoading(true);
+
+    void complianceRepository
+      .getComplianceData(selectedYear)
+      .then((data) => {
+        if (!isCancelled && data.complianceYear === selectedYear) {
+          setSelectedComplianceData(data);
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          setSelectedComplianceData(null);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsQuotaLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [complianceData, selectedYear]);
+
+  const hasMatchingQuota = selectedComplianceData?.complianceYear === selectedYear;
+  const officialQuotaTCO2e = hasMatchingQuota ? selectedComplianceData.quotaPTBAE : null;
 
   // Reset form when sector changes
   const handleSectorChange = (sectorId: string) => {
@@ -438,7 +488,7 @@ export default function KalkulatorHijauPage() {
         merkleRoot: generatedPdfData?.merkleRoot || '-',
         txHash: generatedPdfData?.txHash,
         blockchainReportId: generatedPdfData?.blockchainReportId,
-        thresholdTCO2e: selectedSector?.thresholdTCO2e,
+        thresholdTCO2e: selectedSector?.referenceThresholdTCO2e,
         fieldValues: values,
       });
     } catch (err) {
@@ -596,6 +646,38 @@ export default function KalkulatorHijauPage() {
         </div>
       </div>
 
+      <div className="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-extrabold text-emerald-950">
+              PTBAE-PU Perusahaan Tahun {selectedYear}
+            </h3>
+            <p className="text-[10px] text-emerald-800/80 font-semibold mt-1">
+              Kuota resmi perusahaan digunakan untuk menghitung defisit di Laporan dan Bursa.
+            </p>
+          </div>
+          <span className="text-base font-black text-emerald-900 font-mono">
+            {isQuotaLoading
+              ? 'Memuat...'
+              : officialQuotaTCO2e === null
+                ? 'Belum tersedia'
+                : `${formatCarbon(officialQuotaTCO2e)}`}
+          </span>
+        </div>
+        {hasMatchingQuota && selectedComplianceData.quotaPTBAEStatus === 'LEGACY' && (
+          <p className="text-[10px] text-amber-700 font-semibold mt-3">
+            Data saat ini masih kompatibilitas legacy. Ambang referensi sektor di bawah bukan
+            pengganti PTBAE-PU resmi.
+          </p>
+        )}
+        {!isQuotaLoading && !hasMatchingQuota && (
+          <p className="text-[10px] text-amber-700 font-semibold mt-3">
+            Belum ada alokasi PTBAE-PU untuk tahun yang dipilih. Nilai ambang sektor hanya untuk
+            simulasi dan tidak menjadi dasar pembelian Bursa.
+          </p>
+        )}
+      </div>
+
       {/* ── Main Form (only shown when sector selected) ────────── */}
       {selectedSector && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden flex flex-col md:flex-row">
@@ -751,23 +833,23 @@ export default function KalkulatorHijauPage() {
               <div className="mt-4 pt-4 border-t border-slate-100">
                 <div className="flex justify-between items-end mb-1">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                    Batas Maksimal Sektor {selectedSector.name}
+                    Ambang Referensi Sektor (Simulasi) {selectedSector.name}
                   </span>
                   <span className="text-xs font-black text-slate-700 font-mono">
-                    {formatCarbon(selectedSector.thresholdTCO2e)} tCO₂e
+                    {formatCarbon(selectedSector.referenceThresholdTCO2e)} tCO₂e
                   </span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${total > selectedSector.thresholdTCO2e ? 'bg-red-500' : 'bg-emerald-500'}`}
+                    className={`h-full rounded-full transition-all duration-500 ${total > selectedSector.referenceThresholdTCO2e ? 'bg-red-500' : 'bg-emerald-500'}`}
                     style={{
-                      width: `${Math.min((total / selectedSector.thresholdTCO2e) * 100, 100)}%`,
+                      width: `${Math.min((total / selectedSector.referenceThresholdTCO2e) * 100, 100)}%`,
                     }}
                   />
                 </div>
-                {total > selectedSector.thresholdTCO2e && (
+                {total > selectedSector.referenceThresholdTCO2e && (
                   <p className="text-[10px] font-bold text-red-600 mt-1.5 flex items-center gap-1">
-                    <Flame className="w-3 h-3" /> Emisi melebihi batas (threshold) sektor!
+                    <Flame className="w-3 h-3" /> Emisi melebihi ambang referensi simulasi sektor.
                   </p>
                 )}
               </div>

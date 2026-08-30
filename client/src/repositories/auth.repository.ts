@@ -1,10 +1,10 @@
 import { api } from '../lib/api';
-import type { User, AuthCredentials, AuthResponse } from '../types';
+import type { User, AuthCredentials, AuthResponse, RegistrationData } from '../types';
 import { AuthResponseSchema, UserSchema } from '../schemas';
 
 export interface AuthRepository {
   login(credentials: AuthCredentials): Promise<AuthResponse>;
-  register(data: any): Promise<AuthResponse>;
+  register(data: RegistrationData): Promise<AuthResponse>;
   getCurrentUser(): Promise<User | null>;
   logout(): Promise<{ success: boolean }>;
 }
@@ -19,7 +19,7 @@ export class ApiAuthRepository implements AuthRepository {
     return res;
   }
 
-  async register(data: any): Promise<AuthResponse> {
+  async register(data: RegistrationData): Promise<AuthResponse> {
     return api.post<AuthResponse>('/auth/register', data, AuthResponseSchema);
   }
 

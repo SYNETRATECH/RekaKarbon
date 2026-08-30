@@ -1,5 +1,5 @@
 import { useLocation, Outlet, Link } from 'react-router';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore, type ClientUserRole } from '@/store/useAuthStore';
 import PortalSidebar from './PortalSidebar';
 import LogoutDialog from '@/components/LogoutDialog';
 import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
@@ -9,15 +9,16 @@ import { Input } from '@/components/ui/input';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface PortalLayoutProps {
+  authenticatedRole: ClientUserRole;
   children?: React.ReactNode;
 }
 
-export default function PortalLayout({ children }: PortalLayoutProps) {
+export default function PortalLayout({ authenticatedRole, children }: PortalLayoutProps) {
   // User state and route authorization are guaranteed by app.tsx layout clientLoader before mounting.
-  const { userRole, userProfile } = useAuthStore();
+  const { userProfile } = useAuthStore();
   const location = useLocation();
 
-  const activeRole = userRole || 'emitter';
+  const activeRole = authenticatedRole;
   const activeTab = location.pathname.replace(/^\//, '') || 'dashboard';
 
   const getRoleHeaderTitle = (role: string) => {
@@ -31,6 +32,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         return 'Auditor Portal';
       case 'kth':
         return 'KTH Portal';
+      case 'ministry':
+        return 'Kementerian Portal';
       case 'buyer':
         return 'Buyer Portal';
       case 'emitter':
@@ -42,7 +45,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   return (
     <SidebarProvider className="flex h-screen w-screen bg-slate-100 overflow-hidden font-sans text-slate-800">
       {/* PORTAL SIDEBAR */}
-      <PortalSidebar />
+      <PortalSidebar role={activeRole} />
 
       {/* MAIN PORTAL VIEW CONTAINER */}
       <SidebarInset className="flex flex-col min-w-0 h-full overflow-hidden bg-slate-50/50">

@@ -8,9 +8,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { StorageService } from '../storage/storage.service';
 import { ethers } from 'ethers';
+import { ComplianceRating, Prisma } from '@prisma/client';
+import { PtbaeService } from '../compliance/ptbae.service';
 import type { CalculatorCalculationData } from './types';
 
 type CalculatorScopeData = Partial<CalculatorCalculationData>;
+const CARBON_OFFSET_RATE_IDR = 650000;
 
 @Injectable()
 export class ReportsService {
@@ -20,6 +23,7 @@ export class ReportsService {
     private readonly prisma: PrismaService,
     private readonly blockchainService: BlockchainService,
     private readonly storageService: StorageService,
+    private readonly ptbaeService: PtbaeService,
   ) {}
 
   async getEmissionReports(user?: { userId: string; role: string }) {
@@ -43,71 +47,111 @@ export class ReportsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return reports.map((r) => {
-      const actual = Number(r.totalEmissionsTco2e);
-      const calculationData =
-        r.calculationData &&
-        typeof r.calculationData === 'object' &&
-        !Array.isArray(r.calculationData)
-          ? (r.calculationData as CalculatorScopeData)
-          : null;
-      const getScopeValue = (value: unknown) =>
-        typeof value === 'number' && Number.isFinite(value) ? value : 0;
-      const scope1 = getScopeValue(calculationData?.scope1);
-      const scope2 = getScopeValue(calculationData?.scope2);
-      const scope3 = getScopeValue(calculationData?.scope3);
-      return {
-        id: r.id,
-        year: r.year,
-        title: `Laporan Emisi Tahunan ${r.company.name} ${r.year}`,
-        fileName: r.files[0]?.originalFileName || 'No File',
-        fileSizeBytes: Number(
-          r.files.reduce((acc, f) => acc + f.fileSizeBytes, 0n),
-        ),
-        uploadDate: r.createdAt.toISOString().split('T')[0],
-        status: r.status.toLowerCase(),
-        totalEmissionsTCO2e: actual,
-        blockchainTxHash: r.blockchainTxHash,
-        blockchainReportId: r.blockchainReportId
-          ? Number(r.blockchainReportId)
-          : null,
-        merkleRoot: r.merkleRoot,
-        method: r.reportMethod,
-        sectorId: r.sector,
-        sectors:
-          r.reportMethod === 'CALCULATOR' && calculationData
-            ? [
-                {
-                  id: `sec-${r.id}-1`,
-                  name: 'Scope 1 (Pembakaran & Operasional)',
-                  scope: 'Scope 1',
-                  emissionsTCO2e: scope1,
-                  percentage: actual > 0 ? (scope1 / actual) * 100 : 0,
-                  description: 'Emisi langsung dari operasional',
-                  color: '#ef4444',
-                },
-                {
-                  id: `sec-${r.id}-2`,
-                  name: 'Scope 2 (Listrik)',
-                  scope: 'Scope 2',
-                  emissionsTCO2e: scope2,
-                  percentage: actual > 0 ? (scope2 / actual) * 100 : 0,
-                  description: 'Emisi dari penggunaan listrik',
-                  color: '#f59e0b',
-                },
-                {
-                  id: `sec-${r.id}-3`,
-                  name: 'Scope 3 (Rantai Pasok)',
-                  scope: 'Scope 3',
-                  emissionsTCO2e: scope3,
-                  percentage: actual > 0 ? (scope3 / actual) * 100 : 0,
-                  description:
-                    'Emisi dari rantai pasok dan operasional eksternal',
-                  color: '#3b82f6',
-                },
-              ]
-            : [],
-      };
+    return Promise.all(
+      reports.map(async (r) => {
+        const actual = Number(r.totalEmissionsTco2e);
+        const quota = await this.ptbaeService.resolveForCompany(
+          r.companyId,
+          r.year,
+        );
+        const calculationData =
+          r.calculationData &&
+          typeof r.calculationData === 'object' &&
+          !Array.isArray(r.calculationData)
+            ? (r.calculationData as CalculatorScopeData)
+            : null;
+        const getScopeValue = (value: unknown) =>
+          typeof value === 'number' && Number.isFinite(value) ? value : 0;
+        const scope1 = getScopeValue(calculationData?.scope1);
+        const scope2 = getScopeValue(calculationData?.scope2);
+        const scope3 = getScopeValue(calculationData?.scope3);
+        return {
+          id: r.id,
+          year: r.year,
+          title: `Laporan Emisi Tahunan ${r.company.name} ${r.year}`,
+          fileName: r.files[0]?.originalFileName || 'No File',
+          fileSizeBytes: Number(
+            r.files.reduce((acc, f) => acc + f.fileSizeBytes, 0n),
+          ),
+          uploadDate: r.createdAt.toISOString().split('T')[0],
+          status: r.status.toLowerCase(),
+          totalEmissionsTCO2e: actual,
+          blockchainTxHash: r.blockchainTxHash,
+          blockchainReportId: r.blockchainReportId
+            ? Number(r.blockchainReportId)
+            : null,
+          merkleRoot: r.merkleRoot,
+          quotaPTBAETCO2e: quota.quotaTCO2e,
+          quotaPTBAEStatus: quota.status,
+          quotaPTBAESourceDocument: quota.sourceDocument,
+          method: r.reportMethod,
+          sectorId: r.sector,
+          sectors:
+            r.reportMethod === 'CALCULATOR' && calculationData
+              ? [
+                  {
+                    id: `sec-${r.id}-1`,
+                    name: 'Scope 1 (Pembakaran & Operasional)',
+                    scope: 'Scope 1',
+                    emissionsTCO2e: scope1,
+                    percentage: actual > 0 ? (scope1 / actual) * 100 : 0,
+                    description: 'Emisi langsung dari operasional',
+                    color: '#ef4444',
+                  },
+                  {
+                    id: `sec-${r.id}-2`,
+                    name: 'Scope 2 (Listrik)',
+                    scope: 'Scope 2',
+                    emissionsTCO2e: scope2,
+                    percentage: actual > 0 ? (scope2 / actual) * 100 : 0,
+                    description: 'Emisi dari penggunaan listrik',
+                    color: '#f59e0b',
+                  },
+                  {
+                    id: `sec-${r.id}-3`,
+                    name: 'Scope 3 (Rantai Pasok)',
+                    scope: 'Scope 3',
+                    emissionsTCO2e: scope3,
+                    percentage: actual > 0 ? (scope3 / actual) * 100 : 0,
+                    description:
+                      'Emisi dari rantai pasok dan operasional eksternal',
+                    color: '#3b82f6',
+                  },
+                ]
+              : [],
+        };
+      }),
+    );
+  }
+
+  private async synchronizeCompanyCompliance(
+    companyId: string,
+    actualEmissionTCO2e: number,
+    quotaPTBAETCO2e: number | null,
+  ) {
+    const deficitTCO2e = this.ptbaeService.calculateDeficit(
+      actualEmissionTCO2e,
+      quotaPTBAETCO2e,
+    );
+    const data: Prisma.CompanyUpdateInput = {
+      actualEmissionTco2e: actualEmissionTCO2e,
+    };
+
+    if (deficitTCO2e === null) {
+      await this.prisma.company.update({ where: { id: companyId }, data });
+      return;
+    }
+
+    data.carbonDeficitTco2e = deficitTCO2e;
+    data.offsetCostIdr = deficitTCO2e * CARBON_OFFSET_RATE_IDR;
+    data.complianceRating =
+      deficitTCO2e > 0
+        ? ComplianceRating.NON_COMPLIANT
+        : ComplianceRating.COMPLIANT;
+
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data,
     });
   }
 
@@ -146,6 +190,7 @@ export class ReportsService {
     if (!user) throw new BadRequestException('User not found');
     const company = user.companies[0];
     if (!company) throw new BadRequestException('User has no company');
+    const quota = await this.ptbaeService.resolveForCompany(company.id, year);
 
     const existingReport = await this.prisma.emissionReport.findUnique({
       where: {
@@ -232,6 +277,11 @@ export class ReportsService {
           },
         },
       });
+      await this.synchronizeCompanyCompliance(
+        company.id,
+        totalEmissions,
+        quota.quotaTCO2e,
+      );
 
       return {
         id: report.id,
@@ -264,6 +314,7 @@ export class ReportsService {
     if (!user) throw new BadRequestException('User not found');
     const company = user.companies[0];
     if (!company) throw new BadRequestException('User has no company');
+    const quota = await this.ptbaeService.resolveForCompany(company.id, year);
 
     const existingReport = await this.prisma.emissionReport.findUnique({
       where: {
@@ -313,6 +364,11 @@ export class ReportsService {
           companyId: company.id,
         },
       });
+      await this.synchronizeCompanyCompliance(
+        company.id,
+        totalEmissions,
+        quota.quotaTCO2e,
+      );
 
       return {
         id: report.id,

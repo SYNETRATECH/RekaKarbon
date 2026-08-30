@@ -5,18 +5,24 @@ export interface AnnualChartPoint {
   label?: string;
 }
 
+export type PtbaeQuotaStatus =
+  'VERIFIED' | 'PENDING' | 'REJECTED' | 'EXPIRED' | 'LEGACY' | 'UNAVAILABLE';
+
 export interface ComplianceData {
-  emissionVsQuotaPercent: number;
+  complianceYear: number;
+  emissionVsQuotaPercent: number | null;
   emissionIntensity: number;
   emissionIntensityStandard: number;
-  carbonDeficit: number;
+  carbonDeficit: number | null;
   actualEmissions: number;
-  quotaPTBAE: number;
+  quotaPTBAE: number | null;
+  quotaPTBAEStatus: PtbaeQuotaStatus;
+  quotaPTBAESourceDocument: string | null;
   governedBy: string;
   administrativeSanction: string;
   djpReportStatus: string;
   annualProductionVolume: number;
   carbonPricePerTon: number;
-  totalEstimatedCostIDR: number;
+  totalEstimatedCostIDR: number | null;
   annualHistory: AnnualChartPoint[];
 }

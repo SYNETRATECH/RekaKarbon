@@ -36,10 +36,11 @@ export default function LoginRoute() {
       });
       setIsLoading(false);
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsLoading(false);
+      const message = err instanceof Error ? err.message : undefined;
       setErrorMessage(
-        err?.message || 'Gagal melakukan otentikasi. Silakan periksa kembali kredensial Anda.'
+        message || 'Gagal melakukan otentikasi. Silakan periksa kembali kredensial Anda.'
       );
     }
   };
@@ -162,6 +163,16 @@ export default function LoginRoute() {
                 className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
               >
                 Auditor
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailInput('kementerian@rekakarbon.go.id');
+                  setPasswordInput('password123');
+                }}
+                className="text-[9px] font-extrabold bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+              >
+                Kementerian
               </button>
               <button
                 type="button"
