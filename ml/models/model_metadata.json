@@ -1,7 +1,7 @@
 {
   "model_name": "RekaKarbon Carbon Anomaly Detector",
   "version": "1.0.0",
-  "release_timestamp": "2026-08-30T15:45:58.566533+00:00",
+  "release_timestamp": "2026-08-30T16:08:08.468734+00:00",
   "framework": "Scikit-Learn (IsolationForest + RobustScaler) & ONNX Runtime",
   "target_opset": {
     "": 15,
@@ -213,5 +213,11 @@
       "max_false_positive_rate": 0.1
     },
     "passed": false
+  },
+  "visual_artifacts": {
+    "confusion_matrix_plot": "models/reports\\confusion_matrix.png",
+    "roc_pr_curves_plot": "models/reports\\roc_pr_curves.png",
+    "per_anomaly_recall_plot": "models/reports\\anomaly_type_recall.png",
+    "interactive_html_report": "models/reports\\evaluation_report.html"
   }
 }

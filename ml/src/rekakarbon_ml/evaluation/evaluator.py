@@ -6,7 +6,7 @@ Evaluates classification performance, per-fraud recall, and exports model cards 
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -26,6 +26,7 @@ from ..data.benchmark_loader import (
     SectorBenchmarkLoader,
 )
 from ..pipeline.transformers import DERIVED_FEATURE_NAMES, RAW_FEATURE_COLUMNS
+from .visualizer import ModelVisualizer
 
 QUALITY_GATE_THRESHOLDS = {
     "min_overall_f1": 0.85,
@@ -40,10 +41,15 @@ class ModelEvaluator:
     Evaluates anomaly detection pipelines and unified predictors against labeled ground-truth datasets.
     """
 
-    def __init__(self, predictor_or_pipeline: Any):
+    def __init__(self, predictor_or_pipeline: Any, visualizer: Optional[ModelVisualizer] = None):
         self.predictor = predictor_or_pipeline
+        self.visualizer = visualizer
 
-    def evaluate(self, test_df: pd.DataFrame) -> Dict[str, Any]:
+    def evaluate(
+        self,
+        test_df: pd.DataFrame,
+        generate_plots: bool = False,
+    ) -> Dict[str, Any]:
         """
         Runs comprehensive evaluation against test dataframe with ground-truth 'is_anomaly'.
         """
@@ -109,7 +115,15 @@ class ModelEvaluator:
         if under_rep_recall < QUALITY_GATE_THRESHOLDS["min_under_reporting_recall"]:
             passed_gates = False
 
-        return {
+        cm_dict = {
+            "true_negative": int(tn),
+            "false_positive": int(fp),
+            "false_negative": int(fn),
+            "true_positive": int(tp),
+            "total_samples": len(test_df),
+        }
+
+        eval_results: Dict[str, Any] = {
             "summary": {
                 "precision": round(prec, 4),
                 "recall": round(rec, 4),
@@ -119,20 +133,36 @@ class ModelEvaluator:
                 "false_positive_rate": round(fpr, 4),
                 "false_negative_rate": round(fnr, 4),
             },
-            "confusion_matrix": {
-                "true_negative": int(tn),
-                "false_positive": int(fp),
-                "false_negative": int(fn),
-                "true_positive": int(tp),
-                "total_samples": len(test_df),
-            },
+            "confusion_matrix": cm_dict,
             "per_anomaly_type": per_type_metrics,
             "quality_gate": {
                 "status": "PASSED" if passed_gates else "FAILED",
                 "thresholds": QUALITY_GATE_THRESHOLDS,
                 "passed": bool(passed_gates),
             },
+            "visual_artifacts": {},
         }
+
+        # Generate visual evaluation plots if requested
+        if generate_plots and self.visualizer:
+            print(f"\nGenerating visual evaluation artifacts in '{self.visualizer.output_dir}'...")
+            cm_path = self.visualizer.plot_confusion_matrix(cm_dict)
+            roc_path = self.visualizer.plot_roc_pr_curves(y_true, scores)
+            recall_path = self.visualizer.plot_per_anomaly_type_recall(per_type_metrics)
+            html_path = self.visualizer.generate_html_report(eval_results)
+
+            eval_results["visual_artifacts"] = {
+                "confusion_matrix_plot": cm_path,
+                "roc_pr_curves_plot": roc_path,
+                "per_anomaly_recall_plot": recall_path,
+                "interactive_html_report": html_path,
+            }
+            print(f"  - Confusion Matrix plot saved to: {cm_path}")
+            print(f"  - ROC & PR Curves plot saved to: {roc_path}")
+            print(f"  - Per-Anomaly Recall plot saved to: {recall_path}")
+            print(f"  - Interactive HTML report saved to: {html_path}")
+
+        return eval_results
 
 
 def generate_model_metadata(
@@ -160,6 +190,7 @@ def generate_model_metadata(
         "confusion_matrix": eval_results["confusion_matrix"],
         "fraud_detection_recall": eval_results["per_anomaly_type"],
         "quality_gate": eval_results["quality_gate"],
+        "visual_artifacts": eval_results.get("visual_artifacts", {}),
     }
 
     os.makedirs(os.path.dirname(output_path) or "models", exist_ok=True)
@@ -205,6 +236,18 @@ def main() -> None:
         default=1000,
         help="Number of test samples if generating synthetic test data",
     )
+    parser.add_argument(
+        "--save-plots",
+        action="store_true",
+        default=True,
+        help="Whether to save visual evaluation plots and HTML report",
+    )
+    parser.add_argument(
+        "--report-dir",
+        type=str,
+        default="models/reports",
+        help="Directory to save visual evaluation artifacts",
+    )
     args = parser.parse_args()
 
     print("Starting Standalone Model Evaluation & Quality Gate Assessment...")
@@ -232,8 +275,9 @@ def main() -> None:
             n_total=args.n_samples, anomaly_ratio=0.15
         )
 
-    evaluator = ModelEvaluator(predictor)
-    eval_results = evaluator.evaluate(test_df)
+    visualizer = ModelVisualizer(output_dir=args.report_dir) if args.save_plots else None
+    evaluator = ModelEvaluator(predictor, visualizer=visualizer)
+    eval_results = evaluator.evaluate(test_df, generate_plots=args.save_plots)
     generate_model_metadata(eval_results, output_path=args.output_meta)
 
     summary = eval_results["summary"]
