@@ -170,7 +170,7 @@ def generate_model_metadata(
     return metadata
 
 
-if __name__ == "__main__":
+def main() -> None:
     import argparse
 
     from ..config import DEFAULT_RANDOM_STATE
@@ -234,7 +234,7 @@ if __name__ == "__main__":
 
     evaluator = ModelEvaluator(predictor)
     eval_results = evaluator.evaluate(test_df)
-    meta = generate_model_metadata(eval_results, output_path=args.output_meta)
+    generate_model_metadata(eval_results, output_path=args.output_meta)
 
     summary = eval_results["summary"]
     qgate = eval_results["quality_gate"]
@@ -251,3 +251,7 @@ if __name__ == "__main__":
         print("\n[SUCCESS] Model Quality Gate Verification PASSED!")
     else:
         print("\n[FAILED] Model Quality Gate Verification FAILED!")
+
+
+if __name__ == "__main__":
+    main()

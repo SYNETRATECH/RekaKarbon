@@ -27,6 +27,11 @@ dependencies = [
     "python-dotenv>=1.0.0"
 ]
 
+[project.scripts]
+train = "rekakarbon_ml.pipeline.build_pipeline:main"
+preprocess = "rekakarbon_ml.data.preprocess:main"
+eval = "rekakarbon_ml.pipeline.evaluator:main"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
