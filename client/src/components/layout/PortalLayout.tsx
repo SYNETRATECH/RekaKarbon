@@ -1,7 +1,7 @@
 import { useLocation, Outlet, Link } from 'react-router';
-import { useAuthStore } from '../../store/useAuthStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import PortalSidebar from './PortalSidebar';
-import LogoutDialog from '../../components/LogoutDialog';
+import LogoutDialog from '@/components/LogoutDialog';
 import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -92,7 +92,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
               to="/profile"
               className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-opacity"
             >
-              <div className="w-9 h-9 rounded-full bg-[#033C2E] text-white font-black text-xs flex items-center justify-center shadow-2xs">
+              <div className="w-9 h-9 rounded-full bg-primary text-white font-black text-xs flex items-center justify-center shadow-2xs">
                 {userProfile?.avatar || 'LV'}
               </div>
               <div className="text-left hidden sm:block">
