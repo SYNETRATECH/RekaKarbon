@@ -111,12 +111,12 @@ The `EmissionFeatureEngineer` converts raw parameters into **15 domain-engineere
 #### A. Expected Stoichiometric Physical Emissions ($E_{\text{expected}}$)
 
 Based on official Indonesian Ministry of Energy and Mineral Resources (ESDM), KLHK, and IPCC Tier-2 stoichiometric emission factors:
-$$E_{\text{diesel}} = (\text{stat\_fuel} + \text{mob\_fuel}) \times 0.00268 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{coal}} = \left(\frac{\text{cost\_coal}}{1,200 \text{ IDR/kg}}\right) \times 0.00242 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{gas}} = \left(\frac{\text{cost\_gas}}{10,000 \text{ IDR/m}^3}\right) \times 0.00190 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{pln}} = \left(\frac{\text{cost\_pln}}{1,600 \text{ IDR/kWh}}\right) \times 0.00085 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{process}} = \text{clinker\_tonnes} \times 0.525 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{expected}} = \max(E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}} + E_{\text{pln}} + E_{\text{process}}, \text{production} \times 0.05)$$
+$$E_{\text{diesel}} = (\text{Fuel}_{\text{stat}} + \text{Fuel}_{\text{mob}}) \times 0.00268 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{coal}} = \left(\frac{\text{Cost}_{\text{coal}}}{1{,}200 \text{ IDR/kg}}\right) \times 0.00242 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{gas}} = \left(\frac{\text{Cost}_{\text{gas}}}{10{,}000 \text{ IDR/m}^3}\right) \times 0.00190 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{pln}} = \left(\frac{\text{Cost}_{\text{pln}}}{1{,}600 \text{ IDR/kWh}}\right) \times 0.00085 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{process}} = \text{Clinker}_{\text{tonnes}} \times 0.525 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{expected}} = \max(E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}} + E_{\text{pln}} + E_{\text{process}},\, \text{Production} \times 0.05)$$
 
 #### B. The 15 Engineered Features
 
@@ -141,7 +141,7 @@ In addition to the binary verdict (`PASS_VERIFIED` / `REJECT_ANOMALY`), the engi
 - **`score_bbm` (Physical Fuel vs Emission Correlation)**: Evaluates stoichiometric physical consistency against reported emissions.
 - **`score_cems` (CEMS Sensor / Sector Intensity Benchmark)**: Evaluates production output against BPS / KLHK industrial intensity distributions.
 - **`Composite Trust Score`**:
-  $$\text{Trust Score} = 0.30 \times \text{score\_djp} + 0.40 \times \text{score\_bbm} + 0.30 \times \text{score\_cems} \quad (0 - 100\%)$$
+  $$\text{Trust Score} = 0.30 \times \text{Score}_{\text{DJP}} + 0.40 \times \text{Score}_{\text{BBM}} + 0.30 \times \text{Score}_{\text{CEMS}} \quad (0 - 100\%)$$
 
 ---
 
