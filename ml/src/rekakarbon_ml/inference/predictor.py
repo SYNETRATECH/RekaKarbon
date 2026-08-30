@@ -60,21 +60,24 @@ class CarbonAnomalyPredictor:
         self.onnx_path = onnx_path
         self.ort_session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
 
-        # Official SHAP TreeExplainer initialization on trained IsolationForest model
-        import shap
-
-        detector = self.pipeline.named_steps["detector"]
-        self.shap_explainer = shap.TreeExplainer(detector)
+        self._shap_explainer = None
 
     def compute_shap_values(self, df_raw: pd.DataFrame) -> np.ndarray:
         """
         Computes exact SHAP feature contribution values using official shap.TreeExplainer library.
         Returns shape (N_samples, N_features).
         """
+        if self._shap_explainer is None:
+            import shap
+
+            detector = self.pipeline.named_steps["detector"]
+            self._shap_explainer = shap.TreeExplainer(detector)
+
+        assert self._shap_explainer is not None
         eng_features = self.feature_engineer.transform(df_raw)
         scaler = self.pipeline.named_steps["scaler"]
         scaled_features = scaler.transform(eng_features)
-        shap_vals = self.shap_explainer.shap_values(scaled_features)
+        shap_vals = self._shap_explainer.shap_values(scaled_features)
         return np.asarray(shap_vals)
 
     def predict_single(self, record: Dict[str, Any], validate: bool = False) -> Dict[str, Any]:

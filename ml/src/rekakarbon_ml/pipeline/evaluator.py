@@ -168,3 +168,86 @@ def generate_model_metadata(
 
     print(f"Generated model metadata manifest at: {output_path}")
     return metadata
+
+
+if __name__ == "__main__":
+    import argparse
+
+    from ..config import DEFAULT_RANDOM_STATE
+    from ..data.generator import EmissionDataGenerator
+    from ..inference.predictor import CarbonAnomalyPredictor
+
+    parser = argparse.ArgumentParser(description="RekaKarbon ML Model Evaluation CLI")
+    parser.add_argument(
+        "--model-pkl",
+        type=str,
+        default="models/anomaly_pipeline.pkl",
+        help="Path to .pkl model pipeline",
+    )
+    parser.add_argument(
+        "--model-onnx",
+        type=str,
+        default="models/anomaly_pipeline.onnx",
+        help="Path to .onnx model artifact",
+    )
+    parser.add_argument(
+        "--test-data", type=str, default=None, help="Path to custom test CSV/JSON dataset"
+    )
+    parser.add_argument(
+        "--output-meta",
+        type=str,
+        default="models/model_metadata.json",
+        help="Path to output model_metadata.json",
+    )
+    parser.add_argument(
+        "--n-samples",
+        type=int,
+        default=1000,
+        help="Number of test samples if generating synthetic test data",
+    )
+    args = parser.parse_args()
+
+    print("Starting Standalone Model Evaluation & Quality Gate Assessment...")
+
+    # Load predictor
+    use_onnx = os.path.exists(args.model_onnx)
+    predictor = CarbonAnomalyPredictor(
+        model_pkl_path=args.model_pkl,
+        onnx_path=args.model_onnx,
+        use_onnx=use_onnx,
+    )
+
+    # Load or generate test data
+    if args.test_data and os.path.exists(args.test_data):
+        print(f"Loading test dataset from {args.test_data}...")
+        test_df = (
+            pd.read_json(args.test_data)
+            if args.test_data.endswith(".json")
+            else pd.read_csv(args.test_data)
+        )
+    else:
+        print(f"Generating synthetic evaluation holdout set ({args.n_samples} samples)...")
+        gen = EmissionDataGenerator(random_state=DEFAULT_RANDOM_STATE)
+        _, _, test_df = gen.generate_train_val_test_splits(
+            n_total=args.n_samples, anomaly_ratio=0.15
+        )
+
+    evaluator = ModelEvaluator(predictor)
+    eval_results = evaluator.evaluate(test_df)
+    meta = generate_model_metadata(eval_results, output_path=args.output_meta)
+
+    summary = eval_results["summary"]
+    qgate = eval_results["quality_gate"]
+
+    print("\n================ EVALUATION SUMMARY ================")
+    print(f"F1 Score            : {summary['f1_score']}")
+    print(f"Recall (Overall)    : {summary['recall']}")
+    print(f"Precision           : {summary['precision']}")
+    print(f"ROC-AUC             : {summary['roc_auc']}")
+    print(f"False Positive Rate : {summary['false_positive_rate']}")
+    print("====================================================")
+
+    if qgate["passed"]:
+        print("\n[SUCCESS] Model Quality Gate Verification PASSED!")
+    else:
+        print("\n[FAILED] Model Quality Gate Verification FAILED!")
