@@ -56,6 +56,11 @@ export function formatMonthShort(value: DateInput): string {
   return formatInLocale(value, { month: 'short' });
 }
 
+export function formatMonthNumber(monthIndex: number): string {
+  if (!monthIndex || monthIndex < 1 || monthIndex > 12) return '';
+  return formatInLocale(new Date(2000, monthIndex - 1, 1), { month: 'short' });
+}
+
 export function formatMonthYear(value: DateInput): string {
   return formatInLocale(value, { month: 'short', year: 'numeric' });
 }

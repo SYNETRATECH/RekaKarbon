@@ -453,6 +453,8 @@ import {
   SpatialSummarySchema,
   ConservationAreaSchema,
   DroneScanSchema,
+  DroneArchiveSchema,
+  DroneSchedulesSchema,
   KthPolygonSchema,
   KthLogSchema,
   UserSchema,
@@ -477,6 +479,8 @@ import {
   mockEnergyCorrelationData,
   mockSpatialSummary,
   mockConservationAreas,
+  mockDroneArchive,
+  mockDroneSchedules,
   mockDroneScans,
   mockKthPolygons,
   mockKthLogs,
@@ -540,6 +544,8 @@ describe('Architecture — Mock Fixture Schema Conformity', () => {
     );
     expect(SpatialSummarySchema.safeParse(mockSpatialSummary).success).toBe(true);
     expect(z.array(ConservationAreaSchema).safeParse(mockConservationAreas).success).toBe(true);
+    expect(DroneArchiveSchema.safeParse(mockDroneArchive).success).toBe(true);
+    expect(DroneSchedulesSchema.safeParse(mockDroneSchedules).success).toBe(true);
     expect(z.array(DroneScanSchema).safeParse(mockDroneScans).success).toBe(true);
     expect(z.array(KthPolygonSchema).safeParse(mockKthPolygons).success).toBe(true);
     expect(z.array(KthLogSchema).safeParse(mockKthLogs).success).toBe(true);

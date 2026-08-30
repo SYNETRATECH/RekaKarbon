@@ -68,7 +68,7 @@ export const ConservationAreaSchema = z.object({
   ndvi: VegetationIndexSchema,
   evi: VegetationIndexSchema,
   carbonCredit: CarbonVolumeSchema,
-  cloudCover: z.string(),
+  cloudCoverPercent: PercentageSchema,
   status: z.string().min(1),
   statusLabel: z.string().min(1),
   coordinates: z.any(),
@@ -78,13 +78,46 @@ export const DroneScanSchema = z.object({
   id: UuidSchema,
   date: DateStringSchema,
   location: z.string().min(1),
-  avgHeightMeters: z.number().positive(),
+  avgHeightMeters: z.number().positive().optional(),
   status: z.string().min(1),
   areaCoveredHa: HectaresSchema.optional(),
-  resolutionGSD: z.string().optional(),
+  resolutionGsdCmPx: z.number().positive().optional(),
   chmDensityPercent: PercentageSchema.optional(),
   biomassEstimateTCO2e: CarbonVolumeSchema.optional(),
-  operator: z.string().optional(),
+  operator: z.string().nullable().optional(),
+});
+
+export const DroneArchiveLayerSchema = z.object({
+  id: z.string().min(1),
+  statusType: z.enum(['ready', 'processing', 'queued']),
+  icon: z.string().optional(),
+  fileUrl: z.string().optional(),
+});
+
+export const DroneArchiveSchema = z.object({
+  areaName: z.string().min(1),
+  location: z.string().min(1),
+  cloudCoverPercent: PercentageSchema,
+  layers: z.array(DroneArchiveLayerSchema),
+});
+
+export const DroneScheduleSlotSchema = z.object({
+  month: z.number().int().min(1).max(12),
+  status: z.enum(['done', 'scheduled', 'upcoming']),
+});
+
+export const DroneScheduleStageSchema = z.object({
+  frequencyPerYear: z.number().int().positive(),
+  frequency: z.enum(['quarterly', 'triannual', 'annual']),
+  slots: z.array(DroneScheduleSlotSchema),
+});
+
+export const DroneSchedulesSchema = z.object({
+  startYear: z.number().int(),
+  endYear: z.number().int(),
+  year1: DroneScheduleStageSchema,
+  year2: DroneScheduleStageSchema,
+  year3to5: DroneScheduleStageSchema,
 });
 
 export const KthPolygonSchema = z.object({
@@ -148,6 +181,8 @@ export type AiAnomalyLogType = z.infer<typeof AiAnomalyLogSchema>;
 export type SpatialSummaryType = z.infer<typeof SpatialSummarySchema>;
 export type ConservationAreaType = z.infer<typeof ConservationAreaSchema>;
 export type DroneScanType = z.infer<typeof DroneScanSchema>;
+export type DroneArchiveType = z.infer<typeof DroneArchiveSchema>;
+export type DroneSchedulesType = z.infer<typeof DroneSchedulesSchema>;
 export type KthPolygonType = z.infer<typeof KthPolygonSchema>;
 export type KthLogType = z.infer<typeof KthLogSchema>;
 export type MlAuditResultType = z.infer<typeof MlAuditResultSchema>;

@@ -1,4 +1,10 @@
-import type { AnomalySummary, AiAnomalyLog, EnergyCorrelationItem } from '../../types';
+import type {
+  AnomalySummary,
+  AiAnomalyLog,
+  EnergyCorrelationItem,
+  DroneArchive,
+  DroneSchedules,
+} from '../../types';
 
 export const mockAnomalySummary: AnomalySummary = {
   emitenTerdeteksiAnomali: 12,
@@ -113,7 +119,7 @@ export const mockConservationAreas = [
     ndvi: 0.78,
     evi: 0.62,
     carbonCredit: 48750,
-    cloudCover: '12%',
+    cloudCoverPercent: 12,
     status: 'verified', // 'verified' | 'drone_required' | 'pending'
     statusLabel: 'Terverifikasi',
     coordinates: [
@@ -131,7 +137,7 @@ export const mockConservationAreas = [
     ndvi: 0.71,
     evi: 0.54,
     carbonCredit: 284300,
-    cloudCover: '67%',
+    cloudCoverPercent: 67,
     status: 'drone_required',
     statusLabel: 'Drone Required',
     coordinates: [
@@ -149,7 +155,7 @@ export const mockConservationAreas = [
     ndvi: 0.83,
     evi: 0.69,
     carbonCredit: 193700,
-    cloudCover: '8%',
+    cloudCoverPercent: 8,
     status: 'verified',
     statusLabel: 'Terverifikasi',
     coordinates: [
@@ -167,7 +173,7 @@ export const mockConservationAreas = [
     ndvi: 0.65,
     evi: 0.48,
     carbonCredit: 74500,
-    cloudCover: '29%',
+    cloudCoverPercent: 29,
     status: 'pending',
     statusLabel: 'Pending',
     coordinates: [
@@ -179,51 +185,43 @@ export const mockConservationAreas = [
   },
 ];
 
-export const mockDroneArchive = {
+export const mockDroneArchive: DroneArchive = {
   areaName: 'Restorasi Gambut Katingan',
   location: 'Katingan, Kalimantan Tengah',
-  cloudCover: '67% awan',
+  cloudCoverPercent: 67,
   layers: [
-    { id: 'orto', title: 'Ortofoto', status: 'Tersedia', statusType: 'ready', icon: 'camera' },
-    {
-      id: 'canopy',
-      title: 'Canopy Height',
-      status: 'Proses...',
-      statusType: 'processing',
-      icon: 'layers',
-    },
-    { id: 'dsm', title: 'DSM/DEM', status: 'Antrian', statusType: 'queued', icon: 'activity' },
+    { id: 'orto', statusType: 'ready', icon: 'camera' },
+    { id: 'canopy', statusType: 'processing', icon: 'layers' },
+    { id: 'dsm', statusType: 'queued', icon: 'activity' },
   ],
 };
 
-export const mockDroneSchedules = {
-  period: '2025–2030',
+export const mockDroneSchedules: DroneSchedules = {
+  startYear: 2025,
+  endYear: 2030,
   year1: {
-    title: 'Tahun Pertama',
-    subTitle: '4× / tahun (Triwulanan)',
-    badge: '4× / tahun',
+    frequencyPerYear: 4,
+    frequency: 'quarterly',
     slots: [
-      { month: 'Jan', status: 'done', label: '✓ Selesai' },
-      { month: 'Apr', status: 'done', label: '✓ Selesai' },
-      { month: 'Jul', status: 'scheduled', label: '• Terjadwal' },
-      { month: 'Okt', status: 'upcoming', label: '○ Mendatang' },
+      { month: 1, status: 'done' },
+      { month: 4, status: 'done' },
+      { month: 7, status: 'scheduled' },
+      { month: 10, status: 'upcoming' },
     ],
   },
   year2: {
-    title: 'Tahun Kedua',
-    subTitle: '3× / tahun (Caturwulanan)',
-    badge: '3× / tahun',
+    frequencyPerYear: 3,
+    frequency: 'triannual',
     slots: [
-      { month: 'Jan', status: 'upcoming', label: '○ Mendatang' },
-      { month: 'Mei', status: 'upcoming', label: '○ Mendatang' },
-      { month: 'Sep', status: 'upcoming', label: '○ Mendatang' },
+      { month: 1, status: 'upcoming' },
+      { month: 5, status: 'upcoming' },
+      { month: 9, status: 'upcoming' },
     ],
   },
   year3to5: {
-    title: 'Tahun Ketiga–Kelima',
-    subTitle: '1× / tahun',
-    badge: '1× / tahun',
-    slots: [{ month: 'Jun', status: 'upcoming', label: '○ Mendatang' }],
+    frequencyPerYear: 1,
+    frequency: 'annual',
+    slots: [{ month: 6, status: 'upcoming' }],
   },
 };
 

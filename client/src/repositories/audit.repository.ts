@@ -8,6 +8,8 @@ import type {
   SpatialSummary,
   ConservationArea,
   DroneScan,
+  DroneArchive,
+  DroneSchedules,
   KthPolygon,
   KthLog,
 } from '../types';
@@ -18,6 +20,8 @@ import {
   SpatialSummarySchema,
   ConservationAreaSchema,
   DroneScanSchema,
+  DroneArchiveSchema,
+  DroneSchedulesSchema,
   KthPolygonSchema,
   KthLogSchema,
   MlAuditResultSchema,
@@ -31,8 +35,8 @@ export interface AuditRepository {
   verifyAnomalyRecord(id: string): Promise<{ success: boolean; id: string }>;
   getSpatialSummary(): Promise<SpatialSummary>;
   getConservationAreas(): Promise<ConservationArea[]>;
-  getDroneArchive(): Promise<any>;
-  getDroneSchedules(): Promise<any>;
+  getDroneArchive(projectId?: string): Promise<DroneArchive>;
+  getDroneSchedules(projectId?: string): Promise<DroneSchedules>;
   getCertificationPreview(): Promise<any>;
   authorizeMintingCredit(data: any): Promise<{ success: boolean; txHash: string }>;
   getDroneScans(): Promise<DroneScan[]>;
@@ -70,11 +74,13 @@ export class ApiAuditRepository implements AuditRepository {
       z.array(ConservationAreaSchema)
     );
   }
-  async getDroneArchive(): Promise<any> {
-    return api.get<any>('/audit/drone-archive');
+  async getDroneArchive(projectId?: string): Promise<DroneArchive> {
+    const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return api.get<DroneArchive>(`/audit/drone-archive${query}`, DroneArchiveSchema);
   }
-  async getDroneSchedules(): Promise<any> {
-    return api.get<any>('/audit/drone-schedules');
+  async getDroneSchedules(projectId?: string): Promise<DroneSchedules> {
+    const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return api.get<DroneSchedules>(`/audit/drone-schedules${query}`, DroneSchedulesSchema);
   }
   async getCertificationPreview(): Promise<any> {
     return api.get<any>('/audit/certification-preview');
