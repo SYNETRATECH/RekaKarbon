@@ -50,7 +50,10 @@ class ModelVisualizer:
         total = cm.sum() if cm.sum() > 0 else 1
 
         annot = np.empty_like(cm, dtype=object)
-        labels = [["True Normal (TN)", "False Alarm (FP)"], ["Missed Anomaly (FN)", "Detected Anomaly (TP)"]]
+        labels = [
+            ["True Normal (TN)", "False Alarm (FP)"],
+            ["Missed Anomaly (FN)", "Detected Anomaly (TP)"],
+        ]
         for i in range(2):
             for j in range(2):
                 pct = (cm[i, j] / total) * 100
@@ -66,7 +69,9 @@ class ModelVisualizer:
             ax=ax,
             annot_kws={"size": 11, "weight": "bold"},
         )
-        ax.set_title("RekaKarbon Model Evaluation - Confusion Matrix", fontsize=13, fontweight="bold", pad=12)
+        ax.set_title(
+            "RekaKarbon Model Evaluation - Confusion Matrix", fontsize=13, fontweight="bold", pad=12
+        )
         ax.set_xlabel("Predicted Label (0: Normal, 1: Anomaly)", fontsize=11)
         ax.set_ylabel("Actual Ground Truth", fontsize=11)
         ax.set_xticklabels(["Normal", "Anomaly"])
@@ -111,7 +116,9 @@ class ModelVisualizer:
         ax2.set_title("Precision-Recall Curve (Imbalanced Focus)", fontsize=12, fontweight="bold")
         ax2.legend(loc="lower left")
 
-        plt.suptitle("Model Classification Discriminative Ability", fontsize=14, fontweight="bold", y=1.02)
+        plt.suptitle(
+            "Model Classification Discriminative Ability", fontsize=14, fontweight="bold", y=1.02
+        )
         plt.tight_layout()
         plt.savefig(filepath, dpi=300, bbox_inches="tight")
         plt.close(fig)
@@ -161,8 +168,12 @@ class ModelVisualizer:
             )
 
         ax.set_xlim([0, 115])
-        ax.axvline(92.0, color="red", linestyle="--", linewidth=1.5, label="Quality Gate Threshold (92%)")
-        ax.set_title("Recall Rate Breakdown by Anomaly Category", fontsize=13, fontweight="bold", pad=12)
+        ax.axvline(
+            92.0, color="red", linestyle="--", linewidth=1.5, label="Quality Gate Threshold (92%)"
+        )
+        ax.set_title(
+            "Recall Rate Breakdown by Anomaly Category", fontsize=13, fontweight="bold", pad=12
+        )
         ax.set_xlabel("Detection Recall (%)", fontsize=10)
         ax.set_ylabel("Fraud / Anomaly Category", fontsize=10)
         ax.legend(loc="lower right")
@@ -195,17 +206,28 @@ class ModelVisualizer:
                 model = model_pipeline
                 X_trans = features_df
 
-            explainer = shap.TreeExplainer(model) if hasattr(model, "estimators_") else shap.Explainer(model, X_trans)
+            explainer = (
+                shap.TreeExplainer(model)
+                if hasattr(model, "estimators_")
+                else shap.Explainer(model, X_trans)
+            )
             shap_values = explainer(X_trans)
 
             fig = plt.figure(figsize=(9, 6))
             shap.summary_plot(
                 shap_values,
                 X_trans,
-                feature_names=list(features_df.columns) if isinstance(features_df, pd.DataFrame) else None,
+                feature_names=list(features_df.columns)
+                if isinstance(features_df, pd.DataFrame)
+                else None,
                 show=False,
             )
-            plt.title("SHAP Feature Importance & Impact on Anomaly Score", fontsize=12, fontweight="bold", pad=12)
+            plt.title(
+                "SHAP Feature Importance & Impact on Anomaly Score",
+                fontsize=12,
+                fontweight="bold",
+                pad=12,
+            )
             plt.tight_layout()
             plt.savefig(filepath, dpi=300, bbox_inches="tight")
             plt.close(fig)
@@ -247,7 +269,13 @@ class ModelVisualizer:
             summary["roc_auc"],
         ]
         fig.add_trace(
-            go.Bar(x=metrics_names, y=metrics_vals, marker_color="#008080", text=metrics_vals, textposition="auto"),
+            go.Bar(
+                x=metrics_names,
+                y=metrics_vals,
+                marker_color="#008080",
+                text=metrics_vals,
+                textposition="auto",
+            ),
             row=1,
             col=1,
         )
@@ -257,7 +285,12 @@ class ModelVisualizer:
         fig.add_trace(
             go.Pie(
                 labels=["True Normal", "False Alarm", "Missed Anomaly", "Detected Anomaly"],
-                values=[cm["true_negative"], cm["false_positive"], cm["false_negative"], cm["true_positive"]],
+                values=[
+                    cm["true_negative"],
+                    cm["false_positive"],
+                    cm["false_negative"],
+                    cm["true_positive"],
+                ],
                 hole=0.4,
             ),
             row=1,
@@ -270,7 +303,14 @@ class ModelVisualizer:
             types = list(per_type.keys())
             recalls = [per_type[t]["recall"] for t in types]
             fig.add_trace(
-                go.Bar(x=recalls, y=types, orientation="h", marker_color="#2E8B57", text=recalls, textposition="auto"),
+                go.Bar(
+                    x=recalls,
+                    y=types,
+                    orientation="h",
+                    marker_color="#2E8B57",
+                    text=recalls,
+                    textposition="auto",
+                ),
                 row=2,
                 col=1,
             )
@@ -283,7 +323,10 @@ class ModelVisualizer:
                 mode="number+delta",
                 value=1 if status == "PASSED" else 0,
                 title={"text": f"Gate Status: {status}"},
-                number={"prefix": "Status: ", "font": {"color": "green" if status == "PASSED" else "red"}},
+                number={
+                    "prefix": "Status: ",
+                    "font": {"color": "green" if status == "PASSED" else "red"},
+                },
             ),
             row=2,
             col=2,
