@@ -269,11 +269,15 @@ with tab1:
         # XAI Feature Attribution Breakdown & Official SHAP Plot
         if "xai" in res and res["xai"].get("top_anomaly_drivers"):
             xai = res["xai"]
-            st.markdown("##### 💡 Explainable AI (XAI) - Atribusi Fitur Anomali & Official SHAP Values")
+            st.markdown(
+                "##### 💡 Explainable AI (XAI) - Atribusi Fitur Anomali & Official SHAP Values"
+            )
             drivers_df = pd.DataFrame(xai["top_anomaly_drivers"])
             if not drivers_df.empty:
                 st.dataframe(
-                    drivers_df[["label", "user_value", "benchmark_value", "impact_score", "direction"]].rename(
+                    drivers_df[
+                        ["label", "user_value", "benchmark_value", "impact_score", "direction"]
+                    ].rename(
                         columns={
                             "label": "Faktor Anomali",
                             "user_value": "Input Perusahaan",
@@ -293,10 +297,15 @@ with tab1:
                 shap_vals = predictor.compute_shap_values(pd.DataFrame([payload]))
                 if shap_vals is not None and shap_vals.size > 0:
                     from rekakarbon_ml.pipeline.transformers import DERIVED_FEATURE_NAMES
-                    shap_df = pd.DataFrame({
-                        "Fitur": DERIVED_FEATURE_NAMES,
-                        "Kontribusi SHAP Value": shap_vals.flatten()[:len(DERIVED_FEATURE_NAMES)],
-                    }).sort_values(by="Kontribusi SHAP Value", key=abs, ascending=True)
+
+                    shap_df = pd.DataFrame(
+                        {
+                            "Fitur": DERIVED_FEATURE_NAMES,
+                            "Kontribusi SHAP Value": shap_vals.flatten()[
+                                : len(DERIVED_FEATURE_NAMES)
+                            ],
+                        }
+                    ).sort_values(by="Kontribusi SHAP Value", key=abs, ascending=True)
 
                     shap_fig = px.bar(
                         shap_df,

@@ -244,4 +244,3 @@ def test_xai_feature_attribution_diagnostics(predictor):
     assert "recommendation" in xai
     assert len(xai["top_anomaly_drivers"]) > 0
     assert xai["top_anomaly_drivers"][0]["impact_score"] > 0.0
-
