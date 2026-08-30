@@ -25,9 +25,12 @@ AI Agent Governance & Development Guide for the `ml/` subproject. See root [AGEN
 poetry install               # Install environment and dependencies
 poetry run ruff format .     # Format all Python files (PEP 8, 100 cols)
 poetry run ruff check .      # Lint check with auto-fixes
-poetry run mypy src tests app.py  # Static type analysis
-poetry run pytest -v         # Run all 20 tests across 6 testing suites
-poetry run streamlit run app.py  # Launch Streamlit development studio
+poetry run mypy src tests    # Static type analysis across package and tests
+poetry run pytest -v         # Run all 21 tests across 6 testing suites
+poetry run preprocess        # Run batch feature engineering CLI
+poetry run train             # Retrain IsolationForest & export ONNX artifact
+poetry run eval              # Run model evaluation & quality gate assessment
+poetry run studio            # Launch Streamlit development studio
 ```
 
 ---
@@ -36,10 +39,9 @@ poetry run streamlit run app.py  # Launch Streamlit development studio
 
 ```
 ml/
-├── pyproject.toml              # Project metadata & dependency definitions
+├── pyproject.toml              # Project metadata, dependencies & script entrypoints
 ├── README.md                   # Scientific documentation, methodology & user guide
 ├── AGENTS.md                   # This agent governance document
-├── app.py                      # Streamlit interactive development studio
 ├── models/
 │   ├── anomaly_pipeline.pkl    # Serialized Scikit-Learn pipeline
 │   ├── anomaly_pipeline.onnx   # Exported ONNX model artifact
@@ -47,21 +49,28 @@ ml/
 ├── src/
 │   └── rekakarbon_ml/
 │       ├── __init__.py
-│       ├── data/               # Ingestion of assets/data and synthetic generators
+│       ├── data/               # WORKFLOW 1: Ingestion, schemas, generators & preprocessing
 │       │   ├── __init__.py
 │       │   ├── benchmark_loader.py
 │       │   ├── generator.py
+│       │   ├── preprocess.py   # Standalone batch feature engineering CLI
 │       │   └── schema.py       # Pydantic schema validation & physical boundaries
-│       ├── pipeline/           # Scikit-Learn pipeline construction & ONNX conversion
+│       ├── pipeline/           # WORKFLOW 2: Scikit-Learn transformers & model training
 │       │   ├── __init__.py
-│       │   ├── transformers.py
-│       │   ├── build_pipeline.py
-│       │   ├── onnx_exporter.py
-│       │   └── evaluator.py    # Evaluation harness & quality gate engine
-│       └── inference/          # Prediction runners & diagnostic scoring
+│       │   ├── transformers.py # Physics-informed feature engineering transformer
+│       │   ├── trainer.py      # Pipeline trainer & ONNX export CLI
+│       │   └── onnx_exporter.py# ONNX graph converter & parity verifier
+│       ├── evaluation/         # WORKFLOW 3: Evaluation harness & quality gates
+│       │   ├── __init__.py
+│       │   └── evaluator.py    # Evaluation harness & model metadata generator CLI
+│       ├── inference/          # RUNTIME INFERENCE ENGINE
+│       │   ├── __init__.py
+│       │   └── predictor.py    # High-level diagnostic predictor
+│       └── studio/             # STREAMLIT PROTOTYPING STUDIO
 │           ├── __init__.py
-│           └── predictor.py
-└── tests/
+│           ├── app.py          # Development studio dashboard
+│           └── cli.py          # Studio launcher entrypoint
+└── tests/                      # WORKFLOW 4: AUTOMATED TEST SUITE
     ├── __init__.py
     ├── test_data_validation.py         # Layer 1: Schema validation & boundary tests
     ├── test_pipeline.py                # Layer 2: Preprocessing & transformer unit tests

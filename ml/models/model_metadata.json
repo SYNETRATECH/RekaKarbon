@@ -1,7 +1,7 @@
 {
   "model_name": "RekaKarbon Carbon Anomaly Detector",
   "version": "1.0.0",
-  "release_timestamp": "2026-08-25T15:18:47.914647+00:00",
+  "release_timestamp": "2026-08-30T16:08:08.468734+00:00",
   "framework": "Scikit-Learn (IsolationForest + RobustScaler) & ONNX Runtime",
   "target_opset": {
     "": 15,
@@ -164,54 +164,60 @@
   },
   "evaluation_metrics": {
     "precision": 1.0,
-    "recall": 0.9167,
-    "f1_score": 0.9565,
+    "recall": 0.9048,
+    "f1_score": 0.95,
     "accuracy": 0.9867,
-    "roc_auc": 0.9919,
+    "roc_auc": 0.9823,
     "false_positive_rate": 0.0,
-    "false_negative_rate": 0.0833
+    "false_negative_rate": 0.0952
   },
   "confusion_matrix": {
-    "true_negative": 315,
+    "true_negative": 129,
     "false_positive": 0,
-    "false_negative": 5,
-    "true_positive": 55,
-    "total_samples": 375
+    "false_negative": 2,
+    "true_positive": 19,
+    "total_samples": 150
   },
   "fraud_detection_recall": {
-    "UNDER_REPORTING_SUBTLE": {
-      "count": 13,
-      "recall": 0.6154
-    },
-    "UNDER_REPORTING_FRAUD": {
-      "count": 14,
+    "IMPOSSIBLE_PRODUCTION_INTENSITY": {
+      "count": 4,
       "recall": 1.0
     },
     "EXTREME_YOY_COLLAPSE": {
-      "count": 18,
-      "recall": 1.0
-    },
-    "IMPOSSIBLE_PRODUCTION_INTENSITY": {
       "count": 5,
       "recall": 1.0
     },
     "UNREPORTED_PROCESS_EMISSIONS": {
-      "count": 5,
+      "count": 4,
       "recall": 1.0
     },
     "FUEL_COST_MISMATCH": {
-      "count": 5,
+      "count": 2,
       "recall": 1.0
+    },
+    "UNDER_REPORTING_FRAUD": {
+      "count": 2,
+      "recall": 0.5
+    },
+    "UNDER_REPORTING_SUBTLE": {
+      "count": 4,
+      "recall": 0.75
     }
   },
   "quality_gate": {
-    "status": "PASSED",
+    "status": "FAILED",
     "thresholds": {
       "min_overall_f1": 0.85,
       "min_overall_recall": 0.88,
       "min_under_reporting_recall": 0.92,
       "max_false_positive_rate": 0.1
     },
-    "passed": true
+    "passed": false
+  },
+  "visual_artifacts": {
+    "confusion_matrix_plot": "models/reports\\confusion_matrix.png",
+    "roc_pr_curves_plot": "models/reports\\roc_pr_curves.png",
+    "per_anomaly_recall_plot": "models/reports\\anomaly_type_recall.png",
+    "interactive_html_report": "models/reports\\evaluation_report.html"
   }
 }

@@ -252,15 +252,25 @@ poetry run ruff check .
 poetry run ruff format .
 
 # Static Type Checker (Mypy)
-poetry run mypy src tests app.py
+poetry run mypy src tests
 
-# Complete Pytest Suite (20 Tests across 6 Suites)
+# Complete Pytest Suite (21 Tests across 6 Suites)
 poetry run pytest -v
 
-# Monorepo shortcuts
+# Registered Poetry Console Entrypoints (Direct Python)
+poetry run preprocess  # Batch feature engineering CLI
+poetry run train       # Retrain IsolationForest & export ONNX
+poetry run eval        # Model evaluation & quality gate assessment
+poetry run studio      # Interactive Streamlit prototyping studio
+
+# Monorepo Shortcuts (From Repository Root)
 pnpm ml:lint
 pnpm ml:typecheck
 pnpm ml:test
+pnpm ml:train
+pnpm ml:preprocess
+pnpm ml:eval
+pnpm ml:studio
 ```
 
 ---
@@ -272,7 +282,6 @@ ml/
 ├── pyproject.toml              # Dependencies (scikit-learn, skl2onnx, onnxruntime, pydantic, ruff, mypy)
 ├── README.md                   # Scientific & technical documentation (this file)
 ├── AGENTS.md                   # Agent governance guide and rules
-├── app.py                      # Streamlit interactive development studio
 ├── models/
 │   ├── anomaly_pipeline.pkl    # Serialized Scikit-Learn pipeline
 │   ├── anomaly_pipeline.onnx   # Exported ONNX model artifact
@@ -280,21 +289,28 @@ ml/
 ├── src/
 │   └── rekakarbon_ml/
 │       ├── __init__.py
-│       ├── data/               # Ingestion of assets/data and synthetic generators
+│       ├── data/               # WORKFLOW 1: Ingestion, schemas, synthetic generators & preprocessing
 │       │   ├── __init__.py
 │       │   ├── benchmark_loader.py
 │       │   ├── generator.py
+│       │   ├── preprocess.py   # Standalone batch feature engineering CLI
 │       │   └── schema.py       # Pydantic data models & boundary validation
-│       ├── pipeline/           # Scikit-Learn custom transformers, trainer & ONNX exporter
+│       ├── pipeline/           # WORKFLOW 2: Scikit-Learn custom transformers & model trainer
 │       │   ├── __init__.py
-│       │   ├── transformers.py
-│       │   ├── build_pipeline.py
-│       │   ├── onnx_exporter.py
-│       │   └── evaluator.py    # Evaluation harness & quality gate engine
-│       └── inference/          # Prediction runners & diagnostic scoring
+│       │   ├── transformers.py # Physics-informed feature engineering transformer
+│       │   ├── trainer.py      # Pipeline trainer & ONNX export CLI
+│       │   └── onnx_exporter.py# ONNX graph converter & parity verifier
+│       ├── evaluation/         # WORKFLOW 3: Evaluation harness & quality gates
+│       │   ├── __init__.py
+│       │   └── evaluator.py    # Evaluation harness & model metadata generator CLI
+│       ├── inference/          # RUNTIME INFERENCE ENGINE
+│       │   ├── __init__.py
+│       │   └── predictor.py    # High-level diagnostic predictor
+│       └── studio/             # STREAMLIT PROTOTYPING STUDIO
 │           ├── __init__.py
-│           └── predictor.py
-└── tests/
+│           ├── app.py          # Development studio dashboard
+│           └── cli.py          # Studio launcher entrypoint
+└── tests/                      # WORKFLOW 4: AUTOMATED TEST SUITE
     ├── __init__.py
     ├── test_data_validation.py         # Layer 1: Schema validation & boundary tests
     ├── test_pipeline.py                # Layer 2: Preprocessing & transformer unit tests

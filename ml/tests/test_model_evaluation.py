@@ -8,15 +8,17 @@ import os
 
 import pytest
 
+from rekakarbon_ml.config import DEFAULT_RANDOM_STATE
 from rekakarbon_ml.data.generator import EmissionDataGenerator
-from rekakarbon_ml.inference.predictor import CarbonAnomalyPredictor
-from rekakarbon_ml.pipeline.build_pipeline import train_and_save_pipeline
-from rekakarbon_ml.pipeline.evaluator import (
+from rekakarbon_ml.evaluation import (
     QUALITY_GATE_THRESHOLDS,
     ModelEvaluator,
+    ModelVisualizer,
     generate_model_metadata,
 )
+from rekakarbon_ml.inference.predictor import CarbonAnomalyPredictor
 from rekakarbon_ml.pipeline.onnx_exporter import export_pipeline_to_onnx
+from rekakarbon_ml.pipeline.trainer import train_and_save_pipeline
 
 
 @pytest.fixture(scope="module")
@@ -25,7 +27,7 @@ def trained_predictor_and_test_data(tmp_path_factory):
     pkl_path = os.path.join(model_dir, "anomaly_pipeline.pkl")
     onnx_path = os.path.join(model_dir, "anomaly_pipeline.onnx")
 
-    gen = EmissionDataGenerator(random_state=42)
+    gen = EmissionDataGenerator(random_state=DEFAULT_RANDOM_STATE)
     train_df, val_df, test_df = gen.generate_train_val_test_splits(n_total=2500, anomaly_ratio=0.15)
 
     pipe, _ = train_and_save_pipeline(save_dir=model_dir, n_samples=1500)
@@ -82,3 +84,19 @@ def test_model_evaluation_metrics_and_quality_gates(trained_predictor_and_test_d
     assert len(loaded_meta["derived_features"]) == 15
     assert len(loaded_meta["supported_sectors"]) == 6
     assert "solar_diesel_tco2e_per_liter" in loaded_meta["stoichiometric_factors"]
+
+
+def test_model_visualizer_artifact_generation(trained_predictor_and_test_data, tmp_path):
+    predictor, _, _, test_df, _ = trained_predictor_and_test_data
+
+    report_dir = str(tmp_path / "test_reports")
+    visualizer = ModelVisualizer(output_dir=report_dir)
+    evaluator = ModelEvaluator(predictor, visualizer=visualizer)
+
+    eval_results = evaluator.evaluate(test_df, generate_plots=True)
+
+    artifacts = eval_results.get("visual_artifacts", {})
+    assert os.path.exists(artifacts["confusion_matrix_plot"])
+    assert os.path.exists(artifacts["roc_pr_curves_plot"])
+    assert os.path.exists(artifacts["per_anomaly_recall_plot"])
+    assert os.path.exists(artifacts["interactive_html_report"])
