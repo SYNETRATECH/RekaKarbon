@@ -4,6 +4,7 @@ Unit Tests for Scikit-Learn Carbon Anomaly Detection Pipeline.
 
 import numpy as np
 
+from rekakarbon_ml.config import DEFAULT_RANDOM_STATE
 from rekakarbon_ml.data.generator import EmissionDataGenerator
 from rekakarbon_ml.pipeline.build_pipeline import build_anomaly_pipeline
 from rekakarbon_ml.pipeline.transformers import (
@@ -36,7 +37,7 @@ def test_feature_engineer_shape():
 
 
 def test_pipeline_fit_predict():
-    gen = EmissionDataGenerator(random_state=42)
+    gen = EmissionDataGenerator(random_state=DEFAULT_RANDOM_STATE)
     df = gen.generate_dataset(n_samples=200)
 
     pipe = build_anomaly_pipeline(contamination=0.10)

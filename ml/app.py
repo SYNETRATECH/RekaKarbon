@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from rekakarbon_ml.config import DEFAULT_RANDOM_STATE
 from rekakarbon_ml.data.benchmark_loader import (
     MARKET_PRICE_RANGES,
     STOICHIOMETRIC_FACTORS,
@@ -389,7 +390,7 @@ with tab2:
     st.caption("Simulasi batch dataset industri Indonesia dari data BPS & KLHK")
 
     n_batch = st.slider("Jumlah Sampel Batch Simulasi", 50, 500, 150)
-    gen = EmissionDataGenerator(random_state=42)
+    gen = EmissionDataGenerator(random_state=DEFAULT_RANDOM_STATE)
     batch_df = gen.generate_dataset(n_samples=n_batch, anomaly_ratio=0.15)
 
     batch_preds = predictor.predict_batch(batch_df)

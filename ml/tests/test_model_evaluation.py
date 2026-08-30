@@ -8,6 +8,7 @@ import os
 
 import pytest
 
+from rekakarbon_ml.config import DEFAULT_RANDOM_STATE
 from rekakarbon_ml.data.generator import EmissionDataGenerator
 from rekakarbon_ml.inference.predictor import CarbonAnomalyPredictor
 from rekakarbon_ml.pipeline.build_pipeline import train_and_save_pipeline
@@ -25,7 +26,7 @@ def trained_predictor_and_test_data(tmp_path_factory):
     pkl_path = os.path.join(model_dir, "anomaly_pipeline.pkl")
     onnx_path = os.path.join(model_dir, "anomaly_pipeline.onnx")
 
-    gen = EmissionDataGenerator(random_state=42)
+    gen = EmissionDataGenerator(random_state=DEFAULT_RANDOM_STATE)
     train_df, val_df, test_df = gen.generate_train_val_test_splits(n_total=2500, anomaly_ratio=0.15)
 
     pipe, _ = train_and_save_pipeline(save_dir=model_dir, n_samples=1500)

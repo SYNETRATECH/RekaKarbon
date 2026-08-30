@@ -9,6 +9,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
+from ..config import get_random_state
 from .benchmark_loader import (
     MARKET_PRICE_RANGES,
     STOICHIOMETRIC_FACTORS,
@@ -23,8 +24,9 @@ class EmissionDataGenerator:
     with calibrated normal distributions and multi-modal anomaly injections.
     """
 
-    def __init__(self, random_state: int = 42):
-        self.rng = np.random.RandomState(random_state)
+    def __init__(self, random_state: int | None = None):
+        self.random_state = get_random_state(random_state)
+        self.rng = np.random.RandomState(self.random_state)
         self.loader = SectorBenchmarkLoader()
         self.sector_benchmarks = self.loader.get_sector_emission_factors()
         self.factors = STOICHIOMETRIC_FACTORS
