@@ -4,6 +4,7 @@ Dedicated development & prototyping dashboard for inspecting emissions anomaly d
 physics stoichiometry breakdowns, and e-Faktur fiscal integrity cross-checks.
 """
 
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -264,6 +265,51 @@ with tab1:
         st.markdown(f"**Diagnostik AI:** {res['explanation']}")
         if res["flags"]:
             st.warning(f"**Flag Peringatan:** {', '.join(res['flags'])}")
+
+        # XAI Feature Attribution Breakdown & Official SHAP Plot
+        if "xai" in res and res["xai"].get("top_anomaly_drivers"):
+            xai = res["xai"]
+            st.markdown("##### 💡 Explainable AI (XAI) - Atribusi Fitur Anomali & Official SHAP Values")
+            drivers_df = pd.DataFrame(xai["top_anomaly_drivers"])
+            if not drivers_df.empty:
+                st.dataframe(
+                    drivers_df[["label", "user_value", "benchmark_value", "impact_score", "direction"]].rename(
+                        columns={
+                            "label": "Faktor Anomali",
+                            "user_value": "Input Perusahaan",
+                            "benchmark_value": "Acuan Industri (Benchmark)",
+                            "impact_score": "Dampak Anomali (%)",
+                            "direction": "Arah Deviasi",
+                        }
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+            st.info(f"**Rekomendasi Kepatuhan:** {xai['recommendation']}")
+
+            # Compute official SHAP values via predictor.compute_shap_values
+            try:
+                payload = st.session_state.last_payload
+                shap_vals = predictor.compute_shap_values(pd.DataFrame([payload]))
+                if shap_vals is not None and shap_vals.size > 0:
+                    from rekakarbon_ml.pipeline.transformers import DERIVED_FEATURE_NAMES
+                    shap_df = pd.DataFrame({
+                        "Fitur": DERIVED_FEATURE_NAMES,
+                        "Kontribusi SHAP Value": shap_vals.flatten()[:len(DERIVED_FEATURE_NAMES)],
+                    }).sort_values(by="Kontribusi SHAP Value", key=abs, ascending=True)
+
+                    shap_fig = px.bar(
+                        shap_df,
+                        x="Kontribusi SHAP Value",
+                        y="Fitur",
+                        orientation="h",
+                        title="Grafik Kontribusi SHAP TreeExplainer (Scikit-Learn IsolationForest)",
+                        color="Kontribusi SHAP Value",
+                        color_continuous_scale="RdBu_r",
+                    )
+                    st.plotly_chart(shap_fig, use_container_width=True)
+            except Exception as e:
+                st.caption(f"SHAP chart fallback notice: {e}")
 
     # Waterfall breakdown chart of expected emissions vs reported
     st.markdown("#### 📊 Rincian Stoikiometri Fisik vs Laporan Emisi")
