@@ -1,9 +1,9 @@
 import { type RouteConfig, index, route, layout } from '@react-router/dev/routes';
 
 export default [
-  index('routes/_index.tsx'),
-  route('login', 'routes/login.tsx'),
-  route('portal', 'routes/portal_alias.tsx'),
+  index('routes/public/index.tsx'),
+  route('login', 'routes/public/login.tsx'),
+  route('portal-transparansi', 'routes/public/portal-transparansi.tsx'),
 
   // Shared Authenticated Portal Shell
   layout('routes/app.tsx', [

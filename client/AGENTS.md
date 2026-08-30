@@ -36,14 +36,13 @@ pnpm preview      # Preview production build
 ```
 client/
 ├── src/
-│   ├── components/           # Shared UI components (ui/, layout/, modals/, RightDrawer, MapCanvas, etc.)
+│   ├── components/           # Shared UI components (ui/, layout/ [PortalLayout, PortalSidebar, ...], modals/, etc.)
 │   ├── routes/               # React Router v7 routes (role-isolated route views & pages)
 │   │   ├── _index.tsx        # Landing page
 │   │   ├── app.tsx           # Main App route
 │   │   ├── login.tsx         # Login view
 │   │   ├── dashboard.tsx     # Overview dashboard
 │   │   ├── settings.tsx      # App settings
-│   │   ├── layouts/          # PortalLayout.tsx, PortalSidebar.tsx
 │   │   ├── kth/              # KTH role routes (polygon.tsx, wallet.tsx)
 │   │   ├── emitter/          # Emitter role routes (bursa.tsx, compliance.tsx, laporan.tsx, sertifikat.tsx)
 │   │   ├── regulator/        # Regulator role routes (projects.tsx, kth.tsx, forest.tsx, upload.tsx, etc.)

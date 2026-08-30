@@ -9,6 +9,7 @@ import {
 } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import LaporanAuditModal from '../../components/modals/LaporanAuditModal';
+import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -141,6 +142,7 @@ export default function EmissionReportsSector() {
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [auditStep, setAuditStep] = useState(0);
   const [isAuditing, setIsAuditing] = useState(false);
+  const { toast } = useToast();
 
   const navigate = useNavigate();
 
@@ -212,7 +214,11 @@ export default function EmissionReportsSector() {
       });
     } catch (error) {
       console.error('Failed to generate emission report PDF:', error);
-      alert('Terjadi kesalahan saat membuat PDF laporan emisi.');
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Membuat PDF',
+        description: 'Terjadi kesalahan saat membuat PDF laporan emisi.',
+      });
     }
   };
 
@@ -232,7 +238,11 @@ export default function EmissionReportsSector() {
 
     const totalEmissions = parseNumeric(uploadedTotalEmissions);
     if (!documentFile || !selectedSector || totalEmissions <= 0) {
-      alert('Harap unggah dokumen dan masukkan total emisi dari dokumen tersebut.');
+      toast({
+        variant: 'warning',
+        title: 'Data Belum Lengkap',
+        description: 'Harap unggah dokumen dan masukkan total emisi dari dokumen tersebut.',
+      });
       return;
     }
 
@@ -274,17 +284,32 @@ export default function EmissionReportsSector() {
       const msg = error instanceof Error ? error.message : '';
 
       if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
-        alert('⚠️ Sesi Anda telah berakhir.\n\nSilakan login ulang untuk melanjutkan.');
+        toast({
+          variant: 'destructive',
+          title: 'Sesi Telah Berakhir',
+          description: 'Sesi Anda telah berakhir. Silakan login ulang untuk melanjutkan.',
+        });
       } else if (msg.includes('503') || msg.toLowerCase().includes('service unavailable')) {
-        alert(
-          '⚠️ Layanan sedang tidak tersedia.\n\nPastikan server backend dan blockchain node sedang berjalan, lalu coba lagi.'
-        );
+        toast({
+          variant: 'destructive',
+          title: 'Layanan Tidak Tersedia',
+          description:
+            'Pastikan server backend dan blockchain node sedang berjalan, lalu coba lagi.',
+        });
       } else if (msg.includes('sudah pernah dikirimkan')) {
-        alert(`⚠️ Laporan Duplikat\n\n${msg}`);
+        toast({
+          variant: 'warning',
+          title: 'Laporan Duplikat Terdeteksi',
+          description: msg,
+        });
         setIsSubmittedLocal(true); // Mark as submitted since it already exists
         revalidate();
       } else {
-        alert(`⚠️ Error Sistem:\n\n${msg || 'Gagal mengirim laporan emisi.'}`);
+        toast({
+          variant: 'destructive',
+          title: 'Kendala Sistem',
+          description: msg || 'Gagal mengirim laporan emisi ke jaringan.',
+        });
       }
     }
   };

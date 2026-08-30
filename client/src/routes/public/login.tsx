@@ -1,8 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { Mail, Lock, ShieldCheck, ArrowLeft, UserCheck, UserPlus, Eye, EyeOff } from 'lucide-react';
-import brandIcon from '../assets/icon.png';
+import brandIcon from '@/assets/icon.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 

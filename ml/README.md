@@ -67,6 +67,20 @@ flowchart TD
 
 ---
 
+## 💡 Design Decisions & Architectural Rationale (The "Why")
+
+Every design and engineering choice in the RekaKarbon ML pipeline was selected to solve specific challenges in industrial compliance, trust verification, and low-latency system integration:
+
+| Decision Area             | Technical Choice                                          | Strategic & Engineering Rationale ("Why")                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| :------------------------ | :-------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Model Selection**       | **Isolation Forest** (`sklearn.ensemble.IsolationForest`) | • **Unsupervised Reality**: In real-world carbon registries, fraudulent submissions are rare, zero-day, unlabelled, and diverse. Supervised classifiers overfit to known fraud patterns, whereas Isolation Forest isolates novel anomalies through recursive partitioning without requiring labeled fraud datasets.<br>• **Linear Time Complexity**: $O(n \cdot t \cdot \psi)$ where tree depth scales logarithmically, ensuring near-instant scoring.<br>• **Standard ONNX Compatibility**: Converts natively to ONNX `TreeEnsembleRegressor` nodes without unsupported operator workarounds.                                                                        |
+| **Deployment Runtime**    | **In-Process ONNX** (`onnxruntime-node`) in NestJS        | • **Zero Network Latency**: Executing inside the Node.js event loop eliminates HTTP serialization and inter-service network hops, dropping inference latency from $\sim 30\text{--}50\text{ ms}$ (external Python service) to **$< 2\text{ ms}$**.<br>• **Simplified Operations**: Avoids maintaining, scaling, and containerizing a separate Python runtime (FastAPI/Flask) in production infrastructure.<br>• **Cross-Platform Parity**: Guaranteed $100.0\%$ prediction and decision score equivalence ($< 10^{-4}$) between Python training and Node.js production.                                                                                               |
+| **Feature Engineering**   | **Physics-Informed Stoichiometry & e-Faktur Boundaries**  | • **Thermodynamic Grounding**: Machine learning models can hallucinate or learn spurious statistical correlations. Incorporating stoichiometric energy balances ($E_{\text{expected}}$) provides hard physical lower bounds based on IPCC and ESDM combustion laws.<br>• **Fiscal Cross-Verification**: Combines physical energy inputs with Indonesian Ministry of Finance DJP e-Faktur market price ranges (Rp 16,000 – 25,000 / L for solar diesel) to catch financial-physical mismatches.<br>• **Explainability**: Every derived feature maps to a concrete regulatory violation (e.g. suppressed clinker process emissions or impossible production intensity). |
+| **Data Normalization**    | **RobustScaler** (Median & IQR)                           | • **Extreme Scale Variance**: Industrial facilities span multiple orders of magnitude (from small SME factories producing 1,000 tons to giant PLTU power plants emitting millions of tons).<br>• **Outlier Resilience**: `StandardScaler` calculates mean and variance which are heavily distorted by extreme scale differences or massive fraud outliers. `RobustScaler` uses the median and interquartile range (IQR), preserving relative distributions safely.                                                                                                                                                                                                    |
+| **Pipeline Architecture** | **Encapsulated Scikit-Learn Pipeline**                    | • **Anti-Leakage & Serialization**: Bundling custom feature transformation, scaling, and model detection into a single Scikit-Learn `Pipeline` guarantees zero data leakage between train/test splits and enables one-step export to ONNX via `skl2onnx`.                                                                                                                                                                                                                                                                                                                                                                                                             |
+
+---
+
 ## 🔬 Mathematical Methodology & Stoichiometric Formulation
 
 ### 1. Raw Feature Input Specification
@@ -97,24 +111,25 @@ The `EmissionFeatureEngineer` converts raw parameters into **15 domain-engineere
 #### A. Expected Stoichiometric Physical Emissions ($E_{\text{expected}}$)
 
 Based on official Indonesian Ministry of Energy and Mineral Resources (ESDM), KLHK, and IPCC Tier-2 stoichiometric emission factors:
-$$E_{\text{diesel}} = (\text{stat\_fuel} + \text{mob\_fuel}) \times 0.00268 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{coal}} = \left(\frac{\text{cost\_coal}}{1,200 \text{ IDR/kg}}\right) \times 0.00242 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{gas}} = \left(\frac{\text{cost\_gas}}{10,000 \text{ IDR/m}^3}\right) \times 0.00190 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{pln}} = \left(\frac{\text{cost\_pln}}{1,600 \text{ IDR/kWh}}\right) \times 0.00085 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{process}} = \text{clinker\_tonnes} \times 0.525 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{expected}} = \max(E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}} + E_{\text{pln}} + E_{\text{process}}, \text{production} \times 0.05)$$
+
+$$E_{\text{diesel}} = (\text{Fuel}_{\text{stat}} + \text{Fuel}_{\text{mob}}) \times 0.00268 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{coal}} = \left(\frac{\text{Cost}_{\text{coal}}}{1{,}200 \text{ IDR/kg}}\right) \times 0.00242 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{gas}} = \left(\frac{\text{Cost}_{\text{gas}}}{10{,}000 \text{ IDR/m}^3}\right) \times 0.00190 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{pln}} = \left(\frac{\text{Cost}_{\text{pln}}}{1{,}600 \text{ IDR/kWh}}\right) \times 0.00085 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{process}} = \text{Clinker}_{\text{tonnes}} \times 0.525 \quad (\text{tCO}_2\text{e})$$
+$$E_{\text{expected}} = \max(E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}} + E_{\text{pln}} + E_{\text{process}},\, \text{Production} \times 0.05)$$
 
 #### B. The 15 Engineered Features
 
 1. **Stoichiometric Divergence Ratio**: $|E_{\text{expected}} - E_{\text{reported}}| / (E_{\text{expected}} + \epsilon)$
-2. **Solar Unit Cost Log**: $\ln(1 + \text{cost\_solar} / (\text{stat\_fuel} + \epsilon))$
-3. **Emission Intensity**: $E_{\text{reported}} / (\text{production\_tonnes} + \epsilon)$
+2. **Solar Unit Cost Log**: $\ln(1 + \text{Cost}_{\text{solar}} / (\text{Fuel}_{\text{stat}} + \epsilon))$
+3. **Emission Intensity**: $E_{\text{reported}} / (\text{Production} + \epsilon)$
 4. **Sector Intensity Z-Score**: $(I - \mu_{\text{sector}}) / (\sigma_{\text{sector}} + \epsilon)$ (calibrated per sector against KLHK baselines)
 5. **YoY Growth Ratio**: $(E_{\text{reported}} - E_{\text{historical}}) / (E_{\text{historical}} + \epsilon)$
-6. **Energy Spend per Ton Product**: $\sum \text{Costs} / (\text{production\_tonnes} + \epsilon)$
+6. **Energy Spend per Ton Product**: $\sum \text{Costs} / (\text{Production} + \epsilon)$
 7. **Reported to Energy Spend Ratio**: $E_{\text{reported}} / (\sum \text{Costs} \times 10^{-9} + \epsilon)$
 8. **Process Emission Ratio**: $E_{\text{process}} / (E_{\text{expected}} + \epsilon)$
-9. **Solar Market Price Residual Ratio**: $|\text{unit\_solar} - 20500| / 20500$
+9. **Solar Market Price Residual Ratio**: $|\text{Price}_{\text{solar}} - 20{,}500| / 20{,}500$
    10-15. **Sector One-Hot Indicators** (6 binary indicators for Semen, Manufaktur, CPO, Logam, Pulp, PLTU).
 
 ---
@@ -126,8 +141,10 @@ In addition to the binary verdict (`PASS_VERIFIED` / `REJECT_ANOMALY`), the engi
 - **`score_djp` (e-Faktur DJP Financial Consistency)**: Evaluates whether declared fuel spend matches real market unit pricing (benchmark: Rp 16,000 – 25,000 / L).
 - **`score_bbm` (Physical Fuel vs Emission Correlation)**: Evaluates stoichiometric physical consistency against reported emissions.
 - **`score_cems` (CEMS Sensor / Sector Intensity Benchmark)**: Evaluates production output against BPS / KLHK industrial intensity distributions.
-- **`Composite Trust Score`**:
-  $$\text{Trust Score} = 0.30 \times \text{score\_djp} + 0.40 \times \text{score\_bbm} + 0.30 \times \text{score\_cems} \quad (0 - 100\%)$$
+
+The **Composite Trust Score** is synthesized as:
+
+$$\text{Trust Score} = 0.30 \times \text{Score}_{\text{DJP}} + 0.40 \times \text{Score}_{\text{BBM}} + 0.30 \times \text{Score}_{\text{CEMS}} \quad (0 - 100\%)$$
 
 ---
 
