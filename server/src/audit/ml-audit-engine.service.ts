@@ -238,6 +238,21 @@ export class MlAuditEngineService implements OnModuleInit {
       explanation = `Anomali terdeteksi: ${reasons.join('; ')}.`;
     }
 
+    const xai = EmissionFeatureEngineer.computeXaiDiagnostics(
+      report,
+      {
+        eExpected,
+        divergencePct,
+        unitSolar,
+        intensity,
+        intensityZ,
+        tensor,
+        featuresArray: new Float32Array(),
+      },
+      { scoreDjp, scoreBbm, scoreCems },
+      flags,
+    );
+
     return {
       isAnomaly,
       verdict: isAnomaly ? 'REJECT_ANOMALY' : 'PASS_VERIFIED',
@@ -251,6 +266,7 @@ export class MlAuditEngineService implements OnModuleInit {
       scoreCems,
       flags,
       explanation,
+      xai,
     };
   }
 

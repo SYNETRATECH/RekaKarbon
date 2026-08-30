@@ -116,5 +116,8 @@ describe('MlAuditEngineService', () => {
     expect(result.isAnomaly).toBe(true);
     expect(result.verdict).toBe('REJECT_ANOMALY');
     expect(result.flags).toContain('EMISI_PROSES_TIDAK_DILAPORKAN');
+    expect(result.xai).toBeDefined();
+    expect(result.xai?.topAnomalyDrivers.length).toBeGreaterThan(0);
+    expect(result.xai?.recommendation).toBeDefined();
   });
 });

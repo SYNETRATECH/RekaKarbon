@@ -213,3 +213,34 @@ def test_extreme_and_edge_inputs_stability(predictor):
     res_mega = predictor.predict_single(mega_record)
     assert res_mega["verdict"] in ["PASS_VERIFIED", "REJECT_ANOMALY"]
     assert 0.0 <= res_mega["trust_score"] <= 100.0
+
+
+def test_xai_feature_attribution_diagnostics(predictor):
+    """
+    XAI Audit Rule:
+    Every single prediction result must contain a valid 'xai' dictionary
+    with top anomaly drivers, breakdown metrics, and recommendation guidance.
+    """
+    anomaly_record = {
+        "sector": "Semen & Bahan Bangunan",
+        "production_tonnes": 500000.0,
+        "reported_emissions_tco2e": 20000.0,
+        "historical_emissions_tco2e": 320000.0,
+        "stat_fuel_liters": 2000000.0,
+        "mob_fuel_liters": 500000.0,
+        "biomass_tonnes": 10000.0,
+        "clinker_tonnes": 0.0,  # Unreported calcination
+        "cost_solar_idr": 2000000.0 * 20500.0,
+        "cost_coal_idr": 85000000000.0,
+        "cost_gas_idr": 0.0,
+        "cost_pln_idr": 25000000000.0,
+    }
+
+    res = predictor.predict_single(anomaly_record)
+    assert "xai" in res
+    xai = res["xai"]
+    assert "top_anomaly_drivers" in xai
+    assert "breakdown" in xai
+    assert "recommendation" in xai
+    assert len(xai["top_anomaly_drivers"]) > 0
+    assert xai["top_anomaly_drivers"][0]["impact_score"] > 0.0

@@ -4,7 +4,7 @@ Supports Scikit-Learn (.pkl), ONNX Runtime (.onnx), and Multi-Tier Physics & Fis
 """
 
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import numpy as np
 import onnxruntime as ort
@@ -59,6 +59,23 @@ class CarbonAnomalyPredictor:
 
         self.onnx_path = onnx_path
         self.ort_session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
+
+        # Official SHAP TreeExplainer initialization on trained IsolationForest model
+        import shap
+
+        detector = self.pipeline.named_steps["detector"]
+        self.shap_explainer = shap.TreeExplainer(detector)
+
+    def compute_shap_values(self, df_raw: pd.DataFrame) -> np.ndarray:
+        """
+        Computes exact SHAP feature contribution values using official shap.TreeExplainer library.
+        Returns shape (N_samples, N_features).
+        """
+        eng_features = self.feature_engineer.transform(df_raw)
+        scaler = self.pipeline.named_steps["scaler"]
+        scaled_features = scaler.transform(eng_features)
+        shap_vals = self.shap_explainer.shap_values(scaled_features)
+        return np.asarray(shap_vals)
 
     def predict_single(self, record: Dict[str, Any], validate: bool = False) -> Dict[str, Any]:
         """Runs end-to-end anomaly audit on a single company report dict."""
@@ -222,7 +239,102 @@ class CarbonAnomalyPredictor:
                 or (anomaly_prob > 0.70 and composite_trust < 80.0)
             )
 
-            # Explanations in Bahasa Indonesia
+            # Explanations & XAI Feature Attribution
+            drivers = []
+
+            # 1. Stoichiometric Divergence
+            impact_div = min(100.0, round(divergence_pct * 1.2, 1))
+            is_under = reported < e_expected
+            drivers.append(
+                {
+                    "feature_name": "stoichiometric_divergence",
+                    "label": "Divergensi Fisik Stoikiometri",
+                    "user_value": f"{reported:,.0f} tCO2e",
+                    "benchmark_value": f"{round(e_expected):,.0f} tCO2e",
+                    "impact_score": impact_div,
+                    "direction": "BELOW_NORMAL" if is_under else "ABOVE_NORMAL",
+                    "unit": "tCO2e",
+                }
+            )
+
+            # 2. Fuel Unit Cost
+            unit_solar_val = unit_solar if stat_fuel > 0 else 20500.0
+            impact_solar = (
+                min(
+                    100.0,
+                    round(abs(unit_solar_val - self.prices["solar_diesel"]["nominal"]) / 250.0, 1),
+                )
+                if stat_fuel > 0
+                else 0.0
+            )
+            drivers.append(
+                {
+                    "feature_name": "solar_unit_cost",
+                    "label": "Biaya Unit Solar DJP e-Faktur",
+                    "user_value": f"Rp {unit_solar_val:,.0f}/L"
+                    if stat_fuel > 0
+                    else "N/A (Tidak Menggunakan Solar)",
+                    "benchmark_value": f"Rp {self.prices['solar_diesel']['nominal']:,.0f}/L (Rp 16rb-25rb)",
+                    "impact_score": impact_solar,
+                    "direction": "MISMATCH" if impact_solar > 15.0 else "ABOVE_NORMAL",
+                    "unit": "IDR/L",
+                }
+            )
+
+            # 3. Sector Intensity Z-Score
+            is_low = intensity < bench["avg_intensity_tco2e_per_ton"]
+            impact_z = min(100.0, round(intensity_z * 22.0, 1))
+            drivers.append(
+                {
+                    "feature_name": "sector_intensity_zscore",
+                    "label": f"Intensitas Emisi Sektor {sector_name}",
+                    "user_value": f"{intensity:.3f} tCO2e/ton",
+                    "benchmark_value": f"{bench['avg_intensity_tco2e_per_ton']:.3f} tCO2e/ton (min: {bench['min_intensity']})",
+                    "impact_score": impact_z,
+                    "direction": "BELOW_NORMAL" if is_low else "ABOVE_NORMAL",
+                    "unit": "tCO2e/ton",
+                }
+            )
+
+            if "EMISI_PROSES_TIDAK_DILAPORKAN" in flags:
+                drivers.append(
+                    {
+                        "feature_name": "process_emission_ratio",
+                        "label": "Pos Emisi Proses Dekarbonasi/Peleburan",
+                        "user_value": "0 tCO2e (Tidak Terdata)",
+                        "benchmark_value": f"Faktor Dekarbonasi: {bench.get('process_emission_factor', 0.525)} tCO2e/ton",
+                        "impact_score": 88.5,
+                        "direction": "BELOW_NORMAL",
+                        "unit": "tCO2e",
+                    }
+                )
+
+            drivers.sort(key=lambda d: float(cast(float, d["impact_score"])), reverse=True)
+
+            rec = "Laporan emisi Anda konsisten dan memenuhi standar acuan teknis ESDM & KLHK."
+            if is_flagged and drivers:
+                top_driver = drivers[0]["feature_name"]
+                if top_driver == "stoichiometric_divergence":
+                    rec = "Periksa kembali konsumsi BBM dan energi listrik. Angka emisi dilaporkan jauh di bawah batas stoikiometri pembakaran fisik."
+                elif top_driver == "solar_unit_cost":
+                    rec = "Verifikasi nomor seri DJP e-Faktur dan total belanja Solar HSD. Pembagian harga unit tidak sesuai harga pasar resmi."
+                elif top_driver == "process_emission_ratio":
+                    rec = "Tambahkan perhitungan emisi proses dekarbonasi batu kapur (clinker) atau reaksi peleburan dalam formulir pelaporan."
+                elif top_driver == "sector_intensity_zscore":
+                    rec = "Angka intensitas emisi per ton produk berbeda signifikan dari distribusi rata-rata industri sejenis."
+
+            xai = {
+                "top_anomaly_drivers": drivers,
+                "breakdown": {
+                    "physical_fuel_delta_pct": divergence_pct,
+                    "fiscal_price_delta_pct": round(abs(unit_solar - 20500.0) / 20500.0 * 100.0, 1)
+                    if stat_fuel > 0
+                    else 0.0,
+                    "sector_intensity_zscore": round(intensity_z, 2),
+                },
+                "recommendation": rec,
+            }
+
             if not is_flagged:
                 explanation = (
                     f"Laporan terverifikasi konsisten. Total emisi dilaporkan {reported:,.0f} tCO2e "
@@ -268,6 +380,7 @@ class CarbonAnomalyPredictor:
                     "score_cems": round(score_cems, 1),
                     "flags": flags,
                     "explanation": explanation,
+                    "xai": xai,
                 }
             )
 

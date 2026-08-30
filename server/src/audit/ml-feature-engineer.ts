@@ -3,6 +3,7 @@ import {
   AuditEmissionReportDto,
   IndustrialSector,
 } from './dto/audit-emission-report.dto';
+import type { FeatureContribution, XaiDiagnostics } from './types/audit.types';
 
 export const SUPPORTED_SECTORS: IndustrialSector[] = [
   IndustrialSector.SEMEN,
@@ -245,6 +246,159 @@ export class EmissionFeatureEngineer {
       intensityZ: Math.abs(intensityZ),
       featuresArray,
       tensor,
+    };
+  }
+
+  /**
+   * Computes native in-process Explainable AI (XAI) diagnostics, feature contributions, and recommendations.
+   */
+  public static computeXaiDiagnostics(
+    report: AuditEmissionReportDto,
+    extracted: ReturnType<typeof EmissionFeatureEngineer.extractFeatures>,
+    scores: { scoreDjp: number; scoreBbm: number; scoreCems: number },
+    flags: string[],
+  ): XaiDiagnostics {
+    const sector = report.sector;
+    const bench =
+      SECTOR_BENCHMARKS[sector] ||
+      SECTOR_BENCHMARKS[IndustrialSector.MANUFAKTUR];
+
+    const reported = Math.max(report.reportedEmissionsTco2e, 0);
+    const drivers: FeatureContribution[] = [];
+
+    // Driver 1: Physical Stoichiometric Divergence
+    if (extracted.divergencePct > 20.0) {
+      const impactScore = Math.min(
+        100.0,
+        Math.round(extracted.divergencePct * 1.2 * 10) / 10,
+      );
+      const isUnder = reported < extracted.eExpected;
+      drivers.push({
+        featureName: 'stoichiometric_divergence',
+        label: 'Divergensi Fisik Stoikiometri',
+        userValue: `${reported.toLocaleString('id-ID')} tCO2e`,
+        benchmarkValue: `${Math.round(extracted.eExpected).toLocaleString('id-ID')} tCO2e`,
+        impactScore,
+        direction: isUnder ? 'BELOW_NORMAL' : 'ABOVE_NORMAL',
+        unit: 'tCO2e',
+      });
+    }
+
+    // Driver 2: DJP e-Faktur Solar Unit Cost
+    const statFuel = report.statFuelLiters ?? 0;
+    if (statFuel > 0) {
+      const unitSolar = extracted.unitSolar;
+      const nominalSolar = MARKET_PRICE_RANGES.solarDiesel.nominal;
+      if (
+        unitSolar < MARKET_PRICE_RANGES.solarDiesel.min ||
+        unitSolar > MARKET_PRICE_RANGES.solarDiesel.max
+      ) {
+        const impactScore = Math.min(
+          100.0,
+          Math.round((100.0 - scores.scoreDjp) * 10) / 10,
+        );
+        drivers.push({
+          featureName: 'solar_unit_cost',
+          label: 'Biaya Unit Solar DJP e-Faktur',
+          userValue: `Rp ${Math.round(unitSolar).toLocaleString('id-ID')}/L`,
+          benchmarkValue: `Rp ${nominalSolar.toLocaleString('id-ID')}/L (Rp 16rb-25rb)`,
+          impactScore,
+          direction: 'MISMATCH',
+          unit: 'IDR/L',
+        });
+      }
+    }
+
+    // Driver 3: Sector Intensity Z-Score
+    if (extracted.intensityZ > 1.8) {
+      const impactScore = Math.min(
+        100.0,
+        Math.round(extracted.intensityZ * 22.0 * 10) / 10,
+      );
+      const isLow = extracted.intensity < bench.avgIntensityTco2ePerTon;
+      drivers.push({
+        featureName: 'sector_intensity_zscore',
+        label: `Intensitas Emisi Sektor ${sector}`,
+        userValue: `${extracted.intensity.toFixed(3)} tCO2e/ton`,
+        benchmarkValue: `${bench.avgIntensityTco2ePerTon.toFixed(3)} tCO2e/ton (min: ${bench.minIntensity})`,
+        impactScore,
+        direction: isLow ? 'BELOW_NORMAL' : 'ABOVE_NORMAL',
+        unit: 'tCO2e/ton',
+      });
+    }
+
+    // Driver 4: Unreported Process Emissions
+    if (flags.includes('EMISI_PROSES_TIDAK_DILAPORKAN')) {
+      drivers.push({
+        featureName: 'process_emission_ratio',
+        label: 'Pos Emisi Proses Dekarbonasi/Peleburan',
+        userValue: '0 tCO2e (Tidak Terdata)',
+        benchmarkValue: `Faktor Dekarbonasi: ${bench.processEmissionFactor} tCO2e/ton`,
+        impactScore: 88.5,
+        direction: 'BELOW_NORMAL',
+        unit: 'tCO2e',
+      });
+    }
+
+    // Driver 5: Historical Volatility
+    if (flags.includes('VOLATILITAS_HISTORIS_EKSTRIM')) {
+      const hist = report.historicalEmissionsTco2e ?? reported;
+      drivers.push({
+        featureName: 'yoy_change_ratio',
+        label: 'Perubahan YoY Historis',
+        userValue: `${reported.toLocaleString('id-ID')} tCO2e`,
+        benchmarkValue: `${hist.toLocaleString('id-ID')} tCO2e`,
+        impactScore: 75.0,
+        direction: reported < hist ? 'BELOW_NORMAL' : 'ABOVE_NORMAL',
+        unit: 'tCO2e',
+      });
+    }
+
+    // Sort drivers descending by impactScore
+    drivers.sort((a, b) => b.impactScore - a.impactScore);
+
+    // Build Actionable Recommendation Guidance
+    let recommendation =
+      'Laporan emisi Anda konsisten dan memenuhi standar acuan teknis ESDM & KLHK.';
+    if (drivers.length > 0) {
+      const top = drivers[0];
+      if (top.featureName === 'stoichiometric_divergence') {
+        recommendation =
+          'Periksa kembali konsumsi BBM dan energi listrik. Angka emisi dilaporkan jauh di bawah batas stoikiometri pembakaran fisik.';
+      } else if (top.featureName === 'solar_unit_cost') {
+        recommendation =
+          'Verifikasi nomor seri DJP e-Faktur dan total belanja Solar HSD. Pembagian harga unit tidak sesuai harga pasar resmi.';
+      } else if (top.featureName === 'process_emission_ratio') {
+        recommendation =
+          'Tambahkan perhitungan emisi proses dekarbonasi batu kapur (clinker) atau reaksi peleburan dalam formulir pelaporan.';
+      } else if (top.featureName === 'sector_intensity_zscore') {
+        recommendation =
+          'Angka intensitas emisi per ton produk berbeda signifikan dari distribusi rata-rata industri sejenis.';
+      } else {
+        recommendation =
+          'Tinjau kembali data masukan pelaporan emisi Anda sebelum pengajuan ulang.';
+      }
+    }
+
+    const fiscalPriceDeltaPct =
+      statFuel > 0
+        ? Math.round(
+            (Math.abs(
+              extracted.unitSolar - MARKET_PRICE_RANGES.solarDiesel.nominal,
+            ) /
+              MARKET_PRICE_RANGES.solarDiesel.nominal) *
+              1000,
+          ) / 10
+        : 0;
+
+    return {
+      topAnomalyDrivers: drivers,
+      breakdown: {
+        physicalFuelDeltaPct: extracted.divergencePct,
+        fiscalPriceDeltaPct,
+        sectorIntensityZScore: Math.round(extracted.intensityZ * 100) / 100,
+      },
+      recommendation,
     };
   }
 }
