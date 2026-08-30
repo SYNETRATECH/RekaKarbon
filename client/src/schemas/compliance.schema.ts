@@ -8,13 +8,25 @@ export const AnnualChartPointSchema = z.object({
   label: z.string().optional(),
 });
 
+export const PtbaeQuotaStatusSchema = z.enum([
+  'VERIFIED',
+  'PENDING',
+  'REJECTED',
+  'EXPIRED',
+  'LEGACY',
+  'UNAVAILABLE',
+]);
+
 export const ComplianceDataSchema = z.object({
+  complianceYear: z.number().int().positive(),
   emissionVsQuotaPercent: MetricPercentageSchema,
   emissionIntensity: z.number().nonnegative(),
   emissionIntensityStandard: z.number().nonnegative(),
   carbonDeficit: CarbonVolumeSchema,
   actualEmissions: CarbonVolumeSchema,
   quotaPTBAE: CarbonVolumeSchema,
+  quotaPTBAEStatus: PtbaeQuotaStatusSchema,
+  quotaPTBAESourceDocument: z.string().nullable(),
   governedBy: z.string().min(1),
   administrativeSanction: z.string().min(1),
   djpReportStatus: z.string().min(1),
