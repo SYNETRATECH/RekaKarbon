@@ -1,6 +1,11 @@
 import { Globe, ArrowUpRight } from 'lucide-react';
+import { useNavigate } from 'react-router';
 
-export default function CTASectionBottom({ onOpenPortal }: { onOpenPortal: () => void }) {
+export default function CTASectionBottom({ onOpenPortal }: { onOpenPortal?: () => void } = {}) {
+  const navigate = useNavigate();
+  const handleOpenPortal = onOpenPortal || (() => navigate('/portal-transparansi'));
+  const handleLogin = () => navigate('/login');
+
   return (
     <section className="relative overflow-hidden bg-primary-gradient text-white py-28 px-6 text-center">
       {/* Cloud overlay */}
@@ -58,14 +63,14 @@ export default function CTASectionBottom({ onOpenPortal }: { onOpenPortal: () =>
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-3">
           <button
-            onClick={onOpenPortal}
+            onClick={handleLogin}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-primary font-semibold rounded-xl hover:bg-slate-100 transition-colors text-sm shadow-lg shadow-black/15 cursor-pointer"
           >
             Daftar / Masuk Portal
             <ArrowUpRight size={15} />
           </button>
           <button
-            onClick={onOpenPortal}
+            onClick={handleOpenPortal}
             className="flex items-center justify-center gap-2 px-6 py-3 border border-white/70 bg-white/10 backdrop-blur text-white font-semibold rounded-xl hover:bg-white/20 transition-colors text-sm cursor-pointer"
           >
             <Globe size={14} />

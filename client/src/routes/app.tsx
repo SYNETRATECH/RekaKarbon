@@ -1,7 +1,7 @@
 import { redirect } from 'react-router';
 import { authRepository } from '../repositories';
 import { useAuthStore } from '../store/useAuthStore';
-import PortalLayout from './layouts/PortalLayout';
+import PortalLayout from '@/components/layout/PortalLayout';
 
 /**
  * Layout-level clientLoader — runs before any child portal route renders.

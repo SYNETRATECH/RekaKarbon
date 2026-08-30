@@ -39,6 +39,7 @@ import {
 import { formatCarbon } from '@/lib/formatters';
 import { reportRepository } from '../../repositories';
 import { generateEmissionReportPDF } from '@/lib/generateEmissionReportPDF';
+import { useToast } from '@/hooks/use-toast';
 import type { CalculationData, CalculatorReportSubmission } from '@/types';
 
 // ─── Constants & Emission Factors (DEFRA 2023 Standard) ────────────────
@@ -335,6 +336,7 @@ export default function KalkulatorHijauPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [generatedPdfData, setGeneratedPdfData] = useState<CalculatorReportSubmission | null>(null);
+  const { toast } = useToast();
 
   const selectedSector = useMemo(
     () => SECTORS.find((s) => s.id === selectedSectorId) ?? null,
@@ -413,7 +415,11 @@ export default function KalkulatorHijauPage() {
     } catch (error: unknown) {
       console.error(error);
       setIsSubmitting(false);
-      alert(error instanceof Error ? error.message : 'Gagal menyimpan laporan kalkulator.');
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Menyimpan Laporan',
+        description: error instanceof Error ? error.message : 'Gagal menyimpan laporan kalkulator.',
+      });
     }
   };
 
@@ -437,7 +443,11 @@ export default function KalkulatorHijauPage() {
       });
     } catch (err) {
       console.error('Failed to generate PDF:', err);
-      alert('Terjadi kesalahan saat membuat PDF.');
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Mengunduh PDF',
+        description: 'Terjadi kesalahan saat membuat PDF.',
+      });
     }
   };
 

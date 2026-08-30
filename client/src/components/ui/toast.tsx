@@ -23,14 +23,15 @@ const ToastViewport = React.forwardRef<
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName;
 
 const toastVariants = cva(
-  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-2xl border p-4 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full text-left',
+  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-2xl border p-4 shadow-xl transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full text-left font-sans',
   {
     variants: {
       variant: {
         default: 'border-slate-200 bg-white text-slate-900',
-        mint: 'border-emerald-500/50 bg-slate-900 text-white',
-        destructive: 'destructive group border-rose-500/50 bg-rose-900 text-white',
-        warning: 'border-amber-500/50 bg-amber-950 text-white',
+        mint: 'border-emerald-500/40 bg-[#033C2E] text-white shadow-emerald-950/20',
+        destructive:
+          'destructive group border-rose-500/40 bg-rose-950 text-white shadow-rose-950/20',
+        warning: 'border-amber-500/40 bg-amber-950 text-white shadow-amber-950/20',
       },
     },
     defaultVariants: {
