@@ -8,6 +8,24 @@ export interface SectorBreakdown {
   color: string;
 }
 
+export interface CalculationEntry {
+  id: string;
+  value: number;
+}
+
+export interface CalculationData {
+  scope1: number;
+  scope2: number;
+  scope3: number;
+  entries: CalculationEntry[];
+}
+
+export interface CalculatorReportSubmission {
+  merkleRoot: string;
+  txHash: string;
+  blockchainReportId: number;
+}
+
 export interface EmissionReport {
   id: string;
   year: number;
@@ -15,7 +33,12 @@ export interface EmissionReport {
   fileName: string;
   fileSizeBytes: number;
   uploadDate: string;
-  status: 'verified' | 'audit_in_progress' | 'draft';
+  status: 'verified' | 'approved' | 'submitted' | 'rejected' | 'audit_in_progress' | 'draft';
   totalEmissionsTCO2e: number;
   sectors: SectorBreakdown[];
+  blockchainTxHash?: string | null;
+  blockchainReportId?: number | null;
+  merkleRoot?: string | null;
+  method?: 'UPLOAD' | 'CALCULATOR';
+  sectorId?: string | null;
 }

@@ -40,6 +40,7 @@ export default [
     layout('routes/guards/emitter.tsx', [
       route('bursa', 'routes/emitter/bursa.tsx'),
       route('laporan', 'routes/emitter/laporan.tsx'),
+      route('kalkulator', 'routes/emitter/kalkulator.tsx'),
       route('sertifikat', 'routes/emitter/sertifikat.tsx'),
       route('dompet', 'routes/emitter/wallet.tsx'),
     ]),

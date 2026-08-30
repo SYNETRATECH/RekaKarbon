@@ -1,3 +1,5 @@
+import type { Prisma } from '@prisma/client';
+
 export interface SectorBreakdown {
   id: string;
   name: string;
@@ -6,6 +8,18 @@ export interface SectorBreakdown {
   percentage: number;
   description: string;
   color: string;
+}
+
+export interface CalculationEntry extends Prisma.InputJsonObject {
+  id: string;
+  value: number;
+}
+
+export interface CalculatorCalculationData extends Prisma.InputJsonObject {
+  scope1: number;
+  scope2: number;
+  scope3: number;
+  entries: CalculationEntry[];
 }
 
 export interface EmissionReport {

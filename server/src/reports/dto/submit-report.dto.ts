@@ -12,4 +12,11 @@ export class SubmitReportDto {
   })
   @IsNotEmpty()
   totalEmissions!: string | number;
+
+  @ApiProperty({
+    description: 'Selected Industry Sector',
+    example: 'Energi - Pembangkit Listrik (PLTU)',
+  })
+  @IsNotEmpty()
+  sector!: string;
 }

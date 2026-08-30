@@ -7,7 +7,8 @@ export class MockBursaRepository implements BursaRepository {
     return MOCK_BURSA_ITEMS;
   }
 
-  async buyCarbonToken(listingId: number, volume: number): Promise<{ txHash: string }> {
+  async buyCarbonToken(listingId: string, volume: number): Promise<{ txHash: string }> {
+    console.log(`[MOCK] Buy Carbon Token ${listingId} volume ${volume}`);
     return Promise.resolve({ txHash: '0xmocktransactionhash123' });
   }
 }

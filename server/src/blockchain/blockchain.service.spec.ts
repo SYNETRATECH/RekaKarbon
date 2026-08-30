@@ -124,9 +124,10 @@ describe('BlockchainService', () => {
     });
 
     it('should read carbon balance', async () => {
-      const balance = await service.getCarbonBalance('0xaddress', 1);
+      const walletAddress = '0x0000000000000000000000000000000000000001';
+      const balance = await service.getCarbonBalance(walletAddress, 1);
       expect(balance).toBe(150);
-      expect(mockContract.balanceOf).toHaveBeenCalledWith('0xaddress', 1);
+      expect(mockContract.balanceOf).toHaveBeenCalledWith(walletAddress, 1);
     });
 
     it('should mint offset credit and return tx hash', async () => {

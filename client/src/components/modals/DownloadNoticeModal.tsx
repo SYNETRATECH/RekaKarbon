@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,11 +16,56 @@ interface DownloadNoticeModalProps {
   title?: string;
 }
 
+import jsPDF from 'jspdf';
+
 export default function DownloadNoticeModal({
   fileName,
   onClose,
   title = 'Pengunduhan Berkas Resmi',
 }: DownloadNoticeModalProps) {
+  useEffect(() => {
+    if (fileName) {
+      if (fileName.toLowerCase().endsWith('.pdf')) {
+        try {
+          const doc = new jsPDF();
+          doc.setFillColor(4, 120, 87); // Emerald 700
+          doc.rect(0, 0, 210, 20, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(14);
+          doc.text('REKAKARBON — ARSIP DOKUMEN', 14, 13);
+
+          doc.setTextColor(30, 41, 59); // Slate 800
+          doc.setFontSize(12);
+          doc.text('Keterangan Dokumen', 14, 35);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          doc.setTextColor(100, 116, 139); // Slate 500
+          doc.text(`Nama Berkas: ${fileName}`, 14, 45);
+          doc.text(`Diunduh pada: ${new Date().toLocaleString('id-ID')}`, 14, 52);
+          doc.text('Status: Arsip Laporan Historis (File Asli tidak tersedia di Demo)', 14, 59);
+
+          doc.save(fileName);
+        } catch (err) {
+          console.error('Error generating PDF placeholder', err);
+        }
+      } else {
+        // For non-PDF generic documents
+        const content = `REKAKARBON - Dokumen ${fileName}\nDiunduh pada: ${new Date().toLocaleString()}\n\nDokumen ini dihasilkan oleh sistem RekaKarbon.\nUntuk laporan emisi lengkap, gunakan fitur Kalkulator Hijau.`;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    }
+  }, [fileName]);
+
   return (
     <Dialog open={!!fileName} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
