@@ -3,6 +3,7 @@ export * from './companies';
 export * from './governance';
 export * from './audit';
 export * from './compliance';
+export * from './ptbae';
 export * from './reports';
 export * from './certificates';
 export * from './bursa';

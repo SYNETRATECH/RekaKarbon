@@ -40,6 +40,14 @@ enum KybStatus {
   REJECTED
 }
 
+enum PtbaeStatus {
+  LEGACY
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
 enum ComplianceRating {
   COMPLIANT
   WARNING
@@ -248,10 +256,31 @@ model Company {
   carbonTaxAssessments   CarbonTaxAssessment[]
   stpInvoices            StpInvoice[]
   emissionReports        EmissionReport[]
+  ptbaeAllocations       PtbaeAllocation[]
 
   @@index([complianceRating])
   @@index([region])
   @@map("companies")
+}
+
+model PtbaeAllocation {
+  id               String      @id @default(uuid()) @db.Uuid
+  companyId        String      @map("company_id") @db.Uuid
+  complianceYear   Int         @map("compliance_year")
+  quotaTco2e       Decimal     @map("quota_tco2e") @db.Decimal(14, 2)
+  sourceDocument   String?     @map("source_document") @db.Text
+  status           PtbaeStatus @default(PENDING)
+  assignedAt       DateTime?   @map("assigned_at") @db.Timestamptz
+  verifiedAt       DateTime?   @map("verified_at") @db.Timestamptz
+  notes            String?     @db.Text
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, complianceYear])
+  @@index([complianceYear, status])
+  @@map("ptbae_allocations")
 }
 
 model Smokestack {

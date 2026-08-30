@@ -4,8 +4,10 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { ComplianceRating } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
+import { PtbaeService } from '../compliance/ptbae.service';
 import type { BursaItem } from './types';
 
 @Injectable()
@@ -15,6 +17,7 @@ export class BursaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly blockchainService: BlockchainService,
+    private readonly ptbaeService: PtbaeService,
   ) {}
 
   async getBursaItems(): Promise<BursaItem[]> {
@@ -49,9 +52,9 @@ export class BursaService {
         category,
         categoryLabel,
         location: l.carbonToken.project.province,
-        priceFraction: price,
+        pricePerTonIDR: price,
         change24h: 2.5,
-        supplyFractions: vol,
+        volumeAvailableTCO2e: vol,
         supplyPercent: Math.min(100, Math.round((vol / 50000) * 100)),
       };
     });
@@ -64,9 +67,36 @@ export class BursaService {
   ) {
     const buyer = await this.prisma.user.findUnique({
       where: { id: buyerUserId },
+      include: { companies: true },
     });
     if (!buyer || !buyer.walletAddress)
       throw new BadRequestException('Buyer wallet not found');
+    const company = buyer.companies[0];
+    let activeDeficitTCO2e: number | null = null;
+    if (company) {
+      const latestReport = await this.prisma.emissionReport.findFirst({
+        where: { companyId: company.id },
+        orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
+        select: { year: true, totalEmissionsTco2e: true },
+      });
+      const complianceYear = latestReport?.year ?? new Date().getFullYear();
+      const actualEmissionsTCO2e = latestReport
+        ? Number(latestReport.totalEmissionsTco2e)
+        : Number(company.actualEmissionTco2e);
+      const quota = await this.ptbaeService.resolveForCompany(
+        company.id,
+        complianceYear,
+      );
+      activeDeficitTCO2e = this.ptbaeService.calculateDeficit(
+        actualEmissionsTCO2e,
+        quota.quotaTCO2e,
+      );
+    }
+    if (activeDeficitTCO2e !== null && volumeTco2e > activeDeficitTCO2e) {
+      throw new BadRequestException(
+        `Purchase volume exceeds the active carbon deficit cap of ${activeDeficitTCO2e} tCO2e`,
+      );
+    }
 
     const listing = await this.prisma.bursaListing.findUnique({
       where: { id: listingId },
@@ -133,6 +163,24 @@ export class BursaService {
           status: newStatus,
         },
       });
+
+      if (company && activeDeficitTCO2e !== null) {
+        const remainingDeficitTCO2e = Math.max(
+          0,
+          activeDeficitTCO2e - volumeTco2e,
+        );
+        await tx.company.update({
+          where: { id: company.id },
+          data: {
+            carbonDeficitTco2e: remainingDeficitTCO2e,
+            offsetCostIdr: remainingDeficitTCO2e * 650000,
+            complianceRating:
+              remainingDeficitTCO2e > 0
+                ? ComplianceRating.NON_COMPLIANT
+                : ComplianceRating.COMPLIANT,
+          },
+        });
+      }
 
       return order;
     });

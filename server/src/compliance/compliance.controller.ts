@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -11,6 +11,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import type { AuthenticatedRequest } from '../auth/types';
 
 @ApiTags('Emitter Compliance')
 @ApiBearerAuth('JWT-auth')
@@ -29,8 +30,14 @@ export class ComplianceController {
     description: 'Compliance data retrieved successfully.',
   })
   @Get()
-  async getCompliance(@Query() _query: ComplianceQueryDto) {
-    const data = await this.complianceService.getComplianceData();
+  async getCompliance(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: ComplianceQueryDto,
+  ) {
+    const data = await this.complianceService.getComplianceData(
+      req.user.userId,
+      query.year,
+    );
     return {
       success: true,
       data,

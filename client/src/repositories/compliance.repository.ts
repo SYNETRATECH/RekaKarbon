@@ -2,12 +2,13 @@ import type { ComplianceData } from '../types';
 import { api } from '../lib/api';
 
 export interface ComplianceRepository {
-  getComplianceData(): Promise<ComplianceData>;
+  getComplianceData(year?: number): Promise<ComplianceData>;
 }
 
 export class ApiComplianceRepository implements ComplianceRepository {
-  async getComplianceData(): Promise<ComplianceData> {
-    return api.get<ComplianceData>('/emitter/compliance');
+  async getComplianceData(year?: number): Promise<ComplianceData> {
+    const query = year === undefined ? '' : `?year=${year}`;
+    return api.get<ComplianceData>(`/emitter/compliance${query}`);
   }
 }
 

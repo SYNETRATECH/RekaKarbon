@@ -12,6 +12,8 @@ export type { AuditRepository } from './audit.repository';
 
 export { complianceRepository } from './compliance.repository';
 export type { ComplianceRepository } from './compliance.repository';
+export { ptbaeRepository } from './ptbae.repository';
+export type { PtbaeRepository } from './ptbae.repository';
 
 export { reportRepository } from './report.repository';
 export type { ReportRepository } from './report.repository';

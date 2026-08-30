@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLoaderData } from 'react-router';
-import { bursaRepository } from '../../repositories';
+import { formatCarbon, formatCurrency, formatNumber } from '@/lib/formatters';
+import { bursaRepository, complianceRepository, reportRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import BursaPurchaseModal from '../../components/modals/BursaPurchaseModal';
@@ -24,10 +25,15 @@ import {
   MapPin,
   Search,
 } from 'lucide-react';
+import type { BursaItem } from '@/types';
 
 export async function clientLoader() {
-  const bursaItems = await bursaRepository.getBursaItems().catch(() => []);
-  return { bursaItems };
+  const [bursaItems, complianceData, emissionReports] = await Promise.all([
+    bursaRepository.getBursaItems().catch(() => []),
+    complianceRepository.getComplianceData().catch(() => null),
+    reportRepository.getEmissionReports().catch(() => []),
+  ]);
+  return { bursaItems, complianceData, emissionReports };
 }
 
 clientLoader.hydrate = true as const;
@@ -44,44 +50,47 @@ export function meta() {
 }
 
 export default function CarbonDexMarket() {
-  const { bursaItems } = useLoaderData<typeof clientLoader>();
+  const { bursaItems, complianceData, emissionReports } = useLoaderData<typeof clientLoader>();
 
   const [bursaFilter, setBursaFilter] = useState<'all' | 'hutan' | 'mangrove' | 'gambut'>('all');
   const [sortBy, setSortBy] = useState<'pasokan' | 'harga' | 'perubahan'>('pasokan');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBursaToken, setSelectedBursaToken] = useState<any>(null);
-  const [buyQuantity, setBuyQuantity] = useState(2330);
+  const [selectedBursaToken, setSelectedBursaToken] = useState<BursaItem | null>(null);
+
+  const activeReport = emissionReports.find((report) => report.status !== 'rejected') ?? null;
+  const actualEmissionTCO2e =
+    activeReport?.totalEmissionsTCO2e ?? complianceData?.actualEmissions ?? 0;
+  const quotaPTBAETCO2e = activeReport
+    ? (activeReport.quotaPTBAETCO2e ?? null)
+    : (complianceData?.quotaPTBAE ?? null);
+  const calculatedDeficitTCO2e =
+    quotaPTBAETCO2e === null ? null : Math.max(0, actualEmissionTCO2e - quotaPTBAETCO2e);
+  const deficitTCO2e = activeReport
+    ? calculatedDeficitTCO2e
+    : (complianceData?.carbonDeficit ?? calculatedDeficitTCO2e);
+  const estimatedOffsetCostIDR =
+    deficitTCO2e === null ? null : deficitTCO2e * (complianceData?.carbonPricePerTon ?? 650000);
+  const complianceBasis = activeReport
+    ? `laporan emisi tahun ${activeReport.year}`
+    : 'data kepatuhan aktif';
 
   // Sorting and Searching logic
   const sortedItems = [...bursaItems]
-    .filter((item: any) => bursaFilter === 'all' || item.category === bursaFilter)
+    .filter((item) => bursaFilter === 'all' || item.category === bursaFilter)
     .filter(
-      (item: any) =>
+      (item) =>
         !searchTerm ||
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.categoryLabel.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort((a: any, b: any) => {
-      if (sortBy === 'pasokan') return b.supplyFractions - a.supplyFractions;
-      if (sortBy === 'harga') return a.priceFraction - b.priceFraction;
+    .sort((a, b) => {
+      if (sortBy === 'pasokan') return b.volumeAvailableTCO2e - a.volumeAvailableTCO2e;
+      if (sortBy === 'harga') return a.pricePerTonIDR - b.pricePerTonIDR;
       if (sortBy === 'perubahan') return b.change24h - a.change24h;
       return 0;
     });
-
-  // Allocation breakdown calculation for Modal
-  const totalAmountIDR =
-    buyQuantity * 10 * (selectedBursaToken ? selectedBursaToken.priceFraction : 55000);
-  const platformFeeIDR = totalAmountIDR * 0.03; // 3%
-  const projectFundIDR = totalAmountIDR * 0.97; // 97%
-
-  // 5 Environmental Allocation Posts (of Project Fund 97%)
-  const posRestorasi = projectFundIDR * 0.62; // 62%
-  const posPemeliharaan = projectFundIDR * 0.15; // 15%
-  const posMonitoring = projectFundIDR * 0.1; // 10%
-  const posBufferPool = projectFundIDR * 0.08; // 8%
-  const posNusaApi = projectFundIDR * 0.05; // 5%
 
   return (
     <div className="flex-1 flex flex-col min-h-0 h-full space-y-4 animate-fade-in text-left">
@@ -95,12 +104,44 @@ export default function CarbonDexMarket() {
       </div>
 
       {/* 2. TOP ALERT BOX (WARNING BANNER) */}
-      <Alert variant="destructive">
-        <AlertTriangle className="w-4 h-4 text-status-danger-fg" />
+      <Alert variant={deficitTCO2e !== null && deficitTCO2e > 0 ? 'destructive' : 'default'}>
+        {deficitTCO2e !== null && deficitTCO2e > 0 ? (
+          <AlertTriangle className="w-4 h-4 text-status-danger-fg" />
+        ) : deficitTCO2e === null ? (
+          <Info className="w-4 h-4 text-amber-600" />
+        ) : (
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+        )}
         <div>
-          <AlertTitle className="text-status-danger-fg">Defisit aktif: 2.330 tCO₂e</AlertTitle>
-          <AlertDescription className="text-status-danger-fg/90">
-            Beli minimal 2.330 tCO₂e sebelum 31 Des 2025 untuk menghindari denda Rp 1,51 Miliar.
+          <AlertTitle
+            className={
+              deficitTCO2e !== null && deficitTCO2e > 0
+                ? 'text-status-danger-fg'
+                : deficitTCO2e === null
+                  ? 'text-amber-700'
+                  : 'text-emerald-700'
+            }
+          >
+            {deficitTCO2e !== null && deficitTCO2e > 0
+              ? `Defisit aktif: ${formatCarbon(deficitTCO2e)}`
+              : deficitTCO2e === null
+                ? 'PTBAE-PU belum tersedia'
+                : 'Tidak ada defisit emisi aktif'}
+          </AlertTitle>
+          <AlertDescription
+            className={
+              deficitTCO2e !== null && deficitTCO2e > 0
+                ? 'text-status-danger-fg/90'
+                : deficitTCO2e === null
+                  ? 'text-amber-700/90'
+                  : 'text-emerald-700/90'
+            }
+          >
+            {deficitTCO2e !== null && deficitTCO2e > 0
+              ? `Batas pembelian otomatis disetel sebesar ${formatCarbon(deficitTCO2e)} berdasarkan ${complianceBasis} (${formatCarbon(actualEmissionTCO2e)} emisi - ${formatCarbon(quotaPTBAETCO2e)} kuota). Estimasi nilai offset ${formatCurrency(estimatedOffsetCostIDR)}.`
+              : deficitTCO2e === null
+                ? 'Pembelian untuk pelunasan dinonaktifkan sampai kuota PTBAE-PU resmi tersedia.'
+                : 'Pembelian token untuk pelunasan defisit tidak tersedia sampai sistem menerima emisi yang melebihi kuota.'}
           </AlertDescription>
         </div>
       </Alert>
@@ -241,7 +282,7 @@ export default function CarbonDexMarket() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedItems.map((item: any, index: number) => (
+              {sortedItems.map((item, index) => (
                 <TableRow key={item.id} className="border-b border-slate-100 hover:bg-slate-50/50">
                   {/* Column 0: No. */}
                   <TableCell className="p-4 align-middle text-center font-mono font-bold text-slate-400 text-xs">
@@ -295,7 +336,7 @@ export default function CarbonDexMarket() {
                   {/* Column 2: Harga / Fraksi */}
                   <TableCell className="p-4 align-middle">
                     <p className="font-mono font-black text-sm text-slate-900 leading-none">
-                      Rp {item.priceFraction.toLocaleString('id-ID')}
+                      {formatCurrency(item.pricePerTonIDR / 10)}
                     </p>
                     <span className="text-[9px] text-slate-400 font-medium block mt-1">
                       per 0,1 tCO₂e
@@ -327,7 +368,7 @@ export default function CarbonDexMarket() {
                     <div className="space-y-1 max-w-[200px]">
                       <div className="flex items-center justify-between text-[9px] font-bold">
                         <span className="text-slate-800 font-black">
-                          {item.supplyFractions.toLocaleString('id-ID')} fraksi
+                          {formatNumber(item.volumeAvailableTCO2e)} tCO₂e
                         </span>
                         <span
                           className={
@@ -380,7 +421,11 @@ export default function CarbonDexMarket() {
       </div>
 
       {/* 7. MODULAR BURSA PURCHASE & TRANSPARENCY ALLOCATION MODAL */}
-      <BursaPurchaseModal token={selectedBursaToken} onClose={() => setSelectedBursaToken(null)} />
+      <BursaPurchaseModal
+        token={selectedBursaToken}
+        deficitTCO2e={deficitTCO2e}
+        onClose={() => setSelectedBursaToken(null)}
+      />
     </div>
   );
 }

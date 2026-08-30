@@ -6,6 +6,7 @@ import {
   auditRepository,
   regulatorRepository,
   projectRepository,
+  companyRepository,
 } from '../repositories';
 import { useAuthStore } from '../store/useAuthStore';
 import { RouteSkeletonLoader } from '../components/ui/RouteSkeletonLoader';
@@ -29,11 +30,13 @@ export async function clientLoader() {
   const role = useAuthStore.getState().userRole;
 
   if (role === 'emitter' || role === 'buyer') {
-    const [complianceData, emissionReports] = await Promise.all([
+    const [complianceData, emissionReports, projects, companies] = await Promise.all([
       complianceRepository.getComplianceData().catch(() => null),
       reportRepository.getEmissionReports().catch(() => []),
+      projectRepository.getProjects().catch(() => []),
+      companyRepository.getCompanies().catch(() => []),
     ]);
-    return { role, complianceData, emissionReports };
+    return { role, complianceData, emissionReports, projects, companies };
   } else if (role === 'regulator' || role === 'admin' || role === 'superadmin') {
     const [forestProjects, nationalForestRegions, kthGroups] = await Promise.all([
       regulatorRepository.getForestProjects().catch(() => []),

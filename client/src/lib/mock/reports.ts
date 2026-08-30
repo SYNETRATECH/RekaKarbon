@@ -12,6 +12,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
     method: 'UPLOAD',
     sectorId: 'manufaktur',
     totalEmissionsTCO2e: 14830,
+    quotaPTBAETCO2e: 12500,
     sectors: [
       {
         id: 'c3d4e5f6-0003-4000-8000-000000000011',
@@ -62,6 +63,7 @@ export const MOCK_EMISSION_REPORTS: EmissionReport[] = [
     method: 'UPLOAD',
     sectorId: 'manufaktur',
     totalEmissionsTCO2e: 13500,
+    quotaPTBAETCO2e: 12500,
     sectors: [
       {
         id: 'c3d4e5f6-0003-4000-8000-000000000021',

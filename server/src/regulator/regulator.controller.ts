@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -11,6 +11,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { UpsertPtbaeAllocationDto } from '../compliance/dto';
+import { PtbaeService } from '../compliance/ptbae.service';
 
 @ApiTags('Regulator Forest Cadastre & KTH Oversight')
 @ApiBearerAuth('JWT-auth')
@@ -18,7 +20,10 @@ import { Role } from '@prisma/client';
 @Roles(Role.regulator, Role.superadmin)
 @Controller('regulator')
 export class RegulatorController {
-  constructor(private readonly regulatorService: RegulatorService) {}
+  constructor(
+    private readonly regulatorService: RegulatorService,
+    private readonly ptbaeService: PtbaeService,
+  ) {}
 
   @ApiOperation({ summary: 'Retrieve national forest regions carbon data' })
   @ApiResponse({
@@ -66,6 +71,19 @@ export class RegulatorController {
   @Get('regulation-uploads')
   async getRegulationUploads(@Query() _query: RegulatorQueryDto) {
     const data = await this.regulatorService.getRegulationUploads();
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Create or update annual PTBAE-PU company allocation',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'PTBAE-PU allocation saved successfully.',
+  })
+  @Post('ptbae-allocations')
+  async upsertPtbaeAllocation(@Body() dto: UpsertPtbaeAllocationDto) {
+    const data = await this.ptbaeService.upsertAllocation(dto);
     return { success: true, data };
   }
 }

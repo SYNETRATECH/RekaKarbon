@@ -5,8 +5,8 @@ export interface BursaItem {
   category: 'mangrove' | 'hutan' | 'gambut';
   categoryLabel: string;
   location: string;
-  priceFraction: number;
+  pricePerTonIDR: number;
   change24h: number;
-  supplyFractions: number;
+  volumeAvailableTCO2e: number;
   supplyPercent: number;
 }

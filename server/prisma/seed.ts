@@ -6,6 +6,7 @@ import {
   UserStatus,
   KybCategory,
   KybStatus,
+  PtbaeStatus,
   ComplianceRating,
   SensorStatus,
   EcosystemType,
@@ -68,6 +69,7 @@ async function main() {
   await prisma.kthGroup.deleteMany();
   await prisma.cemsTelemetryLog.deleteMany();
   await prisma.smokestack.deleteMany();
+  await prisma.ptbaeAllocation.deleteMany();
   await prisma.company.deleteMany();
   await prisma.kybProfile.deleteMany();
   await prisma.user.deleteMany();
@@ -800,6 +802,25 @@ async function main() {
       },
     });
   }
+
+  // 14b. Seed compatibility PTBAE allocations for every company.
+  // These values mirror the legacy company cap until an official yearly allocation is uploaded.
+  const seededCompanies = await prisma.company.findMany({
+    select: { id: true, emissionCapTco2e: true },
+  });
+  await prisma.ptbaeAllocation.createMany({
+    data: seededCompanies.map((company) => ({
+      companyId: company.id,
+      complianceYear: 2026,
+      quotaTco2e: company.emissionCapTco2e,
+      sourceDocument:
+        'Data seed kompatibilitas; ganti dengan dokumen PTBAE-PU resmi perusahaan',
+      status: PtbaeStatus.LEGACY,
+      assignedAt: new Date('2026-01-01T00:00:00.000Z'),
+      notes:
+        'Nilai ini bukan ambang universal. Nilai resmi harus ditetapkan per perusahaan dan tahun.',
+    })),
+  });
 
   // 15. Seed DJP Carbon Tax Assessments & STP Invoices
   console.log('🏛️ Seeding DJP Carbon Tax Assessments & STP Invoices...');

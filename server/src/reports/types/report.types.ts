@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import type { PtbaeQuotaStatus } from '../../compliance/types';
 
 export interface SectorBreakdown {
   id: string;
@@ -31,5 +32,8 @@ export interface EmissionReport {
   uploadDate: string;
   status: 'verified' | 'audit_in_progress' | 'draft';
   totalEmissionsTCO2e: number;
+  quotaPTBAETCO2e: number | null;
+  quotaPTBAEStatus: PtbaeQuotaStatus;
+  quotaPTBAESourceDocument: string | null;
   sectors: SectorBreakdown[];
 }
