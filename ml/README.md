@@ -141,8 +141,10 @@ In addition to the binary verdict (`PASS_VERIFIED` / `REJECT_ANOMALY`), the engi
 - **`score_djp` (e-Faktur DJP Financial Consistency)**: Evaluates whether declared fuel spend matches real market unit pricing (benchmark: Rp 16,000 – 25,000 / L).
 - **`score_bbm` (Physical Fuel vs Emission Correlation)**: Evaluates stoichiometric physical consistency against reported emissions.
 - **`score_cems` (CEMS Sensor / Sector Intensity Benchmark)**: Evaluates production output against BPS / KLHK industrial intensity distributions.
-- **`Composite Trust Score`**:
-  $$\text{Trust Score} = 0.30 \times \text{Score}_{\text{DJP}} + 0.40 \times \text{Score}_{\text{BBM}} + 0.30 \times \text{Score}_{\text{CEMS}} \quad (0 - 100\%)$$
+
+The **Composite Trust Score** is synthesized as:
+
+$$\text{Trust Score} = 0.30 \times \text{Score}_{\text{DJP}} + 0.40 \times \text{Score}_{\text{BBM}} + 0.30 \times \text{Score}_{\text{CEMS}} \quad (0 - 100\%)$$
 
 ---
 
