@@ -111,6 +111,7 @@ The `EmissionFeatureEngineer` converts raw parameters into **15 domain-engineere
 #### A. Expected Stoichiometric Physical Emissions ($E_{\text{expected}}$)
 
 Based on official Indonesian Ministry of Energy and Mineral Resources (ESDM), KLHK, and IPCC Tier-2 stoichiometric emission factors:
+
 $$E_{\text{diesel}} = (\text{Fuel}_{\text{stat}} + \text{Fuel}_{\text{mob}}) \times 0.00268 \quad (\text{tCO}_2\text{e})$$
 $$E_{\text{coal}} = \left(\frac{\text{Cost}_{\text{coal}}}{1{,}200 \text{ IDR/kg}}\right) \times 0.00242 \quad (\text{tCO}_2\text{e})$$
 $$E_{\text{gas}} = \left(\frac{\text{Cost}_{\text{gas}}}{10{,}000 \text{ IDR/m}^3}\right) \times 0.00190 \quad (\text{tCO}_2\text{e})$$
@@ -121,14 +122,14 @@ $$E_{\text{expected}} = \max(E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}
 #### B. The 15 Engineered Features
 
 1. **Stoichiometric Divergence Ratio**: $|E_{\text{expected}} - E_{\text{reported}}| / (E_{\text{expected}} + \epsilon)$
-2. **Solar Unit Cost Log**: $\ln(1 + \text{cost\_solar} / (\text{stat\_fuel} + \epsilon))$
-3. **Emission Intensity**: $E_{\text{reported}} / (\text{production\_tonnes} + \epsilon)$
+2. **Solar Unit Cost Log**: $\ln(1 + \text{Cost}_{\text{solar}} / (\text{Fuel}_{\text{stat}} + \epsilon))$
+3. **Emission Intensity**: $E_{\text{reported}} / (\text{Production} + \epsilon)$
 4. **Sector Intensity Z-Score**: $(I - \mu_{\text{sector}}) / (\sigma_{\text{sector}} + \epsilon)$ (calibrated per sector against KLHK baselines)
 5. **YoY Growth Ratio**: $(E_{\text{reported}} - E_{\text{historical}}) / (E_{\text{historical}} + \epsilon)$
-6. **Energy Spend per Ton Product**: $\sum \text{Costs} / (\text{production\_tonnes} + \epsilon)$
+6. **Energy Spend per Ton Product**: $\sum \text{Costs} / (\text{Production} + \epsilon)$
 7. **Reported to Energy Spend Ratio**: $E_{\text{reported}} / (\sum \text{Costs} \times 10^{-9} + \epsilon)$
 8. **Process Emission Ratio**: $E_{\text{process}} / (E_{\text{expected}} + \epsilon)$
-9. **Solar Market Price Residual Ratio**: $|\text{unit\_solar} - 20500| / 20500$
+9. **Solar Market Price Residual Ratio**: $|\text{Price}_{\text{solar}} - 20{,}500| / 20{,}500$
    10-15. **Sector One-Hot Indicators** (6 binary indicators for Semen, Manufaktur, CPO, Logam, Pulp, PLTU).
 
 ---
