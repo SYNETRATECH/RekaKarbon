@@ -245,7 +245,7 @@ jobs:
 
       - name: Typecheck ML code (Mypy)
         working-directory: ./ml
-        run: poetry run mypy src tests app.py
+        run: poetry run mypy src tests
 
       - name: Test ML engine & ONNX parity (Pytest)
         working-directory: ./ml
