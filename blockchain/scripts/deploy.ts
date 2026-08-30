@@ -63,10 +63,8 @@ async function main(): Promise<void> {
   console.log('=======================================================\n');
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error: unknown) => {
-    console.error('❌ Terjadi kesalahan saat deployment:');
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((error: unknown) => {
+  console.error('❌ Terjadi kesalahan saat deployment:');
+  console.error(error);
+  process.exitCode = 1;
+});

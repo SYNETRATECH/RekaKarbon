@@ -10,9 +10,9 @@ export const BursaItemSchema = z.object({
   category: BursaCategorySchema,
   categoryLabel: z.string().min(1),
   location: z.string().min(1),
-  priceFraction: IdrAmountSchema,
+  pricePerTonIDR: IdrAmountSchema,
   change24h: z.number(),
-  supplyFractions: CarbonVolumeSchema,
+  volumeAvailableTCO2e: CarbonVolumeSchema,
   supplyPercent: PercentageSchema,
 });
 

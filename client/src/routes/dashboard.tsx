@@ -9,7 +9,6 @@ import {
   projectRepository,
   companyRepository,
 } from '../repositories';
-import { useAuthStore } from '../store/useAuthStore';
 import { isClientUserRole, type ClientUserRole } from '../store/useAuthStore';
 import { RouteSkeletonLoader } from '../components/ui/RouteSkeletonLoader';
 
@@ -93,9 +92,8 @@ export function meta() {
 }
 
 export default function DashboardRoute() {
-  const { userRole } = useAuthStore();
   const loaderData = useLoaderData<typeof clientLoader>();
-  const currentRole = userRole || loaderData.role;
+  const currentRole = loaderData.role;
 
   // Defensive: if role is somehow null after the loader chain, render nothing.
   // The app.tsx clientLoader should have already redirected to /login.

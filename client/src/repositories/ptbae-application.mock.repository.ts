@@ -101,9 +101,6 @@ export class MockPtbaeApplicationRepository implements PtbaeApplicationRepositor
 
   async submit(id: string): Promise<PtbaeApplication> {
     const existing = this.requireApplication(id);
-    if (!existing.emissionReportId) {
-      throw new Error('Laporan emisi baseline wajib dipilih sebelum pengajuan dikirim.');
-    }
     const updated: PtbaeApplication = {
       ...existing,
       status: 'submitted',

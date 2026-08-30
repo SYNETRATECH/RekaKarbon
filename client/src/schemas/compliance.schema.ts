@@ -19,12 +19,12 @@ export const PtbaeQuotaStatusSchema = z.enum([
 
 export const ComplianceDataSchema = z.object({
   complianceYear: z.number().int().positive(),
-  emissionVsQuotaPercent: MetricPercentageSchema,
+  emissionVsQuotaPercent: MetricPercentageSchema.nullable(),
   emissionIntensity: z.number().nonnegative(),
   emissionIntensityStandard: z.number().nonnegative(),
-  carbonDeficit: CarbonVolumeSchema,
+  carbonDeficit: CarbonVolumeSchema.nullable(),
   actualEmissions: CarbonVolumeSchema,
-  quotaPTBAE: CarbonVolumeSchema,
+  quotaPTBAE: CarbonVolumeSchema.nullable(),
   quotaPTBAEStatus: PtbaeQuotaStatusSchema,
   quotaPTBAESourceDocument: z.string().nullable(),
   governedBy: z.string().min(1),
@@ -32,7 +32,7 @@ export const ComplianceDataSchema = z.object({
   djpReportStatus: z.string().min(1),
   annualProductionVolume: z.number().nonnegative(),
   carbonPricePerTon: IdrAmountSchema,
-  totalEstimatedCostIDR: IdrAmountSchema,
+  totalEstimatedCostIDR: IdrAmountSchema.nullable(),
   annualHistory: z.array(AnnualChartPointSchema),
 });
 

@@ -138,6 +138,11 @@ export default function PtbaeApplicationRoute() {
     [emissionReports, form.complianceYear, form.emissionReportId]
   );
 
+  const availableBaselineReports = useMemo(
+    () => emissionReports.filter((report) => report.year === form.complianceYear),
+    [emissionReports, form.complianceYear]
+  );
+
   const yearApplication = applications.find(
     (application) => application.complianceYear === selectedYear
   );
@@ -208,15 +213,6 @@ export default function PtbaeApplicationRoute() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.emissionReportId) {
-      toast({
-        variant: 'warning',
-        title: 'Baseline belum dipilih',
-        description: 'Pilih laporan emisi yang menjadi baseline sebelum mengirim pengajuan.',
-      });
-      return;
-    }
-
     const saved = await saveDraft();
     if (!saved) return;
 
@@ -385,7 +381,7 @@ export default function PtbaeApplicationRoute() {
                   Identitas fasilitas dan baseline
                 </h2>
                 <p className="text-[10px] font-semibold text-slate-500">
-                  Baseline harus berasal dari laporan emisi yang tersimpan di RekaKarbon.
+                  Baseline diisi dari perhitungan dan dokumen baseline pengajuan ini.
                 </p>
               </div>
             </div>
@@ -406,7 +402,7 @@ export default function PtbaeApplicationRoute() {
               </label>
               <label className="space-y-1.5">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                  Laporan emisi baseline
+                  Referensi laporan emisi sebelumnya (opsional)
                 </span>
                 <Select
                   value={form.emissionReportId ?? ''}
@@ -415,16 +411,20 @@ export default function PtbaeApplicationRoute() {
                   }
                 >
                   <SelectTrigger className="h-11 rounded-xl text-xs font-bold">
-                    <SelectValue placeholder="Pilih laporan tersimpan" />
+                    <SelectValue placeholder="Pilih laporan sebelumnya (opsional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {emissionReports
-                      .filter((report) => report.year === form.complianceYear)
-                      .map((report) => (
+                    {availableBaselineReports.length > 0 ? (
+                      availableBaselineReports.map((report) => (
                         <SelectItem key={report.id} value={report.id}>
                           {report.title}
                         </SelectItem>
-                      ))}
+                      ))
+                    ) : (
+                      <SelectItem value="no-saved-report" disabled>
+                        Belum ada laporan tersimpan untuk tahun ini
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 {selectedReport && (
@@ -432,6 +432,10 @@ export default function PtbaeApplicationRoute() {
                     Baseline: {formatCarbon(selectedReport.totalEmissionsTCO2e)}
                   </span>
                 )}
+                <span className="block text-[10px] font-semibold text-slate-500">
+                  Baseline utama diambil dari nilai emisi dan dokumen baseline yang Anda isi di
+                  pengajuan ini.
+                </span>
               </label>
               <label className="space-y-1.5">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">

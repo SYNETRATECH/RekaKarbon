@@ -223,12 +223,6 @@ export class PtbaeService {
       );
     }
 
-    if (!existing.emissionReportId) {
-      throw new BadRequestException(
-        'Laporan emisi baseline wajib dipilih sebelum pengajuan dikirim.',
-      );
-    }
-
     const application = await this.prisma.ptbaeApplication.update({
       where: { id: applicationId },
       data: {

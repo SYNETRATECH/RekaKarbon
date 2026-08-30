@@ -1,5 +1,5 @@
 import { useLocation, NavLink } from 'react-router';
-import { useAuthStore } from '@/store/useAuthStore';
+import type { ClientUserRole } from '@/store/useAuthStore';
 import { useUIStore } from '@/store/useUIStore';
 import {
   LayoutDashboard,
@@ -50,13 +50,16 @@ interface NavGroup {
   items: NavItem[];
 }
 
-export default function PortalSidebar() {
-  const { userRole } = useAuthStore();
+interface PortalSidebarProps {
+  role: ClientUserRole;
+}
+
+export default function PortalSidebar({ role }: PortalSidebarProps) {
   const { setIsLogoutDialogOpen } = useUIStore();
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const currentRole = userRole || 'emitter';
+  const currentRole = role;
 
   const handleLogout = () => {
     setIsLogoutDialogOpen(true);
