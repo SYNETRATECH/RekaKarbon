@@ -167,7 +167,7 @@ class ModelVisualizer:
                 fontweight="bold",
             )
 
-        ax.set_xlim([0, 115])
+        ax.set_xlim(0, 115)
         ax.axvline(
             92.0, color="red", linestyle="--", linewidth=1.5, label="Quality Gate Threshold (92%)"
         )
