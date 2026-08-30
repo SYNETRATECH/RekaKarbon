@@ -6,7 +6,7 @@ import numpy as np
 
 from rekakarbon_ml.config import DEFAULT_RANDOM_STATE
 from rekakarbon_ml.data.generator import EmissionDataGenerator
-from rekakarbon_ml.pipeline.build_pipeline import build_anomaly_pipeline
+from rekakarbon_ml.pipeline.trainer import build_anomaly_pipeline
 from rekakarbon_ml.pipeline.transformers import (
     DERIVED_FEATURE_NAMES,
     EmissionFeatureEngineer,

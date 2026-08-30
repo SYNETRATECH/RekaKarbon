@@ -25,7 +25,7 @@ from ..data.benchmark_loader import (
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
 )
-from .transformers import DERIVED_FEATURE_NAMES, RAW_FEATURE_COLUMNS
+from ..pipeline.transformers import DERIVED_FEATURE_NAMES, RAW_FEATURE_COLUMNS
 
 QUALITY_GATE_THRESHOLDS = {
     "min_overall_f1": 0.85,

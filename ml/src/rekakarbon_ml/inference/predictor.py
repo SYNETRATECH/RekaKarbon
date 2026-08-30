@@ -16,7 +16,7 @@ from ..data.benchmark_loader import (
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
 )
-from ..pipeline.build_pipeline import load_pipeline
+from ..pipeline.trainer import load_pipeline
 from ..pipeline.transformers import (
     RAW_FEATURE_COLUMNS,
     SECTOR_TO_IDX,
@@ -44,7 +44,7 @@ class CarbonAnomalyPredictor:
         self.feature_engineer = EmissionFeatureEngineer()
 
         if not os.path.exists(model_pkl_path):
-            from ..pipeline.build_pipeline import train_and_save_pipeline
+            from ..pipeline.trainer import train_and_save_pipeline
 
             self.pipeline, _ = train_and_save_pipeline(
                 save_dir=os.path.dirname(model_pkl_path) or "models"

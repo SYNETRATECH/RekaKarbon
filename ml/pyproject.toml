@@ -28,9 +28,10 @@ dependencies = [
 ]
 
 [project.scripts]
-train = "rekakarbon_ml.pipeline.build_pipeline:main"
+train = "rekakarbon_ml.pipeline.trainer:main"
 preprocess = "rekakarbon_ml.data.preprocess:main"
-eval = "rekakarbon_ml.pipeline.evaluator:main"
+eval = "rekakarbon_ml.evaluation.evaluator:main"
+studio = "rekakarbon_ml.studio.cli:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

@@ -73,8 +73,8 @@ def load_pipeline(model_path: str = "models/anomaly_pipeline.pkl") -> Pipeline:
 
 def main() -> None:
     from ..config import DEFAULT_RANDOM_STATE
+    from ..evaluation.evaluator import ModelEvaluator, generate_model_metadata
     from ..inference.predictor import CarbonAnomalyPredictor
-    from .evaluator import ModelEvaluator, generate_model_metadata
     from .onnx_exporter import export_pipeline_to_onnx
 
     print("Starting End-to-End RekaKarbon ML Pipeline Training...")
