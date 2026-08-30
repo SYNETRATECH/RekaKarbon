@@ -1,6 +1,7 @@
 export interface BlockchainTransactionReceipt {
   hash: string;
   logs: BlockchainLog[];
+  blockNumber?: number | bigint;
 }
 
 export interface BlockchainTransaction {
@@ -75,10 +76,17 @@ export interface CarbonTokenContract {
   queryFilter(
     filter: unknown,
     fromBlock: number,
-    toBlock: 'latest',
+    toBlock: number | 'latest',
   ): Promise<BlockchainEvent[]>;
 }
 
 export interface EmissionRegistryContract {
   submitReport(year: number, rootHash: string): Promise<BlockchainTransaction>;
+  anchorPtbaeApplication(
+    applicationId: string,
+    version: number,
+    rootHash: string,
+    anchorType: number,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
 }

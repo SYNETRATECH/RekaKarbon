@@ -14,6 +14,8 @@ import type {
   EmissionRegistryContract,
 } from './types';
 
+const WALLET_HISTORY_BLOCK_CHUNK = 500;
+
 @Injectable()
 export class BlockchainService implements OnModuleInit {
   private readonly logger = new Logger(BlockchainService.name);
@@ -277,6 +279,10 @@ export class BlockchainService implements OnModuleInit {
   async getWalletTransactionHistory(address: string) {
     const contract = this.ensureRekaKarbon();
     try {
+      if (!this.provider) {
+        throw new Error('Blockchain provider not initialized');
+      }
+
       const validAddress = this.sanitizeAddress(
         address,
         '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
@@ -291,10 +297,11 @@ export class BlockchainService implements OnModuleInit {
         validAddress,
         null,
       );
+      const latestBlock = await this.provider.getBlockNumber();
 
       const [eventsIn, eventsOut] = await Promise.all([
-        contract.queryFilter(filterIn, 0, 'latest'),
-        contract.queryFilter(filterOut, 0, 'latest'),
+        this.queryTransferEvents(contract, filterIn, latestBlock),
+        this.queryTransferEvents(contract, filterOut, latestBlock),
       ]);
 
       // Combine and parse events
@@ -333,6 +340,29 @@ export class BlockchainService implements OnModuleInit {
       this.logger.error('Error fetching wallet history:', error);
       throw new InternalServerErrorException('Failed to fetch wallet history');
     }
+  }
+
+  private async queryTransferEvents(
+    contract: CarbonTokenContract,
+    filter: unknown,
+    latestBlock: number,
+  ): Promise<BlockchainEvent[]> {
+    const events: BlockchainEvent[] = [];
+
+    for (
+      let fromBlock = 0;
+      fromBlock <= latestBlock;
+      fromBlock += WALLET_HISTORY_BLOCK_CHUNK
+    ) {
+      const toBlock = Math.min(
+        fromBlock + WALLET_HISTORY_BLOCK_CHUNK - 1,
+        latestBlock,
+      );
+      const chunk = await contract.queryFilter(filter, fromBlock, toBlock);
+      events.push(...chunk);
+    }
+
+    return events;
   }
 
   private sanitizeAddress(address: string, fallback: string): string {
@@ -440,5 +470,76 @@ export class BlockchainService implements OnModuleInit {
         'Failed to process report on-chain: ' + errStr.substring(0, 500),
       );
     }
+  }
+
+  async anchorPtbaeApplication(
+    applicationId: string,
+    version: number,
+    rootHash: string,
+    anchorType: number,
+  ): Promise<{
+    txHash: string;
+    blockNumber: number | null;
+    chainId: number | null;
+    contractAddress: string;
+  }> {
+    const contract = this.ensureRegistry();
+    const contractAddress = process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
+    if (!contractAddress) {
+      throw new InternalServerErrorException(
+        'Emission registry contract address is not configured',
+      );
+    }
+    if (!Number.isInteger(version) || version <= 0) {
+      throw new InternalServerErrorException(
+        'Invalid PTBAE application version',
+      );
+    }
+    if (!Number.isInteger(anchorType) || anchorType < 0 || anchorType > 3) {
+      throw new InternalServerErrorException('Invalid PTBAE anchor type');
+    }
+    if (!ethers.isHexString(rootHash, 32)) {
+      throw new InternalServerErrorException('Invalid PTBAE Merkle root');
+    }
+
+    const applicationIdBytes32 = this.applicationIdToBytes32(applicationId);
+
+    try {
+      const tx = await contract.anchorPtbaeApplication(
+        applicationIdBytes32,
+        version,
+        rootHash,
+        anchorType,
+        { gasPrice: 0 },
+      );
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+
+      const network = this.provider ? await this.provider.getNetwork() : null;
+      return {
+        txHash: receipt.hash,
+        blockNumber:
+          receipt.blockNumber === undefined
+            ? null
+            : Number(receipt.blockNumber),
+        chainId: network ? Number(network.chainId) : null,
+        contractAddress,
+      };
+    } catch (error: unknown) {
+      this.logger.error('Error anchoring PTBAE application:', error);
+      throw new InternalServerErrorException(
+        'Failed to anchor PTBAE application on-chain',
+      );
+    }
+  }
+
+  private applicationIdToBytes32(applicationId: string): string {
+    const normalizedId = applicationId.replaceAll('-', '');
+    if (!/^[0-9a-f]{32}$/i.test(normalizedId)) {
+      throw new InternalServerErrorException(
+        'PTBAE application ID must be a valid UUID',
+      );
+    }
+    return `0x${normalizedId.padStart(64, '0')}`;
   }
 }

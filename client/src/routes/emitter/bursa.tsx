@@ -17,7 +17,6 @@ import {
 import {
   ShoppingCart,
   AlertTriangle,
-  PieChart,
   CheckCircle2,
   Info,
   TrendingUp,
@@ -60,14 +59,10 @@ export default function CarbonDexMarket() {
   const activeReport = emissionReports.find((report) => report.status !== 'rejected') ?? null;
   const actualEmissionTCO2e =
     activeReport?.totalEmissionsTCO2e ?? complianceData?.actualEmissions ?? 0;
-  const quotaPTBAETCO2e = activeReport
-    ? (activeReport.quotaPTBAETCO2e ?? null)
-    : (complianceData?.quotaPTBAE ?? null);
+  const quotaPTBAETCO2e = activeReport?.quotaPTBAETCO2e ?? complianceData?.quotaPTBAE ?? null;
   const calculatedDeficitTCO2e =
     quotaPTBAETCO2e === null ? null : Math.max(0, actualEmissionTCO2e - quotaPTBAETCO2e);
-  const deficitTCO2e = activeReport
-    ? calculatedDeficitTCO2e
-    : (complianceData?.carbonDeficit ?? calculatedDeficitTCO2e);
+  const deficitTCO2e = calculatedDeficitTCO2e ?? complianceData?.carbonDeficit ?? null;
   const estimatedOffsetCostIDR =
     deficitTCO2e === null ? null : deficitTCO2e * (complianceData?.carbonPricePerTon ?? 650000);
   const complianceBasis = activeReport

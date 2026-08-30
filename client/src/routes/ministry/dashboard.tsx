@@ -25,6 +25,7 @@ import { formatCarbon } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
 import { ptbaeApplicationRepository } from '@/repositories';
 import type { PtbaeApplication, PtbaeMinistryDecisionInput } from '@/types';
+import { PtbaeIntegrityStatus } from '../../components/ptbae/PtbaeIntegrityStatus';
 
 const STATUS_LABELS: Record<PtbaeApplication['status'], string> = {
   draft: 'Draf',
@@ -267,6 +268,9 @@ export default function MinistryDashboard() {
                 >
                   {STATUS_LABELS[selected.status]}
                 </span>
+              </div>
+              <div className="mt-5">
+                <PtbaeIntegrityStatus integrity={selected.integrity} />
               </div>
               <div className="grid gap-4 py-5 sm:grid-cols-2">
                 <div className="rounded-2xl bg-slate-50 p-4">

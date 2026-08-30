@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatCarbon } from '@/lib/formatters';
 import { ptbaeApplicationRepository } from '@/repositories';
 import type { PtbaeApplication } from '@/types';
+import { PtbaeIntegrityStatus } from '../../components/ptbae/PtbaeIntegrityStatus';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 const STATUS_LABELS: Record<PtbaeApplication['status'], string> = {
@@ -143,6 +144,9 @@ export default function AuditorPtbaeRoute() {
                 <p className="mt-1 text-xs font-semibold text-slate-500">
                   {selected.companyName} · {formatCarbon(selected.baselineEmissionTCO2e)}
                 </p>
+              </div>
+              <div className="mt-5">
+                <PtbaeIntegrityStatus integrity={selected.integrity} />
               </div>
               <div className="space-y-5 py-5">
                 <div>

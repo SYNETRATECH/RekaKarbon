@@ -1,4 +1,5 @@
 import type { PtbaeApplicationStatus, PtbaeDocumentType } from '@prisma/client';
+import type { PtbaeIntegritySummary } from './ptbae-integrity.types';
 
 export type PtbaeApplicationStatusKey =
   | 'draft'
@@ -62,6 +63,11 @@ export interface PtbaeApplicationRecord {
   auditorNotes: string | null;
   ministryDecidedAt: string | null;
   ministryNotes: string | null;
+  currentVersion: number;
+  latestMerkleRoot: string | null;
+  latestAnchorStatus: PtbaeBlockchainAnchorStatusKey | null;
+  latestAnchoredAt: string | null;
+  integrity: PtbaeIntegritySummary | null;
   allocation: PtbaeAllocationSummary | null;
   documents: PtbaeApplicationDocumentRecord[];
   createdAt: string;
@@ -75,9 +81,15 @@ export interface PtbaeAllocationSummary {
   sourceDocument: string | null;
   documentNumber: string | null;
   blockchainTxHash: string | null;
+  issuanceTxHash: string | null;
+  decisionMerkleRoot: string | null;
+  applicationVersionId: string | null;
   effectiveFrom: string | null;
   effectiveUntil: string | null;
 }
+
+export type PtbaeBlockchainAnchorStatusKey =
+  'pending' | 'processing' | 'confirmed' | 'failed';
 
 export interface PtbaeApplicationListFilters {
   status?: PtbaeApplicationStatus;

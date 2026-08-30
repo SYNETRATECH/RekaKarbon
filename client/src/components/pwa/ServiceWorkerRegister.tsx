@@ -7,6 +7,18 @@ import { useEffect } from 'react';
 export function ServiceWorkerRegister() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      if (import.meta.env.DEV) {
+        void navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => void registration.unregister());
+        });
+        void caches.keys().then((cacheNames) => {
+          cacheNames
+            .filter((cacheName) => cacheName.startsWith('rekakarbon-pwa-'))
+            .forEach((cacheName) => void caches.delete(cacheName));
+        });
+        return;
+      }
+
       // Register after page load for performance
       const handleLoad = () => {
         navigator.serviceWorker
