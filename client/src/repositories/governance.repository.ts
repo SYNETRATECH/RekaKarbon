@@ -1,20 +1,23 @@
 import { api } from '../lib/api';
+import type { MultiSigRequest, KybQueueItem, DjpLogItem } from '../types';
+import { MultiSigRequestSchema, KybQueueItemSchema, DjpLogItemSchema } from '../schemas';
+import { z } from 'zod';
 
 export interface GovernanceRepository {
-  getMultiSigRequests(): Promise<any[]>;
-  getKybQueue(): Promise<any[]>;
-  getDjpLogs(): Promise<any[]>;
+  getMultiSigRequests(): Promise<MultiSigRequest[]>;
+  getKybQueue(): Promise<KybQueueItem[]>;
+  getDjpLogs(): Promise<DjpLogItem[]>;
 }
 
 export class ApiGovernanceRepository implements GovernanceRepository {
-  async getMultiSigRequests() {
-    return api.get<any[]>('/governance/multi-sig');
+  async getMultiSigRequests(): Promise<MultiSigRequest[]> {
+    return api.get<MultiSigRequest[]>('/governance/multi-sig', z.array(MultiSigRequestSchema));
   }
-  async getKybQueue() {
-    return api.get<any[]>('/governance/kyb');
+  async getKybQueue(): Promise<KybQueueItem[]> {
+    return api.get<KybQueueItem[]>('/governance/kyb', z.array(KybQueueItemSchema));
   }
-  async getDjpLogs() {
-    return api.get<any[]>('/governance/djp-logs');
+  async getDjpLogs(): Promise<DjpLogItem[]> {
+    return api.get<DjpLogItem[]>('/governance/djp-logs', z.array(DjpLogItemSchema));
   }
 }
 

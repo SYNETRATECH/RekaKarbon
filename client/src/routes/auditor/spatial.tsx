@@ -294,18 +294,18 @@ export default function SpatialMRVEvaluation() {
                   <div>
                     <span className="text-slate-400 font-semibold block">Tutupan Awan:</span>
                     <span
-                      className={`font-black ${parseInt(selectedArea.cloudCover) > 50 ? 'text-status-danger-fg' : 'text-slate-700'}`}
+                      className={`font-black ${selectedArea.cloudCoverPercent > 50 ? 'text-status-danger-fg' : 'text-slate-700'}`}
                     >
-                      {selectedArea.cloudCover}
+                      {selectedArea.cloudCoverPercent}%
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Action Button */}
-              {parseInt(selectedArea.cloudCover) > 50 ? (
+              {selectedArea.cloudCoverPercent > 50 ? (
                 <Button
-                  onClick={() => navigate('/drone')}
+                  onClick={() => navigate(`/drone?projectId=${selectedArea.id}`)}
                   className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black text-xs py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                 >
                   <CloudRain className="w-4 h-4" />

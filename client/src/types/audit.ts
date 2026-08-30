@@ -30,51 +30,105 @@ export interface AiAnomalyLog {
 }
 
 export interface SpatialSummary {
-  areaHectares: number;
-  totalTreeCount: number;
-  avgCanopyDensity: number;
-  estimatedBiomassTCO2e: number;
-  droneAuditCoveragePercent: number;
-  lastFlyoverDate: string;
+  totalAreaTerverifikasi?: string;
+  subArea?: string;
+  totalKreditKarbon?: string;
+  subKredit?: string;
+  blokadeAwan?: string;
+  subAwan?: string;
+  areaHectares?: number;
+  totalTreeCount?: number;
+  avgCanopyDensity?: number;
+  estimatedBiomassTCO2e?: number;
+  droneAuditCoveragePercent?: number;
+  lastFlyoverDate?: string;
 }
 
 export interface ConservationArea {
   id: string;
   name: string;
-  region: string;
-  hectares: number;
-  canopyDensityPercent: number;
-  estimatedCarbonTCO2e: number;
-  coordinates: [number, number];
+  location: string;
+  areaHectares: number;
+  ndvi: number;
+  evi: number;
+  carbonCredit: number;
+  cloudCoverPercent: number;
+  status: string;
+  statusLabel: string;
+  coordinates: any;
 }
 
 export interface DroneScan {
   id: string;
   date: string;
   location: string;
-  areaCoveredHa: number;
-  resolutionGSD: string;
-  chmDensityPercent: number;
-  biomassEstimateTCO2e: number;
-  operator: string;
+  avgHeightMeters?: number;
   status: string;
+  areaCoveredHa?: number;
+  resolutionGsdCmPx?: number;
+  chmDensityPercent?: number;
+  biomassEstimateTCO2e?: number;
+  operator?: string | null;
+}
+
+export interface DroneArchiveLayer {
+  id: string;
+  statusType: 'ready' | 'processing' | 'queued';
+  icon?: string;
+  fileUrl?: string;
+}
+
+export interface DroneArchive {
+  areaName: string;
+  location: string;
+  cloudCoverPercent: number;
+  layers: DroneArchiveLayer[];
+}
+
+export interface DroneScheduleSlot {
+  month: number;
+  status: 'done' | 'scheduled' | 'upcoming';
+}
+
+export type MonitoringFrequency = 'quarterly' | 'triannual' | 'annual';
+
+export interface DroneScheduleStage {
+  frequencyPerYear: number;
+  frequency: MonitoringFrequency;
+  slots: DroneScheduleSlot[];
+}
+
+export interface DroneSchedules {
+  startYear: number;
+  endYear: number;
+  year1: DroneScheduleStage;
+  year2: DroneScheduleStage;
+  year3to5: DroneScheduleStage;
 }
 
 export interface KthPolygon {
   id: string;
-  kthName: string;
-  areaHa: number;
-  color: string;
-  coordinates: Array<[number, number]>;
+  name: string;
+  areaHectares: number;
+  estimatedCO2e: number;
+  status: string;
+  kthName?: string;
+  areaHa?: number;
+  color?: string;
+  coordinates?: any;
 }
 
 export interface KthLog {
   id: string;
-  timestamp: string;
-  kthName: string;
-  action: string;
-  detail: string;
-  status: string;
+  date: string;
+  type: string;
+  desc: string;
+  verified: boolean;
+  timestamp?: string;
+  kthName?: string;
+  action?: string;
+  detail?: string;
+  status?: string;
 }
 
 export interface MlAuditResult {

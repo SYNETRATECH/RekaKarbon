@@ -1,5 +1,7 @@
 import { api } from '../lib/api';
 import type { StoredFile, UploadFileDto } from '../types/storage';
+import { StoredFileSchema } from '../schemas';
+import { z } from 'zod';
 
 export interface StorageRepository {
   getFiles(): Promise<StoredFile[]>;
@@ -9,15 +11,15 @@ export interface StorageRepository {
 
 export class ApiStorageRepository implements StorageRepository {
   async getFiles(): Promise<StoredFile[]> {
-    return api.get<StoredFile[]>('/storage/files');
+    return api.get<StoredFile[]>('/storage/files', z.array(StoredFileSchema));
   }
 
   async getFileById(id: string): Promise<StoredFile | null> {
-    return api.get<StoredFile>(`/storage/files/${id}`);
+    return api.get<StoredFile | null>(`/storage/files/${id}`, StoredFileSchema.nullable());
   }
 
   async uploadFile(data: UploadFileDto): Promise<StoredFile> {
-    return api.post<StoredFile>('/storage/upload', data);
+    return api.post<StoredFile>('/storage/upload', data, StoredFileSchema);
   }
 }
 

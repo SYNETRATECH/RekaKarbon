@@ -1,4 +1,5 @@
 import type { ComplianceData } from '../types';
+import { ComplianceDataSchema } from '../schemas';
 import { api } from '../lib/api';
 
 export interface ComplianceRepository {
@@ -7,7 +8,7 @@ export interface ComplianceRepository {
 
 export class ApiComplianceRepository implements ComplianceRepository {
   async getComplianceData(): Promise<ComplianceData> {
-    return api.get<ComplianceData>('/emitter/compliance');
+    return api.get<ComplianceData>('/emitter/compliance', ComplianceDataSchema);
   }
 }
 

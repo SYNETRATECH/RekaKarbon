@@ -1,4 +1,6 @@
 import type { Project } from '../types';
+import { ProjectSchema } from '../schemas';
+import { z } from 'zod';
 import { api } from '../lib/api';
 
 export interface ProjectRepository {
@@ -8,10 +10,10 @@ export interface ProjectRepository {
 
 export class ApiProjectRepository implements ProjectRepository {
   async getProjects(): Promise<Project[]> {
-    return api.get<Project[]>('/projects');
+    return api.get<Project[]>('/projects', z.array(ProjectSchema));
   }
   async getProjectById(id: string): Promise<Project | null> {
-    return api.get<Project>(`/projects/${id}`);
+    return api.get<Project | null>(`/projects/${id}`, ProjectSchema.nullable());
   }
 }
 

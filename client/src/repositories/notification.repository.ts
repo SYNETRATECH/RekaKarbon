@@ -5,6 +5,8 @@ import type {
   SubscribeWebPushParams,
   VapidKeyResponse,
 } from '../types/notification';
+import { SystemNotificationSchema, VapidKeyResponseSchema } from '../schemas';
+import { z } from 'zod';
 
 export interface NotificationRepository {
   getNotifications(): Promise<SystemNotification[]>;
@@ -17,27 +19,42 @@ export interface NotificationRepository {
 
 export class ApiNotificationRepository implements NotificationRepository {
   async getNotifications(): Promise<SystemNotification[]> {
-    return api.get<SystemNotification[]>('/notifications');
+    return api.get<SystemNotification[]>('/notifications', z.array(SystemNotificationSchema));
   }
 
   async markAsRead(id: string): Promise<{ success: boolean; id: string }> {
-    return api.patch<{ success: boolean; id: string }>(`/notifications/${id}/read`, {});
+    return api.patch<{ success: boolean; id: string }>(
+      `/notifications/${id}/read`,
+      {},
+      z.object({ success: z.boolean(), id: z.string() })
+    );
   }
 
   async createNotification(data: CreateNotificationDto): Promise<SystemNotification> {
-    return api.post<SystemNotification>('/notifications', data);
+    return api.post<SystemNotification>('/notifications', data, SystemNotificationSchema);
   }
 
   async getVapidPublicKey(): Promise<VapidKeyResponse> {
-    return api.get<VapidKeyResponse>('/notifications/webpush/vapid-public-key');
+    return api.get<VapidKeyResponse>(
+      '/notifications/webpush/vapid-public-key',
+      VapidKeyResponseSchema
+    );
   }
 
   async subscribeWebPush(data: SubscribeWebPushParams): Promise<{ success: boolean }> {
-    return api.post<{ success: boolean }>('/notifications/webpush/subscribe', data);
+    return api.post<{ success: boolean }>(
+      '/notifications/webpush/subscribe',
+      data,
+      z.object({ success: z.boolean() })
+    );
   }
 
   async unsubscribeWebPush(endpoint: string): Promise<{ success: boolean }> {
-    return api.post<{ success: boolean }>('/notifications/webpush/unsubscribe', { endpoint });
+    return api.post<{ success: boolean }>(
+      '/notifications/webpush/unsubscribe',
+      { endpoint },
+      z.object({ success: z.boolean() })
+    );
   }
 }
 

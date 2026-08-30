@@ -1,4 +1,6 @@
 import type { Company } from '../types';
+import { CompanySchema } from '../schemas';
+import { z } from 'zod';
 import { api } from '../lib/api';
 
 export interface CompanyRepository {
@@ -8,10 +10,10 @@ export interface CompanyRepository {
 
 export class ApiCompanyRepository implements CompanyRepository {
   async getCompanies(): Promise<Company[]> {
-    return api.get<Company[]>('/companies');
+    return api.get<Company[]>('/companies', z.array(CompanySchema));
   }
   async getCompanyById(id: string): Promise<Company | null> {
-    return api.get<Company>(`/companies/${id}`);
+    return api.get<Company | null>(`/companies/${id}`, CompanySchema.nullable());
   }
 }
 

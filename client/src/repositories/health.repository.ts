@@ -1,5 +1,6 @@
 import { api } from '../lib/api';
 import type { HealthStatusResponse } from '../types/health';
+import { HealthStatusResponseSchema } from '../schemas';
 
 export interface HealthRepository {
   getHealthStatus(): Promise<HealthStatusResponse>;
@@ -7,7 +8,7 @@ export interface HealthRepository {
 
 export class ApiHealthRepository implements HealthRepository {
   async getHealthStatus(): Promise<HealthStatusResponse> {
-    return api.get<HealthStatusResponse>('/health');
+    return api.get<HealthStatusResponse>('/health', HealthStatusResponseSchema);
   }
 }
 
