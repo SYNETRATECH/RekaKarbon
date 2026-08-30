@@ -261,6 +261,7 @@ poetry run pytest -v
 pnpm ml:lint
 pnpm ml:typecheck
 pnpm ml:test
+pnpm ml:train
 ```
 
 ---
