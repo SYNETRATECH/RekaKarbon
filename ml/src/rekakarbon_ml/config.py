@@ -11,9 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Central Default Random Seed for reproducibility across generation, training, and evaluation
-DEFAULT_RANDOM_STATE: int = int(
-    os.getenv("RANDOM_STATE") or 20260830
-)
+DEFAULT_RANDOM_STATE: int = int(os.getenv("RANDOM_STATE") or 20260830)
 
 
 def get_random_state(override: int | None = None) -> int:

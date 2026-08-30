@@ -70,6 +70,7 @@ def load_pipeline(model_path: str = "models/anomaly_pipeline.pkl") -> Pipeline:
         return pipeline
     return joblib.load(model_path)
 
+
 def main() -> None:
     from ..config import DEFAULT_RANDOM_STATE
     from ..inference.predictor import CarbonAnomalyPredictor
@@ -77,7 +78,9 @@ def main() -> None:
     from .onnx_exporter import export_pipeline_to_onnx
 
     print("Starting End-to-End RekaKarbon ML Pipeline Training...")
-    pipeline, train_df = train_and_save_pipeline(save_dir="models", n_samples=2500, contamination=0.15)
+    pipeline, train_df = train_and_save_pipeline(
+        save_dir="models", n_samples=2500, contamination=0.15
+    )
 
     print("\nExporting Pipeline to ONNX...")
     export_pipeline_to_onnx(pipeline, output_path="models/anomaly_pipeline.onnx")
@@ -93,13 +96,12 @@ def main() -> None:
 
     evaluator = ModelEvaluator(predictor)
     eval_results = evaluator.evaluate(test_df)
-    meta = generate_model_metadata(eval_results, output_path="models/model_metadata.json")
+    generate_model_metadata(eval_results, output_path="models/model_metadata.json")
 
     if eval_results["quality_gate"]["passed"]:
         print("[SUCCESS] Pipeline Retraining and Quality Gate Verification PASSED!")
     else:
         print("[FAILED] Quality Gate Verification FAILED!")
-
 
 
 if __name__ == "__main__":

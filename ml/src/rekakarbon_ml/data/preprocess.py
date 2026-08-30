@@ -6,6 +6,7 @@ and exports 15 derived physical/stoichiometric features to CSV/JSON format.
 
 import argparse
 import os
+
 import pandas as pd
 
 from ..data.generator import EmissionDataGenerator
@@ -29,7 +30,9 @@ def preprocess_dataset(
         else:
             raw_df = pd.read_csv(input_path)
     else:
-        print(f"No input file specified/found. Generating {n_samples} synthetic emission records...")
+        print(
+            f"No input file specified/found. Generating {n_samples} synthetic emission records..."
+        )
         generator = EmissionDataGenerator(random_state=random_state)
         raw_df = generator.generate_dataset(n_samples=n_samples)
 
@@ -51,15 +54,27 @@ def preprocess_dataset(
     else:
         processed_df.to_csv(output_path, index=False)
 
-    print(f"[SUCCESS] Preprocessed dataset ({processed_df.shape[0]} rows, {processed_df.shape[1]} features) saved to {output_path}")
+    print(
+        f"[SUCCESS] Preprocessed dataset ({processed_df.shape[0]} rows, {processed_df.shape[1]} features) saved to {output_path}"
+    )
     return processed_df
 
 
 def main():
     parser = argparse.ArgumentParser(description="RekaKarbon ML Data Preprocessing CLI")
-    parser.add_argument("--input", "-i", type=str, default=None, help="Path to raw dataset CSV/JSON")
-    parser.add_argument("--output", "-o", type=str, default="data/processed_features.csv", help="Path to output processed CSV/JSON")
-    parser.add_argument("--n-samples", "-n", type=int, default=500, help="Number of synthetic samples if generating")
+    parser.add_argument(
+        "--input", "-i", type=str, default=None, help="Path to raw dataset CSV/JSON"
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default="data/processed_features.csv",
+        help="Path to output processed CSV/JSON",
+    )
+    parser.add_argument(
+        "--n-samples", "-n", type=int, default=500, help="Number of synthetic samples if generating"
+    )
     args = parser.parse_args()
 
     preprocess_dataset(
