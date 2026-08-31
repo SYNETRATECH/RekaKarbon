@@ -12,29 +12,36 @@ from sklearn.ensemble import IsolationForest
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
-from ..config import get_random_state
+from ..config import (
+    IsolationForestConfig,
+    get_isolation_forest_config,
+    get_ml_config,
+    get_random_state,
+)
 from ..data.generator import EmissionDataGenerator
 from .transformers import EmissionFeatureEngineer
 
 
 def build_anomaly_pipeline(
-    contamination: float = 0.10, random_state: int | None = None
+    contamination: float | None = None,
+    random_state: int | None = None,
+    model_config: IsolationForestConfig | None = None,
 ) -> Pipeline:
     """Builds a scikit-learn pipeline for feature engineering, scaling, and outlier detection."""
-    seed = get_random_state(random_state)
+    if model_config is not None:
+        cfg = model_config
+        if contamination is not None:
+            cfg.contamination = contamination
+        if random_state is not None:
+            cfg.random_state = random_state
+    else:
+        cfg = get_isolation_forest_config(contamination=contamination, random_state=random_state)
+
     pipeline = Pipeline(
         [
             ("feature_engineer", EmissionFeatureEngineer()),
             ("scaler", RobustScaler()),
-            (
-                "detector",
-                IsolationForest(
-                    n_estimators=100,
-                    contamination=contamination,
-                    random_state=seed,
-                    n_jobs=1,
-                ),
-            ),
+            ("detector", IsolationForest(**cfg.to_dict())),
         ]
     )
     return pipeline
@@ -42,21 +49,29 @@ def build_anomaly_pipeline(
 
 def train_and_save_pipeline(
     save_dir: str = "models",
-    n_samples: int = 2000,
-    contamination: float = 0.10,
+    n_samples: int | None = None,
+    contamination: float | None = None,
     random_state: int | None = None,
+    model_config: IsolationForestConfig | None = None,
 ) -> Tuple[Pipeline, pd.DataFrame]:
     """Generates synthetic training data, trains the pipeline, and saves to disk."""
+    ml_cfg = get_ml_config()
+    samples = n_samples if n_samples is not None else ml_cfg.dataset.default_n_samples
+    contam = contamination if contamination is not None else ml_cfg.model.contamination
     seed = get_random_state(random_state)
-    os.makedirs(save_dir, exist_ok=True)
+    target_dir = save_dir or ml_cfg.paths.models_dir
+    os.makedirs(target_dir, exist_ok=True)
+
     generator = EmissionDataGenerator(random_state=seed)
-    df = generator.generate_dataset(n_samples=n_samples, anomaly_ratio=contamination)
+    df = generator.generate_dataset(n_samples=samples, anomaly_ratio=contam)
 
     X = df
-    pipeline = build_anomaly_pipeline(contamination=contamination, random_state=seed)
+    pipeline = build_anomaly_pipeline(
+        contamination=contam, random_state=seed, model_config=model_config
+    )
     pipeline.fit(X)
 
-    model_path = os.path.join(save_dir, "anomaly_pipeline.pkl")
+    model_path = os.path.join(target_dir, "anomaly_pipeline.pkl")
     joblib.dump(pipeline, model_path)
     print(f"Trained and saved pipeline to {model_path}")
 

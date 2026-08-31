@@ -9,7 +9,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from ..config import get_random_state
+from ..config import get_dataset_config, get_random_state
 from .benchmark_loader import (
     MARKET_PRICE_RANGES,
     STOICHIOMETRIC_FACTORS,
@@ -31,18 +31,25 @@ class EmissionDataGenerator:
         self.sector_benchmarks = self.loader.get_sector_emission_factors()
         self.factors = STOICHIOMETRIC_FACTORS
         self.prices = MARKET_PRICE_RANGES
+        self.dataset_config = get_dataset_config()
 
     def generate_dataset(
         self,
-        n_samples: int = 1800,
-        anomaly_ratio: float = 0.12,
+        n_samples: int | None = None,
+        anomaly_ratio: float | None = None,
         sectors: List[str] | None = None,
     ) -> pd.DataFrame:
+        samples = n_samples if n_samples is not None else self.dataset_config.default_n_samples
+        ratio = (
+            anomaly_ratio
+            if anomaly_ratio is not None
+            else self.dataset_config.default_anomaly_ratio
+        )
         sectors_to_use = sectors or SUPPORTED_SECTORS
         data = []
 
-        n_anomalies = int(n_samples * anomaly_ratio)
-        n_normals = n_samples - n_anomalies
+        n_anomalies = int(samples * ratio)
+        n_normals = samples - n_anomalies
 
         # 1. Generate Normal Compliant Reports
         for _ in range(n_normals):
@@ -254,16 +261,22 @@ class EmissionDataGenerator:
 
     def generate_train_val_test_splits(
         self,
-        n_total: int = 2500,
-        anomaly_ratio: float = 0.12,
+        n_total: int | None = None,
+        anomaly_ratio: float | None = None,
         train_ratio: float = 0.70,
         val_ratio: float = 0.15,
         test_ratio: float = 0.15,
     ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Generates stratified non-leaking train, validation, and test datasets."""
-        full_df = self.generate_dataset(n_samples=n_total, anomaly_ratio=anomaly_ratio)
-        n_train = int(n_total * train_ratio)
-        n_val = int(n_total * val_ratio)
+        total = n_total if n_total is not None else self.dataset_config.default_n_samples
+        ratio = (
+            anomaly_ratio
+            if anomaly_ratio is not None
+            else self.dataset_config.default_anomaly_ratio
+        )
+        full_df = self.generate_dataset(n_samples=total, anomaly_ratio=ratio)
+        n_train = int(total * train_ratio)
+        n_val = int(total * val_ratio)
 
         train_df = full_df.iloc[:n_train].reset_index(drop=True)
         val_df = full_df.iloc[n_train : n_train + n_val].reset_index(drop=True)
