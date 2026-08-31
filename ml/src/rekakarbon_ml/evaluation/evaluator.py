@@ -19,6 +19,7 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
+from ..config import get_ml_config, get_quality_gate_config
 from ..data.benchmark_loader import (
     MARKET_PRICE_RANGES,
     STOICHIOMETRIC_FACTORS,
@@ -28,12 +29,7 @@ from ..data.benchmark_loader import (
 from ..pipeline.transformers import DERIVED_FEATURE_NAMES, RAW_FEATURE_COLUMNS
 from .visualizer import ModelVisualizer
 
-QUALITY_GATE_THRESHOLDS = {
-    "min_overall_f1": 0.85,
-    "min_overall_recall": 0.88,
-    "min_under_reporting_recall": 0.92,
-    "max_false_positive_rate": 0.10,
-}
+QUALITY_GATE_THRESHOLDS = get_quality_gate_config().to_dict()
 
 
 class ModelEvaluator:
@@ -180,6 +176,7 @@ def generate_model_metadata(
         "release_timestamp": datetime.now(timezone.utc).isoformat(),
         "framework": "Scikit-Learn (IsolationForest + RobustScaler) & ONNX Runtime",
         "target_opset": {"": 15, "ai.onnx.ml": 3},
+        "hyperparameters": get_ml_config().model.to_dict(),
         "raw_features": RAW_FEATURE_COLUMNS,
         "derived_features": DERIVED_FEATURE_NAMES,
         "supported_sectors": SUPPORTED_SECTORS,
