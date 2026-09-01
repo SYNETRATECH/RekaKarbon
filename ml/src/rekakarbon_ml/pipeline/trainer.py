@@ -1,8 +1,10 @@
 """
 Pipeline Builder and Trainer for Carbon Anomaly Detection.
-Follows standard Scikit-Learn Pipeline and RobustScaler + IsolationForest.
+Follows standard Scikit-Learn Pipeline with RobustScaler + IsolationForest.
+Supports training on persisted raw dataset splits (data/splits/train.csv) or input CSVs.
 """
 
+import argparse
 import os
 from typing import Tuple
 
@@ -18,7 +20,7 @@ from ..config import (
     get_ml_config,
     get_random_state,
 )
-from ..data.generator import EmissionDataGenerator
+from ..pipeline.onnx_exporter import export_pipeline_to_onnx
 from .transformers import EmissionFeatureEngineer
 
 
@@ -48,13 +50,17 @@ def build_anomaly_pipeline(
 
 
 def train_and_save_pipeline(
+    train_data_path: str | None = None,
     save_dir: str = "models",
     n_samples: int | None = None,
     contamination: float | None = None,
     random_state: int | None = None,
     model_config: IsolationForestConfig | None = None,
 ) -> Tuple[Pipeline, pd.DataFrame]:
-    """Generates synthetic training data, trains the pipeline, and saves to disk."""
+    """
+    Loads raw training dataset (or uses default data/splits/train.csv), trains the pipeline,
+    and exports serialized .pkl and .onnx model artifacts.
+    """
     ml_cfg = get_ml_config()
     samples = n_samples if n_samples is not None else ml_cfg.dataset.default_n_samples
     contam = contamination if contamination is not None else ml_cfg.model.contamination
@@ -62,18 +68,40 @@ def train_and_save_pipeline(
     target_dir = save_dir or ml_cfg.paths.models_dir
     os.makedirs(target_dir, exist_ok=True)
 
-    generator = EmissionDataGenerator(random_state=seed)
-    df = generator.generate_dataset(n_samples=samples, anomaly_ratio=contam)
+    default_train_split = os.path.join(ml_cfg.paths.data_splits_dir, "train.csv")
 
-    X = df
+    if train_data_path and os.path.exists(train_data_path):
+        print(f"Loading training data from specified path: {train_data_path}")
+        df = (
+            pd.read_json(train_data_path)
+            if train_data_path.endswith(".json")
+            else pd.read_csv(train_data_path)
+        )
+    elif os.path.exists(default_train_split):
+        print(f"Loading training data from default split: {default_train_split}")
+        df = pd.read_csv(default_train_split)
+    else:
+        print(
+            f"No training split found at {default_train_split}. Triggering preprocessing & split pipeline..."
+        )
+        from ..data.preprocess import preprocess_dataset
+
+        _, df, _, _ = preprocess_dataset(n_samples=samples, random_state=seed)
+
+    print(f"Fitting IsolationForest Pipeline on {len(df)} training records...")
     pipeline = build_anomaly_pipeline(
         contamination=contam, random_state=seed, model_config=model_config
     )
-    pipeline.fit(X)
+    pipeline.fit(df)
 
     model_path = os.path.join(target_dir, "anomaly_pipeline.pkl")
     joblib.dump(pipeline, model_path)
-    print(f"Trained and saved pipeline to {model_path}")
+    print(f"[SUCCESS] Trained and saved Scikit-Learn pipeline to {model_path}")
+
+    # Automatically export ONNX model artifact
+    onnx_path = os.path.join(target_dir, "anomaly_pipeline.onnx")
+    export_pipeline_to_onnx(pipeline, output_path=onnx_path)
+    print(f"[SUCCESS] Exported ONNX model artifact to {onnx_path}")
 
     return pipeline, df
 
@@ -87,34 +115,64 @@ def load_pipeline(model_path: str = "models/anomaly_pipeline.pkl") -> Pipeline:
 
 
 def main() -> None:
-    from ..config import DEFAULT_RANDOM_STATE
     from ..evaluation.evaluator import ModelEvaluator, generate_model_metadata
     from ..inference.predictor import CarbonAnomalyPredictor
-    from .onnx_exporter import export_pipeline_to_onnx
 
-    print("Starting End-to-End RekaKarbon ML Pipeline Training...")
-    pipeline, train_df = train_and_save_pipeline(
-        save_dir="models", n_samples=2500, contamination=0.15
+    parser = argparse.ArgumentParser(description="RekaKarbon ML Pipeline Trainer CLI")
+    parser.add_argument(
+        "--train-data",
+        type=str,
+        default=None,
+        help="Path to training CSV/JSON (defaults to data/splits/train.csv)",
     )
+    parser.add_argument(
+        "--save-dir",
+        type=str,
+        default="models",
+        help="Directory to save trained model artifacts",
+    )
+    parser.add_argument(
+        "--n-samples",
+        type=int,
+        default=2500,
+        help="Synthetic samples if generating training split",
+    )
+    parser.add_argument(
+        "--contamination",
+        type=float,
+        default=0.15,
+        help="Expected anomaly ratio for IsolationForest",
+    )
+    args = parser.parse_args()
 
-    print("\nExporting Pipeline to ONNX...")
-    export_pipeline_to_onnx(pipeline, output_path="models/anomaly_pipeline.onnx")
+    print("Starting RekaKarbon ML Pipeline Training...")
+    pipeline, train_df = train_and_save_pipeline(
+        train_data_path=args.train_data,
+        save_dir=args.save_dir,
+        n_samples=args.n_samples,
+        contamination=args.contamination,
+    )
 
     print("\nEvaluating Retrained Pipeline Quality Gates...")
     predictor = CarbonAnomalyPredictor(
-        model_pkl_path="models/anomaly_pipeline.pkl",
-        onnx_path="models/anomaly_pipeline.onnx",
+        model_pkl_path=os.path.join(args.save_dir, "anomaly_pipeline.pkl"),
+        onnx_path=os.path.join(args.save_dir, "anomaly_pipeline.onnx"),
         use_onnx=True,
     )
-    generator = EmissionDataGenerator(random_state=DEFAULT_RANDOM_STATE)
-    _, _, test_df = generator.generate_train_val_test_splits(n_total=2500, anomaly_ratio=0.15)
+
+    test_split_path = os.path.join(get_ml_config().paths.data_splits_dir, "test.csv")
+    if os.path.exists(test_split_path):
+        test_df = pd.read_csv(test_split_path)
+    else:
+        test_df = train_df
 
     evaluator = ModelEvaluator(predictor)
     eval_results = evaluator.evaluate(test_df)
-    generate_model_metadata(eval_results, output_path="models/model_metadata.json")
+    meta_path = os.path.join(args.save_dir, "model_metadata.json")
+    generate_model_metadata(eval_results, output_path=meta_path)
 
     if eval_results["quality_gate"]["passed"]:
-        print("[SUCCESS] Pipeline Retraining and Quality Gate Verification PASSED!")
+        print("[SUCCESS] Retraining and Quality Gate Verification PASSED!")
     else:
         print("[FAILED] Quality Gate Verification FAILED!")
 

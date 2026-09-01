@@ -111,10 +111,17 @@ class QualityGateConfig:
 
 @dataclass
 class PathsConfig:
-    """Paths configuration for model artifacts and report outputs."""
+    """Paths configuration for model artifacts, data directories, and report outputs."""
 
     models_dir: str = field(default_factory=lambda: os.getenv("ML_MODELS_DIR", "models"))
     reports_dir: str = field(default_factory=lambda: os.getenv("ML_REPORTS_DIR", "models/reports"))
+    data_raw_dir: str = field(default_factory=lambda: os.getenv("ML_DATA_RAW_DIR", "data/raw"))
+    data_splits_dir: str = field(
+        default_factory=lambda: os.getenv("ML_DATA_SPLITS_DIR", "data/splits")
+    )
+    data_processed_dir: str = field(
+        default_factory=lambda: os.getenv("ML_DATA_PROCESSED_DIR", "data/processed")
+    )
 
 
 @dataclass

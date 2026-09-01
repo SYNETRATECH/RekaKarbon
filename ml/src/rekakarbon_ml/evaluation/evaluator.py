@@ -202,7 +202,6 @@ def main() -> None:
     import argparse
 
     from ..config import DEFAULT_RANDOM_STATE, get_dataset_config
-    from ..data.generator import EmissionDataGenerator
     from ..inference.predictor import CarbonAnomalyPredictor
 
     parser = argparse.ArgumentParser(description="RekaKarbon ML Model Evaluation CLI")
@@ -258,18 +257,25 @@ def main() -> None:
     )
 
     # Load or generate test data
+    default_test_split = os.path.join(get_ml_config().paths.data_splits_dir, "test.csv")
     if args.test_data and os.path.exists(args.test_data):
-        print(f"Loading test dataset from {args.test_data}...")
+        print(f"Loading test dataset from specified path: {args.test_data}...")
         test_df = (
             pd.read_json(args.test_data)
             if args.test_data.endswith(".json")
             else pd.read_csv(args.test_data)
         )
+    elif os.path.exists(default_test_split):
+        print(f"Loading test dataset from default split: {default_test_split}...")
+        test_df = pd.read_csv(default_test_split)
     else:
-        print(f"Generating synthetic evaluation holdout set ({args.n_samples} samples)...")
-        gen = EmissionDataGenerator(random_state=DEFAULT_RANDOM_STATE)
-        _, _, test_df = gen.generate_train_val_test_splits(
-            n_total=args.n_samples, anomaly_ratio=0.15
+        print(
+            f"No test split found at {default_test_split}. Triggering preprocessing & split pipeline..."
+        )
+        from ..data.preprocess import preprocess_dataset
+
+        _, _, _, test_df = preprocess_dataset(
+            n_samples=args.n_samples, random_state=DEFAULT_RANDOM_STATE
         )
 
     visualizer = ModelVisualizer(output_dir=args.report_dir) if args.save_plots else None
