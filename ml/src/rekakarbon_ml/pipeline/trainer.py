@@ -107,7 +107,7 @@ def main() -> None:
         use_onnx=True,
     )
     generator = EmissionDataGenerator(random_state=DEFAULT_RANDOM_STATE)
-    _, _, test_df = generator.generate_train_val_test_splits(n_total=1000, anomaly_ratio=0.15)
+    _, _, test_df = generator.generate_train_val_test_splits(n_total=2500, anomaly_ratio=0.15)
 
     evaluator = ModelEvaluator(predictor)
     eval_results = evaluator.evaluate(test_df)
