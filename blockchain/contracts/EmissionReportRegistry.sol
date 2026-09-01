@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 /// @notice Registry untuk menyimpan laporan emisi tahunan perusahaan secara on-chain menggunakan Merkle Root
 contract EmissionReportRegistry is AccessControl {
     bytes32 public constant AUDITOR_ROLE = keccak256("AUDITOR_ROLE");
+    bytes32 public constant REPORTER_ROLE = keccak256("REPORTER_ROLE");
 
     enum ReportStatus { DRAFT, SUBMITTED, APPROVED, REJECTED }
     enum PtbaeAnchorType { APPLICATION_SUBMISSION, AUDIT_DECISION, MINISTRY_DECISION, REVOCATION }
@@ -51,11 +52,30 @@ contract EmissionReportRegistry is AccessControl {
     constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(AUDITOR_ROLE, msg.sender); // Biasanya AI dMRV service atau KLHK
+        _grantRole(REPORTER_ROLE, msg.sender); // Backend dapat mewakili emitter terautentikasi
     }
 
     /// @notice Submit laporan emisi dengan menyimpan Merkle Root data
     function submitReport(uint256 year, bytes32 merkleRoot) public returns (uint256) {
-        uint256 existingReportId = latestReportIdByYear[msg.sender][year];
+        return _submitReport(msg.sender, year, merkleRoot);
+    }
+
+    /// @notice Submit laporan atas nama emitter yang sudah diverifikasi oleh backend
+    function submitReportFor(
+        address reporter,
+        uint256 year,
+        bytes32 merkleRoot
+    ) external onlyRole(REPORTER_ROLE) returns (uint256) {
+        require(reporter != address(0), "Reporter is required");
+        return _submitReport(reporter, year, merkleRoot);
+    }
+
+    function _submitReport(
+        address reporter,
+        uint256 year,
+        bytes32 merkleRoot
+    ) internal returns (uint256) {
+        uint256 existingReportId = latestReportIdByYear[reporter][year];
         uint8 revision = 0;
 
         if (existingReportId != 0) {
@@ -68,7 +88,7 @@ contract EmissionReportRegistry is AccessControl {
         uint256 newReportId = _nextReportId++;
         
         reports[newReportId] = EmissionReport({
-            reporter: msg.sender,
+            reporter: reporter,
             year: year,
             merkleRoot: merkleRoot,
             status: ReportStatus.SUBMITTED,
@@ -77,9 +97,9 @@ contract EmissionReportRegistry is AccessControl {
             revisionCount: revision
         });
 
-        latestReportIdByYear[msg.sender][year] = newReportId;
+        latestReportIdByYear[reporter][year] = newReportId;
 
-        emit ReportSubmitted(newReportId, msg.sender, merkleRoot, year, revision);
+        emit ReportSubmitted(newReportId, reporter, merkleRoot, year, revision);
         return newReportId;
     }
 

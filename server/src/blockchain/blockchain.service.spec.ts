@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BlockchainService } from './blockchain.service';
 import { ethers } from 'ethers';
-import type { BlockchainTransaction, CarbonTokenContract } from './types';
+import type {
+  BlockchainTransaction,
+  CarbonTokenContract,
+  EmissionRegistryContract,
+} from './types';
 
 jest.mock('ethers', () => {
   const original = jest.requireActual(
@@ -66,7 +70,8 @@ describe('BlockchainService', () => {
     let mockContract: Pick<
       CarbonTokenContract,
       'balanceOf' | 'mintOffsetCredit'
-    >;
+    > &
+      Pick<EmissionRegistryContract, 'submitReportFor'>;
 
     beforeEach(() => {
       process.env.BESU_RPC_URL = 'http://127.0.0.1:8545';
@@ -86,6 +91,17 @@ describe('BlockchainService', () => {
       mockContract = {
         balanceOf: jest.fn().mockResolvedValue(BigInt(150)),
         mintOffsetCredit: jest.fn().mockResolvedValue(transaction),
+        submitReportFor: jest.fn().mockResolvedValue({
+          wait: jest.fn().mockResolvedValue({
+            hash: '0xreporttxhash',
+            logs: [
+              {
+                fragment: { name: 'ReportSubmitted' },
+                args: [7n],
+              },
+            ],
+          }),
+        }),
       };
 
       jest
@@ -141,6 +157,25 @@ describe('BlockchainService', () => {
         '0xtoaddress',
         500,
         '-6.2,106.8',
+      );
+    });
+
+    it('should submit an emission report for the emitter wallet', async () => {
+      const result = await service.submitEmissionReport(
+        '0x0000000000000000000000000000000000000002',
+        2026,
+        '0x0000000000000000000000000000000000000000000000000000000000000003',
+      );
+
+      expect(result).toEqual({
+        txHash: '0xreporttxhash',
+        reportId: 7,
+      });
+      expect(mockContract.submitReportFor).toHaveBeenCalledWith(
+        '0x0000000000000000000000000000000000000002',
+        2026,
+        '0x0000000000000000000000000000000000000000000000000000000000000003',
+        { gasPrice: 0 },
       );
     });
   });

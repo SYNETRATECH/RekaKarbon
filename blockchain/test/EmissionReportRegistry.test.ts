@@ -7,9 +7,15 @@ const { ethers } = hardhat;
 interface EmissionReportRegistryContract {
   waitForDeployment(): Promise<unknown>;
   AUDITOR_ROLE(): Promise<string>;
+  REPORTER_ROLE(): Promise<string>;
   grantRole(role: string, account: string): Promise<{ wait(): Promise<unknown> }>;
   connect(signer: HardhatEthersSigner): EmissionReportRegistryContract;
   submitReport(year: bigint, merkleRoot: string): Promise<{ wait(): Promise<unknown> }>;
+  submitReportFor(
+    reporter: string,
+    year: bigint,
+    merkleRoot: string
+  ): Promise<{ wait(): Promise<unknown> }>;
   latestReportIdByYear(reporter: string, year: bigint): Promise<bigint>;
   reports(reportId: bigint): Promise<{
     reporter: string;
@@ -50,7 +56,10 @@ interface EmissionReportRegistryContract {
 
 describe('EmissionReportRegistry Smart Contract', function () {
   let registry: EmissionReportRegistryContract;
-  let admin: HardhatEthersSigner, auditor: HardhatEthersSigner, corpA: HardhatEthersSigner;
+  let admin: HardhatEthersSigner,
+    auditor: HardhatEthersSigner,
+    corpA: HardhatEthersSigner,
+    corpB: HardhatEthersSigner;
 
   const YEAR = 2026n;
   const MERKLE_ROOT = ethers.keccak256(ethers.toUtf8Bytes('dummy_merkle_root_2026'));
@@ -61,7 +70,7 @@ describe('EmissionReportRegistry Smart Contract', function () {
   const PTBAE_MERKLE_ROOT = ethers.keccak256(ethers.toUtf8Bytes('ptbae-merkle-root-2026-001'));
 
   before(async function () {
-    [admin, auditor, corpA] = await ethers.getSigners();
+    [admin, auditor, corpA, corpB] = await ethers.getSigners();
 
     const emissionReportRegistryFactory = await ethers.getContractFactory('EmissionReportRegistry');
     registry =
@@ -98,6 +107,21 @@ describe('EmissionReportRegistry Smart Contract', function () {
       expect(error).to.not.be.undefined;
       expect(error?.message).to.include('Report already approved or pending');
     });
+
+    it('Harus memisahkan laporan dua perusahaan pada tahun yang sama saat dikirim backend', async function () {
+      const REPORTER_ROLE = await registry.REPORTER_ROLE();
+      await registry.grantRole(REPORTER_ROLE, admin.address);
+
+      const tx = await registry.submitReportFor(corpB.address, YEAR, MERKLE_ROOT_3);
+      await tx.wait();
+
+      const reportId = await registry.latestReportIdByYear(corpB.address, YEAR);
+      const report = await registry.reports(reportId);
+      expect(report.reporter).to.equal(corpB.address);
+      expect(report.year).to.equal(YEAR);
+      expect(report.merkleRoot).to.equal(MERKLE_ROOT_3);
+      expect(report.status).to.equal(1n);
+    });
   });
 
   describe('2. Audit & Revision', function () {
@@ -115,7 +139,7 @@ describe('EmissionReportRegistry Smart Contract', function () {
       await tx.wait();
 
       const reportId = await registry.latestReportIdByYear(corpA.address, YEAR);
-      expect(reportId).to.equal(2n);
+      expect(reportId).to.not.equal(1n);
 
       const report = await registry.reports(reportId);
       expect(report.revisionCount).to.equal(1n);

@@ -3,6 +3,7 @@ import {
   Logger,
   InternalServerErrorException,
   BadRequestException,
+  HttpException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
@@ -13,6 +14,11 @@ import { PtbaeService } from '../compliance/ptbae.service';
 import type { CalculatorCalculationData } from './types';
 
 type CalculatorScopeData = Partial<CalculatorCalculationData>;
+
+type EmitterWalletUser = {
+  walletAddress: string | null;
+};
+
 const CARBON_OFFSET_RATE_IDR = 650000;
 
 @Injectable()
@@ -25,6 +31,20 @@ export class ReportsService {
     private readonly storageService: StorageService,
     private readonly ptbaeService: PtbaeService,
   ) {}
+
+  private resolveEmitterWallet(user: EmitterWalletUser): string {
+    if (!user.walletAddress) {
+      throw new BadRequestException('Emitter wallet address is not configured');
+    }
+
+    try {
+      return ethers.getAddress(user.walletAddress);
+    } catch {
+      throw new BadRequestException(
+        'Emitter wallet address is not a valid EVM address',
+      );
+    }
+  }
 
   async getEmissionReports(user?: { userId: string; role: string }) {
     let whereClause = {};
@@ -190,6 +210,7 @@ export class ReportsService {
     if (!user) throw new BadRequestException('User not found');
     const company = user.companies[0];
     if (!company) throw new BadRequestException('User has no company');
+    const reporterAddress = this.resolveEmitterWallet(user);
     const quota = await this.ptbaeService.resolveForCompany(company.id, year);
 
     const existingReport = await this.prisma.emissionReport.findUnique({
@@ -249,7 +270,11 @@ export class ReportsService {
 
     try {
       const { txHash, reportId } =
-        await this.blockchainService.submitEmissionReport(year, merkleRoot);
+        await this.blockchainService.submitEmissionReport(
+          reporterAddress,
+          year,
+          merkleRoot,
+        );
       this.logger.log(
         `Successfully submitted report on-chain. TX: ${txHash}, ReportID: ${reportId}`,
       );
@@ -292,6 +317,7 @@ export class ReportsService {
       };
     } catch (error: unknown) {
       this.logger.error('Failed to process report', error);
+      if (error instanceof HttpException) throw error;
       const e = error as Record<string, unknown>;
       const errMsg = typeof e?.message === 'string' ? e.message : String(error);
       throw new InternalServerErrorException(
@@ -314,6 +340,7 @@ export class ReportsService {
     if (!user) throw new BadRequestException('User not found');
     const company = user.companies[0];
     if (!company) throw new BadRequestException('User has no company');
+    const reporterAddress = this.resolveEmitterWallet(user);
     const quota = await this.ptbaeService.resolveForCompany(company.id, year);
 
     const existingReport = await this.prisma.emissionReport.findUnique({
@@ -345,7 +372,11 @@ export class ReportsService {
 
     try {
       const { txHash, reportId } =
-        await this.blockchainService.submitEmissionReport(year, merkleRoot);
+        await this.blockchainService.submitEmissionReport(
+          reporterAddress,
+          year,
+          merkleRoot,
+        );
       this.logger.log(
         `Successfully submitted calculator report on-chain. TX: ${txHash}, ReportID: ${reportId}`,
       );
@@ -379,6 +410,7 @@ export class ReportsService {
       };
     } catch (error: unknown) {
       this.logger.error('Failed to process calculator report', error);
+      if (error instanceof HttpException) throw error;
       const e = error as Record<string, unknown>;
       const errMsg = typeof e?.message === 'string' ? e.message : String(error);
       throw new InternalServerErrorException(

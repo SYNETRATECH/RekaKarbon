@@ -101,6 +101,12 @@ export interface CarbonTokenContract {
 
 export interface EmissionRegistryContract {
   submitReport(year: number, rootHash: string): Promise<BlockchainTransaction>;
+  submitReportFor(
+    reporter: string,
+    year: number,
+    rootHash: string,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
   anchorPtbaeApplication(
     applicationId: string,
     version: number,

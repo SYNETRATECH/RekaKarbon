@@ -38,6 +38,7 @@ async function main(): Promise<void> {
   const ORACLE_ROLE: string = await rekaKarbon.ORACLE_ROLE();
   const DEPOSIT_ROLE: string = await rekaKarbon.DEPOSIT_ROLE();
   const AUDITOR_ROLE: string = await registry.AUDITOR_ROLE();
+  const REPORTER_ROLE: string = await registry.REPORTER_ROLE();
 
   await rekaKarbon.grantRole(ORACLE_ROLE, deployer.address, transactionOverrides);
   console.log('✅ ORACLE_ROLE (RekaKarbon) diberikan kepada Backend.');
@@ -47,6 +48,9 @@ async function main(): Promise<void> {
 
   await registry.grantRole(AUDITOR_ROLE, deployer.address, transactionOverrides);
   console.log('✅ AUDITOR_ROLE (EmissionReportRegistry) diberikan kepada Backend.');
+
+  await registry.grantRole(REPORTER_ROLE, deployer.address, transactionOverrides);
+  console.log('✅ REPORTER_ROLE (EmissionReportRegistry) diberikan kepada Backend.');
 
   // 2. SIMPAN CONTRACT ADDRESS KE FILE JSON
   const deploymentInfo = {
