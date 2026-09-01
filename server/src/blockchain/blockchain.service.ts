@@ -2,6 +2,7 @@ import {
   Injectable,
   OnModuleInit,
   InternalServerErrorException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { ethers } from 'ethers';
@@ -592,12 +593,24 @@ export class BlockchainService implements OnModuleInit {
   }
 
   async submitEmissionReport(
+    reporter: string,
     year: number,
     rootHash: string,
   ): Promise<{ txHash: string; reportId: number }> {
     const contract = this.ensureRegistry();
+    let validReporter: string;
     try {
-      const tx = await contract.submitReport(year, rootHash);
+      validReporter = ethers.getAddress(reporter);
+    } catch {
+      throw new InternalServerErrorException(
+        'Emitter wallet address is not a valid EVM address',
+      );
+    }
+
+    try {
+      const tx = await contract.submitReportFor(validReporter, year, rootHash, {
+        gasPrice: 0,
+      });
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
 
@@ -621,7 +634,7 @@ export class BlockchainService implements OnModuleInit {
         this.logger.warn(
           'Blockchain rejected: Report already submitted for this year.',
         );
-        throw new Error(
+        throw new ConflictException(
           'Laporan emisi untuk tahun ini sudah pernah disubmit atau sedang dalam proses.',
         );
       }
