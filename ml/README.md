@@ -24,7 +24,7 @@ The **RekaKarbon AI/ML Engine** screens these multi-variable submissions to dete
 
 ---
 
-## 🏛️ System Architecture & In-Process ONNX Execution
+## 🏛️ System Architecture & 5-Stage MLOps Lifecycle
 
 The ML package is architected with a **Scikit-Learn Pipeline + ONNX Export + Node.js In-Process Runtime** design. This allows rapid training, feature engineering, and validation in Python while enabling **native, zero-Python in-process inference** in the NestJS backend using `onnxruntime-node`.
 
@@ -43,14 +43,18 @@ flowchart TD
         Prisma[(PostgreSQL Database)]
     end
 
-    subgraph MLPackage ["ML Development & Testing (ml/)"]
-        DataLayer["assets/data (BPS & KLHK Benchmarks)"] --> Generator["Stratified Dataset Generator"]
-        Generator --> SklearnPipe["Scikit-Learn Pipeline (EmissionFeatureEngineer -> RobustScaler -> IsolationForest)"]
-        SklearnPipe --> OnnxExport["skl2onnx Exporter"]
+    subgraph MLPackage ["5-Stage MLOps Lifecycle (ml/)"]
+        DataRaw["data/raw/raw_emissions.csv"] --> Validator["data/validator.py (Pydantic Batch Schema Validation)"]
+        Validator --> StratifiedSplit["data/generator.py (Stratified Sampling on Sector + Anomaly)"]
+        StratifiedSplit --> Splits["data/splits/ (train.csv, val.csv, test.csv)"]
+        Splits --> FeatureReg["data/feature_registry.py (Feature Specs & feature_manifest.json)"]
+        FeatureReg --> SklearnPipe["training/trainer.py (FeatureEngineer -> RobustScaler -> IsolationForest)"]
+        SklearnPipe --> OnnxExport["training/onnx_exporter.py (skl2onnx Serializer)"]
         OnnxExport --> OnnxFile["models/anomaly_pipeline.onnx"]
-        SklearnPipe --> Evaluator["evaluator.py (Quality Gates & Metrics)"]
+        SklearnPipe --> Evaluator["evaluation/evaluator.py (Quality Gates & Metrics)"]
         Evaluator --> MetadataFile["models/model_metadata.json"]
-        SklearnPipe --> StreamlitApp["app.py (Streamlit Prototyping Studio)"]
+        Evaluator --> VisualReports["models/reports/ (HTML, ROC, CM Plots)"]
+        Orchestrator["pipeline/orchestrator.py (Top-Level MLOps Workflow CLI)"] -.-> MLPackage
     end
 
     UI -->|"Submit 3-Category Emission Data"| AuditCtrl
@@ -71,19 +75,30 @@ flowchart TD
 
 Every design and engineering choice in the RekaKarbon ML pipeline was selected to solve specific challenges in industrial compliance, trust verification, and low-latency system integration:
 
-| Decision Area             | Technical Choice                                          | Strategic & Engineering Rationale ("Why")                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| :------------------------ | :-------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Model Selection**       | **Isolation Forest** (`sklearn.ensemble.IsolationForest`) | • **Unsupervised Reality**: In real-world carbon registries, fraudulent submissions are rare, zero-day, unlabelled, and diverse. Supervised classifiers overfit to known fraud patterns, whereas Isolation Forest isolates novel anomalies through recursive partitioning without requiring labeled fraud datasets.<br>• **Linear Time Complexity**: $O(n \cdot t \cdot \psi)$ where tree depth scales logarithmically, ensuring near-instant scoring.<br>• **Standard ONNX Compatibility**: Converts natively to ONNX `TreeEnsembleRegressor` nodes without unsupported operator workarounds.                                                                        |
-| **Deployment Runtime**    | **In-Process ONNX** (`onnxruntime-node`) in NestJS        | • **Zero Network Latency**: Executing inside the Node.js event loop eliminates HTTP serialization and inter-service network hops, dropping inference latency from $\sim 30\text{--}50\text{ ms}$ (external Python service) to **$< 2\text{ ms}$**.<br>• **Simplified Operations**: Avoids maintaining, scaling, and containerizing a separate Python runtime (FastAPI/Flask) in production infrastructure.<br>• **Cross-Platform Parity**: Guaranteed $100.0\%$ prediction and decision score equivalence ($< 10^{-4}$) between Python training and Node.js production.                                                                                               |
-| **Feature Engineering**   | **Physics-Informed Stoichiometry & e-Faktur Boundaries**  | • **Thermodynamic Grounding**: Machine learning models can hallucinate or learn spurious statistical correlations. Incorporating stoichiometric energy balances ($E_{\text{expected}}$) provides hard physical lower bounds based on IPCC and ESDM combustion laws.<br>• **Fiscal Cross-Verification**: Combines physical energy inputs with Indonesian Ministry of Finance DJP e-Faktur market price ranges (Rp 16,000 – 25,000 / L for solar diesel) to catch financial-physical mismatches.<br>• **Explainability**: Every derived feature maps to a concrete regulatory violation (e.g. suppressed clinker process emissions or impossible production intensity). |
-| **Data Normalization**    | **RobustScaler** (Median & IQR)                           | • **Extreme Scale Variance**: Industrial facilities span multiple orders of magnitude (from small SME factories producing 1,000 tons to giant PLTU power plants emitting millions of tons).<br>• **Outlier Resilience**: `StandardScaler` calculates mean and variance which are heavily distorted by extreme scale differences or massive fraud outliers. `RobustScaler` uses the median and interquartile range (IQR), preserving relative distributions safely.                                                                                                                                                                                                    |
-| **Pipeline Architecture** | **Encapsulated Scikit-Learn Pipeline**                    | • **Anti-Leakage & Serialization**: Bundling custom feature transformation, scaling, and model detection into a single Scikit-Learn `Pipeline` guarantees zero data leakage between train/test splits and enables one-step export to ONNX via `skl2onnx`.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Decision Area            | Technical Choice                                              | Strategic & Engineering Rationale ("Why")                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| :----------------------- | :------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Model Selection**      | **Isolation Forest** (`sklearn.ensemble.IsolationForest`)     | • **Unsupervised Reality**: In real-world carbon registries, fraudulent submissions are rare, zero-day, unlabelled, and diverse. Supervised classifiers overfit to known fraud patterns, whereas Isolation Forest isolates novel anomalies through recursive partitioning without requiring labeled fraud datasets.<br>• **Linear Time Complexity**: $O(n \cdot t \cdot \psi)$ where tree depth scales logarithmically, ensuring near-instant scoring.<br>• **Standard ONNX Compatibility**: Converts natively to ONNX `TreeEnsembleRegressor` nodes without unsupported operator workarounds.                                                                        |
+| **Deployment Runtime**   | **In-Process ONNX** (`onnxruntime-node`) in NestJS            | • **Zero Network Latency**: Executing inside the Node.js event loop eliminates HTTP serialization and inter-service network hops, dropping inference latency from $\sim 30\text{--}50\text{ ms}$ (external Python service) to **$< 2\text{ ms}$**.<br>• **Simplified Operations**: Avoids maintaining, scaling, and containerizing a separate Python runtime (FastAPI/Flask) in production infrastructure.<br>• **Cross-Platform Parity**: Guaranteed $100.0\%$ prediction and decision score equivalence ($< 10^{-4}$) between Python training and Node.js production.                                                                                               |
+| **Feature Engineering**  | **Physics-Informed Stoichiometry & e-Faktur Boundaries**      | • **Thermodynamic Grounding**: Machine learning models can hallucinate or learn spurious statistical correlations. Incorporating stoichiometric energy balances ($E_{\text{expected}}$) provides hard physical lower bounds based on IPCC and ESDM combustion laws.<br>• **Fiscal Cross-Verification**: Combines physical energy inputs with Indonesian Ministry of Finance DJP e-Faktur market price ranges (Rp 16,000 – 25,000 / L for solar diesel) to catch financial-physical mismatches.<br>• **Explainability**: Every derived feature maps to a concrete regulatory violation (e.g. suppressed clinker process emissions or impossible production intensity). |
+| **Data Normalization**   | **RobustScaler** (Median & IQR)                               | • **Extreme Scale Variance**: Industrial facilities span multiple orders of magnitude (from small SME factories producing 1,000 tons to giant PLTU power plants emitting millions of tons).<br>• **Outlier Resilience**: `StandardScaler` calculates mean and variance which are heavily distorted by extreme scale differences or massive fraud outliers. `RobustScaler` uses the median and interquartile range (IQR), preserving relative distributions safely.                                                                                                                                                                                                    |
+| **Package Architecture** | **Strict Module Boundaries (`data`, `training`, `pipeline`)** | • **Single Responsibility Principle**: Separates raw data ingestion & validation (`data/`), model architecture & ONNX export (`training/`), and end-to-end workflow execution (`pipeline/`). Prevents semantic confusion and guarantees zero data leakage.                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ---
 
-## 🔬 Mathematical Methodology & Stoichiometric Formulation
+## 🔬 MLOps Data Preparation & Mathematical Methodology
 
-### 1. Raw Feature Input Specification
+### 1. Data Preparation, Schema Validation & Stratified Splitting
+
+To ensure data quality and eliminate evaluation bias, the data preparation lifecycle enforces four fundamental protocols:
+
+- **Batch Schema Validation (`data/validator.py`)**: Raw reporting records loaded during batch preparation are validated against `EmissionReportInput` Pydantic boundary checks. Out-of-bounds inputs (e.g., negative fuel volumes, impossible clinker ratios) are flagged and reported in `data/dataset_summary.json`.
+- **Stratified Dataset Splitting (`data/generator.py` & `data/preprocess.py`)**: Splitting into `data/splits/train.csv`, `val.csv`, and `test.csv` uses stratified sampling based on `is_anomaly` and `sector`. This guarantees identical class and sector distributions across training and holdout evaluation sets.
+- **Feature Store Registry Specification (`data/feature_registry.py`)**: All 15 derived features are defined with formal metadata (data types, physical units, descriptions, stoichiometric formulas) and exported to `data/feature_manifest.json`.
+- **Dataset Diagnostic Manifest (`data/preprocess.py`)**: Preprocessing automatically exports `data/dataset_summary.json` documenting total counts, split ratios, schema health, sector distributions, and anomaly class ratios.
+
+---
+
+### 2. Raw Feature Input Specification
 
 Every company filing provides core numerical and sectoral parameters:
 
@@ -104,9 +119,9 @@ Every company filing provides core numerical and sectoral parameters:
 
 ---
 
-### 2. Stoichiometric Energy Balance & 15 Derived Features
+### 3. Stoichiometric Energy Balance & 15 Derived Features
 
-The `EmissionFeatureEngineer` converts raw parameters into **15 domain-engineered indicators**:
+The `EmissionFeatureEngineer` (`src/rekakarbon_ml/training/transformers.py`) converts raw parameters into **15 domain-engineered indicators**:
 
 #### A. Expected Stoichiometric Physical Emissions ($E_{\text{expected}}$)
 
@@ -134,7 +149,7 @@ $$E_{\text{expected}} = \max(E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}
 
 ---
 
-### 3. Multi-Tier Trust Scoring & Diagnostic Flags
+### 4. Multi-Tier Trust Scoring & Diagnostic Flags
 
 In addition to the binary verdict (`PASS_VERIFIED` / `REJECT_ANOMALY`), the engine computes explicit sub-scores:
 
@@ -154,31 +169,31 @@ The ML pipeline implements the testing methodology outlined in [`ml-testing-guid
 
 | Layer                                   | Test File                                                                | Key Checks & Assertions                                                                                                                                                           | Status          |
 | :-------------------------------------- | :----------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------- |
-| **1. Data Validation**                  | [`test_data_validation.py`](tests/test_data_validation.py)               | Pydantic schema validation, negative value rejection, unknown sector protection, cement clinker boundary checking.                                                                | ✅ **7 Passed** |
-| **2. Preprocessing & Invariance**       | [`test_pipeline.py`](tests/test_pipeline.py)                             | Feature engineering matrix shape $(N, 15)$, NaN/Inf sanitization, Scikit-Learn pipeline fitting.                                                                                  | ✅ **3 Passed** |
-| **3. Model Evaluation & Quality Gates** | [`test_model_evaluation.py`](tests/test_model_evaluation.py)             | Evaluation on independent holdout split ($375$ samples), precision/recall/F1 calculation, per-fraud recall assertion.                                                             | ✅ **1 Passed** |
-| **4. Behavioral & Metamorphic**         | [`test_behavioral_robustness.py`](tests/test_behavioral_robustness.py)   | Monotonicity (decreasing reported emissions with high fuel spend strictly drops trust), DJP e-Faktur price bounds, $\pm 1\%$ sensor noise resilience, extreme scale non-crashing. | ✅ **4 Passed** |
-| **5. Performance Benchmarks**           | [`test_performance_benchmarks.py`](tests/test_performance_benchmarks.py) | p50/p95/p99 single inference latency benchmark ($< 35\text{ms}$), batch 500 records throughput benchmark ($> 500\text{ records/sec}$).                                            | ✅ **2 Passed** |
+| **1. Data Validation**                  | [`test_data_validation.py`](tests/test_data_validation.py)               | Pydantic schema validation, batch DataFrame validation, feature registry manifest verification, cement clinker boundary checking.                                                 | ✅ **9 Passed** |
+| **2. Preprocessing & Invariance**       | [`test_pipeline.py`](tests/test_pipeline.py)                             | Feature engineering matrix shape $(N, 15)$, NaN/Inf sanitization, stratified dataset split creation, Scikit-Learn pipeline fitting, full orchestrator execution.                  | ✅ **5 Passed** |
+| **3. Model Evaluation & Quality Gates** | [`test_model_evaluation.py`](tests/test_model_evaluation.py)             | Evaluation on independent stratified holdout split ($375$ samples), precision/recall/F1 calculation, per-fraud recall assertion.                                                  | ✅ **2 Passed** |
+| **4. Behavioral & Metamorphic**         | [`test_behavioral_robustness.py`](tests/test_behavioral_robustness.py)   | Monotonicity (decreasing reported emissions with high fuel spend strictly drops trust), DJP e-Faktur price bounds, $\pm 1\%$ sensor noise resilience, extreme scale non-crashing. | ✅ **5 Passed** |
+| **5. Performance Benchmarks**           | [`test_performance_benchmarks.py`](tests/test_performance_benchmarks.py) | p50/p95/p99 single inference latency benchmark ($< 35\text{ms}$), batch 500 records throughput benchmark.                                                                         | ✅ **2 Passed** |
 | **6. ONNX Parity**                      | [`test_onnx_parity.py`](tests/test_onnx_parity.py)                       | $100\%$ prediction parity between Scikit-Learn `.predict()` and ONNX Runtime `session.run()`, score difference $< 10^{-4}$.                                                       | ✅ **3 Passed** |
 
 ---
 
 ## 📊 Evaluation Benchmark Results & Quality Gates
 
-Evaluated on an independent holdout test dataset generated from Indonesian industrial sector distributions:
+Evaluated on an independent stratified holdout test dataset generated from Indonesian industrial sector distributions:
 
 | Metric                           | Target / Gate      | Measured Score | Verdict       |
 | :------------------------------- | :----------------- | :------------- | :------------ |
-| **F1 Score**                     | $\ge 0.85$         | **0.9787**     | ✅ **PASSED** |
-| **Recall (Overall)**             | $\ge 0.88$         | **0.9583**     | ✅ **PASSED** |
+| **F1 Score**                     | $\ge 0.85$         | **0.9818**     | ✅ **PASSED** |
+| **Recall (Overall)**             | $\ge 0.88$         | **0.9643**     | ✅ **PASSED** |
 | **Precision**                    | $\ge 0.70$         | **1.0000**     | ✅ **PASSED** |
 | **Accuracy**                     | $\ge 0.90$         | **0.9947**     | ✅ **PASSED** |
-| **ROC-AUC**                      | $\ge 0.90$         | **0.9972**     | ✅ **PASSED** |
+| **ROC-AUC**                      | $\ge 0.90$         | **0.9901**     | ✅ **PASSED** |
 | **False Positive Rate**          | $\le 10.0\%$       | **0.0%**       | ✅ **PASSED** |
 | **Under-Reporting Recall**       | $\ge 92.0\%$       | **100.0%**     | ✅ **PASSED** |
 | **Single Predict Latency (p95)** | $\le 35\text{ ms}$ | **1.45 ms**    | ✅ **PASSED** |
 
-Model metadata, feature specifications, and evaluation results are exported to [`models/model_metadata.json`](models/model_metadata.json).
+Model metadata, feature specifications, and evaluation results are exported to [`models/model_metadata.json`](models/model_metadata.json) and visual plots in [`models/reports/`](models/reports/).
 
 ---
 
@@ -233,11 +248,11 @@ export class MlAuditEngineService implements OnModuleInit {
 
 ## 🚀 Prototyping Studio (Streamlit Dashboard)
 
-An interactive dashboard (`app.py`) for domain experts to test filings, inspect distributions, and simulate anomalies:
+An interactive dashboard (`src/rekakarbon_ml/studio/app.py`) for domain experts to test filings, inspect distributions, and simulate anomalies:
 
 ```bash
 cd ml
-poetry run streamlit run app.py
+poetry run studio
 ```
 
 ---
@@ -254,13 +269,14 @@ poetry run ruff format .
 # Static Type Checker (Mypy)
 poetry run mypy src tests
 
-# Complete Pytest Suite (21 Tests across 6 Suites)
+# Complete Pytest Suite (34 Tests across 6 Suites)
 poetry run pytest -v
 
-# Registered Poetry Console Entrypoints (Direct Python)
-poetry run preprocess  # Batch feature engineering CLI
-poetry run train       # Retrain IsolationForest & export ONNX
+# Registered Poetry Console Entrypoints
+poetry run preprocess  # Batch schema validation, stratified split & feature registry CLI
+poetry run train       # Retrain IsolationForest & export ONNX artifact
 poetry run eval        # Model evaluation & quality gate assessment
+poetry run pipeline    # Execute end-to-end MLOps workflow orchestrator CLI
 poetry run studio      # Interactive Streamlit prototyping studio
 
 # Monorepo Shortcuts (From Repository Root)
@@ -270,6 +286,7 @@ pnpm ml:test
 pnpm ml:train
 pnpm ml:preprocess
 pnpm ml:eval
+pnpm ml:pipeline
 pnpm ml:studio
 ```
 
@@ -279,41 +296,59 @@ pnpm ml:studio
 
 ```
 ml/
-├── pyproject.toml              # Dependencies (scikit-learn, skl2onnx, onnxruntime, pydantic, ruff, mypy)
+├── pyproject.toml              # Dependencies & script entrypoints
 ├── README.md                   # Scientific & technical documentation (this file)
 ├── AGENTS.md                   # Agent governance guide and rules
-├── models/
+├── data/                       # PERSISTED DATA ARTIFACTS
+│   ├── raw/
+│   │   └── raw_emissions.csv   # Raw emission submissions
+│   ├── splits/
+│   │   ├── train.csv           # Stratified training split
+│   │   ├── val.csv             # Stratified validation split
+│   │   └── test.csv            # Stratified holdout test split
+│   ├── processed/
+│   │   └── processed_features.csv # 15-dim feature matrix
+│   ├── feature_manifest.json   # Feature store registry specifications
+│   └── dataset_summary.json    # Dataset distribution & validation health diagnostics
+├── models/                     # MODEL ARTIFACTS & REPORTS
 │   ├── anomaly_pipeline.pkl    # Serialized Scikit-Learn pipeline
 │   ├── anomaly_pipeline.onnx   # Exported ONNX model artifact
-│   └── model_metadata.json     # Model card manifest & quality gate metrics
+│   ├── model_metadata.json     # Model card manifest & quality gate metrics
+│   └── reports/                # Visual plots (ROC, CM, HTML report)
 ├── src/
 │   └── rekakarbon_ml/
 │       ├── __init__.py
-│       ├── data/               # WORKFLOW 1: Ingestion, schemas, synthetic generators & preprocessing
+│       ├── data/               # DATA PREPARATION & GOVERNANCE MODULE
 │       │   ├── __init__.py
-│       │   ├── benchmark_loader.py
-│       │   ├── generator.py
-│       │   ├── preprocess.py   # Standalone batch feature engineering CLI
-│       │   └── schema.py       # Pydantic data models & boundary validation
-│       ├── pipeline/           # WORKFLOW 2: Scikit-Learn custom transformers & model trainer
+│       │   ├── benchmark_loader.py # Ground truth sector benchmarks (BPS, KLHK)
+│       │   ├── feature_registry.py # Feature store specifications & manifest exporter
+│       │   ├── generator.py       # Synthetic dataset generator & stratified split engine
+│       │   ├── preprocess.py      # Preprocessing, validation & splitting CLI
+│       │   ├── schema.py          # Pydantic input schema & physical boundary rules
+│       │   └── validator.py       # Batch DataFrame validation engine
+│       ├── training/           # MODEL TRAINING & SERIALIZATION MODULE
 │       │   ├── __init__.py
-│       │   ├── transformers.py # Physics-informed feature engineering transformer
-│       │   ├── trainer.py      # Pipeline trainer & ONNX export CLI
-│       │   └── onnx_exporter.py# ONNX graph converter & parity verifier
-│       ├── evaluation/         # WORKFLOW 3: Evaluation harness & quality gates
+│       │   ├── transformers.py    # Physics-informed Scikit-Learn feature transformer
+│       │   ├── trainer.py         # IsolationForest pipeline trainer CLI
+│       │   └── onnx_exporter.py   # ONNX converter & parity verifier
+│       ├── evaluation/         # EVALUATION HARNESS & QUALITY GATES
 │       │   ├── __init__.py
-│       │   └── evaluator.py    # Evaluation harness & model metadata generator CLI
-│       ├── inference/          # RUNTIME INFERENCE ENGINE
+│       │   ├── evaluator.py       # Evaluation harness & metadata generator CLI
+│       │   └── visualizer.py      # Plotly & Matplotlib report generator
+│       ├── inference/          # RUNTIME INFERENCE ENGINE FOR SERVER
 │       │   ├── __init__.py
-│       │   └── predictor.py    # High-level diagnostic predictor
+│       │   └── predictor.py       # High-level diagnostic predictor
+│       ├── pipeline/           # WORKFLOW ORCHESTRATION MODULE
+│       │   ├── __init__.py
+│       │   └── orchestrator.py    # End-to-end MLOps workflow coordinator CLI
 │       └── studio/             # STREAMLIT PROTOTYPING STUDIO
 │           ├── __init__.py
-│           ├── app.py          # Development studio dashboard
-│           └── cli.py          # Studio launcher entrypoint
-└── tests/                      # WORKFLOW 4: AUTOMATED TEST SUITE
+│           ├── app.py             # Development studio dashboard
+│           └── cli.py             # Studio launcher entrypoint
+└── tests/                      # AUTOMATED TEST SUITE
     ├── __init__.py
-    ├── test_data_validation.py         # Layer 1: Schema validation & boundary tests
-    ├── test_pipeline.py                # Layer 2: Preprocessing & transformer unit tests
+    ├── test_data_validation.py         # Layer 1: Schema validation & feature registry tests
+    ├── test_pipeline.py                # Layer 2: Preprocessing, splits & orchestrator tests
     ├── test_model_evaluation.py        # Layer 3 & 4: Evaluation metrics & quality gates
     ├── test_behavioral_robustness.py   # Layer 5: Metamorphic & noise invariance tests
     ├── test_performance_benchmarks.py  # Layer 6 & 7: Inference latency & throughput benchmarks
