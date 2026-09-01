@@ -126,12 +126,7 @@ export class MockPtbaeApplicationRepository implements PtbaeApplicationRepositor
 
   async decideAudit(id: string, input: PtbaeAuditDecisionInput): Promise<PtbaeApplication> {
     const existing = this.requireApplication(id);
-    const status =
-      input.decision === 'approve'
-        ? 'ministry_review'
-        : input.decision === 'request_revision'
-          ? 'revision_required'
-          : 'rejected';
+    const status = input.decision === 'approve' ? 'ministry_review' : 'revision_required';
     const updated: PtbaeApplication = {
       ...existing,
       status,

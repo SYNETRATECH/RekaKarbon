@@ -20,3 +20,25 @@ export interface PurchasedCertificate {
     lastSpatialAuditDate: string;
   };
 }
+
+export interface RetirementCertificateResult {
+  txHash: string;
+  certificateNumber: string;
+  volumeRetired: number;
+  assetId: number;
+}
+
+export interface RetirementCertificateVerification {
+  certificateId: number;
+  certificateNumber: string;
+  retiree: string;
+  assetId: number;
+  amountRetired: number;
+  txHash: string;
+  blockNumber: number;
+  retiredAt: string | null;
+  chainId: number;
+  contractAddress: string;
+}
+
+export type RetirementCertificateHistoryItem = RetirementCertificateVerification;

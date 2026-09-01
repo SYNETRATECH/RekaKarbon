@@ -1,43 +1,16 @@
-import {
-  Award,
-  Download,
-  ExternalLink,
-  MapPin,
-  Sparkles,
-  Layers,
-  Flame,
-  Activity,
-} from 'lucide-react';
+import { Award, Download, ExternalLink, MapPin, Sparkles, Layers, Flame } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { formatCurrency, formatCompactCurrency } from '@/lib/formatters';
 import { formatDate } from '@/lib/dates';
-import { useState } from 'react';
+import type { PurchasedCertificate } from '@/types';
 
 interface CertificateCardProps {
-  cert: {
-    id: string;
-    certificateNumber: string;
-    projectName: string;
-    location: string;
-    registryStandard: string;
-    purchasedVolumeTCO2e: number;
-    pricePerTonIDR: number;
-    totalPaidIDR: number;
-    blockchainTxHash: string;
-    coordinates: [number, number];
-    projectCondition: {
-      lastSpatialAuditDate: string;
-      canopyDensityPercent: number;
-      carbonSequestrationRate: number;
-      kthIncentiveDisbursed: number;
-      droneAuditStatus: string;
-    };
-  };
-  onRetireClick?: (cert: any) => void;
+  cert: PurchasedCertificate;
+  onRetireClick?: (cert: PurchasedCertificate) => void;
 }
 
 export default function CertificateCard({ cert, onRetireClick }: CertificateCardProps) {
-  const [hasRetired, setHasRetired] = useState(false); // Can be driven by props later if needed
+  const hasRetired = false; // Can be driven by certificate state later if needed
 
   const handleRetire = async () => {
     if (onRetireClick) {

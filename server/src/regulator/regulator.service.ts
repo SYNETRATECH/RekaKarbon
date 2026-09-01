@@ -39,6 +39,7 @@ export class RegulatorService {
         projectName: r.projectName,
         region: r.province,
         ecosystemType: r.ecosystemType.toLowerCase().replace(/_/g, ' '),
+        coordinates: [r.latitude, r.longitude],
         areaHectares: Number(r.areaHectares),
         targetSequestrationTCO2e: Number(r.targetSequestrationTco2e),
         actualSequestrationTCO2e: Number(r.actualSequestrationTco2e),

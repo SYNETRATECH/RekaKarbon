@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { CertificatesController } from './certificates.controller';
+import { PublicCertificatesController } from './public-certificates.controller';
 import { CertificatesService } from './certificates.service';
 import { BlockchainModule } from '../blockchain/blockchain.module';
 
 @Module({
   imports: [BlockchainModule],
-  controllers: [CertificatesController],
+  controllers: [CertificatesController, PublicCertificatesController],
   providers: [CertificatesService],
   exports: [CertificatesService],
 })

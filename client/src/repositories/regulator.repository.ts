@@ -8,11 +8,12 @@ import type {
 } from '../types';
 import {
   NationalForestRegionSchema,
-  ForestProjectItemSchema,
+  ForestProjectApiItemSchema,
   KTHGroupItemSchema,
   KTHTransactionItemSchema,
   RegulationDocumentUploadItemSchema,
 } from '../schemas';
+import type { ForestProjectApiItemType } from '../schemas';
 import { z } from 'zod';
 import { api } from '../lib/api';
 
@@ -33,10 +34,60 @@ export class ApiRegulatorRepository implements RegulatorRepository {
     );
   }
   async getForestProjects(): Promise<ForestProjectItem[]> {
-    return api.get<ForestProjectItem[]>(
+    const apiProjects = await api.get<ForestProjectApiItemType[]>(
       '/regulator/forest-projects',
-      z.array(ForestProjectItemSchema)
+      z.array(ForestProjectApiItemSchema)
     );
+
+    const categoryByEcosystem: Record<
+      ForestProjectApiItemType['ecosystemType'],
+      ForestProjectItem['category']
+    > = {
+      'mangrove blue carbon': 'mangrove',
+      'peatland restoration': 'gambut',
+      agroforestry: 'reforestri',
+      'tropical rainforest': 'hutan_hujan',
+    };
+    const categoryLabelByCategory: Record<ForestProjectItem['category'], string> = {
+      mangrove: 'Mangrove & Blue Carbon',
+      hutan_hujan: 'Hutan Hujan Tropis',
+      gambut: 'Restorasi Gambut',
+      reforestri: 'Agroforestri',
+    };
+    const statusByAuditStatus: Record<
+      ForestProjectApiItemType['auditStatus'],
+      ForestProjectItem['dMRVStatus']
+    > = {
+      verified: 'verified',
+      in_review: 'pending_inspection',
+      flagged: 'revision',
+    };
+
+    return apiProjects.map((project) => {
+      const category = categoryByEcosystem[project.ecosystemType];
+      return {
+        id: project.id,
+        projectName: project.projectName,
+        category,
+        categoryLabel: categoryLabelByCategory[category],
+        location: project.region,
+        coordinates: project.coordinates,
+        targetSequestrationTCO2e: project.targetSequestrationTCO2e,
+        actualSequestrationTCO2e: project.actualSequestrationTCO2e,
+        fundingBudgetIDR: project.fundingBudgetIDR,
+        assignedKTH: project.partnerKTH,
+        dMRVStatus: statusByAuditStatus[project.auditStatus],
+        progressDetail: {
+          survivalRatePercent: project.progressDetail.survivalRatePercent,
+          canopyHeightMeters: project.progressDetail.canopyHeightMeters,
+          ndviScore: project.ndviScore,
+          disbursedBudgetIDR: project.progressDetail.disbursedBudgetIDR,
+          stages: project.progressDetail.stages,
+          tokenBuyers: project.progressDetail.tokenBuyers,
+          disbursementHistory: project.progressDetail.disbursements,
+        },
+      };
+    }) satisfies ForestProjectItem[];
   }
   async getKTHGroups(): Promise<KTHGroupItem[]> {
     return api.get<KTHGroupItem[]>('/regulator/kth-groups', z.array(KTHGroupItemSchema));

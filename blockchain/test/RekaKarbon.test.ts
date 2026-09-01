@@ -288,6 +288,26 @@ describe('RekaKarbon Smart Contract', function () {
       expect(certData.isActive).to.be.true;
     });
 
+    it('Harus mengizinkan backend me-retire token milik user dan tetap mencatat user sebagai retiree', async function () {
+      const balanceBefore = await rekaKarbon.balanceOf(corpB.address, assetId);
+
+      const tx = await rekaKarbon
+        .connect(deposit)
+        .retireCarbonWithCertificateFor(corpB.address, assetId, 25n, 'CERT-2026-BACKEND-001');
+      await tx.wait();
+
+      const balanceAfter = await rekaKarbon.balanceOf(corpB.address, assetId);
+      expect(balanceAfter).to.equal(balanceBefore - 25n);
+
+      const certs = await rekaKarbon.getCertsByRetiree(corpB.address);
+      const certId = certs[certs.length - 1];
+      const certData = await rekaKarbon.retirementCerts(certId);
+
+      expect(certData.retiree).to.equal(corpB.address);
+      expect(certData.amountRetired).to.equal(25n);
+      expect(certData.certificateNumber).to.equal('CERT-2026-BACKEND-001');
+    });
+
     it('Harus gagal retireCarbonWithCertificate jika saldo SPE-GRK tidak cukup', async function () {
       let error: Error | undefined;
       try {

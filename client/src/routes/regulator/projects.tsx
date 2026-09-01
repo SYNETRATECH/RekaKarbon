@@ -282,7 +282,7 @@ export default function ForestProjectsManagement() {
                     {formatCurrency(prj.fundingBudgetIDR)}
                   </TableCell>
                   <TableCell>
-                    {prj.verificationStatus === 'verified' ? (
+                    {prj.dMRVStatus === 'verified' ? (
                       <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                         Terverifikasi dMRV

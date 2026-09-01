@@ -351,9 +351,7 @@ export class PtbaeService {
     const nextStatus =
       dto.decision === PtbaeAuditDecision.APPROVE
         ? PtbaeApplicationStatus.MINISTRY_REVIEW
-        : dto.decision === PtbaeAuditDecision.REQUEST_REVISION
-          ? PtbaeApplicationStatus.REVISION_REQUIRED
-          : PtbaeApplicationStatus.REJECTED;
+        : PtbaeApplicationStatus.REVISION_REQUIRED;
 
     await this.prisma.$transaction(async (transaction) => {
       const application = await transaction.ptbaeApplication.update({
@@ -370,9 +368,7 @@ export class PtbaeService {
       const eventType =
         dto.decision === PtbaeAuditDecision.APPROVE
           ? PtbaeApplicationEventType.AUDIT_APPROVED
-          : dto.decision === PtbaeAuditDecision.REQUEST_REVISION
-            ? PtbaeApplicationEventType.REVISION_REQUESTED
-            : PtbaeApplicationEventType.REVOKED;
+          : PtbaeApplicationEventType.REVISION_REQUESTED;
 
       await this.recordIntegrityVersion(
         transaction,

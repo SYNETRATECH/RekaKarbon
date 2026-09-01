@@ -1,6 +1,7 @@
 export type {
   BlockchainEvent,
   BlockchainHealth,
+  BlockchainRetirementCertificate,
   BlockchainLog,
   BlockchainTransaction,
   BlockchainTransactionOverrides,

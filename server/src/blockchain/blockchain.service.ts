@@ -10,6 +10,7 @@ import * as EmissionRegistryABI from './config/EmissionReportRegistry.json';
 import type {
   BlockchainEvent,
   BlockchainHealth,
+  BlockchainRetirementCertificate,
   CarbonTokenContract,
   EmissionRegistryContract,
 } from './types';
@@ -418,7 +419,9 @@ export class BlockchainService implements OnModuleInit {
   ): Promise<string> {
     const contract = this.ensureRekaKarbon();
     try {
-      const tx = await contract.retireCarbonWithCertificate(
+      const validFrom = ethers.getAddress(from);
+      const tx = await contract.retireCarbonWithCertificateFor(
+        validFrom,
         assetId,
         amountTco2e,
         certNumber,
@@ -430,6 +433,162 @@ export class BlockchainService implements OnModuleInit {
       this.logger.error('Error retiring carbon token:', error);
       throw new InternalServerErrorException('Failed to retire token on-chain');
     }
+  }
+
+  async getRetirementCertificateByTransactionHash(
+    txHash: string,
+  ): Promise<BlockchainRetirementCertificate | null> {
+    if (!ethers.isHexString(txHash, 32)) return null;
+    if (!this.provider) {
+      throw new InternalServerErrorException(
+        'Blockchain provider not initialized',
+      );
+    }
+
+    const contractAddress =
+      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+    if (!contractAddress) {
+      throw new InternalServerErrorException(
+        'Carbon token contract address is not configured',
+      );
+    }
+
+    const receipt = await this.provider.getTransactionReceipt(txHash);
+    if (!receipt) return null;
+
+    const contractInterface = new ethers.Interface(RekaKarbonABI.abi);
+    const retirementEvent = receipt.logs
+      .filter(
+        (log) => log.address.toLowerCase() === contractAddress.toLowerCase(),
+      )
+      .map((log) => {
+        try {
+          return contractInterface.parseLog({
+            topics: log.topics,
+            data: log.data,
+          });
+        } catch {
+          return null;
+        }
+      })
+      .find((event) => event?.name === 'RetirementCertificateIssued');
+
+    if (!retirementEvent) return null;
+
+    const block = await this.provider.getBlock(receipt.blockNumber);
+    const network = await this.provider.getNetwork();
+    const args = retirementEvent.args;
+
+    return {
+      certificateId: Number(args[0]),
+      retiree: ethers.getAddress(String(args[1])),
+      assetId: Number(args[2]),
+      amountRetired: Number(args[3]),
+      certificateNumber: String(args[4]),
+      txHash: receipt.hash,
+      blockNumber: receipt.blockNumber,
+      retiredAt: block ? new Date(block.timestamp * 1000).toISOString() : null,
+      chainId: Number(network.chainId),
+      contractAddress: ethers.getAddress(contractAddress),
+    };
+  }
+
+  async getRetirementCertificatesForAddress(
+    address: string,
+  ): Promise<BlockchainRetirementCertificate[]> {
+    if (!this.provider) {
+      throw new InternalServerErrorException(
+        'Blockchain provider not initialized',
+      );
+    }
+
+    const contractAddress =
+      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+    if (!contractAddress) {
+      throw new InternalServerErrorException(
+        'Carbon token contract address is not configured',
+      );
+    }
+
+    const validAddress = ethers.getAddress(address);
+    const contractInterface = new ethers.Interface(RekaKarbonABI.abi);
+    const eventFragment = contractInterface.getEvent(
+      'RetirementCertificateIssued',
+    );
+    if (!eventFragment) return [];
+
+    const latestBlock = await this.provider.getBlockNumber();
+    const logs: ethers.Log[] = [];
+    const logFilter = {
+      address: ethers.getAddress(contractAddress),
+      topics: [
+        eventFragment.topicHash,
+        null,
+        ethers.zeroPadValue(validAddress, 32),
+        null,
+      ],
+    };
+
+    // Besu limits the block range accepted by eth_getLogs. Querying from
+    // block 0 to latest in one request therefore fails once the chain grows.
+    for (
+      let fromBlock = 0;
+      fromBlock <= latestBlock;
+      fromBlock += WALLET_HISTORY_BLOCK_CHUNK
+    ) {
+      const toBlock = Math.min(
+        fromBlock + WALLET_HISTORY_BLOCK_CHUNK - 1,
+        latestBlock,
+      );
+      const chunk = await this.provider.getLogs({
+        ...logFilter,
+        fromBlock,
+        toBlock,
+      });
+      logs.push(...chunk);
+    }
+    const network = await this.provider.getNetwork();
+    const blockTimestamps = new Map<number, string | null>();
+    const history: BlockchainRetirementCertificate[] = [];
+
+    for (const log of logs) {
+      let event: ethers.LogDescription | null = null;
+      try {
+        event = contractInterface.parseLog({
+          topics: log.topics,
+          data: log.data,
+        });
+      } catch {
+        continue;
+      }
+
+      if (!event || event.name !== 'RetirementCertificateIssued') continue;
+
+      let retiredAt = blockTimestamps.get(log.blockNumber);
+      if (retiredAt === undefined) {
+        const block = await this.provider.getBlock(log.blockNumber);
+        retiredAt = block
+          ? new Date(block.timestamp * 1000).toISOString()
+          : null;
+        blockTimestamps.set(log.blockNumber, retiredAt);
+      }
+
+      const args = event.args;
+      history.push({
+        certificateId: Number(args[0]),
+        retiree: ethers.getAddress(String(args[1])),
+        assetId: Number(args[2]),
+        amountRetired: Number(args[3]),
+        certificateNumber: String(args[4]),
+        txHash: log.transactionHash,
+        blockNumber: log.blockNumber,
+        retiredAt,
+        chainId: Number(network.chainId),
+        contractAddress: ethers.getAddress(contractAddress),
+      });
+    }
+
+    return history.sort((left, right) => right.blockNumber - left.blockNumber);
   }
 
   async submitEmissionReport(

@@ -107,7 +107,7 @@ export interface PtbaeApplicationInput {
 }
 
 export interface PtbaeAuditDecisionInput {
-  decision: 'approve' | 'request_revision' | 'reject';
+  decision: 'approve' | 'request_revision';
   notes?: string;
 }
 

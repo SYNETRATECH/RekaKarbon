@@ -23,6 +23,19 @@ export interface BlockchainHealth {
   reason?: string;
 }
 
+export interface BlockchainRetirementCertificate {
+  certificateId: number;
+  certificateNumber: string;
+  retiree: string;
+  assetId: number;
+  amountRetired: number;
+  txHash: string;
+  blockNumber: number;
+  retiredAt: string | null;
+  chainId: number;
+  contractAddress: string;
+}
+
 export interface BlockchainEvent {
   args: readonly [string, string, string, bigint, bigint];
   getBlock(): Promise<{ timestamp: number }>;
@@ -62,6 +75,12 @@ export interface CarbonTokenContract {
     totalCost: number,
   ): Promise<BlockchainTransaction>;
   retireCarbonWithCertificate(
+    assetId: number,
+    amountTco2e: number,
+    certNumber: string,
+  ): Promise<BlockchainTransaction>;
+  retireCarbonWithCertificateFor(
+    retiree: string,
     assetId: number,
     amountTco2e: number,
     certNumber: string,

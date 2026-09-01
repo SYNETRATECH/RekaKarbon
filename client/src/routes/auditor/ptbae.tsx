@@ -1,13 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  AlertCircle,
-  CheckCircle2,
-  ClipboardCheck,
-  FileSearch,
-  Loader2,
-  Send,
-  XCircle,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle2, ClipboardCheck, FileSearch, Loader2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -64,16 +56,26 @@ export default function AuditorPtbaeRoute() {
     void loadQueue();
   }, []);
 
-  const decide = async (decision: 'approve' | 'request_revision' | 'reject') => {
+  const submitDecision = async (
+    decision: 'approve' | 'request_revision',
+    decisionNotes = notes
+  ) => {
     if (!selected) return;
-    if (decision === 'reject' && !window.confirm('Tolak pengajuan ini sebagai Auditor?')) return;
     setIsSaving(true);
     try {
-      await ptbaeApplicationRepository.decideAudit(selected.id, { decision, notes });
+      await ptbaeApplicationRepository.decideAudit(selected.id, {
+        decision,
+        notes: decisionNotes,
+      });
       await loadQueue();
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const decide = async (decision: 'approve' | 'request_revision') => {
+    if (!selected || isSaving) return;
+    await submitDecision(decision);
   };
 
   return (
@@ -201,16 +203,6 @@ export default function AuditorPtbaeRoute() {
                 >
                   <Send className="mr-2 h-4 w-4" />
                   Minta Revisi
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isSaving}
-                  onClick={() => void decide('reject')}
-                  className="rounded-xl border-rose-200 text-xs font-black text-rose-700 hover:bg-rose-50"
-                >
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Tolak
                 </Button>
                 <Button
                   type="button"

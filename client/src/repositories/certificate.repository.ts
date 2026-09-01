@@ -1,14 +1,23 @@
-import type { PurchasedCertificate } from '../types';
-import { PurchasedCertificateSchema } from '../schemas';
+import type {
+  PurchasedCertificate,
+  RetirementCertificateHistoryItem,
+  RetirementCertificateResult,
+  RetirementCertificateVerification,
+} from '../types';
+import {
+  PurchasedCertificateSchema,
+  RetirementCertificateHistorySchema,
+  RetirementCertificateResultSchema,
+  RetirementCertificateVerificationSchema,
+} from '../schemas';
 import { z } from 'zod';
 import { api } from '../lib/api';
 
 export interface CertificateRepository {
   getPurchasedCertificates(): Promise<PurchasedCertificate[]>;
-  retireCertificate(
-    tokenId: string,
-    volumeTco2e: number
-  ): Promise<{ txHash: string; certificateNumber: string }>;
+  getRetirementHistory(): Promise<RetirementCertificateHistoryItem[]>;
+  retireCertificate(tokenId: string, volumeTco2e: number): Promise<RetirementCertificateResult>;
+  verifyRetirementCertificate(txHash: string): Promise<RetirementCertificateVerification>;
 }
 
 export class ApiCertificateRepository implements CertificateRepository {
@@ -19,17 +28,31 @@ export class ApiCertificateRepository implements CertificateRepository {
     );
   }
 
+  async getRetirementHistory(): Promise<RetirementCertificateHistoryItem[]> {
+    return api.get<RetirementCertificateHistoryItem[]>(
+      '/emitter/certificates/retired',
+      RetirementCertificateHistorySchema
+    );
+  }
+
   async retireCertificate(
     tokenId: string,
     volumeTco2e: number
-  ): Promise<{ txHash: string; certificateNumber: string }> {
-    return api.post<{ txHash: string; certificateNumber: string }>(
+  ): Promise<RetirementCertificateResult> {
+    return api.post<RetirementCertificateResult>(
       '/emitter/certificates/retire',
       {
         tokenId,
         volumeTco2e,
       },
-      z.object({ txHash: z.string(), certificateNumber: z.string() })
+      RetirementCertificateResultSchema
+    );
+  }
+
+  async verifyRetirementCertificate(txHash: string): Promise<RetirementCertificateVerification> {
+    return api.get<RetirementCertificateVerification>(
+      `/public/certificates/verify/${encodeURIComponent(txHash)}`,
+      RetirementCertificateVerificationSchema
     );
   }
 }
