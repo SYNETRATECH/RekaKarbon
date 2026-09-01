@@ -11,8 +11,8 @@ from rekakarbon_ml.config import DEFAULT_RANDOM_STATE
 from rekakarbon_ml.data.generator import EmissionDataGenerator
 from rekakarbon_ml.data.preprocess import preprocess_dataset
 from rekakarbon_ml.pipeline.orchestrator import run_full_pipeline
-from rekakarbon_ml.pipeline.trainer import build_anomaly_pipeline
-from rekakarbon_ml.pipeline.transformers import (
+from rekakarbon_ml.training.trainer import build_anomaly_pipeline
+from rekakarbon_ml.training.transformers import (
     DERIVED_FEATURE_NAMES,
     EmissionFeatureEngineer,
 )

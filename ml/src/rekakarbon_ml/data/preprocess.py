@@ -12,7 +12,7 @@ import pandas as pd
 
 from ..config import get_dataset_config, get_paths_config, get_random_state
 from ..data.generator import EmissionDataGenerator
-from ..pipeline.transformers import DERIVED_FEATURE_NAMES, EmissionFeatureEngineer
+from ..training.transformers import DERIVED_FEATURE_NAMES, EmissionFeatureEngineer
 
 
 def preprocess_dataset(

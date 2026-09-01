@@ -20,7 +20,7 @@ from ..config import (
     get_ml_config,
     get_random_state,
 )
-from ..pipeline.onnx_exporter import export_pipeline_to_onnx
+from .onnx_exporter import export_pipeline_to_onnx
 from .transformers import EmissionFeatureEngineer
 
 

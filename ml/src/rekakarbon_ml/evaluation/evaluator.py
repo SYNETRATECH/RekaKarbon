@@ -26,7 +26,7 @@ from ..data.benchmark_loader import (
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
 )
-from ..pipeline.transformers import DERIVED_FEATURE_NAMES, RAW_FEATURE_COLUMNS
+from ..training.transformers import DERIVED_FEATURE_NAMES, RAW_FEATURE_COLUMNS
 from .visualizer import ModelVisualizer
 
 QUALITY_GATE_THRESHOLDS = get_quality_gate_config().to_dict()

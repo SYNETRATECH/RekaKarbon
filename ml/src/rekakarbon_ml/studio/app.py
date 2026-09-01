@@ -17,7 +17,7 @@ from rekakarbon_ml.data.benchmark_loader import (
 )
 from rekakarbon_ml.data.generator import EmissionDataGenerator
 from rekakarbon_ml.inference.predictor import CarbonAnomalyPredictor
-from rekakarbon_ml.pipeline.onnx_exporter import verify_onnx_parity
+from rekakarbon_ml.training.onnx_exporter import verify_onnx_parity
 
 st.set_page_config(
     page_title="RekaKarbon AI dMRV - Anomaly Detection Studio",

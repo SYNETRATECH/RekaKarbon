@@ -13,8 +13,8 @@ from ..data.preprocess import preprocess_dataset
 from ..evaluation.evaluator import ModelEvaluator, generate_model_metadata
 from ..evaluation.visualizer import ModelVisualizer
 from ..inference.predictor import CarbonAnomalyPredictor
-from ..pipeline.onnx_exporter import export_pipeline_to_onnx
-from ..pipeline.trainer import train_and_save_pipeline
+from ..training.onnx_exporter import export_pipeline_to_onnx
+from ..training.trainer import train_and_save_pipeline
 
 
 def run_full_pipeline(
@@ -93,7 +93,6 @@ def run_full_pipeline(
 
     if not qgate["passed"]:
         print("[WARNING] Pipeline executed but Quality Gate requirements were not met!")
-
 
     return eval_results
 

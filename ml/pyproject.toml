@@ -30,11 +30,12 @@ dependencies = [
 ]
 
 [project.scripts]
-train = "rekakarbon_ml.pipeline.trainer:main"
+train = "rekakarbon_ml.training.trainer:main"
 preprocess = "rekakarbon_ml.data.preprocess:main"
 eval = "rekakarbon_ml.evaluation.evaluator:main"
 studio = "rekakarbon_ml.studio.cli:main"
 pipeline = "rekakarbon_ml.pipeline.orchestrator:main"
+
 
 
 [build-system]

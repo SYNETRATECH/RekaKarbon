@@ -16,8 +16,8 @@ from ..data.benchmark_loader import (
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
 )
-from ..pipeline.trainer import load_pipeline
-from ..pipeline.transformers import (
+from ..training.trainer import load_pipeline
+from ..training.transformers import (
     RAW_FEATURE_COLUMNS,
     SECTOR_TO_IDX,
     EmissionFeatureEngineer,

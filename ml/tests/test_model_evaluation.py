@@ -17,8 +17,8 @@ from rekakarbon_ml.evaluation import (
     generate_model_metadata,
 )
 from rekakarbon_ml.inference.predictor import CarbonAnomalyPredictor
-from rekakarbon_ml.pipeline.onnx_exporter import export_pipeline_to_onnx
-from rekakarbon_ml.pipeline.trainer import train_and_save_pipeline
+from rekakarbon_ml.training.onnx_exporter import export_pipeline_to_onnx
+from rekakarbon_ml.training.trainer import train_and_save_pipeline
 
 
 @pytest.fixture(scope="module")
