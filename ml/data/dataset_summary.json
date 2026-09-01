@@ -1,0 +1,34 @@
+{
+  "dataset_name": "RekaKarbon Industrial Carbon Emissions Dataset",
+  "total_samples": 100,
+  "split_counts": {
+    "train": 70,
+    "val": 15,
+    "test": 15
+  },
+  "schema_validation": {
+    "total_records": 100,
+    "valid_records": 100,
+    "invalid_records": 0,
+    "valid_ratio": 1.0,
+    "status": "PASSED",
+    "errors": []
+  },
+  "sector_distribution": {
+    "Manufaktur & Pengolahan": 24,
+    "Ketenagalistrikan & PLTU": 21,
+    "Semen & Bahan Bangunan": 16,
+    "Kelapa Sawit & CPO": 15,
+    "Pulp & Kertas": 13,
+    "Logam & Baja": 11
+  },
+  "anomaly_distribution": {
+    "NORMAL": 85,
+    "FUEL_COST_MISMATCH": 5,
+    "IMPOSSIBLE_PRODUCTION_INTENSITY": 3,
+    "UNDER_REPORTING_FRAUD": 3,
+    "EXTREME_YOY_COLLAPSE": 2,
+    "UNREPORTED_PROCESS_EMISSIONS": 1,
+    "UNDER_REPORTING_SUBTLE": 1
+  }
+}

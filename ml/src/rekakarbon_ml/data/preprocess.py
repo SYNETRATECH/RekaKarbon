@@ -1,18 +1,58 @@
 """
-Standalone Data Preprocessing & Data Split Pipeline for RekaKarbon ML Engine.
-Loads or generates raw reporting datasets, exports stratified train/val/test splits,
-applies EmissionFeatureEngineer, and exports derived feature matrices to disk.
+Standalone Data Preprocessing, Validation & Data Split Pipeline for RekaKarbon ML Engine.
+Loads or generates raw reporting datasets, validates Pydantic schema rules,
+exports stratified train/val/test splits, feature registry manifests, and dataset summaries.
 """
 
 import argparse
+import json
 import os
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 import pandas as pd
 
 from ..config import get_dataset_config, get_paths_config, get_random_state
+from ..data.feature_registry import generate_feature_manifest
 from ..data.generator import EmissionDataGenerator
+from ..data.validator import validate_raw_dataframe
 from ..training.transformers import DERIVED_FEATURE_NAMES, EmissionFeatureEngineer
+
+
+def generate_dataset_summary(
+    raw_df: pd.DataFrame,
+    train_df: pd.DataFrame,
+    val_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    validation_summary: Dict[str, Any],
+    output_path: str = "data/dataset_summary.json",
+) -> Dict[str, Any]:
+    """
+    Generates a structured dataset summary manifest detailing record distributions and schema health.
+    """
+    sector_counts = raw_df["sector"].value_counts().to_dict() if "sector" in raw_df.columns else {}
+    anomaly_counts = (
+        raw_df["anomaly_type"].value_counts().to_dict() if "anomaly_type" in raw_df.columns else {}
+    )
+
+    summary: Dict[str, Any] = {
+        "dataset_name": "RekaKarbon Industrial Carbon Emissions Dataset",
+        "total_samples": len(raw_df),
+        "split_counts": {
+            "train": len(train_df),
+            "val": len(val_df),
+            "test": len(test_df),
+        },
+        "schema_validation": validation_summary,
+        "sector_distribution": sector_counts,
+        "anomaly_distribution": anomaly_counts,
+    }
+
+    os.makedirs(os.path.dirname(output_path) or "data", exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+
+    print(f"Generated dataset summary manifest -> {output_path}")
+    return summary
 
 
 def preprocess_dataset(
@@ -25,7 +65,7 @@ def preprocess_dataset(
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Preprocesses raw emission reports into stratified train/val/test splits and a derived feature matrix.
-    Saves artifacts to raw_dir, splits_dir, and output_path.
+    Validates batch schema compliance and exports feature manifest & dataset summary artifacts.
 
     Returns:
         Tuple of (processed_df, train_df, val_df, test_df)
@@ -45,12 +85,27 @@ def preprocess_dataset(
         )
         generator = EmissionDataGenerator(random_state=seed)
         cfg = get_dataset_config()
-        n_total = len(raw_df)
-        n_train = int(n_total * cfg.train_ratio)
-        n_val = int(n_total * cfg.val_ratio)
-        train_df = raw_df.iloc[:n_train].reset_index(drop=True)
-        val_df = raw_df.iloc[n_train : n_train + n_val].reset_index(drop=True)
-        test_df = raw_df.iloc[n_train + n_val :].reset_index(drop=True)
+        # Stratified sampling on input dataset
+        from sklearn.model_selection import train_test_split
+
+        stratify_col = raw_df["is_anomaly"] if "is_anomaly" in raw_df.columns else None
+        train_df, temp_df = train_test_split(
+            raw_df,
+            train_size=cfg.train_ratio,
+            random_state=generator.rng,
+            stratify=stratify_col,
+        )
+        val_relative_ratio = cfg.val_ratio / (cfg.val_ratio + cfg.test_ratio)
+        temp_stratify = temp_df["is_anomaly"] if "is_anomaly" in temp_df.columns else None
+        val_df, test_df = train_test_split(
+            temp_df,
+            train_size=val_relative_ratio,
+            random_state=generator.rng,
+            stratify=temp_stratify,
+        )
+        train_df = train_df.reset_index(drop=True)
+        val_df = val_df.reset_index(drop=True)
+        test_df = test_df.reset_index(drop=True)
     else:
         print(
             f"No input file specified/found. Generating {n_samples} synthetic emission records..."
@@ -59,12 +114,19 @@ def preprocess_dataset(
         train_df, val_df, test_df = generator.generate_train_val_test_splits(n_total=n_samples)
         raw_df = pd.concat([train_df, val_df, test_df], ignore_index=True)
 
-    # 1. Save raw emissions dataset artifact
+    # 1. Batch Schema Validation
+    print("Validating raw emissions dataset against Pydantic schema rules...")
+    raw_df, val_summary = validate_raw_dataframe(raw_df)
+    print(
+        f"Validation Complete: {val_summary['valid_records']}/{val_summary['total_records']} valid (Ratio: {val_summary['valid_ratio']})"
+    )
+
+    # 2. Save raw emissions dataset artifact
     raw_path = os.path.join(target_raw_dir, "raw_emissions.csv")
     raw_df.to_csv(raw_path, index=False)
     print(f"Saved raw emissions dataset ({len(raw_df)} rows) -> {raw_path}")
 
-    # 2. Save stratified split artifacts
+    # 3. Save stratified split artifacts
     train_path = os.path.join(target_splits_dir, "train.csv")
     val_path = os.path.join(target_splits_dir, "val.csv")
     test_path = os.path.join(target_splits_dir, "test.csv")
@@ -77,7 +139,11 @@ def preprocess_dataset(
         f"Saved dataset splits -> Train: {len(train_df)} ({train_path}), Val: {len(val_df)} ({val_path}), Test: {len(test_df)} ({test_path})"
     )
 
-    # 3. Transform full raw dataset into derived feature matrix
+    # 4. Export Feature Registry Manifest & Dataset Summary
+    generate_feature_manifest()
+    generate_dataset_summary(raw_df, train_df, val_df, test_df, val_summary)
+
+    # 5. Transform full raw dataset into derived feature matrix
     print("Executing EmissionFeatureEngineer preprocessing transformer...")
     transformer = EmissionFeatureEngineer()
     engineered_matrix = transformer.transform(raw_df)
@@ -95,7 +161,7 @@ def preprocess_dataset(
     else:
         processed_df.to_csv(output_path, index=False)
 
-    # Also save backwards-compatible fallback copy at data/processed_features.csv if output_path != data/processed_features.csv
+    # Backward-compatible fallback copy at data/processed_features.csv
     fallback_path = "data/processed_features.csv"
     if output_path != fallback_path:
         os.makedirs(os.path.dirname(fallback_path) or "data", exist_ok=True)

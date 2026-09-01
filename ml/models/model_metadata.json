@@ -1,7 +1,7 @@
 {
   "model_name": "RekaKarbon Carbon Anomaly Detector",
   "version": "1.0.0",
-  "release_timestamp": "2026-09-01T08:23:13.431536+00:00",
+  "release_timestamp": "2026-09-01T08:51:35.227421+00:00",
   "framework": "Scikit-Learn (IsolationForest + RobustScaler) & ONNX Runtime",
   "target_opset": {
     "": 15,
@@ -173,39 +173,39 @@
   },
   "evaluation_metrics": {
     "precision": 1.0,
-    "recall": 1.0,
-    "f1_score": 1.0,
-    "accuracy": 1.0,
+    "recall": 0.5,
+    "f1_score": 0.6667,
+    "accuracy": 0.9333,
     "roc_auc": 1.0,
     "false_positive_rate": 0.0,
-    "false_negative_rate": 0.0
+    "false_negative_rate": 0.5
   },
   "confusion_matrix": {
     "true_negative": 13,
     "false_positive": 0,
-    "false_negative": 0,
-    "true_positive": 2,
+    "false_negative": 1,
+    "true_positive": 1,
     "total_samples": 15
   },
   "fraud_detection_recall": {
-    "EXTREME_YOY_COLLAPSE": {
+    "IMPOSSIBLE_PRODUCTION_INTENSITY": {
       "count": 1,
       "recall": 1.0
     },
-    "FUEL_COST_MISMATCH": {
+    "UNDER_REPORTING_SUBTLE": {
       "count": 1,
-      "recall": 1.0
+      "recall": 0.0
     }
   },
   "quality_gate": {
-    "status": "PASSED",
+    "status": "FAILED",
     "thresholds": {
       "min_overall_f1": 0.85,
       "min_overall_recall": 0.88,
       "min_under_reporting_recall": 0.92,
       "max_false_positive_rate": 0.1
     },
-    "passed": true
+    "passed": false
   },
   "visual_artifacts": {}
 }

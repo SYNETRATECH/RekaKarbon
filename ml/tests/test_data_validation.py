@@ -1,17 +1,25 @@
 """
 Layer 1: Data Validation & Schema Integrity Tests.
-Validates Pydantic schema enforcement, physical boundaries, and type safety.
+Validates Pydantic schema enforcement, physical boundaries, type safety,
+batch dataframe validation, and feature registry manifests.
 """
 
+import os
+import tempfile
+
+import pandas as pd
 import pytest
 from pydantic import ValidationError
 
+from rekakarbon_ml.data.feature_registry import FEATURE_REGISTRY, generate_feature_manifest
+from rekakarbon_ml.data.generator import EmissionDataGenerator
 from rekakarbon_ml.data.schema import (
     BatchEmissionReportInput,
     EmissionReportInput,
     SupportedSector,
     validate_emission_dict,
 )
+from rekakarbon_ml.data.validator import validate_raw_dataframe
 
 
 def test_valid_emission_report_all_sectors() -> None:
@@ -140,3 +148,26 @@ def test_batch_emission_report_schema() -> None:
         ]
     )
     assert len(batch.reports) == 2
+
+
+def test_validate_raw_dataframe() -> None:
+    gen = EmissionDataGenerator(random_state=42)
+    df = gen.generate_dataset(n_samples=50)
+
+    # Insert an invalid row
+    invalid_row = df.iloc[0].to_dict()
+    invalid_row["production_tonnes"] = -999.0
+    df = pd.concat([pd.DataFrame([invalid_row]), df], ignore_index=True)
+
+    clean_df, summary = validate_raw_dataframe(df, drop_invalid=True)
+    assert summary["invalid_records"] >= 1
+    assert len(clean_df) < len(df)
+
+
+def test_feature_registry_manifest() -> None:
+    assert len(FEATURE_REGISTRY) == 15
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        manifest_path = os.path.join(tmp_dir, "feature_manifest.json")
+        manifest = generate_feature_manifest(output_path=manifest_path)
+        assert manifest["total_features"] == 15
+        assert os.path.exists(manifest_path)

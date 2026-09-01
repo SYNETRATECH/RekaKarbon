@@ -268,6 +268,8 @@ class EmissionDataGenerator:
         test_ratio: float = 0.15,
     ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Generates stratified non-leaking train, validation, and test datasets."""
+        from sklearn.model_selection import train_test_split
+
         total = n_total if n_total is not None else self.dataset_config.default_n_samples
         ratio = (
             anomaly_ratio
@@ -275,11 +277,28 @@ class EmissionDataGenerator:
             else self.dataset_config.default_anomaly_ratio
         )
         full_df = self.generate_dataset(n_samples=total, anomaly_ratio=ratio)
-        n_train = int(total * train_ratio)
-        n_val = int(total * val_ratio)
 
-        train_df = full_df.iloc[:n_train].reset_index(drop=True)
-        val_df = full_df.iloc[n_train : n_train + n_val].reset_index(drop=True)
-        test_df = full_df.iloc[n_train + n_val :].reset_index(drop=True)
+        stratify_col = full_df["is_anomaly"] if "is_anomaly" in full_df.columns else None
 
-        return train_df, val_df, test_df
+        train_df, temp_df = train_test_split(
+            full_df,
+            train_size=train_ratio,
+            random_state=self.rng,
+            stratify=stratify_col,
+        )
+
+        val_relative_ratio = val_ratio / (val_ratio + test_ratio)
+        temp_stratify = temp_df["is_anomaly"] if "is_anomaly" in temp_df.columns else None
+
+        val_df, test_df = train_test_split(
+            temp_df,
+            train_size=val_relative_ratio,
+            random_state=self.rng,
+            stratify=temp_stratify,
+        )
+
+        return (
+            train_df.reset_index(drop=True),
+            val_df.reset_index(drop=True),
+            test_df.reset_index(drop=True),
+        )
