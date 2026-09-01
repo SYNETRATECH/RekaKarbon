@@ -62,6 +62,7 @@ def preprocess_dataset(
     raw_dir: str | None = None,
     n_samples: int = 2500,
     random_state: int | None = None,
+    force_regenerate: bool = False,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Preprocesses raw emission reports into stratified train/val/test splits and a derived feature matrix.
@@ -78,21 +79,21 @@ def preprocess_dataset(
     os.makedirs(target_raw_dir, exist_ok=True)
     os.makedirs(target_splits_dir, exist_ok=True)
 
+    default_raw_path = os.path.join(target_raw_dir, "raw_emissions.csv")
+
     if input_path and os.path.exists(input_path):
-        print(f"Loading raw dataset from {input_path}...")
+        print(f"Loading raw dataset from specified path: {input_path}...")
         raw_df = (
             pd.read_json(input_path) if input_path.endswith(".json") else pd.read_csv(input_path)
         )
-        generator = EmissionDataGenerator(random_state=seed)
         cfg = get_dataset_config()
-        # Stratified sampling on input dataset
         from sklearn.model_selection import train_test_split
 
         stratify_col = raw_df["is_anomaly"] if "is_anomaly" in raw_df.columns else None
         train_df, temp_df = train_test_split(
             raw_df,
             train_size=cfg.train_ratio,
-            random_state=generator.rng,
+            random_state=seed,
             stratify=stratify_col,
         )
         val_relative_ratio = cfg.val_ratio / (cfg.val_ratio + cfg.test_ratio)
@@ -100,16 +101,38 @@ def preprocess_dataset(
         val_df, test_df = train_test_split(
             temp_df,
             train_size=val_relative_ratio,
-            random_state=generator.rng,
+            random_state=seed + 1,
+            stratify=temp_stratify,
+        )
+        train_df = train_df.reset_index(drop=True)
+        val_df = val_df.reset_index(drop=True)
+        test_df = test_df.reset_index(drop=True)
+    elif os.path.exists(default_raw_path) and not force_regenerate:
+        print(f"Loading raw dataset from existing file: {default_raw_path}...")
+        raw_df = pd.read_csv(default_raw_path)
+        cfg = get_dataset_config()
+        from sklearn.model_selection import train_test_split
+
+        stratify_col = raw_df["is_anomaly"] if "is_anomaly" in raw_df.columns else None
+        train_df, temp_df = train_test_split(
+            raw_df,
+            train_size=cfg.train_ratio,
+            random_state=seed,
+            stratify=stratify_col,
+        )
+        val_relative_ratio = cfg.val_ratio / (cfg.val_ratio + cfg.test_ratio)
+        temp_stratify = temp_df["is_anomaly"] if "is_anomaly" in temp_df.columns else None
+        val_df, test_df = train_test_split(
+            temp_df,
+            train_size=val_relative_ratio,
+            random_state=seed + 1,
             stratify=temp_stratify,
         )
         train_df = train_df.reset_index(drop=True)
         val_df = val_df.reset_index(drop=True)
         test_df = test_df.reset_index(drop=True)
     else:
-        print(
-            f"No input file specified/found. Generating {n_samples} synthetic emission records..."
-        )
+        print(f"Generating fresh {n_samples} synthetic emission records (random_state={seed})...")
         generator = EmissionDataGenerator(random_state=seed)
         train_df, val_df, test_df = generator.generate_train_val_test_splits(n_total=n_samples)
         raw_df = pd.concat([train_df, val_df, test_df], ignore_index=True)
@@ -122,9 +145,8 @@ def preprocess_dataset(
     )
 
     # 2. Save raw emissions dataset artifact
-    raw_path = os.path.join(target_raw_dir, "raw_emissions.csv")
-    raw_df.to_csv(raw_path, index=False)
-    print(f"Saved raw emissions dataset ({len(raw_df)} rows) -> {raw_path}")
+    raw_df.to_csv(default_raw_path, index=False)
+    print(f"Saved raw emissions dataset ({len(raw_df)} rows) -> {default_raw_path}")
 
     # 3. Save stratified split artifacts
     train_path = os.path.join(target_splits_dir, "train.csv")
@@ -204,6 +226,12 @@ def main() -> None:
         default=2500,
         help="Number of synthetic samples if generating",
     )
+    parser.add_argument(
+        "--force-regenerate",
+        "-f",
+        action="store_true",
+        help="Force regeneration of raw synthetic emissions dataset",
+    )
     args = parser.parse_args()
 
     preprocess_dataset(
@@ -212,6 +240,7 @@ def main() -> None:
         splits_dir=args.splits_dir,
         raw_dir=args.raw_dir,
         n_samples=args.n_samples,
+        force_regenerate=args.force_regenerate,
     )
 
 

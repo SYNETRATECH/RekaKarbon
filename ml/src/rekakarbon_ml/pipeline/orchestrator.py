@@ -22,6 +22,7 @@ def run_full_pipeline(
     contamination: float = 0.15,
     random_state: int | None = None,
     save_plots: bool = True,
+    force_regenerate: bool = False,
 ) -> Dict[str, Any]:
     """
     Executes the end-to-end MLOps pipeline lifecycle sequentially.
@@ -42,7 +43,7 @@ def run_full_pipeline(
     # 1. Step 1: Preprocess Data and Create Stratified Splits
     print("\n--- STEP 1: DATA PREPROCESSING & STRATIFIED SPLITTING ---")
     processed_df, train_df, val_df, test_df = preprocess_dataset(
-        n_samples=n_samples, random_state=seed
+        n_samples=n_samples, random_state=seed, force_regenerate=force_regenerate
     )
 
     # 2. Step 2: Train Scikit-Learn Pipeline on Train Split
@@ -120,12 +121,19 @@ def main() -> None:
         action="store_true",
         help="Disable visual evaluation plot generation",
     )
+    parser.add_argument(
+        "--force-regenerate",
+        "-f",
+        action="store_true",
+        help="Force regeneration of raw synthetic emissions dataset",
+    )
     args = parser.parse_args()
 
     run_full_pipeline(
         n_samples=args.n_samples,
         contamination=args.contamination,
         save_plots=not args.no_plots,
+        force_regenerate=args.force_regenerate,
     )
 
 

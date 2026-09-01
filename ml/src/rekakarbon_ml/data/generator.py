@@ -39,7 +39,9 @@ class EmissionDataGenerator:
         anomaly_ratio: float | None = None,
         sectors: List[str] | None = None,
     ) -> pd.DataFrame:
+        self.rng = np.random.RandomState(self.random_state)
         samples = n_samples if n_samples is not None else self.dataset_config.default_n_samples
+
         ratio = (
             anomaly_ratio
             if anomaly_ratio is not None
@@ -257,7 +259,7 @@ class EmissionDataGenerator:
             )
 
         df = pd.DataFrame(data)
-        return df.sample(frac=1.0, random_state=self.rng).reset_index(drop=True)
+        return df.sample(frac=1.0, random_state=self.random_state).reset_index(drop=True)
 
     def generate_train_val_test_splits(
         self,
@@ -283,7 +285,7 @@ class EmissionDataGenerator:
         train_df, temp_df = train_test_split(
             full_df,
             train_size=train_ratio,
-            random_state=self.rng,
+            random_state=self.random_state,
             stratify=stratify_col,
         )
 
@@ -293,7 +295,7 @@ class EmissionDataGenerator:
         val_df, test_df = train_test_split(
             temp_df,
             train_size=val_relative_ratio,
-            random_state=self.rng,
+            random_state=self.random_state + 1,
             stratify=temp_stratify,
         )
 

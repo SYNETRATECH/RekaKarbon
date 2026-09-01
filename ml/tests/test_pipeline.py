@@ -6,6 +6,7 @@ import os
 import tempfile
 
 import numpy as np
+import pandas as pd
 
 from rekakarbon_ml.config import DEFAULT_RANDOM_STATE
 from rekakarbon_ml.data.generator import EmissionDataGenerator
@@ -28,6 +29,23 @@ def test_generator_output():
     assert "production_tonnes" in df.columns
     assert "reported_emissions_tco2e" in df.columns
     assert "cost_solar_idr" in df.columns
+
+
+def test_generator_reproducibility():
+    gen1 = EmissionDataGenerator(random_state=42)
+    df1 = gen1.generate_dataset(n_samples=200, anomaly_ratio=0.15)
+
+    gen2 = EmissionDataGenerator(random_state=42)
+    df2 = gen2.generate_dataset(n_samples=200, anomaly_ratio=0.15)
+
+    pd.testing.assert_frame_equal(df1, df2)
+
+    train1, val1, test1 = gen1.generate_train_val_test_splits(n_total=200, anomaly_ratio=0.15)
+    train2, val2, test2 = gen2.generate_train_val_test_splits(n_total=200, anomaly_ratio=0.15)
+
+    pd.testing.assert_frame_equal(train1, train2)
+    pd.testing.assert_frame_equal(val1, val2)
+    pd.testing.assert_frame_equal(test1, test2)
 
 
 def test_feature_engineer_shape():
@@ -65,6 +83,7 @@ def test_preprocess_and_splits_creation():
             raw_dir=raw_dir,
             n_samples=100,
             random_state=42,
+            force_regenerate=True,
         )
 
         assert os.path.exists(os.path.join(raw_dir, "raw_emissions.csv"))
