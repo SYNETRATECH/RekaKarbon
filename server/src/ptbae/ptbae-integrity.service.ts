@@ -9,6 +9,7 @@ import type {
   PtbaeIntegrityResult,
   PtbaeMerkleProofItem,
 } from './types/ptbae-integrity.types';
+import { toIsoDate, toLowerEnum } from '../common/utils';
 
 const HASH_ALGORITHM = 'sha256';
 const HASH_PREFIX = '0x';
@@ -73,14 +74,6 @@ function hashPair(left: string, right: string): string {
   const ordered =
     left.localeCompare(right) <= 0 ? [left, right] : [right, left];
   return hashText(`${MERKLE_DOMAIN}:node:${ordered[0]}:${ordered[1]}`);
-}
-
-function toIsoDate(value: Date | null): string | null {
-  return value?.toISOString() ?? null;
-}
-
-function toLowerEnum(value: string): string {
-  return value.toLowerCase();
 }
 
 @Injectable()
