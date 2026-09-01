@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules
+.pnpm-store/
 .pnp
 .pnp.*
 .yarn/*
@@ -57,4 +58,3 @@ next-env.d.ts
 mosquitto/data/*
 mosquitto/log/*
 mosquitto/config/passwords
-

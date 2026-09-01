@@ -4,6 +4,7 @@ export default [
   index('routes/public/index.tsx'),
   route('login', 'routes/public/login.tsx'),
   route('portal-transparansi', 'routes/public/portal-transparansi.tsx'),
+  route('verifikasi-sertifikat', 'routes/public/certificate-verification.tsx'),
 
   // Shared Authenticated Portal Shell
   layout('routes/app.tsx', [

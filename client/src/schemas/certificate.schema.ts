@@ -9,6 +9,8 @@ import {
   DateStringSchema,
   TxHashSchema,
   SpeCertificateIdSchema,
+  WalletAddressSchema,
+  DateTimeStringSchema,
 } from './common.schema';
 
 export const ProjectConditionSchema = z.object({
@@ -35,5 +37,31 @@ export const PurchasedCertificateSchema = z.object({
   projectCondition: ProjectConditionSchema,
 });
 
+export const RetirementCertificateResultSchema = z.object({
+  txHash: TxHashSchema,
+  certificateNumber: SpeCertificateIdSchema,
+  volumeRetired: CarbonVolumeSchema,
+  assetId: z.number().int().nonnegative(),
+});
+
+export const RetirementCertificateVerificationSchema = z.object({
+  certificateId: z.number().int().positive(),
+  certificateNumber: SpeCertificateIdSchema,
+  retiree: WalletAddressSchema,
+  assetId: z.number().int().nonnegative(),
+  amountRetired: CarbonVolumeSchema,
+  txHash: TxHashSchema,
+  blockNumber: z.number().int().nonnegative(),
+  retiredAt: z.union([DateTimeStringSchema, z.null()]),
+  chainId: z.number().int().positive(),
+  contractAddress: WalletAddressSchema,
+});
+
+export const RetirementCertificateHistorySchema = z.array(RetirementCertificateVerificationSchema);
+
 export type ProjectConditionType = z.infer<typeof ProjectConditionSchema>;
 export type PurchasedCertificateType = z.infer<typeof PurchasedCertificateSchema>;
+export type RetirementCertificateResultType = z.infer<typeof RetirementCertificateResultSchema>;
+export type RetirementCertificateVerificationType = z.infer<
+  typeof RetirementCertificateVerificationSchema
+>;

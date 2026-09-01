@@ -49,6 +49,23 @@ export class CertificatesController {
   }
 
   @ApiOperation({
+    summary: 'Retrieve the authenticated user retirement certificate history',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Retirement history retrieved from blockchain events.',
+  })
+  @Get('retired')
+  async getRetirementHistory(@Req() req: AuthenticatedRequest) {
+    const userId = req.user.userId || 'mock-user-id';
+    const history = await this.certificatesService.getRetirementHistory(userId);
+    return {
+      success: true,
+      data: history,
+    };
+  }
+
+  @ApiOperation({
     summary: 'Retire / Burn carbon token on-chain to offset emissions',
   })
   @ApiResponse({ status: 201, description: 'Token successfully retired.' })

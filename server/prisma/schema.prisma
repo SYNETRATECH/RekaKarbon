@@ -70,6 +70,30 @@ enum PtbaeDocumentType {
   DECISION_DOCUMENT
 }
 
+enum PtbaeApplicationEventType {
+  SUBMITTED
+  RESUBMITTED
+  AUDIT_APPROVED
+  REVISION_REQUESTED
+  MINISTRY_APPROVED
+  MINISTRY_REJECTED
+  REVOKED
+}
+
+enum PtbaeBlockchainAnchorType {
+  APPLICATION_SUBMISSION
+  AUDIT_DECISION
+  MINISTRY_DECISION
+  REVOCATION
+}
+
+enum PtbaeBlockchainAnchorStatus {
+  PENDING
+  PROCESSING
+  CONFIRMED
+  FAILED
+}
+
 enum ComplianceRating {
   COMPLIANT
   WARNING
@@ -202,31 +226,32 @@ enum PriorityLevel {
 // ---------------------------------------------------------
 
 model User {
-  id           String     @id @default(uuid()) @db.Uuid
-  email        String     @unique @db.Text
-  passwordHash String     @map("password_hash") @db.Text
-  fullName     String?    @map("full_name") @db.Text
-  role         Role       @default(buyer)
-  walletAddress String?   @map("wallet_address") @db.Text
-  status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+  id            String     @id @default(uuid()) @db.Uuid
+  email         String     @unique @db.Text
+  passwordHash  String     @map("password_hash") @db.Text
+  fullName      String?    @map("full_name") @db.Text
+  role          Role       @default(buyer)
+  walletAddress String?    @map("wallet_address") @db.Text
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
 
-  kybProfile            KybProfile?
-  verifiedKybProfiles   KybProfile[]            @relation("KybVerifier")
-  companies             Company[]
-  bursaListings         BursaListing[]          @relation("SellerListings")
-  bursaOrders           BursaOrder[]            @relation("BuyerOrders")
-  multisigRequests      MultiSigRequest[]       @relation("ApplicantRequests")
-  multisigSignatures    MultiSigSignature[]
-  uploadedFiles         StoredFile[]
-  systemNotifications   SystemNotification[]
-  pushSubscriptions     WebPushSubscription[]
-  auditedReports        EmissionReport[]        @relation("AuditorReports")
-  submittedPtbaeApplications PtbaeApplication[] @relation("PtbaeApplicationSubmitter")
-  auditedPtbaeApplications   PtbaeApplication[] @relation("PtbaeApplicationAuditor")
-  decidedPtbaeApplications   PtbaeApplication[] @relation("PtbaeApplicationDecider")
-  issuedPtbaeAllocations     PtbaeAllocation[]   @relation("PtbaeAllocationIssuer")
+  kybProfile                      KybProfile?
+  verifiedKybProfiles             KybProfile[]              @relation("KybVerifier")
+  companies                       Company[]
+  bursaListings                   BursaListing[]            @relation("SellerListings")
+  bursaOrders                     BursaOrder[]              @relation("BuyerOrders")
+  multisigRequests                MultiSigRequest[]         @relation("ApplicantRequests")
+  multisigSignatures              MultiSigSignature[]
+  uploadedFiles                   StoredFile[]
+  systemNotifications             SystemNotification[]
+  pushSubscriptions               WebPushSubscription[]
+  auditedReports                  EmissionReport[]          @relation("AuditorReports")
+  submittedPtbaeApplications      PtbaeApplication[]        @relation("PtbaeApplicationSubmitter")
+  auditedPtbaeApplications        PtbaeApplication[]        @relation("PtbaeApplicationAuditor")
+  decidedPtbaeApplications        PtbaeApplication[]        @relation("PtbaeApplicationDecider")
+  createdPtbaeApplicationVersions PtbaeApplicationVersion[] @relation("PtbaeApplicationVersionCreator")
+  issuedPtbaeAllocations          PtbaeAllocation[]         @relation("PtbaeAllocationIssuer")
 
   @@map("users")
 }
@@ -245,8 +270,8 @@ model KybProfile {
   createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime    @updatedAt @map("updated_at") @db.Timestamptz
 
-  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  verifiedByUser     User?       @relation("KybVerifier", fields: [verifiedByUserId], references: [id])
+  user           User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifiedByUser User? @relation("KybVerifier", fields: [verifiedByUserId], references: [id])
 
   @@index([verificationStatus])
   @@map("kyb_profiles")
@@ -257,35 +282,35 @@ model KybProfile {
 // ---------------------------------------------------------
 
 model Company {
-  id                     String           @id @default(uuid()) @db.Uuid
-  userId                 String?          @map("user_id") @db.Uuid
-  name                   String           @db.Text
-  sector                 String           @db.Text
-  region                 String           @db.Text
-  latitude               Float            @db.DoublePrecision
-  longitude              Float            @db.DoublePrecision
-  emissionCapTco2e       Decimal          @map("emission_cap_tco2e") @db.Decimal(14, 2)
-  actualEmissionTco2e    Decimal          @map("actual_emission_tco2e") @db.Decimal(14, 2)
-  carbonDeficitTco2e     Decimal          @default(0) @map("carbon_deficit_tco2e") @db.Decimal(14, 2)
-  offsetCostIdr          Decimal          @default(0) @map("offset_cost_idr") @db.Decimal(16, 2)
-  complianceRating       ComplianceRating @default(COMPLIANT) @map("compliance_rating")
-  auditDate              DateTime?        @map("audit_date") @db.Date
-  paymentDeadline        DateTime?        @map("payment_deadline") @db.Date
-  stackSensorsDescription String?         @map("stack_sensors_description") @db.Text
-  picAuditor             String?          @map("pic_auditor") @db.Text
-  description            String?          @db.Text
-  createdAt              DateTime         @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt              DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+  id                      String           @id @default(uuid()) @db.Uuid
+  userId                  String?          @map("user_id") @db.Uuid
+  name                    String           @db.Text
+  sector                  String           @db.Text
+  region                  String           @db.Text
+  latitude                Float            @db.DoublePrecision
+  longitude               Float            @db.DoublePrecision
+  emissionCapTco2e        Decimal          @map("emission_cap_tco2e") @db.Decimal(14, 2)
+  actualEmissionTco2e     Decimal          @map("actual_emission_tco2e") @db.Decimal(14, 2)
+  carbonDeficitTco2e      Decimal          @default(0) @map("carbon_deficit_tco2e") @db.Decimal(14, 2)
+  offsetCostIdr           Decimal          @default(0) @map("offset_cost_idr") @db.Decimal(16, 2)
+  complianceRating        ComplianceRating @default(COMPLIANT) @map("compliance_rating")
+  auditDate               DateTime?        @map("audit_date") @db.Date
+  paymentDeadline         DateTime?        @map("payment_deadline") @db.Date
+  stackSensorsDescription String?          @map("stack_sensors_description") @db.Text
+  picAuditor              String?          @map("pic_auditor") @db.Text
+  description             String?          @db.Text
+  createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime         @updatedAt @map("updated_at") @db.Timestamptz
 
-  user                   User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
-  smokestacks            Smokestack[]
-  cemsTelemetryLogs      CemsTelemetryLog[]
-  auditAnomalies         AuditAnomaly[]
-  carbonTaxAssessments   CarbonTaxAssessment[]
-  stpInvoices            StpInvoice[]
-  emissionReports        EmissionReport[]
-  ptbaeAllocations       PtbaeAllocation[]
-  ptbaeApplications      PtbaeApplication[]
+  user                 User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  smokestacks          Smokestack[]
+  cemsTelemetryLogs    CemsTelemetryLog[]
+  auditAnomalies       AuditAnomaly[]
+  carbonTaxAssessments CarbonTaxAssessment[]
+  stpInvoices          StpInvoice[]
+  emissionReports      EmissionReport[]
+  ptbaeAllocations     PtbaeAllocation[]
+  ptbaeApplications    PtbaeApplication[]
 
   @@index([complianceRating])
   @@index([region])
@@ -293,27 +318,31 @@ model Company {
 }
 
 model PtbaeAllocation {
-  id               String      @id @default(uuid()) @db.Uuid
-  companyId        String      @map("company_id") @db.Uuid
-  applicationId    String?     @unique @map("application_id") @db.Uuid
-  complianceYear   Int         @map("compliance_year")
-  quotaTco2e       Decimal     @map("quota_tco2e") @db.Decimal(14, 2)
-  sourceDocument   String?     @map("source_document") @db.Text
-  status           PtbaeStatus @default(PENDING)
-  assignedAt       DateTime?   @map("assigned_at") @db.Timestamptz
-  verifiedAt       DateTime?   @map("verified_at") @db.Timestamptz
-  documentNumber   String?     @map("document_number") @db.Text
-  issuedByUserId   String?     @map("issued_by_user_id") @db.Uuid
-  effectiveFrom    DateTime?   @map("effective_from") @db.Date
-  effectiveUntil   DateTime?   @map("effective_until") @db.Date
-  blockchainTxHash String?     @map("blockchain_tx_hash") @db.Text
-  notes            String?     @db.Text
-  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+  id                   String      @id @default(uuid()) @db.Uuid
+  companyId            String      @map("company_id") @db.Uuid
+  applicationId        String?     @unique @map("application_id") @db.Uuid
+  complianceYear       Int         @map("compliance_year")
+  quotaTco2e           Decimal     @map("quota_tco2e") @db.Decimal(14, 2)
+  sourceDocument       String?     @map("source_document") @db.Text
+  status               PtbaeStatus @default(PENDING)
+  assignedAt           DateTime?   @map("assigned_at") @db.Timestamptz
+  verifiedAt           DateTime?   @map("verified_at") @db.Timestamptz
+  documentNumber       String?     @map("document_number") @db.Text
+  issuedByUserId       String?     @map("issued_by_user_id") @db.Uuid
+  effectiveFrom        DateTime?   @map("effective_from") @db.Date
+  effectiveUntil       DateTime?   @map("effective_until") @db.Date
+  blockchainTxHash     String?     @map("blockchain_tx_hash") @db.Text
+  issuanceTxHash       String?     @map("issuance_tx_hash") @db.Text
+  decisionMerkleRoot   String?     @map("decision_merkle_root") @db.Text
+  applicationVersionId String?     @unique @map("application_version_id") @db.Uuid
+  notes                String?     @db.Text
+  createdAt            DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime    @updatedAt @map("updated_at") @db.Timestamptz
 
-  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  application      PtbaeApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
-  issuedBy         User?       @relation("PtbaeAllocationIssuer", fields: [issuedByUserId], references: [id], onDelete: SetNull)
+  company            Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  application        PtbaeApplication?        @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  applicationVersion PtbaeApplicationVersion? @relation(fields: [applicationVersionId], references: [id], onDelete: SetNull)
+  issuedBy           User?                    @relation("PtbaeAllocationIssuer", fields: [issuedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([companyId, complianceYear])
   @@index([complianceYear, status])
@@ -322,35 +351,41 @@ model PtbaeAllocation {
 }
 
 model PtbaeApplication {
-  id                      String                 @id @default(uuid()) @db.Uuid
-  companyId               String                 @map("company_id") @db.Uuid
-  emissionReportId        String?                @map("emission_report_id") @db.Uuid
-  submittedByUserId       String                 @map("submitted_by_user_id") @db.Uuid
-  complianceYear          Int                    @map("compliance_year")
-  status                  PtbaeApplicationStatus @default(DRAFT)
-  facilityName            String                 @map("facility_name") @db.Text
-  technicalData           Json                   @map("technical_data")
-  productionData          Json                   @map("production_data")
-  baselineEmissionTco2e   Decimal                @map("baseline_emission_tco2e") @db.Decimal(14, 2)
-  mitigationPlan          String                 @map("mitigation_plan") @db.Text
-  emitterNotes            String?                @map("emitter_notes") @db.Text
-  submittedAt             DateTime?              @map("submitted_at") @db.Timestamptz
-  auditedByUserId         String?                @map("audited_by_user_id") @db.Uuid
-  auditedAt               DateTime?              @map("audited_at") @db.Timestamptz
-  auditorNotes            String?                @map("auditor_notes") @db.Text
-  ministryDecisionByUserId String?               @map("ministry_decision_by_user_id") @db.Uuid
-  ministryDecidedAt       DateTime?              @map("ministry_decided_at") @db.Timestamptz
-  ministryNotes           String?                @map("ministry_notes") @db.Text
-  createdAt               DateTime               @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt               DateTime               @updatedAt @map("updated_at") @db.Timestamptz
+  id                       String                       @id @default(uuid()) @db.Uuid
+  companyId                String                       @map("company_id") @db.Uuid
+  emissionReportId         String?                      @map("emission_report_id") @db.Uuid
+  submittedByUserId        String                       @map("submitted_by_user_id") @db.Uuid
+  complianceYear           Int                          @map("compliance_year")
+  status                   PtbaeApplicationStatus       @default(DRAFT)
+  facilityName             String                       @map("facility_name") @db.Text
+  technicalData            Json                         @map("technical_data")
+  productionData           Json                         @map("production_data")
+  baselineEmissionTco2e    Decimal                      @map("baseline_emission_tco2e") @db.Decimal(14, 2)
+  mitigationPlan           String                       @map("mitigation_plan") @db.Text
+  emitterNotes             String?                      @map("emitter_notes") @db.Text
+  submittedAt              DateTime?                    @map("submitted_at") @db.Timestamptz
+  auditedByUserId          String?                      @map("audited_by_user_id") @db.Uuid
+  auditedAt                DateTime?                    @map("audited_at") @db.Timestamptz
+  auditorNotes             String?                      @map("auditor_notes") @db.Text
+  ministryDecisionByUserId String?                      @map("ministry_decision_by_user_id") @db.Uuid
+  ministryDecidedAt        DateTime?                    @map("ministry_decided_at") @db.Timestamptz
+  ministryNotes            String?                      @map("ministry_notes") @db.Text
+  currentVersion           Int                          @default(0) @map("current_version")
+  latestMerkleRoot         String?                      @map("latest_merkle_root") @db.Text
+  latestAnchorStatus       PtbaeBlockchainAnchorStatus? @map("latest_anchor_status")
+  latestAnchoredAt         DateTime?                    @map("latest_anchored_at") @db.Timestamptz
+  createdAt                DateTime                     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                DateTime                     @updatedAt @map("updated_at") @db.Timestamptz
 
-  company                 Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  emissionReport          EmissionReport?        @relation(fields: [emissionReportId], references: [id], onDelete: SetNull)
-  submittedBy             User                   @relation("PtbaeApplicationSubmitter", fields: [submittedByUserId], references: [id], onDelete: Restrict)
-  auditedBy               User?                  @relation("PtbaeApplicationAuditor", fields: [auditedByUserId], references: [id], onDelete: SetNull)
-  ministryDecisionBy      User?                  @relation("PtbaeApplicationDecider", fields: [ministryDecisionByUserId], references: [id], onDelete: SetNull)
-  documents               PtbaeApplicationDocument[]
-  allocation              PtbaeAllocation?
+  company            Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  emissionReport     EmissionReport?            @relation(fields: [emissionReportId], references: [id], onDelete: SetNull)
+  submittedBy        User                       @relation("PtbaeApplicationSubmitter", fields: [submittedByUserId], references: [id], onDelete: Restrict)
+  auditedBy          User?                      @relation("PtbaeApplicationAuditor", fields: [auditedByUserId], references: [id], onDelete: SetNull)
+  ministryDecisionBy User?                      @relation("PtbaeApplicationDecider", fields: [ministryDecisionByUserId], references: [id], onDelete: SetNull)
+  documents          PtbaeApplicationDocument[]
+  allocation         PtbaeAllocation?
+  versions           PtbaeApplicationVersion[]
+  blockchainAnchors  PtbaeBlockchainAnchor[]
 
   @@unique([companyId, complianceYear])
   @@index([status, complianceYear])
@@ -360,15 +395,89 @@ model PtbaeApplication {
   @@map("ptbae_applications")
 }
 
-model PtbaeApplicationDocument {
-  id              String            @id @default(uuid()) @db.Uuid
-  applicationId   String            @map("application_id") @db.Uuid
-  storedFileId    String            @unique @map("stored_file_id") @db.Uuid
-  documentType    PtbaeDocumentType @map("document_type")
-  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
+model PtbaeApplicationVersion {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  applicationId      String                    @map("application_id") @db.Uuid
+  version            Int
+  eventType          PtbaeApplicationEventType @map("event_type")
+  status             PtbaeApplicationStatus
+  snapshotJson       Json                      @map("snapshot_json")
+  snapshotHash       String                    @map("snapshot_hash") @db.Text
+  merkleRoot         String                    @map("merkle_root") @db.Text
+  previousMerkleRoot String?                   @map("previous_merkle_root") @db.Text
+  createdByUserId    String                    @map("created_by_user_id") @db.Uuid
+  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz
 
-  application     PtbaeApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  storedFile      StoredFile       @relation(fields: [storedFileId], references: [id], onDelete: Cascade)
+  application       PtbaeApplication        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  createdBy         User                    @relation("PtbaeApplicationVersionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  leaves            PtbaeMerkleLeaf[]
+  blockchainAnchors PtbaeBlockchainAnchor[]
+  allocation        PtbaeAllocation?
+
+  @@unique([applicationId, version])
+  @@index([applicationId, createdAt])
+  @@index([createdByUserId])
+  @@index([merkleRoot])
+  @@map("ptbae_application_versions")
+}
+
+model PtbaeMerkleLeaf {
+  id                   String   @id @default(uuid()) @db.Uuid
+  applicationVersionId String   @map("application_version_id") @db.Uuid
+  leafKey              String   @map("leaf_key") @db.Text
+  leafType             String   @map("leaf_type") @db.Text
+  contentHash          String   @map("content_hash") @db.Text
+  leafHash             String   @map("leaf_hash") @db.Text
+  leafOrder            Int      @map("leaf_order")
+  proofJson            Json?    @map("proof_json")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  applicationVersion PtbaeApplicationVersion @relation(fields: [applicationVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationVersionId, leafKey])
+  @@index([applicationVersionId, leafOrder])
+  @@index([leafHash])
+  @@map("ptbae_merkle_leaves")
+}
+
+model PtbaeBlockchainAnchor {
+  id                   String                      @id @default(uuid()) @db.Uuid
+  applicationId        String                      @map("application_id") @db.Uuid
+  applicationVersionId String                      @map("application_version_id") @db.Uuid
+  anchorType           PtbaeBlockchainAnchorType   @map("anchor_type")
+  merkleRoot           String                      @map("merkle_root") @db.Text
+  status               PtbaeBlockchainAnchorStatus @default(PENDING)
+  transactionHash      String?                     @map("transaction_hash") @db.Text
+  blockNumber          BigInt?                     @map("block_number")
+  contractAddress      String?                     @map("contract_address") @db.Text
+  chainId              Int?                        @map("chain_id")
+  retryCount           Int                         @default(0) @map("retry_count")
+  lastError            String?                     @map("last_error") @db.Text
+  nextRetryAt          DateTime?                   @map("next_retry_at") @db.Timestamptz
+  submittedAt          DateTime?                   @map("submitted_at") @db.Timestamptz
+  confirmedAt          DateTime?                   @map("confirmed_at") @db.Timestamptz
+  createdAt            DateTime                    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime                    @updatedAt @map("updated_at") @db.Timestamptz
+
+  application        PtbaeApplication        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationVersion PtbaeApplicationVersion @relation(fields: [applicationVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationVersionId, anchorType])
+  @@index([applicationId, createdAt])
+  @@index([status, nextRetryAt])
+  @@index([transactionHash])
+  @@map("ptbae_blockchain_anchors")
+}
+
+model PtbaeApplicationDocument {
+  id            String            @id @default(uuid()) @db.Uuid
+  applicationId String            @map("application_id") @db.Uuid
+  storedFileId  String            @unique @map("stored_file_id") @db.Uuid
+  documentType  PtbaeDocumentType @map("document_type")
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz
+
+  application PtbaeApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  storedFile  StoredFile       @relation(fields: [storedFileId], references: [id], onDelete: Cascade)
 
   @@index([applicationId, documentType])
   @@map("ptbae_application_documents")
@@ -384,27 +493,27 @@ model Smokestack {
   createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz
 
-  company            Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  cemsTelemetryLogs  CemsTelemetryLog[]
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  cemsTelemetryLogs CemsTelemetryLog[]
 
   @@index([companyId])
   @@map("smokestacks")
 }
 
 model CemsTelemetryLog {
-  id            BigInt    @id @default(autoincrement())
-  companyId     String    @map("company_id") @db.Uuid
-  smokestackId  String?   @map("smokestack_id") @db.Uuid
-  co2Ppm        Decimal   @map("co2_ppm") @db.Decimal(10, 2)
-  so2MgM3       Decimal   @map("so2_mg_m3") @db.Decimal(10, 2)
-  noxMgM3       Decimal   @map("nox_mg_m3") @db.Decimal(10, 2)
-  flowRateM3Sec Decimal   @map("flow_rate_m3_sec") @db.Decimal(8, 2)
-  temperatureC  Decimal   @map("temperature_c") @db.Decimal(6, 2)
-  isAnomaly     Boolean   @default(false) @map("is_anomaly")
-  recordedAt    DateTime  @default(now()) @map("recorded_at") @db.Timestamptz
+  id            BigInt   @id @default(autoincrement())
+  companyId     String   @map("company_id") @db.Uuid
+  smokestackId  String?  @map("smokestack_id") @db.Uuid
+  co2Ppm        Decimal  @map("co2_ppm") @db.Decimal(10, 2)
+  so2MgM3       Decimal  @map("so2_mg_m3") @db.Decimal(10, 2)
+  noxMgM3       Decimal  @map("nox_mg_m3") @db.Decimal(10, 2)
+  flowRateM3Sec Decimal  @map("flow_rate_m3_sec") @db.Decimal(8, 2)
+  temperatureC  Decimal  @map("temperature_c") @db.Decimal(6, 2)
+  isAnomaly     Boolean  @default(false) @map("is_anomaly")
+  recordedAt    DateTime @default(now()) @map("recorded_at") @db.Timestamptz
 
-  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  smokestack    Smokestack? @relation(fields: [smokestackId], references: [id], onDelete: SetNull)
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  smokestack Smokestack? @relation(fields: [smokestackId], references: [id], onDelete: SetNull)
 
   @@index([companyId, recordedAt(sort: Desc)])
   @@index([smokestackId, recordedAt(sort: Desc)])
@@ -425,7 +534,7 @@ model NationalForestRegion {
   createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  projects                 ForestProject[]
+  projects ForestProject[]
 
   @@map("national_forest_regions")
 }
@@ -443,45 +552,45 @@ model KthGroup {
   createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                 DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  projects                  ForestProject[]
-  disbursements             KthIncentiveDisbursement[]
+  projects      ForestProject[]
+  disbursements KthIncentiveDisbursement[]
 
   @@map("kth_groups")
 }
 
 model ForestProject {
-  id                       String               @id @default(uuid()) @db.Uuid
-  regionId                 String               @map("region_id") @db.Uuid
-  kthGroupId               String?              @map("kth_group_id") @db.Uuid
-  projectName              String               @map("project_name") @db.Text
-  ecosystemType            EcosystemType        @default(MANGROVE_BLUE_CARBON) @map("ecosystem_type")
-  province                 String               @db.Text
-  latitude                 Float                @db.DoublePrecision
-  longitude                Float                @db.DoublePrecision
-  areaHectares             Decimal              @map("area_hectares") @db.Decimal(12, 2)
-  targetSequestrationTco2e Decimal              @map("target_sequestration_tco2e") @db.Decimal(14, 2)
-  actualSequestrationTco2e Decimal              @map("actual_sequestration_tco2e") @db.Decimal(14, 2)
-  carbonStockTco2e         Decimal              @map("carbon_stock_tco2e") @db.Decimal(14, 2)
-  carbonPricePerTonIdr     Decimal              @default(260000) @map("carbon_price_per_ton_idr") @db.Decimal(12, 2)
-  ndviScore                Decimal              @default(0.75) @map("ndvi_score") @db.Decimal(4, 3)
-  eviScore                 Decimal              @default(0.60) @map("evi_score") @db.Decimal(4, 3)
-  survivalRatePercent      Decimal              @default(85.0) @map("survival_rate_percent") @db.Decimal(5, 2)
-  canopyHeightMeters       Decimal              @default(1.50) @map("canopy_height_meters") @db.Decimal(6, 2)
-  budgetTotalIdr           Decimal              @default(0) @map("budget_total_idr") @db.Decimal(16, 2)
-  budgetDisbursedIdr       Decimal              @default(0) @map("budget_disbursed_idr") @db.Decimal(16, 2)
-  status                   ProjectStatus        @default(ACTIVE_DMRV)
-  speCertificateId         String?              @map("spe_certificate_id") @db.Text
-  coordinatesJson          Json?                @map("coordinates_json")
-  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt                DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+  id                       String        @id @default(uuid()) @db.Uuid
+  regionId                 String        @map("region_id") @db.Uuid
+  kthGroupId               String?       @map("kth_group_id") @db.Uuid
+  projectName              String        @map("project_name") @db.Text
+  ecosystemType            EcosystemType @default(MANGROVE_BLUE_CARBON) @map("ecosystem_type")
+  province                 String        @db.Text
+  latitude                 Float         @db.DoublePrecision
+  longitude                Float         @db.DoublePrecision
+  areaHectares             Decimal       @map("area_hectares") @db.Decimal(12, 2)
+  targetSequestrationTco2e Decimal       @map("target_sequestration_tco2e") @db.Decimal(14, 2)
+  actualSequestrationTco2e Decimal       @map("actual_sequestration_tco2e") @db.Decimal(14, 2)
+  carbonStockTco2e         Decimal       @map("carbon_stock_tco2e") @db.Decimal(14, 2)
+  carbonPricePerTonIdr     Decimal       @default(260000) @map("carbon_price_per_ton_idr") @db.Decimal(12, 2)
+  ndviScore                Decimal       @default(0.75) @map("ndvi_score") @db.Decimal(4, 3)
+  eviScore                 Decimal       @default(0.60) @map("evi_score") @db.Decimal(4, 3)
+  survivalRatePercent      Decimal       @default(85.0) @map("survival_rate_percent") @db.Decimal(5, 2)
+  canopyHeightMeters       Decimal       @default(1.50) @map("canopy_height_meters") @db.Decimal(6, 2)
+  budgetTotalIdr           Decimal       @default(0) @map("budget_total_idr") @db.Decimal(16, 2)
+  budgetDisbursedIdr       Decimal       @default(0) @map("budget_disbursed_idr") @db.Decimal(16, 2)
+  status                   ProjectStatus @default(ACTIVE_DMRV)
+  speCertificateId         String?       @map("spe_certificate_id") @db.Text
+  coordinatesJson          Json?         @map("coordinates_json")
+  createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
-  region                   NationalForestRegion @relation(fields: [regionId], references: [id])
-  kthGroup                 KthGroup?            @relation(fields: [kthGroupId], references: [id], onDelete: SetNull)
-  stages                   ProjectStage[]
-  droneMissions            DroneMission[]
-  forestSensorLogs         ForestSensorTelemetryLog[]
-  carbonTokens             CarbonToken[]
-  disbursements            KthIncentiveDisbursement[]
+  region           NationalForestRegion       @relation(fields: [regionId], references: [id])
+  kthGroup         KthGroup?                  @relation(fields: [kthGroupId], references: [id], onDelete: SetNull)
+  stages           ProjectStage[]
+  droneMissions    DroneMission[]
+  forestSensorLogs ForestSensorTelemetryLog[]
+  carbonTokens     CarbonToken[]
+  disbursements    KthIncentiveDisbursement[]
 
   @@index([regionId])
   @@index([kthGroupId])
@@ -505,24 +614,24 @@ model ProjectStage {
   createdAt            DateTime    @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime    @updatedAt @map("updated_at") @db.Timestamptz
 
-  project              ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  disbursements        KthIncentiveDisbursement[]
+  project       ForestProject              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  disbursements KthIncentiveDisbursement[]
 
   @@index([projectId, yearNumber])
   @@map("project_stages")
 }
 
 model ForestSensorTelemetryLog {
-  id                    BigInt        @id @default(autoincrement())
-  projectId             String        @map("project_id") @db.Uuid
-  nodeId                String        @map("node_id") @db.Text
-  canopyMoisturePercent Decimal       @map("canopy_moisture_percent") @db.Decimal(5, 2)
-  soilMoisturePercent   Decimal       @map("soil_moisture_percent") @db.Decimal(5, 2)
-  ambientTempC          Decimal       @map("ambient_temp_c") @db.Decimal(5, 2)
-  solarRadiationWM2     Decimal       @map("solar_radiation_w_m2") @db.Decimal(7, 2)
-  recordedAt            DateTime      @default(now()) @map("recorded_at") @db.Timestamptz
+  id                    BigInt   @id @default(autoincrement())
+  projectId             String   @map("project_id") @db.Uuid
+  nodeId                String   @map("node_id") @db.Text
+  canopyMoisturePercent Decimal  @map("canopy_moisture_percent") @db.Decimal(5, 2)
+  soilMoisturePercent   Decimal  @map("soil_moisture_percent") @db.Decimal(5, 2)
+  ambientTempC          Decimal  @map("ambient_temp_c") @db.Decimal(5, 2)
+  solarRadiationWM2     Decimal  @map("solar_radiation_w_m2") @db.Decimal(7, 2)
+  recordedAt            DateTime @default(now()) @map("recorded_at") @db.Timestamptz
 
-  project               ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, recordedAt(sort: Desc)])
   @@map("forest_sensor_telemetry_logs")
@@ -533,45 +642,45 @@ model ForestSensorTelemetryLog {
 // ---------------------------------------------------------
 
 model AuditAnomaly {
-  id                   String        @id @default(uuid()) @db.Uuid
-  companyId            String        @map("company_id") @db.Uuid
-  facilityName         String        @map("facility_name") @db.Text
-  anomalyType          AnomalyType   @map("anomaly_type")
-  severity             SeverityLevel @default(HIGH)
-  anomalyScore         Decimal       @map("anomaly_score") @db.Decimal(4, 3)
-  reportedEmissionTco2e Decimal      @map("reported_emission_tco2e") @db.Decimal(14, 2)
-  expectedEmissionTco2e Decimal      @map("expected_emission_tco2e") @db.Decimal(14, 2)
-  divergencePercent    Decimal       @map("divergence_percent") @db.Decimal(5, 2)
-  detectedDate         DateTime      @map("detected_date") @db.Date
-  auditStatus          AuditStatus   @default(PENDING_REVIEW) @map("audit_status")
-  verifierNotes        String?       @map("verifier_notes") @db.Text
-  verifiedAt           DateTime?     @map("verified_at") @db.Timestamptz
-  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  id                    String        @id @default(uuid()) @db.Uuid
+  companyId             String        @map("company_id") @db.Uuid
+  facilityName          String        @map("facility_name") @db.Text
+  anomalyType           AnomalyType   @map("anomaly_type")
+  severity              SeverityLevel @default(HIGH)
+  anomalyScore          Decimal       @map("anomaly_score") @db.Decimal(4, 3)
+  reportedEmissionTco2e Decimal       @map("reported_emission_tco2e") @db.Decimal(14, 2)
+  expectedEmissionTco2e Decimal       @map("expected_emission_tco2e") @db.Decimal(14, 2)
+  divergencePercent     Decimal       @map("divergence_percent") @db.Decimal(5, 2)
+  detectedDate          DateTime      @map("detected_date") @db.Date
+  auditStatus           AuditStatus   @default(PENDING_REVIEW) @map("audit_status")
+  verifierNotes         String?       @map("verifier_notes") @db.Text
+  verifiedAt            DateTime?     @map("verified_at") @db.Timestamptz
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
-  company              Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId, auditStatus])
   @@map("audit_anomalies")
 }
 
 model DroneMission {
-  id                 String        @id @default(uuid()) @db.Uuid
-  projectId          String        @map("project_id") @db.Uuid
-  missionName        String        @map("mission_name") @db.Text
-  flightDate         DateTime      @map("flight_date") @db.Date
-  droneModel         String?       @map("drone_model") @db.Text
-  gsdCmPx            Decimal?      @map("gsd_cm_px") @db.Decimal(4, 2)
-  coverageHectares   Decimal?      @map("coverage_hectares") @db.Decimal(10, 2)
-  status             MissionStatus @default(SCHEDULED)
-  orthophotoFileId   String?       @map("orthophoto_file_id") @db.Uuid
-  pointcloudFileId   String?       @map("pointcloud_file_id") @db.Uuid
-  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  id               String        @id @default(uuid()) @db.Uuid
+  projectId        String        @map("project_id") @db.Uuid
+  missionName      String        @map("mission_name") @db.Text
+  flightDate       DateTime      @map("flight_date") @db.Date
+  droneModel       String?       @map("drone_model") @db.Text
+  gsdCmPx          Decimal?      @map("gsd_cm_px") @db.Decimal(4, 2)
+  coverageHectares Decimal?      @map("coverage_hectares") @db.Decimal(10, 2)
+  status           MissionStatus @default(SCHEDULED)
+  orthophotoFileId String?       @map("orthophoto_file_id") @db.Uuid
+  pointcloudFileId String?       @map("pointcloud_file_id") @db.Uuid
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
-  project            ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  orthophotoFile     StoredFile?   @relation("MissionOrthoFile", fields: [orthophotoFileId], references: [id], onDelete: SetNull)
-  pointcloudFile     StoredFile?   @relation("MissionPointcloudFile", fields: [pointcloudFileId], references: [id], onDelete: SetNull)
+  project        ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  orthophotoFile StoredFile?   @relation("MissionOrthoFile", fields: [orthophotoFileId], references: [id], onDelete: SetNull)
+  pointcloudFile StoredFile?   @relation("MissionPointcloudFile", fields: [pointcloudFileId], references: [id], onDelete: SetNull)
 
   @@index([projectId, flightDate])
   @@map("drone_missions")
@@ -582,20 +691,20 @@ model DroneMission {
 // ---------------------------------------------------------
 
 model CarbonToken {
-  id                   String        @id @default(uuid()) @db.Uuid
-  speCertificateNumber String        @unique @map("spe_certificate_number") @db.Text
-  projectId            String        @map("project_id") @db.Uuid
-  totalMintedTco2e     Decimal       @map("total_minted_tco2e") @db.Decimal(14, 2)
-  availableBalanceTco2e Decimal      @map("available_balance_tco2e") @db.Decimal(14, 2)
-  vintageYear          Int           @map("vintage_year")
-  blockchainTokenId    BigInt?       @map("blockchain_token_id")
-  mintTxHash           String?       @map("mint_tx_hash") @db.Text
-  mintedAt             DateTime?     @map("minted_at") @db.Timestamptz
-  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  id                    String    @id @default(uuid()) @db.Uuid
+  speCertificateNumber  String    @unique @map("spe_certificate_number") @db.Text
+  projectId             String    @map("project_id") @db.Uuid
+  totalMintedTco2e      Decimal   @map("total_minted_tco2e") @db.Decimal(14, 2)
+  availableBalanceTco2e Decimal   @map("available_balance_tco2e") @db.Decimal(14, 2)
+  vintageYear           Int       @map("vintage_year")
+  blockchainTokenId     BigInt?   @map("blockchain_token_id")
+  mintTxHash            String?   @map("mint_tx_hash") @db.Text
+  mintedAt              DateTime? @map("minted_at") @db.Timestamptz
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  project              ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  listings             BursaListing[]
+  project  ForestProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  listings BursaListing[]
 
   @@index([projectId])
   @@map("carbon_tokens")
@@ -612,9 +721,9 @@ model BursaListing {
   createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
-  seller               User          @relation("SellerListings", fields: [sellerUserId], references: [id])
-  carbonToken          CarbonToken   @relation(fields: [carbonTokenId], references: [id], onDelete: Cascade)
-  orders               BursaOrder[]
+  seller      User         @relation("SellerListings", fields: [sellerUserId], references: [id])
+  carbonToken CarbonToken  @relation(fields: [carbonTokenId], references: [id], onDelete: Cascade)
+  orders      BursaOrder[]
 
   @@index([sellerUserId])
   @@index([carbonTokenId])
@@ -623,19 +732,19 @@ model BursaListing {
 }
 
 model BursaOrder {
-  id              String       @id @default(uuid()) @db.Uuid
-  listingId       String       @map("listing_id") @db.Uuid
-  buyerUserId     String       @map("buyer_user_id") @db.Uuid
-  volumeTco2e     Decimal      @map("volume_tco2e") @db.Decimal(12, 2)
-  pricePerTonIdr  Decimal      @map("price_per_ton_idr") @db.Decimal(14, 2)
-  totalAmountIdr  Decimal      @map("total_amount_idr") @db.Decimal(16, 2)
-  txHash          String?      @map("tx_hash") @db.Text
-  status          OrderStatus  @default(PENDING)
-  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
-  completedAt     DateTime?    @map("completed_at") @db.Timestamptz
+  id             String      @id @default(uuid()) @db.Uuid
+  listingId      String      @map("listing_id") @db.Uuid
+  buyerUserId    String      @map("buyer_user_id") @db.Uuid
+  volumeTco2e    Decimal     @map("volume_tco2e") @db.Decimal(12, 2)
+  pricePerTonIdr Decimal     @map("price_per_ton_idr") @db.Decimal(14, 2)
+  totalAmountIdr Decimal     @map("total_amount_idr") @db.Decimal(16, 2)
+  txHash         String?     @map("tx_hash") @db.Text
+  status         OrderStatus @default(PENDING)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  completedAt    DateTime?   @map("completed_at") @db.Timestamptz
 
-  listing         BursaListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyer           User         @relation("BuyerOrders", fields: [buyerUserId], references: [id])
+  listing BursaListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer   User         @relation("BuyerOrders", fields: [buyerUserId], references: [id])
 
   @@index([listingId])
   @@index([buyerUserId, status])
@@ -643,18 +752,18 @@ model BursaOrder {
 }
 
 model KthIncentiveDisbursement {
-  id          String         @id @default(uuid()) @db.Uuid
-  projectId   String         @map("project_id") @db.Uuid
-  kthGroupId  String         @map("kth_group_id") @db.Uuid
-  stageId     String?        @map("stage_id") @db.Uuid
-  amountIdr   Decimal        @map("amount_idr") @db.Decimal(16, 2)
-  volumeTco2e Decimal        @map("volume_tco2e") @db.Decimal(12, 2)
-  txHash      String?        @map("tx_hash") @db.Text
-  disbursedAt DateTime       @default(now()) @map("disbursed_at") @db.Timestamptz
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @map("project_id") @db.Uuid
+  kthGroupId  String   @map("kth_group_id") @db.Uuid
+  stageId     String?  @map("stage_id") @db.Uuid
+  amountIdr   Decimal  @map("amount_idr") @db.Decimal(16, 2)
+  volumeTco2e Decimal  @map("volume_tco2e") @db.Decimal(12, 2)
+  txHash      String?  @map("tx_hash") @db.Text
+  disbursedAt DateTime @default(now()) @map("disbursed_at") @db.Timestamptz
 
-  project     ForestProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  kthGroup    KthGroup       @relation(fields: [kthGroupId], references: [id], onDelete: Cascade)
-  stage       ProjectStage?  @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  project  ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kthGroup KthGroup      @relation(fields: [kthGroupId], references: [id], onDelete: Cascade)
+  stage    ProjectStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
 
   @@index([projectId])
   @@index([kthGroupId])
@@ -666,19 +775,19 @@ model KthIncentiveDisbursement {
 // ---------------------------------------------------------
 
 model MultiSigRequest {
-  id                  String              @id @default(uuid()) @db.Uuid
-  applicantUserId     String              @map("applicant_user_id") @db.Uuid
-  requestType         MultiSigTxType      @map("request_type")
-  description         String              @db.Text
-  requiredSigners     Int                 @default(2) @map("required_signers")
-  currentSignersCount Int                 @default(0) @map("current_signers_count")
-  status              MultiSigStatus      @default(PENDING)
-  payloadJson         Json?               @map("payload_json")
-  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz
-  executedAt          DateTime?           @map("executed_at") @db.Timestamptz
+  id                  String         @id @default(uuid()) @db.Uuid
+  applicantUserId     String         @map("applicant_user_id") @db.Uuid
+  requestType         MultiSigTxType @map("request_type")
+  description         String         @db.Text
+  requiredSigners     Int            @default(2) @map("required_signers")
+  currentSignersCount Int            @default(0) @map("current_signers_count")
+  status              MultiSigStatus @default(PENDING)
+  payloadJson         Json?          @map("payload_json")
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  executedAt          DateTime?      @map("executed_at") @db.Timestamptz
 
-  applicant           User                @relation("ApplicantRequests", fields: [applicantUserId], references: [id])
-  signatures          MultiSigSignature[]
+  applicant  User                @relation("ApplicantRequests", fields: [applicantUserId], references: [id])
+  signatures MultiSigSignature[]
 
   @@index([status])
   @@index([applicantUserId])
@@ -686,14 +795,14 @@ model MultiSigRequest {
 }
 
 model MultiSigSignature {
-  id            String          @id @default(uuid()) @db.Uuid
-  requestId     String          @map("request_id") @db.Uuid
-  signerUserId  String          @map("signer_user_id") @db.Uuid
-  signatureHash String?         @map("signature_hash") @db.Text
-  signedAt      DateTime        @default(now()) @map("signed_at") @db.Timestamptz
+  id            String   @id @default(uuid()) @db.Uuid
+  requestId     String   @map("request_id") @db.Uuid
+  signerUserId  String   @map("signer_user_id") @db.Uuid
+  signatureHash String?  @map("signature_hash") @db.Text
+  signedAt      DateTime @default(now()) @map("signed_at") @db.Timestamptz
 
-  request       MultiSigRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  signer        User            @relation(fields: [signerUserId], references: [id])
+  request MultiSigRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  signer  User            @relation(fields: [signerUserId], references: [id])
 
   @@unique([requestId, signerUserId])
   @@index([requestId])
@@ -701,37 +810,37 @@ model MultiSigSignature {
 }
 
 model CarbonTaxAssessment {
-  id                 String              @id @default(uuid()) @db.Uuid
-  companyId          String              @map("company_id") @db.Uuid
-  taxYear            Int                 @map("tax_year")
-  actualEmissionTco2e Decimal            @map("actual_emission_tco2e") @db.Decimal(14, 2)
-  quotaPtbaeTco2e    Decimal             @map("quota_ptbae_tco2e") @db.Decimal(14, 2)
-  deficitTco2e       Decimal             @map("deficit_tco2e") @db.Decimal(14, 2)
-  taxRatePerTonIdr   Decimal             @default(650000) @map("tax_rate_per_ton_idr") @db.Decimal(12, 2)
-  totalTaxPayableIdr Decimal             @map("total_tax_payable_idr") @db.Decimal(16, 2)
-  status             TaxAssessmentStatus @default(CALCULATED)
-  assessedAt         DateTime            @default(now()) @map("assessed_at") @db.Timestamptz
+  id                  String              @id @default(uuid()) @db.Uuid
+  companyId           String              @map("company_id") @db.Uuid
+  taxYear             Int                 @map("tax_year")
+  actualEmissionTco2e Decimal             @map("actual_emission_tco2e") @db.Decimal(14, 2)
+  quotaPtbaeTco2e     Decimal             @map("quota_ptbae_tco2e") @db.Decimal(14, 2)
+  deficitTco2e        Decimal             @map("deficit_tco2e") @db.Decimal(14, 2)
+  taxRatePerTonIdr    Decimal             @default(650000) @map("tax_rate_per_ton_idr") @db.Decimal(12, 2)
+  totalTaxPayableIdr  Decimal             @map("total_tax_payable_idr") @db.Decimal(16, 2)
+  status              TaxAssessmentStatus @default(CALCULATED)
+  assessedAt          DateTime            @default(now()) @map("assessed_at") @db.Timestamptz
 
-  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  stpInvoices        StpInvoice[]
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  stpInvoices StpInvoice[]
 
   @@index([companyId, taxYear])
   @@map("carbon_tax_assessments")
 }
 
 model StpInvoice {
-  id            String              @id @default(uuid()) @db.Uuid
-  assessmentId  String?             @map("assessment_id") @db.Uuid
-  companyId     String              @map("company_id") @db.Uuid
-  stpDocNumber  String              @unique @map("stp_doc_number") @db.Text
-  taxYear       Int                 @map("tax_year")
-  amountIdr     Decimal             @map("amount_idr") @db.Decimal(16, 2)
-  dueDate       DateTime            @map("due_date") @db.Date
-  paymentStatus PaymentStatus       @default(UNPAID) @map("payment_status")
-  issuedAt      DateTime            @default(now()) @map("issued_at") @db.Timestamptz
+  id            String        @id @default(uuid()) @db.Uuid
+  assessmentId  String?       @map("assessment_id") @db.Uuid
+  companyId     String        @map("company_id") @db.Uuid
+  stpDocNumber  String        @unique @map("stp_doc_number") @db.Text
+  taxYear       Int           @map("tax_year")
+  amountIdr     Decimal       @map("amount_idr") @db.Decimal(16, 2)
+  dueDate       DateTime      @map("due_date") @db.Date
+  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
+  issuedAt      DateTime      @default(now()) @map("issued_at") @db.Timestamptz
 
-  assessment    CarbonTaxAssessment? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
-  company       Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assessment CarbonTaxAssessment? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
+  company    Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId, taxYear])
   @@index([paymentStatus])
@@ -755,27 +864,27 @@ enum ReportMethod {
 }
 
 model EmissionReport {
-  id                   String               @id @default(uuid()) @db.Uuid
-  companyId            String               @map("company_id") @db.Uuid
-  year                 Int
-  totalEmissionsTco2e  Decimal              @map("total_emissions_tco2e") @db.Decimal(14, 2)
-  merkleRoot           String               @map("merkle_root") @db.Text
-  blockchainTxHash     String?              @map("blockchain_tx_hash") @db.Text
-  blockchainReportId   BigInt?              @map("blockchain_report_id")
-  status               EmissionReportStatus @default(SUBMITTED)
-  reportMethod         ReportMethod         @default(UPLOAD) @map("report_method")
-  sector               String?              @db.Text
-  calculationData      Json?                @map("calculation_data")
-  submittedAt          DateTime             @default(now()) @map("submitted_at") @db.Timestamptz
-  auditedByUserId      String?              @map("audited_by_user_id") @db.Uuid
-  auditorNotes         String?              @map("auditor_notes") @db.Text
-  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+  id                  String               @id @default(uuid()) @db.Uuid
+  companyId           String               @map("company_id") @db.Uuid
+  year                Int
+  totalEmissionsTco2e Decimal              @map("total_emissions_tco2e") @db.Decimal(14, 2)
+  merkleRoot          String               @map("merkle_root") @db.Text
+  blockchainTxHash    String?              @map("blockchain_tx_hash") @db.Text
+  blockchainReportId  BigInt?              @map("blockchain_report_id")
+  status              EmissionReportStatus @default(SUBMITTED)
+  reportMethod        ReportMethod         @default(UPLOAD) @map("report_method")
+  sector              String?              @db.Text
+  calculationData     Json?                @map("calculation_data")
+  submittedAt         DateTime             @default(now()) @map("submitted_at") @db.Timestamptz
+  auditedByUserId     String?              @map("audited_by_user_id") @db.Uuid
+  auditorNotes        String?              @map("auditor_notes") @db.Text
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz
 
-  company              Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  auditor              User?                @relation("AuditorReports", fields: [auditedByUserId], references: [id])
-  files                StoredFile[]
-  ptbaeApplications    PtbaeApplication[]
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  auditor           User?              @relation("AuditorReports", fields: [auditedByUserId], references: [id])
+  files             StoredFile[]
+  ptbaeApplications PtbaeApplication[]
 
   @@unique([companyId, year])
   @@index([status])
@@ -791,13 +900,16 @@ model StoredFile {
   fileSizeBytes    BigInt       @map("file_size_bytes")
   storageKey       String       @unique @map("storage_key") @db.Text
   accessUrl        String       @map("access_url") @db.Text
+  contentHash      String?      @map("content_hash") @db.Text
+  hashAlgorithm    String?      @map("hash_algorithm") @db.Text
+  hashComputedAt   DateTime?    @map("hash_computed_at") @db.Timestamptz
   category         FileCategory @default(EMISSION_REPORT)
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
 
-  uploadedByUser   User?        @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
-  emissionReport   EmissionReport? @relation(fields: [emissionReportId], references: [id], onDelete: SetNull)
-  missionOrthos    DroneMission[] @relation("MissionOrthoFile")
-  missionPointclouds DroneMission[] @relation("MissionPointcloudFile")
+  uploadedByUser            User?                      @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  emissionReport            EmissionReport?            @relation(fields: [emissionReportId], references: [id], onDelete: SetNull)
+  missionOrthos             DroneMission[]             @relation("MissionOrthoFile")
+  missionPointclouds        DroneMission[]             @relation("MissionPointcloudFile")
   ptbaeApplicationDocuments PtbaeApplicationDocument[]
 
   @@index([uploadedByUserId])
@@ -817,7 +929,7 @@ model SystemNotification {
   actionUrl       String?          @map("action_url") @db.Text
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
 
-  recipientUser   User?            @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+  recipientUser User? @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
 
   @@index([recipientUserId, isRead])
   @@map("system_notifications")

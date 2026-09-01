@@ -10,9 +10,12 @@ import * as EmissionRegistryABI from './config/EmissionReportRegistry.json';
 import type {
   BlockchainEvent,
   BlockchainHealth,
+  BlockchainRetirementCertificate,
   CarbonTokenContract,
   EmissionRegistryContract,
 } from './types';
+
+const WALLET_HISTORY_BLOCK_CHUNK = 500;
 
 @Injectable()
 export class BlockchainService implements OnModuleInit {
@@ -277,6 +280,10 @@ export class BlockchainService implements OnModuleInit {
   async getWalletTransactionHistory(address: string) {
     const contract = this.ensureRekaKarbon();
     try {
+      if (!this.provider) {
+        throw new Error('Blockchain provider not initialized');
+      }
+
       const validAddress = this.sanitizeAddress(
         address,
         '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
@@ -291,10 +298,11 @@ export class BlockchainService implements OnModuleInit {
         validAddress,
         null,
       );
+      const latestBlock = await this.provider.getBlockNumber();
 
       const [eventsIn, eventsOut] = await Promise.all([
-        contract.queryFilter(filterIn, 0, 'latest'),
-        contract.queryFilter(filterOut, 0, 'latest'),
+        this.queryTransferEvents(contract, filterIn, latestBlock),
+        this.queryTransferEvents(contract, filterOut, latestBlock),
       ]);
 
       // Combine and parse events
@@ -333,6 +341,29 @@ export class BlockchainService implements OnModuleInit {
       this.logger.error('Error fetching wallet history:', error);
       throw new InternalServerErrorException('Failed to fetch wallet history');
     }
+  }
+
+  private async queryTransferEvents(
+    contract: CarbonTokenContract,
+    filter: unknown,
+    latestBlock: number,
+  ): Promise<BlockchainEvent[]> {
+    const events: BlockchainEvent[] = [];
+
+    for (
+      let fromBlock = 0;
+      fromBlock <= latestBlock;
+      fromBlock += WALLET_HISTORY_BLOCK_CHUNK
+    ) {
+      const toBlock = Math.min(
+        fromBlock + WALLET_HISTORY_BLOCK_CHUNK - 1,
+        latestBlock,
+      );
+      const chunk = await contract.queryFilter(filter, fromBlock, toBlock);
+      events.push(...chunk);
+    }
+
+    return events;
   }
 
   private sanitizeAddress(address: string, fallback: string): string {
@@ -388,7 +419,9 @@ export class BlockchainService implements OnModuleInit {
   ): Promise<string> {
     const contract = this.ensureRekaKarbon();
     try {
-      const tx = await contract.retireCarbonWithCertificate(
+      const validFrom = ethers.getAddress(from);
+      const tx = await contract.retireCarbonWithCertificateFor(
+        validFrom,
         assetId,
         amountTco2e,
         certNumber,
@@ -400,6 +433,162 @@ export class BlockchainService implements OnModuleInit {
       this.logger.error('Error retiring carbon token:', error);
       throw new InternalServerErrorException('Failed to retire token on-chain');
     }
+  }
+
+  async getRetirementCertificateByTransactionHash(
+    txHash: string,
+  ): Promise<BlockchainRetirementCertificate | null> {
+    if (!ethers.isHexString(txHash, 32)) return null;
+    if (!this.provider) {
+      throw new InternalServerErrorException(
+        'Blockchain provider not initialized',
+      );
+    }
+
+    const contractAddress =
+      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+    if (!contractAddress) {
+      throw new InternalServerErrorException(
+        'Carbon token contract address is not configured',
+      );
+    }
+
+    const receipt = await this.provider.getTransactionReceipt(txHash);
+    if (!receipt) return null;
+
+    const contractInterface = new ethers.Interface(RekaKarbonABI.abi);
+    const retirementEvent = receipt.logs
+      .filter(
+        (log) => log.address.toLowerCase() === contractAddress.toLowerCase(),
+      )
+      .map((log) => {
+        try {
+          return contractInterface.parseLog({
+            topics: log.topics,
+            data: log.data,
+          });
+        } catch {
+          return null;
+        }
+      })
+      .find((event) => event?.name === 'RetirementCertificateIssued');
+
+    if (!retirementEvent) return null;
+
+    const block = await this.provider.getBlock(receipt.blockNumber);
+    const network = await this.provider.getNetwork();
+    const args = retirementEvent.args;
+
+    return {
+      certificateId: Number(args[0]),
+      retiree: ethers.getAddress(String(args[1])),
+      assetId: Number(args[2]),
+      amountRetired: Number(args[3]),
+      certificateNumber: String(args[4]),
+      txHash: receipt.hash,
+      blockNumber: receipt.blockNumber,
+      retiredAt: block ? new Date(block.timestamp * 1000).toISOString() : null,
+      chainId: Number(network.chainId),
+      contractAddress: ethers.getAddress(contractAddress),
+    };
+  }
+
+  async getRetirementCertificatesForAddress(
+    address: string,
+  ): Promise<BlockchainRetirementCertificate[]> {
+    if (!this.provider) {
+      throw new InternalServerErrorException(
+        'Blockchain provider not initialized',
+      );
+    }
+
+    const contractAddress =
+      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+    if (!contractAddress) {
+      throw new InternalServerErrorException(
+        'Carbon token contract address is not configured',
+      );
+    }
+
+    const validAddress = ethers.getAddress(address);
+    const contractInterface = new ethers.Interface(RekaKarbonABI.abi);
+    const eventFragment = contractInterface.getEvent(
+      'RetirementCertificateIssued',
+    );
+    if (!eventFragment) return [];
+
+    const latestBlock = await this.provider.getBlockNumber();
+    const logs: ethers.Log[] = [];
+    const logFilter = {
+      address: ethers.getAddress(contractAddress),
+      topics: [
+        eventFragment.topicHash,
+        null,
+        ethers.zeroPadValue(validAddress, 32),
+        null,
+      ],
+    };
+
+    // Besu limits the block range accepted by eth_getLogs. Querying from
+    // block 0 to latest in one request therefore fails once the chain grows.
+    for (
+      let fromBlock = 0;
+      fromBlock <= latestBlock;
+      fromBlock += WALLET_HISTORY_BLOCK_CHUNK
+    ) {
+      const toBlock = Math.min(
+        fromBlock + WALLET_HISTORY_BLOCK_CHUNK - 1,
+        latestBlock,
+      );
+      const chunk = await this.provider.getLogs({
+        ...logFilter,
+        fromBlock,
+        toBlock,
+      });
+      logs.push(...chunk);
+    }
+    const network = await this.provider.getNetwork();
+    const blockTimestamps = new Map<number, string | null>();
+    const history: BlockchainRetirementCertificate[] = [];
+
+    for (const log of logs) {
+      let event: ethers.LogDescription | null = null;
+      try {
+        event = contractInterface.parseLog({
+          topics: log.topics,
+          data: log.data,
+        });
+      } catch {
+        continue;
+      }
+
+      if (!event || event.name !== 'RetirementCertificateIssued') continue;
+
+      let retiredAt = blockTimestamps.get(log.blockNumber);
+      if (retiredAt === undefined) {
+        const block = await this.provider.getBlock(log.blockNumber);
+        retiredAt = block
+          ? new Date(block.timestamp * 1000).toISOString()
+          : null;
+        blockTimestamps.set(log.blockNumber, retiredAt);
+      }
+
+      const args = event.args;
+      history.push({
+        certificateId: Number(args[0]),
+        retiree: ethers.getAddress(String(args[1])),
+        assetId: Number(args[2]),
+        amountRetired: Number(args[3]),
+        certificateNumber: String(args[4]),
+        txHash: log.transactionHash,
+        blockNumber: log.blockNumber,
+        retiredAt,
+        chainId: Number(network.chainId),
+        contractAddress: ethers.getAddress(contractAddress),
+      });
+    }
+
+    return history.sort((left, right) => right.blockNumber - left.blockNumber);
   }
 
   async submitEmissionReport(
@@ -440,5 +629,76 @@ export class BlockchainService implements OnModuleInit {
         'Failed to process report on-chain: ' + errStr.substring(0, 500),
       );
     }
+  }
+
+  async anchorPtbaeApplication(
+    applicationId: string,
+    version: number,
+    rootHash: string,
+    anchorType: number,
+  ): Promise<{
+    txHash: string;
+    blockNumber: number | null;
+    chainId: number | null;
+    contractAddress: string;
+  }> {
+    const contract = this.ensureRegistry();
+    const contractAddress = process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
+    if (!contractAddress) {
+      throw new InternalServerErrorException(
+        'Emission registry contract address is not configured',
+      );
+    }
+    if (!Number.isInteger(version) || version <= 0) {
+      throw new InternalServerErrorException(
+        'Invalid PTBAE application version',
+      );
+    }
+    if (!Number.isInteger(anchorType) || anchorType < 0 || anchorType > 3) {
+      throw new InternalServerErrorException('Invalid PTBAE anchor type');
+    }
+    if (!ethers.isHexString(rootHash, 32)) {
+      throw new InternalServerErrorException('Invalid PTBAE Merkle root');
+    }
+
+    const applicationIdBytes32 = this.applicationIdToBytes32(applicationId);
+
+    try {
+      const tx = await contract.anchorPtbaeApplication(
+        applicationIdBytes32,
+        version,
+        rootHash,
+        anchorType,
+        { gasPrice: 0 },
+      );
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+
+      const network = this.provider ? await this.provider.getNetwork() : null;
+      return {
+        txHash: receipt.hash,
+        blockNumber:
+          receipt.blockNumber === undefined
+            ? null
+            : Number(receipt.blockNumber),
+        chainId: network ? Number(network.chainId) : null,
+        contractAddress,
+      };
+    } catch (error: unknown) {
+      this.logger.error('Error anchoring PTBAE application:', error);
+      throw new InternalServerErrorException(
+        'Failed to anchor PTBAE application on-chain',
+      );
+    }
+  }
+
+  private applicationIdToBytes32(applicationId: string): string {
+    const normalizedId = applicationId.replaceAll('-', '');
+    if (!/^[0-9a-f]{32}$/i.test(normalizedId)) {
+      throw new InternalServerErrorException(
+        'PTBAE application ID must be a valid UUID',
+      );
+    }
+    return `0x${normalizedId.padStart(64, '0')}`;
   }
 }

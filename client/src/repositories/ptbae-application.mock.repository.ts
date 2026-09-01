@@ -45,6 +45,11 @@ export class MockPtbaeApplicationRepository implements PtbaeApplicationRepositor
       auditorNotes: null,
       ministryDecidedAt: null,
       ministryNotes: null,
+      currentVersion: 0,
+      latestMerkleRoot: null,
+      latestAnchorStatus: null,
+      latestAnchoredAt: null,
+      integrity: null,
       allocation: null,
       documents: existing?.documents ?? [],
       createdAt: existing?.createdAt ?? new Date().toISOString(),
@@ -121,12 +126,7 @@ export class MockPtbaeApplicationRepository implements PtbaeApplicationRepositor
 
   async decideAudit(id: string, input: PtbaeAuditDecisionInput): Promise<PtbaeApplication> {
     const existing = this.requireApplication(id);
-    const status =
-      input.decision === 'approve'
-        ? 'ministry_review'
-        : input.decision === 'request_revision'
-          ? 'revision_required'
-          : 'rejected';
+    const status = input.decision === 'approve' ? 'ministry_review' : 'revision_required';
     const updated: PtbaeApplication = {
       ...existing,
       status,
@@ -170,6 +170,9 @@ export class MockPtbaeApplicationRepository implements PtbaeApplicationRepositor
         sourceDocument: input.sourceDocument,
         documentNumber: input.documentNumber,
         blockchainTxHash: '0xmock-ptbae-issuance',
+        issuanceTxHash: '0xmock-ptbae-issuance',
+        decisionMerkleRoot: '0xmock-ptbae-merkle-root',
+        applicationVersionId: crypto.randomUUID(),
         effectiveFrom: input.effectiveFrom ?? null,
         effectiveUntil: input.effectiveUntil ?? null,
       },

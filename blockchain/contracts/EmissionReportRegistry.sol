@@ -9,6 +9,7 @@ contract EmissionReportRegistry is AccessControl {
     bytes32 public constant AUDITOR_ROLE = keccak256("AUDITOR_ROLE");
 
     enum ReportStatus { DRAFT, SUBMITTED, APPROVED, REJECTED }
+    enum PtbaeAnchorType { APPLICATION_SUBMISSION, AUDIT_DECISION, MINISTRY_DECISION, REVOCATION }
 
     struct EmissionReport {
         address reporter;
@@ -24,10 +25,28 @@ contract EmissionReportRegistry is AccessControl {
     mapping(uint256 => EmissionReport) public reports;
     mapping(address => mapping(uint256 => uint256)) public latestReportIdByYear; // reporter => year => reportId
 
+    struct PtbaeApplicationAnchor {
+        bytes32 applicationId;
+        uint256 version;
+        bytes32 merkleRoot;
+        PtbaeAnchorType anchorType;
+        uint256 anchoredAt;
+        address anchoredBy;
+    }
+
+    mapping(bytes32 => mapping(uint256 => PtbaeApplicationAnchor)) public ptbaeAnchors;
+
     uint8 public constant MAX_REVISIONS = 3;
 
     event ReportSubmitted(uint256 indexed reportId, address indexed reporter, bytes32 merkleRoot, uint256 year, uint8 revision);
     event ReportAudited(uint256 indexed reportId, ReportStatus status, string notes);
+    event PtbaeApplicationAnchored(
+        bytes32 indexed applicationId,
+        uint256 indexed version,
+        bytes32 merkleRoot,
+        PtbaeAnchorType anchorType,
+        address indexed anchoredBy
+    );
 
     constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -89,5 +108,45 @@ contract EmissionReportRegistry is AccessControl {
         uint256 reportId = latestReportIdByYear[reporter][year];
         if (reportId == 0) return MAX_REVISIONS;
         return MAX_REVISIONS - reports[reportId].revisionCount;
+    }
+
+    /// @notice Mencatat fingerprint versi pengajuan PTBAE-PU tanpa menyimpan data mentah.
+    function anchorPtbaeApplication(
+        bytes32 applicationId,
+        uint256 version,
+        bytes32 merkleRoot,
+        PtbaeAnchorType anchorType
+    ) external onlyRole(AUDITOR_ROLE) {
+        require(applicationId != bytes32(0), "Application ID is required");
+        require(version > 0, "Application version is required");
+        require(merkleRoot != bytes32(0), "Merkle root is required");
+        require(ptbaeAnchors[applicationId][version].anchoredAt == 0, "PTBAE version already anchored");
+
+        ptbaeAnchors[applicationId][version] = PtbaeApplicationAnchor({
+            applicationId: applicationId,
+            version: version,
+            merkleRoot: merkleRoot,
+            anchorType: anchorType,
+            anchoredAt: block.timestamp,
+            anchoredBy: msg.sender
+        });
+
+        emit PtbaeApplicationAnchored(
+            applicationId,
+            version,
+            merkleRoot,
+            anchorType,
+            msg.sender
+        );
+    }
+
+    /// @notice Memverifikasi fingerprint versi pengajuan PTBAE-PU.
+    function verifyPtbaeApplicationAnchor(
+        bytes32 applicationId,
+        uint256 version,
+        bytes32 merkleRoot
+    ) external view returns (bool) {
+        PtbaeApplicationAnchor storage anchor = ptbaeAnchors[applicationId][version];
+        return anchor.anchoredAt != 0 && anchor.merkleRoot == merkleRoot;
     }
 }

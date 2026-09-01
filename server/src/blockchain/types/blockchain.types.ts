@@ -1,6 +1,7 @@
 export interface BlockchainTransactionReceipt {
   hash: string;
   logs: BlockchainLog[];
+  blockNumber?: number | bigint;
 }
 
 export interface BlockchainTransaction {
@@ -20,6 +21,19 @@ export interface BlockchainHealth {
   contractDeployed?: boolean;
   ministryRoleGrantedToSigner?: boolean;
   reason?: string;
+}
+
+export interface BlockchainRetirementCertificate {
+  certificateId: number;
+  certificateNumber: string;
+  retiree: string;
+  assetId: number;
+  amountRetired: number;
+  txHash: string;
+  blockNumber: number;
+  retiredAt: string | null;
+  chainId: number;
+  contractAddress: string;
 }
 
 export interface BlockchainEvent {
@@ -65,6 +79,12 @@ export interface CarbonTokenContract {
     amountTco2e: number,
     certNumber: string,
   ): Promise<BlockchainTransaction>;
+  retireCarbonWithCertificateFor(
+    retiree: string,
+    assetId: number,
+    amountTco2e: number,
+    certNumber: string,
+  ): Promise<BlockchainTransaction>;
   filters: {
     TransferSingle(
       operator: string | null,
@@ -75,10 +95,17 @@ export interface CarbonTokenContract {
   queryFilter(
     filter: unknown,
     fromBlock: number,
-    toBlock: 'latest',
+    toBlock: number | 'latest',
   ): Promise<BlockchainEvent[]>;
 }
 
 export interface EmissionRegistryContract {
   submitReport(year: number, rootHash: string): Promise<BlockchainTransaction>;
+  anchorPtbaeApplication(
+    applicationId: string,
+    version: number,
+    rootHash: string,
+    anchorType: number,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
 }

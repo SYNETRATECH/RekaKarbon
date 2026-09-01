@@ -248,6 +248,40 @@ contract RekaKarbon is ERC1155, AccessControl, ERC1155Holder {
         return certId;
     }
 
+    /// @notice Backend retires tokens owned by a verified platform user.
+    /// @dev The platform signer is authorized through DEPOSIT_ROLE, while the
+    ///      retirement certificate remains associated with the user's wallet.
+    function retireCarbonWithCertificateFor(
+        address retiree,
+        uint256 assetId,
+        uint256 amount,
+        string calldata certificateNumber
+    ) public onlyRole(DEPOSIT_ROLE) returns (uint256) {
+        require(retiree != address(0), "RekaKarbon: Retiree tidak valid");
+        require(!carbonAssets[assetId].isFrozen, "RekaKarbon: Aset sedang dibekukan");
+        require(balanceOf(retiree, assetId) >= amount, "RekaKarbon: Saldo tidak cukup");
+
+        _burn(retiree, assetId, amount);
+
+        uint256 certId = _nextCertId++;
+        retirementCerts[certId] = RetirementCertificate({
+            retiree: retiree,
+            assetId: assetId,
+            amountRetired: amount,
+            certificateNumber: certificateNumber,
+            burnTxHash: bytes32(0),
+            retiredAt: block.timestamp,
+            isActive: true
+        });
+
+        certsByRetiree[retiree].push(certId);
+
+        emit CarbonRetired(retiree, assetId, amount);
+        emit RetirementCertificateIssued(certId, retiree, assetId, amount, certificateNumber);
+
+        return certId;
+    }
+
     /// @notice Mendapatkan daftar ID sertifikat milik seorang pengguna
     function getCertsByRetiree(address retiree) external view returns (uint256[] memory) {
         return certsByRetiree[retiree];

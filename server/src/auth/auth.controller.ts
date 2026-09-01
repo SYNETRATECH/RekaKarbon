@@ -59,6 +59,21 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @ApiOperation({
+    summary: 'End the current client session',
+    description:
+      'JWT authentication is stateless, so the client removes its token locally. This endpoint provides a consistent logout contract for clients.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Logout acknowledged successfully.',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
+  logout(): { success: true; data: { loggedOut: true } } {
+    return { success: true, data: { loggedOut: true } };
+  }
+
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get current authenticated user profile (Protected)',

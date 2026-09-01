@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   UuidSchema,
+  EntityIdSchema,
   YearSchema,
   FileSizeBytesSchema,
   DateStringSchema,
@@ -10,7 +11,7 @@ import {
 } from './common.schema';
 
 export const SectorBreakdownSchema = z.object({
-  id: UuidSchema,
+  id: EntityIdSchema,
   name: z.string().min(1),
   scope: z.string().min(1),
   emissionsTCO2e: CarbonVolumeSchema,

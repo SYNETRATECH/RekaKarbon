@@ -4,6 +4,8 @@ coverage
 
 # Generated Hardhat artifacts (already ignored by Git)
 blockchain/cache/
+blockchain/artifacts/
+blockchain/**/*.sol
 blockchain/deployment-info.json
 
 out/**

@@ -16,6 +16,8 @@ export type PtbaeDocumentType =
   | 'mitigation_plan'
   | 'supporting_document';
 
+export type PtbaeAnchorStatus = 'pending' | 'processing' | 'confirmed' | 'failed';
+
 export interface PtbaeTechnicalData {
   machineryDescription: string;
   fuelTypes: string[];
@@ -48,8 +50,20 @@ export interface PtbaeApplicationAllocation {
   sourceDocument: string | null;
   documentNumber: string | null;
   blockchainTxHash: string | null;
+  issuanceTxHash: string | null;
+  decisionMerkleRoot: string | null;
+  applicationVersionId: string | null;
   effectiveFrom: string | null;
   effectiveUntil: string | null;
+}
+
+export interface PtbaeApplicationIntegrity {
+  version: number;
+  snapshotHash: string;
+  merkleRoot: string;
+  anchorStatus: PtbaeAnchorStatus | null;
+  transactionHash: string | null;
+  confirmedAt: string | null;
 }
 
 export interface PtbaeApplication {
@@ -70,6 +84,11 @@ export interface PtbaeApplication {
   auditorNotes: string | null;
   ministryDecidedAt: string | null;
   ministryNotes: string | null;
+  currentVersion: number;
+  latestMerkleRoot: string | null;
+  latestAnchorStatus: PtbaeAnchorStatus | null;
+  latestAnchoredAt: string | null;
+  integrity: PtbaeApplicationIntegrity | null;
   allocation: PtbaeApplicationAllocation | null;
   documents: PtbaeApplicationDocument[];
   createdAt: string;
@@ -88,7 +107,7 @@ export interface PtbaeApplicationInput {
 }
 
 export interface PtbaeAuditDecisionInput {
-  decision: 'approve' | 'request_revision' | 'reject';
+  decision: 'approve' | 'request_revision';
   notes?: string;
 }
 

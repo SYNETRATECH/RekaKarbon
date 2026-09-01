@@ -33,6 +33,7 @@ import type {
   PtbaeDocumentType,
 } from '@/types';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+import { PtbaeIntegrityStatus } from '../../components/ptbae/PtbaeIntegrityStatus';
 
 export async function clientLoader() {
   const [applications, emissionReports] = await Promise.all([
@@ -355,6 +356,8 @@ export default function PtbaeApplicationRoute() {
           </div>
         )}
       </Card>
+
+      {yearApplication && <PtbaeIntegrityStatus integrity={yearApplication.integrity} />}
 
       {!canEdit ? (
         <Card className="rounded-3xl border-blue-200 bg-blue-50/60 p-6">

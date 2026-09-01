@@ -4,7 +4,6 @@ import { IsEnum, IsOptional, IsString } from 'class-validator';
 export enum PtbaeAuditDecision {
   APPROVE = 'approve',
   REQUEST_REVISION = 'request_revision',
-  REJECT = 'reject',
 }
 
 export class PtbaeAuditDecisionDto {

@@ -1,21 +1,33 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { certificateRepository } from '../../repositories';
-import { Activity, Flame, CheckCircle2 } from 'lucide-react';
+import type { PurchasedCertificate, RetirementCertificateResult } from '@/types';
+import { Activity, Flame, CheckCircle2, Download, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getRetirementQrUrl, getRetirementVerificationUrl } from '@/lib/certificate-verification';
+import { generateRetirementCertificatePDF } from '@/lib/generateRetirementCertificatePDF';
 
 interface RetireTokenModalProps {
-  cert: any;
-  onClose: (success?: boolean, retData?: any) => void;
+  cert: PurchasedCertificate;
+  onClose: (success?: boolean, retData?: RetirementCertificateResult) => void;
 }
 
 export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProps) {
   const [retireQuantity, setRetireQuantity] = useState<number>(cert.purchasedVolumeTCO2e);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successData, setSuccessData] = useState<any>(null);
+  const [successData, setSuccessData] = useState<RetirementCertificateResult | null>(null);
+  const [qrUnavailable, setQrUnavailable] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
+
+  const verificationUrl = successData ? getRetirementVerificationUrl(successData.txHash) : '';
+  const qrUrl = verificationUrl ? getRetirementQrUrl(verificationUrl) : '';
+
+  useEffect(() => {
+    setQrUnavailable(false);
+  }, [successData]);
 
   const handleRetire = async () => {
     if (retireQuantity <= 0 || retireQuantity > cert.purchasedVolumeTCO2e) {
@@ -45,7 +57,28 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
   };
 
   const handleFinish = () => {
-    onClose(true, successData);
+    onClose(true, successData ?? undefined);
+  };
+
+  const handleDownload = async () => {
+    if (!successData) return;
+
+    setIsDownloading(true);
+    try {
+      const verification = await certificateRepository.verifyRetirementCertificate(
+        successData.txHash
+      );
+      generateRetirementCertificatePDF({ verification, verificationUrl });
+    } catch (error) {
+      console.error('Certificate PDF error:', error);
+      toast({
+        title: 'Unduhan gagal',
+        description: 'Data verifikasi blockchain belum dapat dimuat.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   if (successData) {
@@ -80,9 +113,58 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
             </div>
           </div>
 
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6">
+            <div className="flex flex-col items-center gap-3">
+              {!qrUnavailable ? (
+                <img
+                  src={qrUrl}
+                  alt="QR code verifikasi sertifikat retirement"
+                  className="h-40 w-40 rounded-xl bg-white p-2"
+                  onError={() => setQrUnavailable(true)}
+                />
+              ) : (
+                <div className="flex h-40 w-40 items-center justify-center rounded-xl bg-white p-3 text-center text-xs font-semibold text-slate-500">
+                  QR tidak dapat dimuat. Gunakan tautan verifikasi di bawah.
+                </div>
+              )}
+              <p className="text-xs font-semibold text-emerald-800">
+                Scan untuk membuka verifikasi publik berbasis blockchain.
+              </p>
+              <a
+                href={verificationUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="max-w-full truncate text-xs font-bold text-blue-600 underline"
+              >
+                {verificationUrl}
+              </a>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              onClick={handleDownload}
+              disabled={isDownloading}
+              variant="outline"
+              className="flex-1 rounded-xl py-6 font-bold text-slate-700"
+            >
+              <Download className="mr-2 h-4 w-4 text-emerald-600" />
+              {isDownloading ? 'Menyiapkan...' : 'Unduh Bukti PDF'}
+            </Button>
+            <Button
+              asChild
+              className="flex-1 rounded-xl bg-emerald-600 py-6 font-bold text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700"
+            >
+              <a href={verificationUrl} target="_blank" rel="noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Verifikasi Publik
+              </a>
+            </Button>
+          </div>
           <Button
             onClick={handleFinish}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-6 font-bold shadow-lg shadow-emerald-200"
+            variant="ghost"
+            className="mt-2 w-full rounded-xl py-5 font-bold text-slate-500"
           >
             Tutup
           </Button>
@@ -100,9 +182,10 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
         </DialogTitle>
 
         <div className="bg-orange-50 text-orange-800 p-4 rounded-xl text-xs font-medium mb-6 leading-relaxed">
-          Membakar token karbon (Retirement) akan menghapus token ini dari sirkulasi dan
-          menghasilkan sertifikat offset (SPE-GRK) yang dapat digunakan untuk pelaporan pajak karbon
-          Anda. Aksi ini <b>tidak dapat dibatalkan</b>.
+          Membakar token karbon (Retirement) akan mengurangi saldo token dari sirkulasi dan
+          menghasilkan bukti sertifikat offset (SPE-GRK). Riwayat retirement tetap tersimpan pada
+          blockchain dan dapat dibuka kembali untuk kebutuhan pelaporan. Aksi ini{' '}
+          <b>tidak dapat dibatalkan</b>.
         </div>
 
         <div className="space-y-4">

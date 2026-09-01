@@ -8,7 +8,10 @@ import {
 import {
   FileCategory,
   Prisma,
+  PtbaeApplicationEventType,
   PtbaeApplicationStatus,
+  PtbaeBlockchainAnchorStatus,
+  PtbaeBlockchainAnchorType,
   PtbaeDocumentType,
   PtbaeStatus,
 } from '@prisma/client';
@@ -16,6 +19,7 @@ import { randomUUID } from 'crypto';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { PtbaeIntegrityService } from './ptbae-integrity.service';
 import type { AuthenticatedUserPayload } from '../auth/types';
 import type {
   CreatePtbaeApplicationDto,
@@ -29,6 +33,8 @@ import {
   toPtbaeApplicationStatusKey,
   toPtbaeDocumentTypeKey,
   type PtbaeApplicationRecord,
+  type PtbaeBlockchainAnchorStatusKey,
+  type PtbaeIntegritySummary,
   type PtbaeProductionData,
   type PtbaeTechnicalData,
 } from './types';
@@ -39,6 +45,11 @@ type ApplicationWithRelations = Prisma.PtbaeApplicationGetPayload<{
     company: true;
     documents: { include: { storedFile: true } };
     allocation: true;
+    versions: {
+      orderBy: { version: 'desc' };
+      take: 1;
+      include: { blockchainAnchors: true };
+    };
   };
 }>;
 
@@ -75,6 +86,7 @@ export class PtbaeService {
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
     private readonly blockchainService: BlockchainService,
+    private readonly integrityService: PtbaeIntegrityService,
   ) {}
 
   async getEmitterApplications(
@@ -223,16 +235,28 @@ export class PtbaeService {
       );
     }
 
-    const application = await this.prisma.ptbaeApplication.update({
-      where: { id: applicationId },
-      data: {
-        status: PtbaeApplicationStatus.SUBMITTED,
-        submittedAt: new Date(),
-      },
-      include: this.applicationInclude,
+    await this.prisma.$transaction(async (transaction) => {
+      const application = await transaction.ptbaeApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: PtbaeApplicationStatus.SUBMITTED,
+          submittedAt: new Date(),
+        },
+        include: this.applicationInclude,
+      });
+
+      await this.recordIntegrityVersion(
+        transaction,
+        application,
+        user.userId,
+        existing.currentVersion > 0
+          ? PtbaeApplicationEventType.RESUBMITTED
+          : PtbaeApplicationEventType.SUBMITTED,
+        PtbaeBlockchainAnchorType.APPLICATION_SUBMISSION,
+      );
     });
 
-    return this.toApplicationRecord(application);
+    return this.toApplicationRecord(await this.findApplication(applicationId));
   }
 
   async uploadEmitterDocuments(
@@ -270,6 +294,9 @@ export class PtbaeService {
           fileSizeBytes: BigInt(file.size),
           storageKey,
           accessUrl,
+          contentHash: this.integrityService.hashFile(file.buffer),
+          hashAlgorithm: 'SHA-256',
+          hashComputedAt: new Date(),
           category: FileCategory.PTBAE_APPLICATION,
         },
       });
@@ -324,22 +351,35 @@ export class PtbaeService {
     const nextStatus =
       dto.decision === PtbaeAuditDecision.APPROVE
         ? PtbaeApplicationStatus.MINISTRY_REVIEW
-        : dto.decision === PtbaeAuditDecision.REQUEST_REVISION
-          ? PtbaeApplicationStatus.REVISION_REQUIRED
-          : PtbaeApplicationStatus.REJECTED;
+        : PtbaeApplicationStatus.REVISION_REQUIRED;
 
-    const application = await this.prisma.ptbaeApplication.update({
-      where: { id: applicationId },
-      data: {
-        status: nextStatus,
-        auditedByUserId: user.userId,
-        auditedAt: new Date(),
-        auditorNotes: dto.notes?.trim(),
-      },
-      include: this.applicationInclude,
+    await this.prisma.$transaction(async (transaction) => {
+      const application = await transaction.ptbaeApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: nextStatus,
+          auditedByUserId: user.userId,
+          auditedAt: new Date(),
+          auditorNotes: dto.notes?.trim(),
+        },
+        include: this.applicationInclude,
+      });
+
+      const eventType =
+        dto.decision === PtbaeAuditDecision.APPROVE
+          ? PtbaeApplicationEventType.AUDIT_APPROVED
+          : PtbaeApplicationEventType.REVISION_REQUESTED;
+
+      await this.recordIntegrityVersion(
+        transaction,
+        application,
+        user.userId,
+        eventType,
+        PtbaeBlockchainAnchorType.AUDIT_DECISION,
+      );
     });
 
-    return this.toApplicationRecord(application);
+    return this.toApplicationRecord(await this.findApplication(applicationId));
   }
 
   async getMinistryQueue(
@@ -383,17 +423,28 @@ export class PtbaeService {
       );
     }
 
-    const application = await this.prisma.ptbaeApplication.update({
-      where: { id: applicationId },
-      data: {
-        status: PtbaeApplicationStatus.REVISION_REQUIRED,
-        ministryDecisionByUserId: user.userId,
-        ministryDecidedAt: new Date(),
-        ministryNotes: dto.notes?.trim(),
-      },
-      include: this.applicationInclude,
+    await this.prisma.$transaction(async (transaction) => {
+      const application = await transaction.ptbaeApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: PtbaeApplicationStatus.REVISION_REQUIRED,
+          ministryDecisionByUserId: user.userId,
+          ministryDecidedAt: new Date(),
+          ministryNotes: dto.notes?.trim(),
+        },
+        include: this.applicationInclude,
+      });
+
+      await this.recordIntegrityVersion(
+        transaction,
+        application,
+        user.userId,
+        PtbaeApplicationEventType.REVISION_REQUESTED,
+        PtbaeBlockchainAnchorType.MINISTRY_DECISION,
+      );
     });
-    return this.toApplicationRecord(application);
+
+    return this.toApplicationRecord(await this.findApplication(applicationId));
   }
 
   async rejectMinistryApplication(
@@ -408,17 +459,28 @@ export class PtbaeService {
       );
     }
 
-    const application = await this.prisma.ptbaeApplication.update({
-      where: { id: applicationId },
-      data: {
-        status: PtbaeApplicationStatus.REJECTED,
-        ministryDecisionByUserId: user.userId,
-        ministryDecidedAt: new Date(),
-        ministryNotes: dto.notes?.trim(),
-      },
-      include: this.applicationInclude,
+    await this.prisma.$transaction(async (transaction) => {
+      const application = await transaction.ptbaeApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: PtbaeApplicationStatus.REJECTED,
+          ministryDecisionByUserId: user.userId,
+          ministryDecidedAt: new Date(),
+          ministryNotes: dto.notes?.trim(),
+        },
+        include: this.applicationInclude,
+      });
+
+      await this.recordIntegrityVersion(
+        transaction,
+        application,
+        user.userId,
+        PtbaeApplicationEventType.MINISTRY_REJECTED,
+        PtbaeBlockchainAnchorType.MINISTRY_DECISION,
+      );
     });
-    return this.toApplicationRecord(application);
+
+    return this.toApplicationRecord(await this.findApplication(applicationId));
   }
 
   async approveMinistryApplication(
@@ -469,7 +531,7 @@ export class PtbaeService {
     }
 
     await this.prisma.$transaction(async (transaction) => {
-      await transaction.ptbaeAllocation.upsert({
+      const allocation = await transaction.ptbaeAllocation.upsert({
         where: {
           companyId_complianceYear: {
             companyId: existing.companyId,
@@ -490,6 +552,7 @@ export class PtbaeService {
           effectiveFrom: asDate(dto.effectiveFrom),
           effectiveUntil: asDate(dto.effectiveUntil),
           blockchainTxHash,
+          issuanceTxHash: blockchainTxHash,
           notes: dto.notes?.trim(),
         },
         update: {
@@ -504,23 +567,141 @@ export class PtbaeService {
           effectiveFrom: asDate(dto.effectiveFrom),
           effectiveUntil: asDate(dto.effectiveUntil),
           blockchainTxHash,
+          issuanceTxHash: blockchainTxHash,
           notes: dto.notes?.trim(),
         },
       });
 
-      await transaction.ptbaeApplication.update({
+      const application = await transaction.ptbaeApplication.update({
         where: { id: applicationId },
         data: { status: PtbaeApplicationStatus.APPROVED },
+        include: this.applicationInclude,
+      });
+
+      const integrityVersion = await this.recordIntegrityVersion(
+        transaction,
+        application,
+        user.userId,
+        PtbaeApplicationEventType.MINISTRY_APPROVED,
+        PtbaeBlockchainAnchorType.MINISTRY_DECISION,
+      );
+
+      await transaction.ptbaeAllocation.update({
+        where: { id: allocation.id },
+        data: {
+          applicationVersionId: integrityVersion.versionId,
+          decisionMerkleRoot: integrityVersion.merkleRoot,
+        },
       });
     });
 
     return this.toApplicationRecord(await this.findApplication(applicationId));
   }
 
+  private async recordIntegrityVersion(
+    transaction: Prisma.TransactionClient,
+    application: ApplicationWithRelations,
+    createdByUserId: string,
+    eventType: PtbaeApplicationEventType,
+    anchorType: PtbaeBlockchainAnchorType,
+  ): Promise<{ versionId: string; merkleRoot: string }> {
+    const integrity = this.integrityService.buildIntegrity({
+      id: application.id,
+      companyId: application.companyId,
+      emissionReportId: application.emissionReportId,
+      complianceYear: application.complianceYear,
+      status: application.status,
+      facilityName: application.facilityName,
+      technicalData: application.technicalData,
+      productionData: application.productionData,
+      baselineEmissionTCO2e: Number(application.baselineEmissionTco2e),
+      mitigationPlan: application.mitigationPlan,
+      emitterNotes: application.emitterNotes,
+      submittedAt: application.submittedAt,
+      auditedAt: application.auditedAt,
+      auditorNotes: application.auditorNotes,
+      ministryDecidedAt: application.ministryDecidedAt,
+      ministryNotes: application.ministryNotes,
+      documents: application.documents.map((document) => ({
+        id: document.id,
+        documentType: document.documentType,
+        fileName: document.storedFile.originalFileName,
+        mimeType: document.storedFile.mimeType,
+        fileSizeBytes: Number(document.storedFile.fileSizeBytes),
+        contentHash: document.storedFile.contentHash,
+        createdAt: document.createdAt,
+      })),
+      allocation: application.allocation
+        ? {
+            id: application.allocation.id,
+            quotaTCO2e: Number(application.allocation.quotaTco2e),
+            status: application.allocation.status,
+            sourceDocument: application.allocation.sourceDocument,
+            documentNumber: application.allocation.documentNumber,
+            effectiveFrom: application.allocation.effectiveFrom,
+            effectiveUntil: application.allocation.effectiveUntil,
+            issuanceTxHash:
+              application.allocation.issuanceTxHash ??
+              application.allocation.blockchainTxHash,
+          }
+        : null,
+    });
+
+    const version = await transaction.ptbaeApplicationVersion.create({
+      data: {
+        applicationId: application.id,
+        version: application.currentVersion + 1,
+        eventType,
+        status: application.status,
+        snapshotJson: integrity.snapshotJson,
+        snapshotHash: integrity.snapshotHash,
+        merkleRoot: integrity.merkleRoot,
+        previousMerkleRoot: application.latestMerkleRoot,
+        createdByUserId,
+        leaves: {
+          create: integrity.leaves.map((leaf) => ({
+            leafKey: leaf.leafKey,
+            leafType: leaf.leafType,
+            contentHash: leaf.contentHash,
+            leafHash: leaf.leafHash,
+            leafOrder: leaf.leafOrder,
+            proofJson: leaf.proofJson,
+          })),
+        },
+      },
+    });
+
+    await transaction.ptbaeBlockchainAnchor.create({
+      data: {
+        applicationId: application.id,
+        applicationVersionId: version.id,
+        anchorType,
+        merkleRoot: integrity.merkleRoot,
+      },
+    });
+
+    await transaction.ptbaeApplication.update({
+      where: { id: application.id },
+      data: {
+        currentVersion: version.version,
+        latestMerkleRoot: integrity.merkleRoot,
+        latestAnchorStatus: PtbaeBlockchainAnchorStatus.PENDING,
+        latestAnchoredAt: null,
+      },
+    });
+
+    return { versionId: version.id, merkleRoot: integrity.merkleRoot };
+  }
+
   private readonly applicationInclude = {
     company: true,
     documents: { include: { storedFile: true } },
     allocation: true,
+    versions: {
+      orderBy: { version: 'desc' },
+      take: 1,
+      include: { blockchainAnchors: true },
+    },
   } as const;
 
   private async findEmitterCompany(userId: string) {
@@ -578,6 +759,21 @@ export class PtbaeService {
   private toApplicationRecord(
     application: ApplicationWithRelations,
   ): PtbaeApplicationRecord {
+    const latestVersion = application.versions[0];
+    const latestAnchor = latestVersion?.blockchainAnchors[0] ?? null;
+    const integrity: PtbaeIntegritySummary | null = latestVersion
+      ? {
+          version: latestVersion.version,
+          snapshotHash: latestVersion.snapshotHash,
+          merkleRoot: latestVersion.merkleRoot,
+          anchorStatus: latestAnchor
+            ? this.toAnchorStatusKey(latestAnchor.status)
+            : null,
+          transactionHash: latestAnchor?.transactionHash ?? null,
+          confirmedAt: latestAnchor?.confirmedAt?.toISOString() ?? null,
+        }
+      : null;
+
     return {
       id: application.id,
       companyId: application.companyId,
@@ -596,6 +792,13 @@ export class PtbaeService {
       auditorNotes: application.auditorNotes,
       ministryDecidedAt: application.ministryDecidedAt?.toISOString() ?? null,
       ministryNotes: application.ministryNotes,
+      currentVersion: application.currentVersion,
+      latestMerkleRoot: application.latestMerkleRoot,
+      latestAnchorStatus: application.latestAnchorStatus
+        ? this.toAnchorStatusKey(application.latestAnchorStatus)
+        : null,
+      latestAnchoredAt: application.latestAnchoredAt?.toISOString() ?? null,
+      integrity,
       allocation: application.allocation
         ? {
             id: application.allocation.id,
@@ -604,6 +807,9 @@ export class PtbaeService {
             sourceDocument: application.allocation.sourceDocument,
             documentNumber: application.allocation.documentNumber,
             blockchainTxHash: application.allocation.blockchainTxHash,
+            issuanceTxHash: application.allocation.issuanceTxHash,
+            decisionMerkleRoot: application.allocation.decisionMerkleRoot,
+            applicationVersionId: application.allocation.applicationVersionId,
             effectiveFrom:
               application.allocation.effectiveFrom
                 ?.toISOString()
@@ -620,13 +826,19 @@ export class PtbaeService {
         fileName: document.storedFile.originalFileName,
         mimeType: document.storedFile.mimeType,
         fileSizeBytes: Number(document.storedFile.fileSizeBytes),
-        fileHash: null,
+        fileHash: document.storedFile.contentHash,
         accessUrl: document.storedFile.accessUrl,
         createdAt: document.createdAt.toISOString(),
       })),
       createdAt: application.createdAt.toISOString(),
       updatedAt: application.updatedAt.toISOString(),
     };
+  }
+
+  private toAnchorStatusKey(
+    status: PtbaeBlockchainAnchorStatus,
+  ): PtbaeBlockchainAnchorStatusKey {
+    return status.toLowerCase() as PtbaeBlockchainAnchorStatusKey;
   }
 
   private toTechnicalData(value: Prisma.JsonValue): PtbaeTechnicalData {

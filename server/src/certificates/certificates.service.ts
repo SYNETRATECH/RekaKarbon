@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
-import type { PurchasedCertificate } from './types';
+import type {
+  PurchasedCertificate,
+  RetirementCertificateVerification,
+} from './types';
 
 @Injectable()
 export class CertificatesService {
@@ -145,5 +148,29 @@ export class CertificatesService {
       volumeRetired: volumeTco2e,
       assetId,
     };
+  }
+
+  async verifyRetirementCertificate(
+    txHash: string,
+  ): Promise<RetirementCertificateVerification | null> {
+    const verification =
+      await this.blockchainService.getRetirementCertificateByTransactionHash(
+        txHash,
+      );
+
+    return verification;
+  }
+
+  async getRetirementHistory(
+    userId: string,
+  ): Promise<RetirementCertificateVerification[]> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.walletAddress) {
+      throw new BadRequestException('User wallet not found');
+    }
+
+    return this.blockchainService.getRetirementCertificatesForAddress(
+      user.walletAddress,
+    );
   }
 }

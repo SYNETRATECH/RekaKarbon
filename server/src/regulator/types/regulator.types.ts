@@ -82,6 +82,7 @@ export interface ForestProjectItem {
   projectName: string;
   region: string;
   ecosystemType: string;
+  coordinates?: [number, number];
   areaHectares: number;
   targetSequestrationTCO2e: number;
   actualSequestrationTCO2e: number;
