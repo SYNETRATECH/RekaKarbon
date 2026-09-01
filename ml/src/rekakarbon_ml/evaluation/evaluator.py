@@ -201,7 +201,7 @@ def generate_model_metadata(
 def main() -> None:
     import argparse
 
-    from ..config import DEFAULT_RANDOM_STATE
+    from ..config import DEFAULT_RANDOM_STATE, get_dataset_config
     from ..data.generator import EmissionDataGenerator
     from ..inference.predictor import CarbonAnomalyPredictor
 
@@ -230,7 +230,7 @@ def main() -> None:
     parser.add_argument(
         "--n-samples",
         type=int,
-        default=1000,
+        default=get_dataset_config().default_n_samples,
         help="Number of test samples if generating synthetic test data",
     )
     parser.add_argument(
