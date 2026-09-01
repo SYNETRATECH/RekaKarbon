@@ -1,34 +1,34 @@
 {
   "dataset_name": "RekaKarbon Industrial Carbon Emissions Dataset",
-  "total_samples": 100,
+  "total_samples": 2500,
   "split_counts": {
-    "train": 70,
-    "val": 15,
-    "test": 15
+    "train": 1750,
+    "val": 375,
+    "test": 375
   },
   "schema_validation": {
-    "total_records": 100,
-    "valid_records": 100,
+    "total_records": 2500,
+    "valid_records": 2500,
     "invalid_records": 0,
     "valid_ratio": 1.0,
     "status": "PASSED",
     "errors": []
   },
   "sector_distribution": {
-    "Manufaktur & Pengolahan": 24,
-    "Ketenagalistrikan & PLTU": 21,
-    "Semen & Bahan Bangunan": 16,
-    "Kelapa Sawit & CPO": 15,
-    "Pulp & Kertas": 13,
-    "Logam & Baja": 11
+    "Manufaktur & Pengolahan": 450,
+    "Ketenagalistrikan & PLTU": 444,
+    "Kelapa Sawit & CPO": 430,
+    "Semen & Bahan Bangunan": 399,
+    "Pulp & Kertas": 399,
+    "Logam & Baja": 378
   },
   "anomaly_distribution": {
-    "NORMAL": 85,
-    "FUEL_COST_MISMATCH": 5,
-    "IMPOSSIBLE_PRODUCTION_INTENSITY": 3,
-    "UNDER_REPORTING_FRAUD": 3,
-    "EXTREME_YOY_COLLAPSE": 2,
-    "UNREPORTED_PROCESS_EMISSIONS": 1,
-    "UNDER_REPORTING_SUBTLE": 1
+    "NORMAL": 2125,
+    "FUEL_COST_MISMATCH": 67,
+    "UNREPORTED_PROCESS_EMISSIONS": 67,
+    "UNDER_REPORTING_SUBTLE": 61,
+    "IMPOSSIBLE_PRODUCTION_INTENSITY": 61,
+    "UNDER_REPORTING_FRAUD": 60,
+    "EXTREME_YOY_COLLAPSE": 59
   }
 }

@@ -26,7 +26,11 @@ from ..data.benchmark_loader import (
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
 )
-from ..training.transformers import DERIVED_FEATURE_NAMES, RAW_FEATURE_COLUMNS
+from ..training.transformers import (
+    DERIVED_FEATURE_NAMES,
+    RAW_FEATURE_COLUMNS,
+    EmissionFeatureEngineer,
+)
 from .visualizer import ModelVisualizer
 
 QUALITY_GATE_THRESHOLDS = get_quality_gate_config().to_dict()
@@ -145,17 +149,26 @@ class ModelEvaluator:
             cm_path = self.visualizer.plot_confusion_matrix(cm_dict)
             roc_path = self.visualizer.plot_roc_pr_curves(y_true, scores)
             recall_path = self.visualizer.plot_per_anomaly_type_recall(per_type_metrics)
+
+            transformer = EmissionFeatureEngineer()
+            features_matrix = transformer.transform(test_df)
+            features_df = pd.DataFrame(features_matrix, columns=DERIVED_FEATURE_NAMES)
+            shap_path = self.visualizer.plot_shap_summary(self.predictor, features_df)
+
             html_path = self.visualizer.generate_html_report(eval_results)
 
             eval_results["visual_artifacts"] = {
                 "confusion_matrix_plot": cm_path,
                 "roc_pr_curves_plot": roc_path,
                 "per_anomaly_recall_plot": recall_path,
+                "shap_summary_plot": shap_path,
                 "interactive_html_report": html_path,
             }
             print(f"  - Confusion Matrix plot saved to: {cm_path}")
             print(f"  - ROC & PR Curves plot saved to: {roc_path}")
             print(f"  - Per-Anomaly Recall plot saved to: {recall_path}")
+            if shap_path:
+                print(f"  - SHAP Summary plot saved to: {shap_path}")
             print(f"  - Interactive HTML report saved to: {html_path}")
 
         return eval_results

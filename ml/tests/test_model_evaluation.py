@@ -99,4 +99,5 @@ def test_model_visualizer_artifact_generation(trained_predictor_and_test_data, t
     assert os.path.exists(artifacts["confusion_matrix_plot"])
     assert os.path.exists(artifacts["roc_pr_curves_plot"])
     assert os.path.exists(artifacts["per_anomaly_recall_plot"])
+    assert os.path.exists(artifacts["shap_summary_plot"])
     assert os.path.exists(artifacts["interactive_html_report"])
