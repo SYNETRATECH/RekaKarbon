@@ -1,7 +1,7 @@
 {
   "model_name": "RekaKarbon Carbon Anomaly Detector",
   "version": "1.0.0",
-  "release_timestamp": "2026-09-03T10:08:15.115838+00:00",
+  "release_timestamp": "2026-09-03T11:50:58.070318+00:00",
   "framework": "Scikit-Learn (IsolationForest + RobustScaler) & ONNX Runtime",
   "target_opset": {
     "": 15,

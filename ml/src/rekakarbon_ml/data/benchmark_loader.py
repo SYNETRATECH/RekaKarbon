@@ -6,7 +6,7 @@ Indonesian datasets (BPS, KLHK), client-aligned GHG protocol factors, and dynami
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
@@ -194,17 +194,42 @@ def load_sectors_config() -> Dict[str, Dict[str, Any]]:
     return DEFAULT_SECTORS_DATA.copy()
 
 
+def normalize_sector_key(
+    raw_sector: str, sectors_data: Optional[Dict[str, Dict[str, Any]]] = None
+) -> str:
+    """Maps sector string, name, or legacy sector string to canonical sector id."""
+    norm = str(raw_sector).strip().lower()
+    data = sectors_data if sectors_data is not None else DEFAULT_SECTORS_DATA
+    if norm in data:
+        return norm
+    for sid, sval in data.items():
+        if norm == sval.get("name", "").lower():
+            return sid
+        if sid in norm or norm in sid:
+            return sid
+    # Legacy mapping fallbacks
+    if "semen" in norm or "logam" in norm or "pltu" in norm or "listrik" in norm:
+        return "pertambangan"
+    if "cpo" in norm or "sawit" in norm:
+        return "pertanian"
+    if "pulp" in norm or "kertas" in norm:
+        return "manufaktur"
+    return SUPPORTED_SECTORS[0]
+
+
 class SectorBenchmarkLoader:
     """Loads sector profiles, IPCC factors, and sector-specific emission parameters."""
 
-    def __init__(self, data_dir: Optional[Path] = None):
-        self.data_dir = data_dir or get_assets_data_path()
+    def __init__(self, data_dir: Optional[Union[Path, str]] = None):
+        self.data_dir = str(data_dir or get_assets_data_path())
         self.sectors_data = load_sectors_config()
 
     def load_sector_trends(self) -> pd.DataFrame:
         """Loads historical national GHG emissions by sector (2000-2023)."""
         csv_path = (
-            self.data_dir / "emisi-gas-rumah-kaca-menurut-jenis-sektor-2000-2023" / "2000-2023.csv"
+            Path(self.data_dir)
+            / "emisi-gas-rumah-kaca-menurut-jenis-sektor-2000-2023"
+            / "2000-2023.csv"
         )
         if not csv_path.exists():
             return pd.DataFrame()
@@ -212,7 +237,9 @@ class SectorBenchmarkLoader:
 
     def load_physical_supply_use_2024(self) -> pd.DataFrame:
         """Loads 2024 Physical Supply and Use Table for Indonesian GHG emissions."""
-        csv_path = self.data_dir / "penyediaan-dan-penggunaan-fisik-grk-di-indonesia" / "2024.csv"
+        csv_path = (
+            Path(self.data_dir) / "penyediaan-dan-penggunaan-fisik-grk-di-indonesia" / "2024.csv"
+        )
         if not csv_path.exists():
             return pd.DataFrame()
         return pd.read_csv(csv_path, skiprows=2)
@@ -234,19 +261,4 @@ class SectorBenchmarkLoader:
 
     def normalize_sector_key(self, raw_sector: str) -> str:
         """Maps sector string, name, or legacy sector string to canonical sector id."""
-        norm = str(raw_sector).strip().lower()
-        if norm in self.sectors_data:
-            return norm
-        for sid, sval in self.sectors_data.items():
-            if norm == sval.get("name", "").lower():
-                return sid
-            if sid in norm or norm in sid:
-                return sid
-        # Legacy mapping fallbacks
-        if "semen" in norm or "logam" in norm or "pltu" in norm or "listrik" in norm:
-            return "pertambangan"
-        if "cpo" in norm or "sawit" in norm:
-            return "pertanian"
-        if "pulp" in norm or "kertas" in norm:
-            return "manufaktur"
-        return SUPPORTED_SECTORS[0]
+        return normalize_sector_key(raw_sector, self.sectors_data)

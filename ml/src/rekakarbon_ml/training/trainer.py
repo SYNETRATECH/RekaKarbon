@@ -106,8 +106,22 @@ def train_and_save_pipeline(
     return pipeline, df
 
 
+def _enable_cross_platform_unpickling() -> None:
+    """Enables unpickling of WindowsPath objects on POSIX/Linux platforms."""
+    import pathlib
+    import sys
+
+    if sys.platform != "win32":
+        try:
+            # Map WindowsPath to PureWindowsPath on POSIX to prevent UnsupportedOperation
+            pathlib.WindowsPath = pathlib.PureWindowsPath  # type: ignore
+        except Exception:
+            pass
+
+
 def load_pipeline(model_path: str = "models/anomaly_pipeline.pkl") -> Pipeline:
     """Loads an existing pipeline from disk, or trains a new one if not found."""
+    _enable_cross_platform_unpickling()
     if not os.path.exists(model_path):
         pipeline, _ = train_and_save_pipeline(save_dir=os.path.dirname(model_path) or "models")
         return pipeline

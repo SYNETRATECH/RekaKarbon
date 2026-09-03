@@ -14,6 +14,7 @@ from ..data.benchmark_loader import (
     STOICHIOMETRIC_FACTORS,
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
+    normalize_sector_key,
 )
 
 RAW_FEATURE_COLUMNS: List[str] = [
@@ -76,7 +77,6 @@ class EmissionFeatureEngineer(BaseEstimator, TransformerMixin):
         self.benchmarks = loader.get_sector_emission_factors()
         self.factors = STOICHIOMETRIC_FACTORS
         self.prices = MARKET_PRICE_RANGES
-        self.loader = loader
 
     def fit(self, X, y=None):
         return self
@@ -88,7 +88,7 @@ class EmissionFeatureEngineer(BaseEstimator, TransformerMixin):
             if "sector" in df.columns:
                 df["sector_idx"] = (
                     df["sector"]
-                    .map(lambda s: SECTOR_TO_IDX.get(self.loader.normalize_sector_key(str(s)), 0))
+                    .map(lambda s: SECTOR_TO_IDX.get(normalize_sector_key(str(s)), 0))
                     .fillna(0)
                     .astype(float)
                 )
