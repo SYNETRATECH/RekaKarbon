@@ -15,20 +15,20 @@
     "errors": []
   },
   "sector_distribution": {
-    "Manufaktur & Pengolahan": 450,
-    "Ketenagalistrikan & PLTU": 444,
-    "Kelapa Sawit & CPO": 430,
-    "Semen & Bahan Bangunan": 399,
-    "Pulp & Kertas": 399,
-    "Logam & Baja": 378
+    "pertambangan": 454,
+    "pertanian": 428,
+    "perbankan": 416,
+    "konstruksi": 412,
+    "manufaktur": 407,
+    "perhotelan": 383
   },
   "anomaly_distribution": {
     "NORMAL": 2125,
-    "FUEL_COST_MISMATCH": 67,
-    "UNREPORTED_PROCESS_EMISSIONS": 67,
-    "UNDER_REPORTING_SUBTLE": 61,
-    "IMPOSSIBLE_PRODUCTION_INTENSITY": 61,
-    "UNDER_REPORTING_FRAUD": 60,
-    "EXTREME_YOY_COLLAPSE": 59
+    "SCOPE2_ELECTRICITY_MISMATCH": 82,
+    "FUEL_PRICE_INVOICE_FRAUD": 65,
+    "SCOPE_MATH_DISCREPANCY": 64,
+    "SECTOR_INTENSITY_ANOMALY": 62,
+    "EXTREME_YOY_COLLAPSE": 51,
+    "SCOPE1_UNDERREPORTING_FRAUD": 51
   }
 }

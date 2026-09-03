@@ -43,12 +43,15 @@ def test_predictor_unified(shared_model_artifacts):
         use_onnx=True,
     )
 
-    # Test normal compliant record (Manufaktur & Pengolahan)
+    # Test normal compliant record (Manufaktur)
     sample_normal = {
-        "sector": "Manufaktur & Pengolahan",
+        "sector": "manufaktur",
         "production_tonnes": 450000.0,
-        "reported_emissions_tco2e": 48200.0,
-        "historical_emissions_tco2e": 47200.0,
+        "reported_scope1_tco2e": 38940.0,
+        "reported_scope2_tco2e": 1235.0,
+        "reported_scope3_tco2e": 0.0,
+        "reported_emissions_tco2e": 40175.0,
+        "historical_emissions_tco2e": 40000.0,
         "stat_fuel_liters": 4850000.0,
         "mob_fuel_liters": 1240000.0,
         "biomass_tonnes": 0.0,
@@ -67,10 +70,13 @@ def test_predictor_unified(shared_model_artifacts):
 
     # Test anomalous record (under-reporting: 1,000 tCO2e reported for 48,000 tCO2e spend)
     sample_anomaly = {
-        "sector": "Manufaktur & Pengolahan",
+        "sector": "manufaktur",
         "production_tonnes": 450000.0,
+        "reported_scope1_tco2e": 1000.0,
+        "reported_scope2_tco2e": 0.0,
+        "reported_scope3_tco2e": 0.0,
         "reported_emissions_tco2e": 1000.0,  # massive under-reporting
-        "historical_emissions_tco2e": 47200.0,
+        "historical_emissions_tco2e": 40000.0,
         "stat_fuel_liters": 4850000.0,
         "mob_fuel_liters": 1240000.0,
         "biomass_tonnes": 0.0,
@@ -97,8 +103,10 @@ def test_sector_specific_cement_calcination(shared_model_artifacts):
 
     # Cement plant producing 500,000 ton with clinker calcination
     sample_cement_fraud = {
-        "sector": "Semen & Bahan Bangunan",
+        "sector": "pertambangan",
         "production_tonnes": 500000.0,
+        "reported_scope1_tco2e": 20000.0,
+        "reported_scope2_tco2e": 0.0,
         "reported_emissions_tco2e": 20000.0,  # 15x under-reported
         "historical_emissions_tco2e": 320000.0,
         "stat_fuel_liters": 2000000.0,

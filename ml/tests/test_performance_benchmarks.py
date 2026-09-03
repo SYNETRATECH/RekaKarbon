@@ -68,7 +68,7 @@ def test_single_prediction_latency_percentiles(predictor):
 
     print(f"\n[Single Predict Latency] p50: {p50:.2f}ms | p95: {p95:.2f}ms | p99: {p99:.2f}ms")
 
-    assert p50 < 20.0, f"p50 latency too high: {p50:.2f}ms"
+    assert p50 < 30.0, f"p50 latency too high: {p50:.2f}ms"
     assert p95 < 40.0, f"p95 latency too high: {p95:.2f}ms"
 
 

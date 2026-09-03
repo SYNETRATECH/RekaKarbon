@@ -54,7 +54,7 @@ def test_feature_engineer_shape():
     fe = EmissionFeatureEngineer()
     features = fe.transform(df)
     assert features.shape == (20, len(DERIVED_FEATURE_NAMES))
-    assert features.shape == (20, 15)
+    assert features.shape == (20, 20)
     assert not np.isnan(features).any()
     assert not np.isinf(features).any()
 

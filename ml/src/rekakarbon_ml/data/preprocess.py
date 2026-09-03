@@ -15,7 +15,6 @@ from ..config import get_dataset_config, get_paths_config, get_random_state
 from ..data.feature_registry import generate_feature_manifest
 from ..data.generator import EmissionDataGenerator
 from ..data.validator import validate_raw_dataframe
-from ..training.transformers import DERIVED_FEATURE_NAMES, EmissionFeatureEngineer
 
 
 def generate_dataset_summary(
@@ -167,6 +166,8 @@ def preprocess_dataset(
 
     # 5. Transform full raw dataset into derived feature matrix
     print("Executing EmissionFeatureEngineer preprocessing transformer...")
+    from ..training.transformers import DERIVED_FEATURE_NAMES, EmissionFeatureEngineer
+
     transformer = EmissionFeatureEngineer()
     engineered_matrix = transformer.transform(raw_df)
 

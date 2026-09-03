@@ -34,7 +34,8 @@ def test_valid_emission_report_all_sectors() -> None:
             "cost_solar_idr": 150000.0 * 20500.0,
         }
         report = EmissionReportInput.model_validate(valid_payload)
-        assert report.sector.value == sector.value
+        sec_val = report.sector.value if hasattr(report.sector, "value") else report.sector
+        assert sec_val == sector.value
         assert report.production_tonnes == 50000.0
         feature_dict = report.to_feature_dict()
         assert feature_dict["sector"] == sector.value
@@ -95,7 +96,7 @@ def test_negative_emissions_or_costs_rejected() -> None:
 
 def test_cement_clinker_boundary_validation() -> None:
     invalid_cement = {
-        "sector": SupportedSector.SEMEN.value,
+        "sector": SupportedSector.PERTAMBANGAN.value,
         "production_tonnes": 100000.0,
         "reported_emissions_tco2e": 65000.0,
         "clinker_tonnes": 150000.0,
@@ -107,7 +108,7 @@ def test_cement_clinker_boundary_validation() -> None:
 
 def test_validate_emission_dict_helper() -> None:
     valid_data = {
-        "sector": "Logam & Baja",
+        "sector": "pertambangan",
         "production_tonnes": 200000.0,
         "reported_emissions_tco2e": 370000.0,
     }
@@ -118,7 +119,7 @@ def test_validate_emission_dict_helper() -> None:
     assert model.historical_emissions_tco2e == 370000.0
 
     invalid_data = {
-        "sector": "Logam & Baja",
+        "sector": "pertambangan",
         "production_tonnes": -100.0,
         "reported_emissions_tco2e": 370000.0,
     }
@@ -133,14 +134,14 @@ def test_batch_emission_report_schema() -> None:
         reports=[
             EmissionReportInput.model_validate(
                 {
-                    "sector": SupportedSector.CPO.value,
+                    "sector": SupportedSector.PERTANIAN.value,
                     "production_tonnes": 50000.0,
                     "reported_emissions_tco2e": 9000.0,
                 }
             ),
             EmissionReportInput.model_validate(
                 {
-                    "sector": SupportedSector.PULP.value,
+                    "sector": SupportedSector.MANUFAKTUR.value,
                     "production_tonnes": 80000.0,
                     "reported_emissions_tco2e": 36000.0,
                 }
@@ -165,9 +166,9 @@ def test_validate_raw_dataframe() -> None:
 
 
 def test_feature_registry_manifest() -> None:
-    assert len(FEATURE_REGISTRY) == 15
+    assert len(FEATURE_REGISTRY) == 20
     with tempfile.TemporaryDirectory() as tmp_dir:
         manifest_path = os.path.join(tmp_dir, "feature_manifest.json")
         manifest = generate_feature_manifest(output_path=manifest_path)
-        assert manifest["total_features"] == 15
+        assert manifest["total_features"] == 20
         assert os.path.exists(manifest_path)

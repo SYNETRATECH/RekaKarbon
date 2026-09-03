@@ -54,7 +54,7 @@ def validate_raw_dataframe(
         "invalid_records": invalid_count,
         "valid_ratio": valid_ratio,
         "status": "PASSED" if invalid_count == 0 else "WARNING_INVALID_ROWS_DETECTED",
-        "errors": invalid_records[:10],  # sample top 10 error details
+        "errors": invalid_records[:10],
     }
 
     if drop_invalid and invalid_count > 0:

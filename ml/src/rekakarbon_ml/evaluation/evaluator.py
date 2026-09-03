@@ -111,7 +111,9 @@ class ModelEvaluator:
             and fpr <= QUALITY_GATE_THRESHOLDS["max_false_positive_rate"]
         )
 
-        under_rep_recall = per_type_metrics.get("UNDER_REPORTING_FRAUD", {}).get("recall", 1.0)
+        under_rep_recall = per_type_metrics.get("SCOPE1_UNDERREPORTING_FRAUD", {}).get(
+            "recall", per_type_metrics.get("UNDER_REPORTING_FRAUD", {}).get("recall", 1.0)
+        )
         if under_rep_recall < QUALITY_GATE_THRESHOLDS["min_under_reporting_recall"]:
             passed_gates = False
 
