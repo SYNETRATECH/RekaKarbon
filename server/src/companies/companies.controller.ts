@@ -4,7 +4,6 @@ import {
   Param,
   Query,
   NotFoundException,
-  UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import {
@@ -16,12 +15,9 @@ import {
 } from '@nestjs/swagger';
 import { CompaniesService } from './companies.service';
 import { CompanyQueryDto } from './dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Companies & Emitters')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('companies')
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}

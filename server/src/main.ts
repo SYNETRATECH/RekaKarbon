@@ -15,6 +15,9 @@ async function bootstrap() {
   // Dynamic CORS origin configuration for multi-server / distributed deployment
   const corsOriginsEnv = process.env.CORS_ORIGINS;
   const defaultAllowedOrigins = [
+    'http://localhost:8101',
+    'http://127.0.0.1:8101',
+    'http://localhost:8100',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',

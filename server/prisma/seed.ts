@@ -829,6 +829,21 @@ async function main() {
       budgetDisbursedIdr: 3750000000.0,
       status: ProjectStatus.ACTIVE_DMRV,
       speCertificateId: 'SPE-GRK-00192-REKA-2026',
+      bufferAllocatedPercent: 8.0,
+      bufferUsedPercent: 0.0,
+      trendDataJson: {
+        labels: ['2021', '2022', '2023', '2024', '2025'],
+        data: [1.15, 1.18, 1.2, 1.22, 1.24],
+      },
+      coordinatesJson: [
+        { lat: -7.732, lng: 114.398 },
+        { lat: -7.735, lng: 114.471 },
+        { lat: -7.822, lng: 114.478 },
+        { lat: -7.889, lng: 114.452 },
+        { lat: -7.911, lng: 114.331 },
+        { lat: -7.832, lng: 114.288 },
+        { lat: -7.748, lng: 114.321 },
+      ],
     },
   });
 
@@ -854,7 +869,21 @@ async function main() {
       budgetTotalIdr: 3500000000.0,
       budgetDisbursedIdr: 2800000000.0,
       status: ProjectStatus.ACTIVE_DMRV,
-      speCertificateId: 'SPE-GRK-00204-REKA-2026',
+      speCertificateId: 'SPE-GRK-00241-TUBAN-2026',
+      bufferAllocatedPercent: 8.0,
+      bufferUsedPercent: 0.0,
+      trendDataJson: {
+        labels: ['2021', '2022', '2023', '2024', '2025'],
+        data: [1.1, 1.14, 1.19, 1.22, 1.26],
+      },
+      coordinatesJson: [
+        { lat: -6.87, lng: 111.98 },
+        { lat: -6.86, lng: 112.05 },
+        { lat: -6.9, lng: 112.08 },
+        { lat: -6.93, lng: 112.03 },
+        { lat: -6.92, lng: 111.96 },
+        { lat: -6.88, lng: 111.95 },
+      ],
     },
   });
 
@@ -891,6 +920,24 @@ async function main() {
       speCreditsMinted: 2400.0,
       plantedTrees: 38500,
       targetTrees: 40000,
+    },
+  });
+
+  const stageMangrove1 = await prisma.projectStage.create({
+    data: {
+      id: randomUUID(),
+      projectId: projectMangrove.id,
+      yearNumber: 1,
+      title: 'Tahun 1: Pembibitan Mangrove Rhizophora',
+      milestoneDescription:
+        'Penanaman 50.000 bibit mangrove dan pembangunan tanggul penahan ombak.',
+      status: StageStatus.COMPLETED,
+      canopyDensityPercent: 55.0,
+      farmerIncentiveIdr: 300000000.0,
+      incentiveStatus: 'DISBURSED',
+      speCreditsMinted: 2400.0,
+      plantedTrees: 50000,
+      targetTrees: 50000,
     },
   });
 
@@ -995,8 +1042,72 @@ async function main() {
       totalAmountIdr: 325000000.0,
       txHash:
         '0x8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b',
+      blockNumber: '#184410',
+      verificationStatus: 'Terverifikasi (KLHK On-Chain)',
+      auditorName: 'Rian Hermawan, M.T (Sucofindo)',
       status: OrderStatus.COMPLETED,
       completedAt: new Date('2026-02-18T11:20:00.000Z'),
+    },
+  });
+
+  const tokenMangrove = await prisma.carbonToken.create({
+    data: {
+      id: randomUUID(),
+      speCertificateNumber: 'SPE-TUBAN-2026-001',
+      projectId: projectMangrove.id,
+      totalMintedTco2e: 70000.0,
+      availableBalanceTco2e: 0.0,
+      vintageYear: 2026,
+      blockchainTokenId: BigInt(2),
+      mintTxHash:
+        '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
+      mintedAt: new Date('2026-01-22T10:00:00.000Z'),
+    },
+  });
+
+  const listingMangrove = await prisma.bursaListing.create({
+    data: {
+      id: randomUUID(),
+      sellerUserId: userAdmin.id,
+      carbonTokenId: tokenMangrove.id,
+      projectName: 'Restorasi Mangrove Hutan Lindung Tuban',
+      volumeAvailableTco2e: 0.0,
+      pricePerTonIdr: 260000.0,
+      status: ListingStatus.FILLED,
+    },
+  });
+
+  await prisma.bursaOrder.create({
+    data: {
+      id: randomUUID(),
+      listingId: listingMangrove.id,
+      buyerUserId: userEmitter2.id,
+      volumeTco2e: 50000.0,
+      pricePerTonIdr: 260000.0,
+      totalAmountIdr: 13000000000.0,
+      txHash: '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d',
+      blockNumber: '#184410',
+      verificationStatus: 'Terverifikasi (KLHK On-Chain)',
+      auditorName: 'Rian Hermawan, M.T (Sucofindo)',
+      status: OrderStatus.COMPLETED,
+      completedAt: new Date('2025-07-10T09:30:00.000Z'),
+    },
+  });
+
+  await prisma.bursaOrder.create({
+    data: {
+      id: randomUUID(),
+      listingId: listingMangrove.id,
+      buyerUserId: userBuyer.id,
+      volumeTco2e: 20000.0,
+      pricePerTonIdr: 260000.0,
+      totalAmountIdr: 5200000000.0,
+      txHash: '0x4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a',
+      blockNumber: '#184102',
+      verificationStatus: 'Terverifikasi (KLHK On-Chain)',
+      auditorName: 'Hendry Setiawan, B.Eng (BSI Group)',
+      status: OrderStatus.COMPLETED,
+      completedAt: new Date('2025-07-05T14:15:00.000Z'),
     },
   });
 
@@ -1010,9 +1121,124 @@ async function main() {
       stageId: stageBaluran1.id,
       amountIdr: 350000000.0,
       volumeTco2e: 1200.0,
+      category: 'Restorasi & Pembibitan',
+      description: 'Pengadaan 40.000 bibit endemik dan pembuatan sekat bakar',
+      vendorName: 'KTH Baluran Mandiri',
       txHash:
         '0x3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c',
+      blockNumber: '#183100',
+      itemsJson: [
+        {
+          name: 'Pengadaan Bibit Pohon Endemik Baluran',
+          qty: 40000,
+          unit: 'Batang',
+          price: 7500,
+          total: 300000000,
+        },
+        {
+          name: 'Pembuatan Sekat Bakar & Jalur Pemadam Firebreak',
+          qty: 5,
+          unit: 'KM',
+          price: 10000000,
+          total: 50000000,
+        },
+      ],
+      proofImagesJson: [
+        '/proofs/nota_pembelian.svg',
+        '/proofs/bukti_transfer.svg',
+      ],
       disbursedAt: new Date('2026-01-25T15:00:00.000Z'),
+    },
+  });
+
+  await prisma.kthIncentiveDisbursement.create({
+    data: {
+      id: randomUUID(),
+      projectId: projectMangrove.id,
+      kthGroupId: kthTuban.id,
+      stageId: stageMangrove1.id,
+      amountIdr: 45000000.0,
+      volumeTco2e: 1000.0,
+      category: 'Pemeliharaan',
+      description:
+        'Insentif bulanan KTH (Dinas Kehutanan Jawa Timur & KTH Tuban)',
+      vendorName: 'Dinas Kehutanan Jawa Timur & KTH Tuban',
+      txHash: '0x8f3a9b2c1d4e7f0a5b6c7d8e9f0a1b2c',
+      blockNumber: '#184920',
+      itemsJson: [
+        {
+          name: 'Insentif Tanam & Pemeliharaan KTH (15 Anggota)',
+          qty: 15,
+          unit: 'Anggota',
+          price: 2000000,
+          total: 30000000,
+        },
+        {
+          name: 'Pengadaan Pupuk Kompos Organik Bio-Fertilizer',
+          qty: 30,
+          unit: 'Karung',
+          price: 300000,
+          total: 9000000,
+        },
+        {
+          name: 'Operasional Alat Penyiangan & Pemangkasan',
+          qty: 6,
+          unit: 'Set',
+          price: 1000000,
+          total: 6000000,
+        },
+      ],
+      proofImagesJson: [
+        '/proofs/nota_pembelian.svg',
+        '/proofs/bukti_transfer.svg',
+        '/proofs/sertifikat_spe.svg',
+      ],
+      disbursedAt: new Date('2025-07-14T10:00:00.000Z'),
+    },
+  });
+
+  await prisma.kthIncentiveDisbursement.create({
+    data: {
+      id: randomUUID(),
+      projectId: projectMangrove.id,
+      kthGroupId: kthTuban.id,
+      stageId: stageMangrove1.id,
+      amountIdr: 85000000.0,
+      volumeTco2e: 1500.0,
+      category: 'Monitoring',
+      description: 'Sewa UAV & pemindaian orthophoto udara dMRV',
+      vendorName: 'PT Aero Mapping Indonesia',
+      txHash: '0x3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a',
+      blockNumber: '#183712',
+      itemsJson: [
+        {
+          name: 'Sewa Drone VTOL LiDAR Multiterrain (3 Hari)',
+          qty: 3,
+          unit: 'Hari',
+          price: 20000000,
+          total: 60000000,
+        },
+        {
+          name: 'Jasa Pengolahan Citra dMRV & Model CHM',
+          qty: 1,
+          unit: 'Paket',
+          price: 15000000,
+          total: 15000000,
+        },
+        {
+          name: 'Honor Pilot Drone Sertifikasi FASI & Surveyor',
+          qty: 2,
+          unit: 'Orang',
+          price: 5000000,
+          total: 10000000,
+        },
+      ],
+      proofImagesJson: [
+        '/proofs/nota_pembelian.svg',
+        '/proofs/bukti_transfer.svg',
+        '/proofs/sertifikat_spe.svg',
+      ],
+      disbursedAt: new Date('2025-06-28T14:30:00.000Z'),
     },
   });
 
@@ -1079,6 +1305,7 @@ async function main() {
       notes:
         'Nilai ini bukan ambang universal. Nilai resmi harus ditetapkan per perusahaan dan tahun.',
     })),
+    skipDuplicates: true,
   });
 
   // 15. Seed DJP Carbon Tax Assessments & STP Invoices

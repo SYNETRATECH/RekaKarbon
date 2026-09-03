@@ -357,22 +357,19 @@ export default function ConservationModule() {
                   </div>
                 </div>
 
-                {/* 3. Buffer Pool Allocation */}
+                {/* 3. Emergency Fund Used for Project */}
                 <div className="flex items-start justify-between gap-4 border-t border-slate-200/50 pt-3 text-left">
                   <div className="space-y-1">
                     <span className="font-semibold text-slate-500 block">
-                      Alokasi Buffer Risiko (8%)
+                      Alokasi Dana Darurat Terpakai
                     </span>
                     <span className="text-[9px] text-slate-400 block leading-tight">
-                      Cadangan kredit mitigasi risiko
+                      Total dana darurat & pemulihan bencana yang disalurkan untuk proyek ini
                     </span>
                   </div>
                   <div className="text-right shrink-0">
                     <span className="font-mono font-black text-xs text-emerald-700 block">
-                      {(activeProj.bufferAllocated * 100).toFixed(0)}%
-                    </span>
-                    <span className="text-[8px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
-                      Terpakai: {(activeProj.bufferUsed * 100).toFixed(1)}%
+                      Rp {(activeProj.emergencyFundUsed || 0).toLocaleString('id-ID')}
                     </span>
                   </div>
                 </div>
@@ -380,68 +377,74 @@ export default function ConservationModule() {
             </div>
           </div>
 
-          {/* 5. Progress Reboisasi Tahunan (Timeline) */}
+          {/* 5. Progress Reboisasi (Timeline Tahap) */}
           <div className="border-t border-slate-200/50 pt-3 space-y-2.5 text-left">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              PROGRESS REBOISASI TAHUNAN
+              PROGRESS REBOISASI PROYEK ({activeProj.stages ? activeProj.stages.length : 0} TAHAP)
             </span>
             <div className="relative pl-5 space-y-3.5 border-l-2 border-slate-200 ml-2">
-              {activeProj.stages.map((stage) => {
-                const isCompleted = stage.status === 'completed';
-                const isOngoing = stage.status === 'ongoing';
-                return (
-                  <div
-                    key={stage.year}
-                    onClick={() => setSelectedDroneStage({ project: activeProj, stage })}
-                    className="relative group p-2 -mx-2 px-2.5 rounded-xl border border-transparent hover:border-emerald-200 hover:bg-emerald-50/50 transition-all cursor-pointer text-left"
-                  >
-                    {/* Milestone circle */}
-                    <span
-                      className={`absolute -left-[27px] top-2.5 w-3 h-3 rounded-full border-2 flex items-center justify-center ${
-                        isCompleted
-                          ? 'bg-emerald-500 border-emerald-600 text-white'
-                          : isOngoing
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                            : 'bg-slate-100 border-slate-300'
-                      }`}
+              {activeProj.stages && activeProj.stages.length > 0 ? (
+                activeProj.stages.map((stage, idx) => {
+                  const isCompleted = stage.status === 'completed';
+                  const isOngoing = stage.status === 'ongoing';
+                  return (
+                    <div
+                      key={(stage as any).id || stage.year || idx}
+                      onClick={() => setSelectedDroneStage({ project: activeProj, stage })}
+                      className="relative group p-2 -mx-2 px-2.5 rounded-xl border border-transparent hover:border-emerald-200 hover:bg-emerald-50/50 transition-all cursor-pointer text-left"
                     >
-                      {isOngoing && (
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                      )}
-                    </span>
-                    <div>
-                      <div className="flex items-center justify-between leading-none">
-                        <div className="flex items-center gap-1.5">
-                          <h5
-                            className={`font-bold text-[10px] group-hover:text-emerald-800 transition-colors ${
-                              isCompleted
-                                ? 'text-slate-700'
-                                : isOngoing
-                                  ? 'text-emerald-800 font-extrabold'
-                                  : 'text-slate-400'
-                            }`}
-                          >
-                            {stage.title}
-                          </h5>
-                          {isOngoing && (
-                            <span className="bg-emerald-100 text-emerald-850 text-[7px] font-extrabold px-1.5 py-0.2 rounded uppercase tracking-wider">
-                              Ongoing
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[8px] text-emerald-700 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                          Audit dMRV ↗
-                        </span>
-                      </div>
-                      <p
-                        className={`text-[9px] ${isCompleted || isOngoing ? 'text-slate-500' : 'text-slate-400'} mt-1 leading-normal`}
+                      {/* Milestone circle */}
+                      <span
+                        className={`absolute -left-[27px] top-2.5 w-3 h-3 rounded-full border-2 flex items-center justify-center ${
+                          isCompleted
+                            ? 'bg-emerald-500 border-emerald-600 text-white'
+                            : isOngoing
+                              ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
+                              : 'bg-slate-100 border-slate-300'
+                        }`}
                       >
-                        {stage.milestone}
-                      </p>
+                        {isOngoing && (
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                        )}
+                      </span>
+                      <div>
+                        <div className="flex items-center justify-between leading-none">
+                          <div className="flex items-center gap-1.5">
+                            <h5
+                              className={`font-bold text-[10px] group-hover:text-emerald-800 transition-colors ${
+                                isCompleted
+                                  ? 'text-slate-700'
+                                  : isOngoing
+                                    ? 'text-emerald-800 font-extrabold'
+                                    : 'text-slate-400'
+                              }`}
+                            >
+                              {stage.title}
+                            </h5>
+                            {isOngoing && (
+                              <span className="bg-emerald-100 text-emerald-850 text-[7px] font-extrabold px-1.5 py-0.2 rounded uppercase tracking-wider">
+                                Ongoing
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[8px] text-emerald-700 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                            Audit dMRV ↗
+                          </span>
+                        </div>
+                        <p
+                          className={`text-[9px] ${isCompleted || isOngoing ? 'text-slate-500' : 'text-slate-400'} mt-1 leading-normal`}
+                        >
+                          {stage.milestone}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className="text-[10px] text-slate-400 py-2">
+                  Belum ada data tahap reboisasi untuk proyek ini.
+                </div>
+              )}
             </div>
           </div>
 
@@ -468,40 +471,40 @@ export default function ConservationModule() {
                 </span>
               </div>
 
-              {/* Budget Allocation Progress */}
-              <div className="space-y-1">
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden flex">
-                  <div
-                    className="bg-emerald-500 h-2"
-                    style={{ width: '62%' }}
-                    title="Restorasi (62%)"
-                  ></div>
-                  <div
-                    className="bg-emerald-700 h-2"
-                    style={{ width: '15%' }}
-                    title="Pemeliharaan (15%)"
-                  ></div>
-                  <div
-                    className="bg-sky-500 h-2"
-                    style={{ width: '10%' }}
-                    title="Monitoring (10%)"
-                  ></div>
-                  <div
-                    className="bg-amber-500 h-2"
-                    style={{ width: '8%' }}
-                    title="Buffer (8%)"
-                  ></div>
-                  <div
-                    className="bg-purple-500 h-2"
-                    style={{ width: '5%' }}
-                    title="NusaCarbon API (5%)"
-                  ></div>
-                </div>
-                <div className="flex justify-between text-[7px] text-slate-400 font-mono">
-                  <span>Tercairkan: Rp {activeProj.disbursedBudget.toLocaleString('id-ID')}</span>
-                  <span>Sisa: Rp {activeProj.remainingBudget.toLocaleString('id-ID')}</span>
-                </div>
-              </div>
+              {/* Dynamic Budget Allocation Progress */}
+              {(() => {
+                const tot = activeProj.totalBudget || 1;
+                const disbursed = activeProj.disbursedBudget || 0;
+                const remaining = activeProj.remainingBudget || 0;
+                const disbursedPct = Math.min(100, Math.max(0, (disbursed / tot) * 100));
+                const remainingPct = Math.max(0, 100 - disbursedPct);
+
+                return (
+                  <div className="space-y-1">
+                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden flex">
+                      <div
+                        className="bg-emerald-500 h-2 transition-all duration-500"
+                        style={{ width: `${disbursedPct.toFixed(1)}%` }}
+                        title={`Tercairkan (${disbursedPct.toFixed(1)}%)`}
+                      ></div>
+                      <div
+                        className="bg-slate-700 h-2 transition-all duration-500"
+                        style={{ width: `${remainingPct.toFixed(1)}%` }}
+                        title={`Sisa Anggaran (${remainingPct.toFixed(1)}%)`}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-[7px] text-slate-400 font-mono">
+                      <span>
+                        Tercairkan: Rp {disbursed.toLocaleString('id-ID')} (
+                        {disbursedPct.toFixed(1)}%)
+                      </span>
+                      <span>
+                        Sisa: Rp {remaining.toLocaleString('id-ID')} ({remainingPct.toFixed(1)}%)
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Sub-Tab Navigation: Token Buyers vs Vendor Disbursement */}
