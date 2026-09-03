@@ -4,11 +4,11 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { ComplianceRating } from '@prisma/client';
+import { ComplianceRating, EmissionReportStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { PtbaeService } from '../compliance/ptbae.service';
-import type { BursaItem } from './types';
+import type { BursaItem, BursaPurchaseEligibility } from './types';
 
 @Injectable()
 export class BursaService {
@@ -60,6 +60,166 @@ export class BursaService {
     });
   }
 
+  async getPurchaseEligibility(
+    buyerUserId: string,
+  ): Promise<BursaPurchaseEligibility> {
+    const buyer = await this.prisma.user.findUnique({
+      where: { id: buyerUserId },
+      include: { companies: true },
+    });
+    const company = buyer?.companies[0];
+
+    if (!company) {
+      return this.ineligible(
+        'company_unavailable',
+        'Perusahaan emitter belum tersedia.',
+      );
+    }
+    if (!buyer?.walletAddress) {
+      return this.ineligible(
+        'wallet_unavailable',
+        'Wallet emitter belum tersedia.',
+      );
+    }
+
+    const latestReport = await this.prisma.emissionReport.findFirst({
+      where: { companyId: company.id },
+      orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
+      select: { id: true, year: true, status: true },
+    });
+    const approvedReport = await this.prisma.emissionReport.findFirst({
+      where: {
+        companyId: company.id,
+        status: EmissionReportStatus.APPROVED,
+      },
+      orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
+      select: { id: true, year: true, totalEmissionsTco2e: true },
+    });
+
+    if (!approvedReport) {
+      const reason =
+        latestReport?.status === EmissionReportStatus.REVISION_REQUIRED
+          ? 'report_revision_required'
+          : latestReport?.status === EmissionReportStatus.SUBMITTED
+            ? 'report_pending_audit'
+            : 'report_not_submitted';
+      return this.ineligible(
+        reason,
+        'Bursa hanya tersedia setelah laporan emisi disetujui Auditor.',
+        {
+          complianceYear: latestReport?.year ?? null,
+          reportId: latestReport?.id ?? null,
+          reportStatus: latestReport?.status?.toLowerCase() ?? null,
+        },
+      );
+    }
+
+    const quota = await this.ptbaeService.resolveForCompany(
+      company.id,
+      approvedReport.year,
+    );
+    if (!quota.isOfficial || quota.quotaTCO2e === null) {
+      return this.ineligible(
+        'ptbae_unavailable',
+        'PTBAE-PU resmi untuk tahun laporan belum tersedia.',
+        {
+          complianceYear: approvedReport.year,
+          reportId: approvedReport.id,
+          reportStatus: 'approved',
+          approvedEmissionsTCO2e: Number(approvedReport.totalEmissionsTco2e),
+        },
+      );
+    }
+
+    const orders = await this.prisma.bursaOrder.findMany({
+      where: {
+        buyerUserId,
+        status: 'COMPLETED',
+        listing: {
+          carbonToken: { vintageYear: approvedReport.year },
+        },
+      },
+      select: { volumeTco2e: true, retiredVolumeTco2e: true },
+    });
+    const availableTokenBalanceTCO2e = orders.reduce(
+      (total, order) => total + Number(order.volumeTco2e),
+      0,
+    );
+    const retiredTCO2e = orders.reduce(
+      (total, order) => total + Number(order.retiredVolumeTco2e),
+      0,
+    );
+    const approvedEmissionsTCO2e = Number(approvedReport.totalEmissionsTco2e);
+    const complianceDeficitTCO2e = Math.max(
+      0,
+      approvedEmissionsTCO2e - quota.quotaTCO2e - retiredTCO2e,
+    );
+    const purchaseRequirementTCO2e = Math.max(
+      0,
+      complianceDeficitTCO2e - availableTokenBalanceTCO2e,
+    );
+
+    const base = {
+      complianceYear: approvedReport.year,
+      reportId: approvedReport.id,
+      reportStatus: 'approved',
+      approvedEmissionsTCO2e,
+      ptbaeQuotaTCO2e: quota.quotaTCO2e,
+      retiredTCO2e,
+      availableTokenBalanceTCO2e,
+      complianceDeficitTCO2e,
+      purchaseRequirementTCO2e,
+    };
+
+    if (complianceDeficitTCO2e === 0) {
+      return {
+        canPurchase: false,
+        reason: 'no_deficit',
+        message: 'Tidak ada defisit emisi yang perlu dilunasi.',
+        ...base,
+      };
+    }
+
+    if (purchaseRequirementTCO2e === 0) {
+      return {
+        canPurchase: false,
+        reason: 'offset_tokens_available',
+        message:
+          'Token yang tersedia sudah cukup. Lanjutkan ke proses retirement.',
+        ...base,
+      };
+    }
+
+    return {
+      canPurchase: true,
+      reason: 'eligible',
+      message: 'Perusahaan dapat membeli token untuk menutup defisit emisi.',
+      ...base,
+    };
+  }
+
+  private ineligible(
+    reason: BursaPurchaseEligibility['reason'],
+    message: string,
+    overrides: Partial<BursaPurchaseEligibility> = {},
+  ): BursaPurchaseEligibility {
+    return {
+      canPurchase: false,
+      reason,
+      message,
+      complianceYear: null,
+      reportId: null,
+      reportStatus: null,
+      approvedEmissionsTCO2e: null,
+      ptbaeQuotaTCO2e: null,
+      retiredTCO2e: 0,
+      availableTokenBalanceTCO2e: 0,
+      complianceDeficitTCO2e: null,
+      purchaseRequirementTCO2e: 0,
+      ...overrides,
+    };
+  }
+
   async buyCarbonToken(
     buyerUserId: string,
     listingId: string,
@@ -72,29 +232,13 @@ export class BursaService {
     if (!buyer || !buyer.walletAddress)
       throw new BadRequestException('Buyer wallet not found');
     const company = buyer.companies[0];
-    let activeDeficitTCO2e: number | null = null;
-    if (company) {
-      const latestReport = await this.prisma.emissionReport.findFirst({
-        where: { companyId: company.id },
-        orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
-        select: { year: true, totalEmissionsTco2e: true },
-      });
-      const complianceYear = latestReport?.year ?? new Date().getFullYear();
-      const actualEmissionsTCO2e = latestReport
-        ? Number(latestReport.totalEmissionsTco2e)
-        : Number(company.actualEmissionTco2e);
-      const quota = await this.ptbaeService.resolveForCompany(
-        company.id,
-        complianceYear,
-      );
-      activeDeficitTCO2e = this.ptbaeService.calculateDeficit(
-        actualEmissionsTCO2e,
-        quota.quotaTCO2e,
-      );
+    const eligibility = await this.getPurchaseEligibility(buyerUserId);
+    if (!eligibility.canPurchase || eligibility.purchaseRequirementTCO2e <= 0) {
+      throw new BadRequestException(eligibility.message);
     }
-    if (activeDeficitTCO2e !== null && volumeTco2e > activeDeficitTCO2e) {
+    if (volumeTco2e > eligibility.purchaseRequirementTCO2e) {
       throw new BadRequestException(
-        `Purchase volume exceeds the active carbon deficit cap of ${activeDeficitTCO2e} tCO2e`,
+        `Purchase volume exceeds the required offset volume of ${eligibility.purchaseRequirementTCO2e} tCO2e`,
       );
     }
 
@@ -164,20 +308,13 @@ export class BursaService {
         },
       });
 
-      if (company && activeDeficitTCO2e !== null) {
-        const remainingDeficitTCO2e = Math.max(
-          0,
-          activeDeficitTCO2e - volumeTco2e,
-        );
+      if (company && eligibility.complianceDeficitTCO2e !== null) {
         await tx.company.update({
           where: { id: company.id },
           data: {
-            carbonDeficitTco2e: remainingDeficitTCO2e,
-            offsetCostIdr: remainingDeficitTCO2e * 650000,
-            complianceRating:
-              remainingDeficitTCO2e > 0
-                ? ComplianceRating.NON_COMPLIANT
-                : ComplianceRating.COMPLIANT,
+            carbonDeficitTco2e: eligibility.complianceDeficitTCO2e,
+            offsetCostIdr: eligibility.complianceDeficitTCO2e * 650000,
+            complianceRating: ComplianceRating.WARNING,
           },
         });
       }

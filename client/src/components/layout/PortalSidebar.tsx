@@ -159,6 +159,12 @@ export default function PortalSidebar({ role }: PortalSidebarProps) {
               icon: FileUp,
               targetPath: '/audit/ptbae',
             },
+            {
+              id: 'emission-report-audit',
+              label: 'Audit Laporan Emisi',
+              icon: FileUp,
+              targetPath: '/audit/emission-reports',
+            },
           ],
         },
         {

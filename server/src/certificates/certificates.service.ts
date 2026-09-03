@@ -136,7 +136,10 @@ export class CertificatesService {
 
       await this.prisma.bursaOrder.update({
         where: { id: order.id },
-        data: { volumeTco2e: orderVol - deduct },
+        data: {
+          volumeTco2e: orderVol - deduct,
+          retiredVolumeTco2e: { increment: deduct },
+        },
       });
 
       remainingToDeduct -= deduct;

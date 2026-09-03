@@ -30,6 +30,7 @@ export default [
       route('drone', 'routes/auditor/drone.tsx'),
       route('gate', 'routes/auditor/gate.tsx'),
       route('audit/ptbae', 'routes/auditor/ptbae.tsx'),
+      route('audit/emission-reports', 'routes/auditor/emission-reports.tsx'),
     ]),
 
     // KTH Protected Routes

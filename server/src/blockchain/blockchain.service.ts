@@ -644,6 +644,38 @@ export class BlockchainService implements OnModuleInit {
     }
   }
 
+  async auditEmissionReport(
+    reportId: number,
+    decision: 'approve' | 'request_revision',
+    notes: string,
+  ): Promise<{ txHash: string }> {
+    const contract = this.ensureRegistry();
+    if (!Number.isInteger(reportId) || reportId <= 0) {
+      throw new InternalServerErrorException('Invalid blockchain report ID');
+    }
+
+    const status = decision === 'approve' ? 2 : 3;
+
+    try {
+      const tx = await contract.auditReport(reportId, status, notes, {
+        gasPrice: 0,
+      });
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+      return { txHash: receipt.hash };
+    } catch (error: unknown) {
+      this.logger.error('Error auditing emission report:', error);
+      const errorRecord = error as Record<string, unknown>;
+      const message =
+        typeof errorRecord.message === 'string'
+          ? errorRecord.message
+          : String(error);
+      throw new Error(
+        `Failed to record emission report audit on-chain: ${message.substring(0, 500)}`,
+      );
+    }
+  }
+
   async anchorPtbaeApplication(
     applicationId: string,
     version: number,

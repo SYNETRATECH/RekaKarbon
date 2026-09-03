@@ -16,5 +16,33 @@ export const BursaItemSchema = z.object({
   supplyPercent: PercentageSchema,
 });
 
+export const BursaEligibilityReasonSchema = z.enum([
+  'eligible',
+  'company_unavailable',
+  'wallet_unavailable',
+  'report_not_submitted',
+  'report_pending_audit',
+  'report_revision_required',
+  'ptbae_unavailable',
+  'no_deficit',
+  'offset_tokens_available',
+]);
+
+export const BursaPurchaseEligibilitySchema = z.object({
+  canPurchase: z.boolean(),
+  reason: BursaEligibilityReasonSchema,
+  message: z.string().min(1),
+  complianceYear: z.number().int().nullable(),
+  reportId: UuidSchema.nullable(),
+  reportStatus: z.string().nullable(),
+  approvedEmissionsTCO2e: CarbonVolumeSchema.nullable(),
+  ptbaeQuotaTCO2e: CarbonVolumeSchema.nullable(),
+  retiredTCO2e: CarbonVolumeSchema,
+  availableTokenBalanceTCO2e: CarbonVolumeSchema,
+  complianceDeficitTCO2e: CarbonVolumeSchema.nullable(),
+  purchaseRequirementTCO2e: CarbonVolumeSchema,
+});
+
 export type BursaCategoryType = z.infer<typeof BursaCategorySchema>;
 export type BursaItemType = z.infer<typeof BursaItemSchema>;
+export type BursaPurchaseEligibilityType = z.infer<typeof BursaPurchaseEligibilitySchema>;

@@ -19,6 +19,8 @@ export type { PtbaeApplicationRepository } from './ptbae-application.repository'
 
 export { reportRepository } from './report.repository';
 export type { ReportRepository } from './report.repository';
+export { emissionReportAuditRepository } from './emission-report-audit.repository';
+export type { EmissionReportAuditRepository } from './emission-report-audit.repository';
 
 export { certificateRepository } from './certificate.repository';
 export type { CertificateRepository } from './certificate.repository';
