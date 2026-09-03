@@ -134,31 +134,33 @@ Rather than generating arbitrary random numbers, the engine enforces strict phys
      For sectors with clinker calcination process emissions (`has_process_emissions = true`), clinker output is derived from chemical stoichiometry ($0.525\text{ tCO}_2\text{e/ton}$).
 2. **Econometric Market Pricing Calibration**:
    - Utility expenditures are computed from real Indonesian market price brackets with stochastic transaction variance:
-     - High-Speed Diesel / Solar: $Rp\, 19{,}000\text{--}23{,}000 / \text{L}$ (BPH Migas industrial price range).
-     - Steam Coal: $Rp\, 1{,}000\text{--}1{,}400 / \text{kg}$.
-     - Natural Gas: $Rp\, 8{,}500\text{--}11{,}500 / \text{m}^3$.
-     - PLN Industrial Grid Tariff: $Rp\, 1{,}350\text{--}1{,}750 / \text{kWh}$ (PLN B3/I3 medium/heavy industrial tariff).
+     - High-Speed Diesel / Solar: Rp 19,000 – 23,000 / L (BPH Migas industrial price range).
+     - Steam Coal: Rp 1,000 – 1,400 / kg.
+     - Natural Gas: Rp 8,500 – 11,500 / m³.
+     - PLN Industrial Grid Tariff: Rp 1,350 – 1,750 / kWh (PLN B3/I3 medium/heavy industrial tariff).
 3. **Bernoulli Modeling of Scope 3 Optionality**:
    - Reflecting Indonesian SME and industrial realities, Scope 3 reporting is governed by a Bernoulli random variable:
-     $$P(\text{Scope 3 Reported}) = 0.35$$
-   - When Scope 3 is inactive ($65\%$ of cases), its emission share is dynamically reallocated to Scope 1 ($60\%$) and Scope 2 ($40\%$), and Scope 3 is recorded as $0.0\text{ tCO}_2\text{e}$. The model and evaluation gates treat Scope 3 = 0 as fully compliant, guaranteeing zero false-positive penalties.
+     $$
+     P(\text{Scope 3 Reported}) = 0.35
+     $$
+   - When Scope 3 is inactive (65% of cases), its emission share is dynamically reallocated to Scope 1 (60%) and Scope 2 (40%), and Scope 3 is recorded as 0.0 tCO₂e. The model and evaluation gates treat Scope 3 = 0 as fully compliant, guaranteeing zero false-positive penalties.
 4. **Multi-Modal Counterfactual Anomaly Injections**:
-   The generator injects 6 specific, realistic industrial anomaly vectors ($15\%$ anomaly ratio):
-   - `SCOPE1_UNDERREPORTING_FRAUD` ($3.5\%$): High physical fuel burned, but Scope 1 reported fraudulently low ($18\text{--}42\%$ of true emissions) for greenwashing.
-   - `SCOPE2_ELECTRICITY_MISMATCH` ($2.5\%$): High metered PLN electricity consumed, but Scope 2 omitted or suppressed ($15\text{--}38\%$).
-   - `SCOPE_MATH_DISCREPANCY` ($2.5\%$): Arithmetic tampering where declared total does not match $\text{Scope 1} + \text{Scope 2} + \text{Scope 3}$ ($> 25\%$ error).
-   - `FUEL_PRICE_INVOICE_FRAUD` ($2.5\%$): Fake e-Faktur unit price claims (e.g. reporting subsidized solar at $Rp\, 800/\text{L}$ instead of industrial market price).
-   - `EXTREME_YOY_COLLAPSE` ($2.0\%$): Sudden $>75\%$ collapse in YoY emissions without physical factory output contraction.
-   - `SECTOR_INTENSITY_ANOMALY` ($2.0\%$): Output violates sectoral thermodynamic limits ($\ll \text{min\_intensity}$).
+   The generator injects 6 specific, realistic industrial anomaly vectors (15% anomaly ratio):
+   - `SCOPE1_UNDERREPORTING_FRAUD` (3.5%): High physical fuel burned, but Scope 1 reported fraudulently low (18%–42% of true emissions) for greenwashing.
+   - `SCOPE2_ELECTRICITY_MISMATCH` (2.5%): High metered PLN electricity consumed, but Scope 2 omitted or suppressed (15%–38%).
+   - `SCOPE_MATH_DISCREPANCY` (2.5%): Arithmetic tampering where declared total does not match `Scope 1 + Scope 2 + Scope 3` (> 25% error).
+   - `FUEL_PRICE_INVOICE_FRAUD` (2.5%): Fake e-Faktur unit price claims (e.g. reporting subsidized solar at Rp 800 / L instead of industrial market price).
+   - `EXTREME_YOY_COLLAPSE` (2.0%): Sudden > 75% collapse in YoY emissions without physical factory output contraction.
+   - `SECTOR_INTENSITY_ANOMALY` (2.0%): Output violates sectoral thermodynamic limits (`intensity << min_intensity`).
 
 #### C. Dataset Lineage & Stratified Splitting
 
 - **Total Population**: 2,500 company filings across the 6 Indonesian industrial sectors.
-- **Class Balance**: 2,125 normal compliant filings ($85.0\%$) and 375 anomalous filings ($15.0\%$).
+- **Class Balance**: 2,125 normal compliant filings (85.0%) and 375 anomalous filings (15.0%).
 - **Stratified Partitioning**:
-  - `data/splits/train.csv`: 1,750 records ($70.0\%$).
-  - `data/splits/val.csv`: 375 records ($15.0\%$).
-  - `data/splits/test.csv`: 375 records ($15.0\%$).
+  - `data/splits/train.csv`: 1,750 records (70.0%).
+  - `data/splits/val.csv`: 375 records (15.0%).
+  - `data/splits/test.csv`: 375 records (15.0%).
     Stratified across both `is_anomaly` and `sector` to eliminate distribution shift between training and holdout evaluation.
 
 ---
