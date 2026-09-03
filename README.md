@@ -67,8 +67,10 @@ graph TD
 
 ### 3. 🌿 AI/ML Engine (`ml/`)
 
-- Industrial emission anomaly detection combining IPCC Tier-2 stoichiometric physical combustion modeling, DJP e-Faktur fuel price checks, and unsupervised multivariate Isolation Forest isolation.
-- Fully validated across **9 MLOps testing layers** with automated quality gates ($F_1 = 0.9787$, $\text{ROC-AUC} = 0.9972$, $100\%$ under-reporting catch rate).
+- Industrial emission anomaly detection adhering to the **GHG Protocol Corporate Standard** (Scope 1 direct combustion & IPPU, Scope 2 purchased electricity, and fully optional Scope 3 value chain).
+- 20-dimensional physical stoichiometric modeling, DJP e-Faktur price boundary checks, dynamic sector configuration via `sectors.json`, and unsupervised multivariate Isolation Forest isolation.
+- Built as a **Verificator Decision Support** copilot providing risk priority tiers (`critical`, `high`, `medium`, `low`), multi-tier trust scores, scope-by-scope diagnostics, and XAI recommendations.
+- Fully validated across **9 MLOps testing layers** (37 / 37 tests passing, $100\%$ numerical ONNX parity, $F_1 = 1.0000$, $\text{ROC-AUC} = 0.9845$, $0.0\%$ False Positive Rate).
 - Tech: Python 3.13, Scikit-Learn, `skl2onnx`, ONNX Runtime, Pydantic, Streamlit Studio, Pytest.
 
 ### 4. ⛓️ Blockchain & Smart Contracts (`blockchain/`)

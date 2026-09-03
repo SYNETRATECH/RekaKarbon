@@ -16,7 +16,7 @@ server/src/
 │   ├── dto/         # Audit query and emission report validation DTOs
 │   ├── types/       # Audit and ML result interfaces
 │   ├── ml-audit-engine.service.ts # Real-time ONNX runtime execution & multi-tier audit rules
-│   ├── ml-feature-engineer.ts    # 15-dimensional physical & econometric feature extractor
+│   ├── ml-feature-engineer.ts    # 20-dimensional GHG Protocol physical & fiscal feature extractor
 │   └── audit.controller.ts       # REST endpoints including POST /audit/evaluate-emission
 ├── blockchain/      # Ethers.js client, ERC-20 Carbon Token minting, retirement & burn listeners
 ├── marketplace/     # Bursa Karbon orderbook, trade settlement, and bid/ask matching
@@ -33,12 +33,13 @@ The server directly executes the trained machine learning pipeline without requi
 ### How it Works:
 
 1. **Model Graph Loading**: On application startup (`onModuleInit`), `MlAuditEngineService` loads `ml/models/anomaly_pipeline.onnx` into memory using Microsoft's `onnxruntime-node` C++ runtime.
-2. **Feature Transformation**: When an emitter submits emission data, `EmissionFeatureEngineer` computes 15 derived physical parameters:
-   - Stoichiometric combustion balance (IPCC Tier-2 & KLHK factors).
+2. **Feature Transformation**: When an emitter submits emission data, `EmissionFeatureEngineer` computes the **20 derived physical & fiscal parameters** defined in [`ml/README.md`](../ml/README.md):
+   - GHG Protocol Scope 1 stoichiometric combustion balance & Scope 2 PLN grid divergence.
+   - Mathematical summation discrepancy detection ($\text{Scope 1} + \text{Scope 2} + \text{Scope 3} \neq \text{Total}$).
    - DJP e-Faktur fuel unit price validation (Rp 16,000 – 25,000 / L index).
-   - Sector carbon intensity Z-scores across 6 Indonesian industrial sectors.
-3. **ONNX Graph Inference**: The 15-dimensional Float32 tensor is executed asynchronously in the ONNX graph (`IsolationForest + RobustScaler`).
-4. **Diagnostic Verdict**: The service combines the raw ML outlier score with fiscal & physical checks to return a comprehensive diagnostic payload (`isAnomaly`, `verdict`, `trustScore`, `scoreDjp`, `scoreBbm`, `scoreCems`, `flags`, `explanation`).
+   - Sector carbon intensity Z-scores across 6 Indonesian industrial sectors configured in `ml/data/sectors.json`.
+3. **ONNX Graph Inference**: The 20-dimensional Float32 tensor is executed asynchronously in the ONNX graph (`IsolationForest + RobustScaler`).
+4. **Verificator Decision Support Payload**: The service combines the raw ML outlier score with fiscal & physical checks to return a comprehensive diagnostic payload (`priority`, `verdict`, `trustScore`, `scopeDiagnostics`, `flags`, `xai`).
 
 ---
 
