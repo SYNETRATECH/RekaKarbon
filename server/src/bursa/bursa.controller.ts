@@ -43,6 +43,18 @@ export class BursaController {
   }
 
   @ApiOperation({
+    summary: 'Retrieve the authenticated emitter carbon purchase eligibility',
+  })
+  @ApiResponse({ status: 200, description: 'Purchase eligibility retrieved.' })
+  @Get('eligibility')
+  async getPurchaseEligibility(@Req() req: AuthenticatedRequest) {
+    const data = await this.bursaService.getPurchaseEligibility(
+      req.user.userId,
+    );
+    return { success: true, data };
+  }
+
+  @ApiOperation({
     summary: 'Buy Carbon Token (SPE-GRK) from Bursa DEX',
   })
   @ApiResponse({

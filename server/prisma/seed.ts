@@ -39,6 +39,271 @@ const prisma = new PrismaClient({ adapter });
 
 const DEFAULT_SEED_PASSWORD = 'password123';
 
+const ADDITIONAL_EMITTERS = [
+  {
+    email: 'esg.bukitasam@rekakarbon.test',
+    fullName: 'Rina Lestari (ESG Manager PT Bukit Asam)',
+    walletAddress: '0x4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F',
+    companyName: 'PT Bukit Asam Tbk',
+    sector: 'Pertambangan Batubara',
+    region: 'Tanjung Enim, Sumatera Selatan',
+    latitude: -3.717,
+    longitude: 103.781,
+    emissionCapTco2e: 1200000,
+    actualEmissionTco2e: 1280000,
+    carbonDeficitTco2e: 80000,
+    offsetCostIdr: 2400000000,
+    complianceRating: ComplianceRating.NON_COMPLIANT,
+    stackSensorsDescription:
+      '6 titik CEMS pada unit pembangkit dan fasilitas pengolahan',
+    description: 'Akun uji emitter untuk sektor pertambangan dan energi.',
+  },
+  {
+    email: 'esg.indocement@rekakarbon.test',
+    fullName: 'Dimas Prakoso (Sustainability Lead PT Indocement)',
+    walletAddress: '0x5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A',
+    companyName: 'PT Indocement Tunggal Prakarsa Tbk',
+    sector: 'Industri Semen',
+    region: 'Citeureup, Jawa Barat',
+    latitude: -6.485,
+    longitude: 106.892,
+    emissionCapTco2e: 950000,
+    actualEmissionTco2e: 920000,
+    carbonDeficitTco2e: 0,
+    offsetCostIdr: 0,
+    complianceRating: ComplianceRating.COMPLIANT,
+    stackSensorsDescription: '8 titik CEMS kiln dan unit pembakaran klinker',
+    description: 'Akun uji emitter untuk sektor semen dan manufaktur.',
+  },
+  {
+    email: 'esg.chandraasri@rekakarbon.test',
+    fullName: 'Nadia Permata (ESG Manager PT Chandra Asri)',
+    walletAddress: '0x6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B',
+    companyName: 'PT Chandra Asri Pacific Tbk',
+    sector: 'Petrokimia dan Industri Kimia',
+    region: 'Cilegon, Banten',
+    latitude: -6.002,
+    longitude: 105.995,
+    emissionCapTco2e: 1500000,
+    actualEmissionTco2e: 1680000,
+    carbonDeficitTco2e: 180000,
+    offsetCostIdr: 5400000000,
+    complianceRating: ComplianceRating.WARNING,
+    stackSensorsDescription: '10 titik CEMS pada unit cracker dan boiler',
+    description: 'Akun uji emitter untuk sektor petrokimia.',
+  },
+  {
+    email: 'environment.pupukkuj@rekakarbon.test',
+    fullName: 'Fajar Nugroho (Environment Manager PT Pupuk Kujang)',
+    walletAddress: '0x7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C',
+    companyName: 'PT Pupuk Kujang',
+    sector: 'Industri Pupuk dan Amonia',
+    region: 'Cikampek, Jawa Barat',
+    latitude: -6.419,
+    longitude: 107.451,
+    emissionCapTco2e: 1100000,
+    actualEmissionTco2e: 1200000,
+    carbonDeficitTco2e: 100000,
+    offsetCostIdr: 3000000000,
+    complianceRating: ComplianceRating.NON_COMPLIANT,
+    stackSensorsDescription: '7 titik CEMS pada unit ammonia dan urea',
+    description: 'Akun uji emitter untuk sektor pupuk.',
+  },
+  {
+    email: 'sustainability.vale@rekakarbon.test',
+    fullName: 'Maya Sari (Sustainability Officer PT Vale Indonesia)',
+    walletAddress: '0x8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C7D',
+    companyName: 'PT Vale Indonesia Tbk',
+    sector: 'Pertambangan dan Pengolahan Nikel',
+    region: 'Sorowako, Sulawesi Selatan',
+    latitude: -2.529,
+    longitude: 121.36,
+    emissionCapTco2e: 1350000,
+    actualEmissionTco2e: 1310000,
+    carbonDeficitTco2e: 0,
+    offsetCostIdr: 0,
+    complianceRating: ComplianceRating.COMPLIANT,
+    stackSensorsDescription: '9 titik CEMS pada smelter dan pembangkit captive',
+    description: 'Akun uji emitter untuk sektor pertambangan mineral.',
+  },
+  {
+    email: 'esg.indahkiat@rekakarbon.test',
+    fullName: 'Arief Hidayat (ESG Manager PT Indah Kiat Pulp & Paper)',
+    walletAddress: '0x9D0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C7D8E',
+    companyName: 'PT Indah Kiat Pulp & Paper Tbk',
+    sector: 'Industri Pulp dan Kertas',
+    region: 'Perawang, Riau',
+    latitude: 0.647,
+    longitude: 101.577,
+    emissionCapTco2e: 1750000,
+    actualEmissionTco2e: 1900000,
+    carbonDeficitTco2e: 150000,
+    offsetCostIdr: 4500000000,
+    complianceRating: ComplianceRating.WARNING,
+    stackSensorsDescription:
+      '11 titik CEMS pada recovery boiler dan power plant',
+    description: 'Akun uji emitter untuk sektor pulp dan kertas.',
+  },
+  {
+    email: 'environment.gajah.tunggal@rekakarbon.test',
+    fullName: 'Salsa Maharani (Environment Lead PT Gajah Tunggal)',
+    walletAddress: '0x0E1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C7D8E9F',
+    companyName: 'PT Gajah Tunggal Tbk',
+    sector: 'Industri Ban dan Karet',
+    region: 'Tangerang, Banten',
+    latitude: -6.178,
+    longitude: 106.631,
+    emissionCapTco2e: 550000,
+    actualEmissionTco2e: 500000,
+    carbonDeficitTco2e: 0,
+    offsetCostIdr: 0,
+    complianceRating: ComplianceRating.COMPLIANT,
+    stackSensorsDescription: '4 titik CEMS pada boiler dan proses vulkanisasi',
+    description: 'Akun uji emitter untuk industri manufaktur.',
+  },
+  {
+    email: 'esg.semenindonesia@rekakarbon.test',
+    fullName: 'Bagas Wicaksono (Sustainability Lead PT Semen Indonesia)',
+    walletAddress: '0x1F2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C7D8E9F0A',
+    companyName: 'PT Semen Indonesia (Persero) Tbk',
+    sector: 'Industri Semen dan Bahan Bangunan',
+    region: 'Gresik, Jawa Timur',
+    latitude: -7.155,
+    longitude: 112.655,
+    emissionCapTco2e: 1250000,
+    actualEmissionTco2e: 1420000,
+    carbonDeficitTco2e: 170000,
+    offsetCostIdr: 5100000000,
+    complianceRating: ComplianceRating.NON_COMPLIANT,
+    stackSensorsDescription: '9 titik CEMS pada kiln dan unit pembakaran',
+    description: 'Akun uji emitter untuk sektor semen.',
+  },
+  {
+    email: 'sustainability.amman@rekakarbon.test',
+    fullName: 'Taufik Ramadhan (Sustainability Manager PT Amman Mineral)',
+    walletAddress: '0x2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C7D8E9F0A1B',
+    companyName: 'PT Amman Mineral Nusa Tenggara',
+    sector: 'Pertambangan dan Pengolahan Mineral',
+    region: 'Sumbawa Barat, Nusa Tenggara Barat',
+    latitude: -8.966,
+    longitude: 116.842,
+    emissionCapTco2e: 1600000,
+    actualEmissionTco2e: 1530000,
+    carbonDeficitTco2e: 0,
+    offsetCostIdr: 0,
+    complianceRating: ComplianceRating.COMPLIANT,
+    stackSensorsDescription:
+      '8 titik CEMS pada fasilitas pengolahan dan pembangkit',
+    description: 'Akun uji emitter untuk sektor pertambangan mineral.',
+  },
+  {
+    email: 'esg.unilever@rekakarbon.test',
+    fullName: 'Citra Anindita (ESG Manager PT Unilever Indonesia)',
+    walletAddress: '0x3B4C5D6E7F8A9B0C1D2E3F4A5B6C7D8E9F0A1B2C',
+    companyName: 'PT Unilever Indonesia Tbk',
+    sector: 'Industri Barang Konsumsi',
+    region: 'Cikarang, Jawa Barat',
+    latitude: -6.307,
+    longitude: 107.172,
+    emissionCapTco2e: 420000,
+    actualEmissionTco2e: 450000,
+    carbonDeficitTco2e: 30000,
+    offsetCostIdr: 900000000,
+    complianceRating: ComplianceRating.WARNING,
+    stackSensorsDescription: '3 titik CEMS pada boiler dan fasilitas utilitas',
+    description: 'Akun uji emitter untuk sektor barang konsumsi.',
+  },
+] as const;
+
+async function seedAdditionalEmitterAccounts(
+  passwordHash: string,
+): Promise<void> {
+  for (const emitter of ADDITIONAL_EMITTERS) {
+    const user = await prisma.user.upsert({
+      where: { email: emitter.email },
+      update: {
+        passwordHash,
+        fullName: emitter.fullName,
+        role: Role.emitter,
+        status: UserStatus.ACTIVE,
+        walletAddress: emitter.walletAddress,
+      },
+      create: {
+        id: randomUUID(),
+        email: emitter.email,
+        passwordHash,
+        fullName: emitter.fullName,
+        role: Role.emitter,
+        status: UserStatus.ACTIVE,
+        walletAddress: emitter.walletAddress,
+      },
+    });
+
+    const companyData = {
+      name: emitter.companyName,
+      sector: emitter.sector,
+      region: emitter.region,
+      latitude: emitter.latitude,
+      longitude: emitter.longitude,
+      emissionCapTco2e: emitter.emissionCapTco2e,
+      actualEmissionTco2e: emitter.actualEmissionTco2e,
+      carbonDeficitTco2e: emitter.carbonDeficitTco2e,
+      offsetCostIdr: emitter.offsetCostIdr,
+      complianceRating: emitter.complianceRating,
+      auditDate: new Date('2026-06-01'),
+      paymentDeadline: new Date('2026-12-31'),
+      stackSensorsDescription: emitter.stackSensorsDescription,
+      picAuditor: 'Dr. Ir. Rian Hermawan (PT Sucofindo Verifier)',
+      description: emitter.description,
+    };
+
+    const existingCompany = await prisma.company.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+
+    const company = existingCompany
+      ? await prisma.company.update({
+          where: { id: existingCompany.id },
+          data: companyData,
+        })
+      : await prisma.company.create({
+          data: {
+            id: randomUUID(),
+            userId: user.id,
+            ...companyData,
+          },
+        });
+
+    const existingAllocation = await prisma.ptbaeAllocation.findUnique({
+      where: {
+        companyId_complianceYear: {
+          companyId: company.id,
+          complianceYear: 2026,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!existingAllocation) {
+      await prisma.ptbaeAllocation.create({
+        data: {
+          companyId: company.id,
+          complianceYear: 2026,
+          quotaTco2e: emitter.emissionCapTco2e,
+          sourceDocument:
+            'Data seed kompatibilitas; ganti dengan dokumen PTBAE-PU resmi perusahaan',
+          status: PtbaeStatus.LEGACY,
+          assignedAt: new Date('2026-01-01T00:00:00.000Z'),
+          notes:
+            'Nilai ini hanya untuk pengujian. Nilai resmi harus ditetapkan per perusahaan dan tahun.',
+        },
+      });
+    }
+  }
+}
+
 async function main() {
   console.log('🌱 Starting comprehensive RekaKarbon PostgreSQL seeding...');
   console.log(
@@ -47,6 +312,15 @@ async function main() {
 
   // Generate genuine cryptographically secure bcrypt hash at runtime (10 rounds)
   const defaultPasswordHash = await bcrypt.hash(DEFAULT_SEED_PASSWORD, 10);
+
+  if (process.env.SEED_ONLY_ADDITIONAL_EMITTERS === 'true') {
+    console.log(
+      '🏭 Seeding 10 additional emitter accounts without deleting existing data...',
+    );
+    await seedAdditionalEmitterAccounts(defaultPasswordHash);
+    console.log('✅ Additional emitter accounts are ready for testing.');
+    return;
+  }
 
   // 1. Clean existing records in strict reverse dependency order
   console.log('🧹 Purging existing database tables...');
@@ -126,7 +400,7 @@ async function main() {
     },
   });
 
-  const userMinistry = await prisma.user.create({
+  await prisma.user.create({
     data: {
       id: userMinistryId,
       email: 'kementerian@rekakarbon.go.id',
@@ -339,7 +613,7 @@ async function main() {
     },
   });
 
-  const companyPertamina = await prisma.company.create({
+  await prisma.company.create({
     data: {
       id: randomUUID(),
       userId: userEmitter3.id,
@@ -362,7 +636,7 @@ async function main() {
     },
   });
 
-  const companyPupukKaltim = await prisma.company.create({
+  await prisma.company.create({
     data: {
       id: randomUUID(),
       userId: userEmitter4.id,
@@ -385,7 +659,7 @@ async function main() {
     },
   });
 
-  const companyKrakatauSteel = await prisma.company.create({
+  await prisma.company.create({
     data: {
       id: randomUUID(),
       userId: userEmitter5.id,
@@ -784,39 +1058,9 @@ async function main() {
     },
   });
 
-  // --- 10 TEST EMITTERS ---
-  console.log('🏭 Seeding 10 Emitter users for testing...');
-  for (let i = 1; i <= 10; i++) {
-    const uId = randomUUID();
-    await prisma.user.create({
-      data: {
-        id: uId,
-        email: `tester${i}@emitter.com`,
-        passwordHash: defaultPasswordHash,
-        fullName: `Tester Emitter ${i}`,
-        role: Role.emitter,
-        status: UserStatus.ACTIVE,
-        walletAddress: `0xTESTERWALLET${i.toString().padStart(4, '0')}`,
-      },
-    });
-    await prisma.company.create({
-      data: {
-        id: randomUUID(),
-        userId: uId,
-        name: `PT Tester Emitter ${i}`,
-        sector: 'Manufaktur Umum',
-        region: 'Jawa Barat',
-        latitude: -6.0 + i * 0.01,
-        longitude: 106.0 + i * 0.01,
-        emissionCapTco2e: 500000.0,
-        actualEmissionTco2e: 450000.0,
-        carbonDeficitTco2e: 0.0,
-        offsetCostIdr: 0.0,
-        complianceRating: ComplianceRating.COMPLIANT,
-        auditDate: new Date('2026-05-01'),
-      },
-    });
-  }
+  // --- 10 ADDITIONAL EMITTERS ---
+  console.log('🏭 Seeding 10 additional emitter users for testing...');
+  await seedAdditionalEmitterAccounts(defaultPasswordHash);
 
   // 14b. Seed compatibility PTBAE allocations for every company.
   // These values mirror the legacy company cap until an official yearly allocation is uploaded.
@@ -917,6 +1161,11 @@ async function main() {
   console.log('• KEMENTERIAN_PTBAE:  kementerian@rekakarbon.go.id');
   console.log('• CORPORATE_EMITTER:  director@suralaya.co.id');
   console.log('• CORPORATE_EMITTER:  sustainability@sementuban.co.id');
+  for (const emitter of ADDITIONAL_EMITTERS) {
+    console.log(
+      `• TEST_EMITTER:        ${emitter.email} (${emitter.companyName})`,
+    );
+  }
   console.log('• KTH_COMMUNITY:      kth.tuban@perhutanan.id');
   console.log('• PUBLIC_BUYER:       investor@greenfund.sg');
   console.log(

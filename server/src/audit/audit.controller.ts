@@ -5,6 +5,7 @@ import {
   Param,
   Body,
   Query,
+  Req,
   UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -21,6 +22,8 @@ import {
   DroneQueryDto,
   VerifyAnomalyDto,
   AuditEmissionReportDto,
+  AuditEmissionReportDecisionDto,
+  AuditEmissionReportQueryDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -28,6 +31,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { AuditService } from './audit.service';
 import { MlAuditEngineService } from './ml-audit-engine.service';
+import { EmissionReportAuditService } from './emission-report-audit.service';
+import type { AuthenticatedRequest } from '../auth/types';
 
 @ApiTags('Audit & dMRV Verification')
 @ApiBearerAuth('JWT-auth')
@@ -38,7 +43,54 @@ export class AuditController {
   constructor(
     private readonly auditService: AuditService,
     private readonly mlAuditEngineService: MlAuditEngineService,
+    private readonly emissionReportAuditService: EmissionReportAuditService,
   ) {}
+
+  @ApiOperation({
+    summary: 'Retrieve emission reports awaiting Auditor review',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Emission report audit queue retrieved.',
+  })
+  @Get('emission-reports')
+  async getEmissionReportQueue(@Query() query: AuditEmissionReportQueryDto) {
+    const data = await this.emissionReportAuditService.getQueue(query);
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve one emission report for audit' })
+  @ApiResponse({
+    status: 200,
+    description: 'Emission report audit detail retrieved.',
+  })
+  @ApiParam({ name: 'id', description: 'Emission report ID (UUID)' })
+  @Get('emission-reports/:id')
+  async getEmissionReportDetail(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    const data = await this.emissionReportAuditService.getDetail(id);
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Approve or request revision for an emission report',
+  })
+  @ApiResponse({ status: 200, description: 'Audit decision recorded.' })
+  @ApiParam({ name: 'id', description: 'Emission report ID (UUID)' })
+  @Post('emission-reports/:id/decision')
+  async decideEmissionReport(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() dto: AuditEmissionReportDecisionDto,
+  ) {
+    const data = await this.emissionReportAuditService.decide(
+      id,
+      req.user.userId,
+      dto,
+    );
+    return { success: true, data };
+  }
 
   @ApiOperation({
     summary:
