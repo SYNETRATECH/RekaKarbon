@@ -111,7 +111,58 @@ To ensure data quality, regulatory adherence, and prevent evaluation leakage, th
 
 ---
 
-### 2. Raw Feature Input Specification
+### 2. Dataset Generation Methodology: Physics-Informed Parametric Monte Carlo
+
+The raw training and holdout datasets (`ml/data/raw/raw_emissions.csv`, `data/splits/train.csv`, `val.csv`, `test.csv`) are generated via [`EmissionDataGenerator`](src/rekakarbon_ml/data/generator.py) using a **Physics-Informed Parametric Monte Carlo Generative Engine**.
+
+#### A. Rationale for Synthetic Generation in Carbon dMRV & Taxation
+
+1. **Confidentiality & Tax Secrecy (UU KUP No. 28/2007 & UU HPP No. 7/2021)**: Real-world company monthly fuel invoices, PLN utility billing receipts, and DJP e-Faktur tax records are legally classified as strictly confidential proprietary commercial secrets. Unredacted transaction logs are not publicly disclosable under Indonesian law.
+2. **Extreme Ground-Truth Fraud Scarcity**: In public carbon registries (e.g., KLHK SRN-PPI, IDXCarbon), $> 99.5\%$ of filings are formally accepted as compliant. Verified, ground-truth labeled corporate fraud attempts (e.g. deliberate $70\%$ under-reporting or calcination suppression) are virtually absent in open datasets.
+3. **Counterfactual Stress-Testing**: Developing an effective anomaly detection and auditor-copilot engine requires deterministic ground-truth labels across diverse multi-modal fraud mechanisms to verify model recall and prevent false-negative evasion.
+
+#### B. Generation Framework & Core Techniques
+
+Rather than generating arbitrary random numbers, the engine enforces strict physical, econometric, and sectoral constraints:
+
+1. **Thermodynamic Inverse Decomposition**:
+   - The generator samples operational production scale $P \sim \mathcal{U}(\text{min}, \text{max})$ and sectoral carbon intensity $I \sim \mathcal{N}_{\text{clipped}}(\mu_{\text{sector}}, \sigma_{\text{sector}})$ from [`data/sectors.json`](data/sectors.json).
+   - Expected emissions $E_{\text{expected}} = P \times I$ are partitioned into Scope 1 and Scope 2 based on empirical sectoral priors (`expected_scope_shares`).
+   - The generator then **reverse-calculates physical fuel volumes** using official IPCC Tier-2 and ESDM stoichiometric combustion factors:
+     $$\text{Diesel (L)} = \frac{E_{\text{diesel}}}{0.002512 \text{ tCO}_2\text{e/L}}, \quad \text{Coal (kg)} = \frac{E_{\text{coal}}}{0.002531 \text{ tCO}_2\text{e/kg}}, \quad \text{PLN (kWh)} = \frac{E_{\text{Scope 2}}}{0.000207 \text{ tCO}_2\text{e/kWh}}$$
+     For sectors with clinker calcination process emissions (`has_process_emissions = true`), clinker output is derived from chemical stoichiometry ($0.525\text{ tCO}_2\text{e/ton}$).
+2. **Econometric Market Pricing Calibration**:
+   - Utility expenditures are computed from real Indonesian market price brackets with stochastic transaction variance:
+     - High-Speed Diesel / Solar: $Rp\, 19{,}000\text{--}23{,}000 / \text{L}$ (BPH Migas industrial price range).
+     - Steam Coal: $Rp\, 1{,}000\text{--}1{,}400 / \text{kg}$.
+     - Natural Gas: $Rp\, 8{,}500\text{--}11{,}500 / \text{m}^3$.
+     - PLN Industrial Grid Tariff: $Rp\, 1{,}350\text{--}1{,}750 / \text{kWh}$ (PLN B3/I3 medium/heavy industrial tariff).
+3. **Bernoulli Modeling of Scope 3 Optionality**:
+   - Reflecting Indonesian SME and industrial realities, Scope 3 reporting is governed by a Bernoulli random variable:
+     $$P(\text{Scope 3 Reported}) = 0.35$$
+   - When Scope 3 is inactive ($65\%$ of cases), its emission share is dynamically reallocated to Scope 1 ($60\%$) and Scope 2 ($40\%$), and Scope 3 is recorded as $0.0\text{ tCO}_2\text{e}$. The model and evaluation gates treat Scope 3 = 0 as fully compliant, guaranteeing zero false-positive penalties.
+4. **Multi-Modal Counterfactual Anomaly Injections**:
+   The generator injects 6 specific, realistic industrial anomaly vectors ($15\%$ anomaly ratio):
+   - `SCOPE1_UNDERREPORTING_FRAUD` ($3.5\%$): High physical fuel burned, but Scope 1 reported fraudulently low ($18\text{--}42\%$ of true emissions) for greenwashing.
+   - `SCOPE2_ELECTRICITY_MISMATCH` ($2.5\%$): High metered PLN electricity consumed, but Scope 2 omitted or suppressed ($15\text{--}38\%$).
+   - `SCOPE_MATH_DISCREPANCY` ($2.5\%$): Arithmetic tampering where declared total does not match $\text{Scope 1} + \text{Scope 2} + \text{Scope 3}$ ($> 25\%$ error).
+   - `FUEL_PRICE_INVOICE_FRAUD` ($2.5\%$): Fake e-Faktur unit price claims (e.g. reporting subsidized solar at $Rp\, 800/\text{L}$ instead of industrial market price).
+   - `EXTREME_YOY_COLLAPSE` ($2.0\%$): Sudden $>75\%$ collapse in YoY emissions without physical factory output contraction.
+   - `SECTOR_INTENSITY_ANOMALY` ($2.0\%$): Output violates sectoral thermodynamic limits ($\ll \text{min\_intensity}$).
+
+#### C. Dataset Lineage & Stratified Splitting
+
+- **Total Population**: 2,500 company filings across the 6 Indonesian industrial sectors.
+- **Class Balance**: 2,125 normal compliant filings ($85.0\%$) and 375 anomalous filings ($15.0\%$).
+- **Stratified Partitioning**:
+  - `data/splits/train.csv`: 1,750 records ($70.0\%$).
+  - `data/splits/val.csv`: 375 records ($15.0\%$).
+  - `data/splits/test.csv`: 375 records ($15.0\%$).
+    Stratified across both `is_anomaly` and `sector` to eliminate distribution shift between training and holdout evaluation.
+
+---
+
+### 3. Raw Feature Input Specification
 
 Every company emission report provides 17 raw parameters across GHG scopes, physical energy consumption, and utility expenditures:
 
@@ -137,7 +188,7 @@ Every company emission report provides 17 raw parameters across GHG scopes, phys
 
 ---
 
-### 3. Stoichiometric Energy Balance & 20 Derived Features
+### 4. Stoichiometric Energy Balance & 20 Derived Features
 
 The `EmissionFeatureEngineer` (`src/rekakarbon_ml/training/transformers.py`) transforms the 17 raw features into **20 domain-engineered indicators**:
 
@@ -173,7 +224,7 @@ $$E_{\text{Scope2, expected}} = \max(E_{\text{pln}},\, 0.001)$$
 
 ---
 
-### 4. Verificator Decision Support Architecture & XAI
+### 5. Verificator Decision Support Architecture & XAI
 
 The engine is engineered as a **decision-support copilot** for human auditors. Output diagnostics include:
 

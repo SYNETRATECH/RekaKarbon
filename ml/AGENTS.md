@@ -123,6 +123,7 @@ ml/
 ### 3. Configurable Sector Governance & Data Preparation
 
 - **Dynamic Sectors**: Industrial sectors MUST NOT be hardcoded in Python code. All sector definitions, reference thresholds, and intensity priors MUST be defined in `ml/data/sectors.json` and loaded via `SectorBenchmarkLoader`.
+- **Synthetic Data Generation Standards**: All synthetic datasets generated via `EmissionDataGenerator` (`generator.py`) MUST adhere to Physics-Informed Parametric Monte Carlo sampling—incorporating stoichiometric inverse fuel decomposition, Bernoulli Scope 3 optionality ($P=0.35$), and Indonesian market pricing brackets without arbitrary numbers.
 - **Batch Validation**: All raw batch datasets processed by `preprocess.py` MUST be validated against `validate_raw_dataframe()` in `src/rekakarbon_ml/data/validator.py` to ensure schema compliance before feature derivation.
 - **Stratified Dataset Splitting**: Splitting into `train.csv`, `val.csv`, and `test.csv` MUST be stratified on `is_anomaly` and `sector` to eliminate distribution shift between training and test holdouts.
 - **Feature Registry & Manifest**: Any new feature added to `transformers.py` MUST be declared in `FEATURE_REGISTRY` in `src/rekakarbon_ml/data/feature_registry.py` with physical units, description, and formula.
