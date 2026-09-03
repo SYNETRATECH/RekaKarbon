@@ -60,7 +60,7 @@ export default function PortalTransparansiRoute() {
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 w-full max-w-[1600px] mx-auto relative mt-20">
+        <main className="flex-1 w-full relative mt-20">
           {/* FLOATING HEADER & SWITCHER (Top Left) */}
           <div className="absolute top-6 left-6 pointer-events-auto w-[340px] z-40">
             <div className="bg-white border border-slate-200/60 p-5 rounded-[32px] shadow-[0_16px_40px_rgba(0,0,0,0.1)] flex flex-col gap-5">

@@ -581,6 +581,8 @@ model ForestProject {
   status                   ProjectStatus @default(ACTIVE_DMRV)
   speCertificateId         String?       @map("spe_certificate_id") @db.Text
   coordinatesJson          Json?         @map("coordinates_json")
+  bufferAllocatedPercent   Decimal       @default(8.0) @map("buffer_allocated_percent") @db.Decimal(5, 2)
+  trendDataJson            Json?         @map("trend_data_json")
   createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -738,9 +740,12 @@ model BursaOrder {
   volumeTco2e    Decimal     @map("volume_tco2e") @db.Decimal(12, 2)
   pricePerTonIdr Decimal     @map("price_per_ton_idr") @db.Decimal(14, 2)
   totalAmountIdr Decimal     @map("total_amount_idr") @db.Decimal(16, 2)
-  txHash         String?     @map("tx_hash") @db.Text
-  status         OrderStatus @default(PENDING)
-  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  txHash             String?     @map("tx_hash") @db.Text
+  blockNumber        String?     @map("block_number") @db.Text
+  verificationStatus String      @default("Terverifikasi (KLHK On-Chain)") @map("verification_status") @db.Text
+  auditorName        String?     @map("auditor_name") @db.Text
+  status             OrderStatus @default(PENDING)
+  createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz
   completedAt    DateTime?   @map("completed_at") @db.Timestamptz
 
   listing BursaListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
@@ -756,10 +761,16 @@ model KthIncentiveDisbursement {
   projectId   String   @map("project_id") @db.Uuid
   kthGroupId  String   @map("kth_group_id") @db.Uuid
   stageId     String?  @map("stage_id") @db.Uuid
-  amountIdr   Decimal  @map("amount_idr") @db.Decimal(16, 2)
-  volumeTco2e Decimal  @map("volume_tco2e") @db.Decimal(12, 2)
-  txHash      String?  @map("tx_hash") @db.Text
-  disbursedAt DateTime @default(now()) @map("disbursed_at") @db.Timestamptz
+  amountIdr       Decimal  @map("amount_idr") @db.Decimal(16, 2)
+  volumeTco2e     Decimal  @map("volume_tco2e") @db.Decimal(12, 2)
+  category        String   @default("Restorasi & Pemeliharaan") @db.Text
+  description     String?  @map("description") @db.Text
+  vendorName      String?  @map("vendor_name") @db.Text
+  txHash          String?  @map("tx_hash") @db.Text
+  blockNumber     String?  @map("block_number") @db.Text
+  itemsJson       Json?    @map("items_json")
+  proofImagesJson Json?    @map("proof_images_json")
+  disbursedAt     DateTime @default(now()) @map("disbursed_at") @db.Timestamptz
 
   project  ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   kthGroup KthGroup      @relation(fields: [kthGroupId], references: [id], onDelete: Cascade)

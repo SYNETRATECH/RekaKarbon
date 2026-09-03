@@ -9,7 +9,7 @@
     "pnpm": "11.22.0"
   },
   "scripts": {
-    "dev": "pnpm dev:server & pnpm dev:client",
+    "dev": "concurrently -k -n \"server,client\" -c \"cyan,magenta\" \"pnpm server:dev\" \"pnpm client:dev\"",
     "build": "pnpm client:build && pnpm server:build",
     "start:prod": "pnpm build && (pnpm server:prod & pnpm client:preview)",
     "format:check": "prettier --check client server blockchain",
@@ -59,6 +59,7 @@
   },
   "type": "module",
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
     "prettier": "3.9.6"

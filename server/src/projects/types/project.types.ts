@@ -91,4 +91,6 @@ export interface Project {
   stages: ReforestationStage[];
   disbursementHistory: DisbursementItem[];
   tokenBuyers: TokenBuyer[];
+  emergencyFundAllocated?: number;
+  emergencyFundUsed?: number;
 }
