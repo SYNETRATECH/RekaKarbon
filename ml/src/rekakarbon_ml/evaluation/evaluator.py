@@ -26,7 +26,11 @@ from ..data.benchmark_loader import (
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
 )
-from ..pipeline.transformers import DERIVED_FEATURE_NAMES, RAW_FEATURE_COLUMNS
+from ..training.transformers import (
+    DERIVED_FEATURE_NAMES,
+    RAW_FEATURE_COLUMNS,
+    EmissionFeatureEngineer,
+)
 from .visualizer import ModelVisualizer
 
 QUALITY_GATE_THRESHOLDS = get_quality_gate_config().to_dict()
@@ -107,7 +111,9 @@ class ModelEvaluator:
             and fpr <= QUALITY_GATE_THRESHOLDS["max_false_positive_rate"]
         )
 
-        under_rep_recall = per_type_metrics.get("UNDER_REPORTING_FRAUD", {}).get("recall", 1.0)
+        under_rep_recall = per_type_metrics.get("SCOPE1_UNDERREPORTING_FRAUD", {}).get(
+            "recall", per_type_metrics.get("UNDER_REPORTING_FRAUD", {}).get("recall", 1.0)
+        )
         if under_rep_recall < QUALITY_GATE_THRESHOLDS["min_under_reporting_recall"]:
             passed_gates = False
 
@@ -145,17 +151,26 @@ class ModelEvaluator:
             cm_path = self.visualizer.plot_confusion_matrix(cm_dict)
             roc_path = self.visualizer.plot_roc_pr_curves(y_true, scores)
             recall_path = self.visualizer.plot_per_anomaly_type_recall(per_type_metrics)
+
+            transformer = EmissionFeatureEngineer()
+            features_matrix = transformer.transform(test_df)
+            features_df = pd.DataFrame(features_matrix, columns=DERIVED_FEATURE_NAMES)
+            shap_path = self.visualizer.plot_shap_summary(self.predictor, features_df)
+
             html_path = self.visualizer.generate_html_report(eval_results)
 
             eval_results["visual_artifacts"] = {
                 "confusion_matrix_plot": cm_path,
                 "roc_pr_curves_plot": roc_path,
                 "per_anomaly_recall_plot": recall_path,
+                "shap_summary_plot": shap_path,
                 "interactive_html_report": html_path,
             }
             print(f"  - Confusion Matrix plot saved to: {cm_path}")
             print(f"  - ROC & PR Curves plot saved to: {roc_path}")
             print(f"  - Per-Anomaly Recall plot saved to: {recall_path}")
+            if shap_path:
+                print(f"  - SHAP Summary plot saved to: {shap_path}")
             print(f"  - Interactive HTML report saved to: {html_path}")
 
         return eval_results
@@ -201,8 +216,7 @@ def generate_model_metadata(
 def main() -> None:
     import argparse
 
-    from ..config import DEFAULT_RANDOM_STATE
-    from ..data.generator import EmissionDataGenerator
+    from ..config import DEFAULT_RANDOM_STATE, get_dataset_config
     from ..inference.predictor import CarbonAnomalyPredictor
 
     parser = argparse.ArgumentParser(description="RekaKarbon ML Model Evaluation CLI")
@@ -230,7 +244,7 @@ def main() -> None:
     parser.add_argument(
         "--n-samples",
         type=int,
-        default=1000,
+        default=get_dataset_config().default_n_samples,
         help="Number of test samples if generating synthetic test data",
     )
     parser.add_argument(
@@ -258,18 +272,25 @@ def main() -> None:
     )
 
     # Load or generate test data
+    default_test_split = os.path.join(get_ml_config().paths.data_splits_dir, "test.csv")
     if args.test_data and os.path.exists(args.test_data):
-        print(f"Loading test dataset from {args.test_data}...")
+        print(f"Loading test dataset from specified path: {args.test_data}...")
         test_df = (
             pd.read_json(args.test_data)
             if args.test_data.endswith(".json")
             else pd.read_csv(args.test_data)
         )
+    elif os.path.exists(default_test_split):
+        print(f"Loading test dataset from default split: {default_test_split}...")
+        test_df = pd.read_csv(default_test_split)
     else:
-        print(f"Generating synthetic evaluation holdout set ({args.n_samples} samples)...")
-        gen = EmissionDataGenerator(random_state=DEFAULT_RANDOM_STATE)
-        _, _, test_df = gen.generate_train_val_test_splits(
-            n_total=args.n_samples, anomaly_ratio=0.15
+        print(
+            f"No test split found at {default_test_split}. Triggering preprocessing & split pipeline..."
+        )
+        from ..data.preprocess import preprocess_dataset
+
+        _, _, _, test_df = preprocess_dataset(
+            n_samples=args.n_samples, random_state=DEFAULT_RANDOM_STATE
         )
 
     visualizer = ModelVisualizer(output_dir=args.report_dir) if args.save_plots else None

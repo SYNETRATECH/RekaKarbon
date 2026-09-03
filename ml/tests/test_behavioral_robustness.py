@@ -9,8 +9,8 @@ import numpy as np
 import pytest
 
 from rekakarbon_ml.inference.predictor import CarbonAnomalyPredictor
-from rekakarbon_ml.pipeline.onnx_exporter import export_pipeline_to_onnx
-from rekakarbon_ml.pipeline.trainer import train_and_save_pipeline
+from rekakarbon_ml.training.onnx_exporter import export_pipeline_to_onnx
+from rekakarbon_ml.training.trainer import train_and_save_pipeline
 
 
 @pytest.fixture(scope="module")
@@ -50,12 +50,17 @@ def test_metamorphic_directional_under_reporting(predictor):
     }
 
     # Sequence of decreasing reported emissions
-    emissions_sequence = [48000.0, 30000.0, 15000.0, 3000.0]
+    emissions_sequence = [33000.0, 22000.0, 11000.0, 3000.0]
     divergences = []
     trust_scores = []
 
     for emiss in emissions_sequence:
-        rec = dict(base_record, reported_emissions_tco2e=emiss)
+        rec = dict(
+            base_record,
+            reported_scope1_tco2e=emiss * 0.9,
+            reported_scope2_tco2e=emiss * 0.1,
+            reported_emissions_tco2e=emiss,
+        )
         res = predictor.predict_single(rec)
         divergences.append(res["divergence_percent"])
         trust_scores.append(res["trust_score"])
@@ -128,13 +133,16 @@ def test_sensor_perturbation_noise_invariance(predictor):
     should preserve the 'PASS_VERIFIED' verdict.
     """
     base_compliant = {
-        "sector": "Pulp & Kertas",
-        "production_tonnes": 95000.0,
-        "reported_emissions_tco2e": 42000.0,
-        "historical_emissions_tco2e": 41000.0,
+        "sector": "manufaktur",
+        "production_tonnes": 120000.0,
+        "reported_scope1_tco2e": 35330.0,
+        "reported_scope2_tco2e": 690.0,
+        "reported_scope3_tco2e": 0.0,
+        "reported_emissions_tco2e": 36020.0,
+        "historical_emissions_tco2e": 36000.0,
         "stat_fuel_liters": 2200000.0,
         "mob_fuel_liters": 450000.0,
-        "biomass_tonnes": 12000.0,
+        "biomass_tonnes": 0.0,
         "clinker_tonnes": 0.0,
         "cost_solar_idr": 2200000.0 * 20500.0,
         "cost_coal_idr": 15727000000.0,
@@ -244,3 +252,56 @@ def test_xai_feature_attribution_diagnostics(predictor):
     assert "recommendation" in xai
     assert len(xai["top_anomaly_drivers"]) > 0
     assert xai["top_anomaly_drivers"][0]["impact_score"] > 0.0
+
+
+def test_optional_scope3_no_false_positive(predictor):
+    """
+    Business Requirement: Scope 3 is fully optional.
+    Companies reporting zero or absent Scope 3 must not be penalized.
+    """
+    compliant_scope3_zero = {
+        "sector": "manufaktur",
+        "production_tonnes": 100000.0,
+        "reported_scope1_tco2e": 15000.0,
+        "reported_scope2_tco2e": 5000.0,
+        "reported_scope3_tco2e": 0.0,
+        "reported_emissions_tco2e": 20000.0,
+        "historical_emissions_tco2e": 19800.0,
+        "stat_fuel_liters": (15000.0 * 0.8) / 0.002512,
+        "mob_fuel_liters": (15000.0 * 0.2) / 0.002512,
+        "electricity_kwh": 5000.0 / 0.000207,
+        "cost_solar_idr": ((15000.0 * 0.8) / 0.002512) * 20500.0,
+        "cost_pln_idr": (5000.0 / 0.000207) * 1500.0,
+    }
+    res = predictor.predict_single(compliant_scope3_zero)
+    assert res["is_anomaly"] is False
+    assert res["verdict"] == "PASS_VERIFIED"
+    assert res["trust_score"] >= 80.0
+    assert res["priority"] == "low"
+
+
+def test_scope_math_summation_discrepancy(predictor):
+    """
+    Mathematical Integrity Rule:
+    When reported_emissions_tco2e does not equal Scope 1 + Scope 2 + Scope 3,
+    the system must flag DISKREPANSI_PENJUMLAHAN_SCOPE and alert the auditor.
+    """
+    discrepancy_record = {
+        "sector": "manufaktur",
+        "production_tonnes": 100000.0,
+        "reported_scope1_tco2e": 15000.0,
+        "reported_scope2_tco2e": 5000.0,
+        "reported_scope3_tco2e": 1000.0,
+        "reported_emissions_tco2e": 10000.0,  # Reported 10k instead of 21k (sum is 21k)
+        "historical_emissions_tco2e": 10000.0,
+        "stat_fuel_liters": (15000.0 * 0.8) / 0.002512,
+        "mob_fuel_liters": (15000.0 * 0.2) / 0.002512,
+        "electricity_kwh": 5000.0 / 0.000207,
+        "cost_solar_idr": ((15000.0 * 0.8) / 0.002512) * 20500.0,
+        "cost_pln_idr": (5000.0 / 0.000207) * 1500.0,
+    }
+    res = predictor.predict_single(discrepancy_record)
+    assert res["is_anomaly"] is True
+    assert "DISKREPANSI_PENJUMLAHAN_SCOPE" in res["flags"]
+    assert res["scope_diagnostics"]["math_coherence"]["is_coherent"] is False
+    assert res["priority"] in ["high", "critical"]

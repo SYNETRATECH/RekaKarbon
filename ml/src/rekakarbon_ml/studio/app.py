@@ -17,7 +17,7 @@ from rekakarbon_ml.data.benchmark_loader import (
 )
 from rekakarbon_ml.data.generator import EmissionDataGenerator
 from rekakarbon_ml.inference.predictor import CarbonAnomalyPredictor
-from rekakarbon_ml.pipeline.onnx_exporter import verify_onnx_parity
+from rekakarbon_ml.training.onnx_exporter import verify_onnx_parity
 
 st.set_page_config(
     page_title="RekaKarbon AI dMRV - Anomaly Detection Studio",
@@ -90,129 +90,119 @@ with tab1:
             horizontal=True,
         )
 
-    # Preset Values Calculation based on sector
-    if preset == "Laporan Normal (Sesuai Standar)":
-        if selected_sector == "Semen & Bahan Bangunan":
-            default_prod = 500000.0
-            default_clinker = 360000.0
-            default_stat = 2500000.0
-            default_mob = 600000.0
-            default_bio = 5000.0
-            default_cost_solar = 2500000.0 * 20500.0
-            default_cost_coal = 75000000000.0
-            default_cost_gas = 0.0
-            default_cost_pln = 22000000000.0
-            default_reported = 325000.0
-            default_hist = 320000.0
-        elif selected_sector == "Kelapa Sawit & CPO":
-            default_prod = 150000.0
-            default_clinker = 0.0
-            default_stat = 1200000.0
-            default_mob = 800000.0
-            default_bio = 35000.0
-            default_cost_solar = 1200000.0 * 20500.0
-            default_cost_coal = 500000000.0
-            default_cost_gas = 0.0
-            default_cost_pln = 3500000000.0
-            default_reported = 27000.0
-            default_hist = 26500.0
-        else:
-            default_prod = 450000.0
-            default_clinker = 0.0
-            default_stat = 4850000.0
-            default_mob = 1240000.0
-            default_bio = 0.0
-            default_cost_solar = 4850000.0 * 20500.0
-            default_cost_coal = 12800000000.0
-            default_cost_gas = 3100000000.0
-            default_cost_pln = 8950000000.0
-            default_reported = 48200.0
-            default_hist = 47200.0
-    elif preset == "Anomali: Under-Reporting Ekstrim (Greenwashing)":
-        default_prod = 450000.0
-        default_clinker = 300000.0 if selected_sector == "Semen & Bahan Bangunan" else 0.0
-        default_stat = 4850000.0
-        default_mob = 1240000.0
-        default_bio = 0.0
-        default_cost_solar = 4850000.0 * 20500.0
-        default_cost_coal = 12800000000.0
-        default_cost_gas = 3100000000.0
-        default_cost_pln = 8950000000.0
-        default_reported = 4800.0  # 10x under-reported
-        default_hist = 47200.0
+    # Preset Values Calculation dynamically based on sector benchmarks
+    bench_avg = float(sector_info.get("avg_intensity_tco2e_per_ton", 0.28))
+    default_prod = 150000.0
+    normal_total = default_prod * bench_avg
+    shares = sector_info.get(
+        "expected_scope_shares", {"scope1": 0.60, "scope2": 0.35, "scope3": 0.05}
+    )
+    s1_norm = round(normal_total * shares.get("scope1", 0.60), 2)
+    s2_norm = round(normal_total * shares.get("scope2", 0.35), 2)
+    s3_norm = round(normal_total * shares.get("scope3", 0.05), 2)
+
+    fuel_priors = sector_info.get(
+        "fuel_share_priors", {"solar_diesel": 0.5, "coal": 0.2, "natural_gas": 0.3}
+    )
+    share_solar = fuel_priors.get("solar_diesel", 0.5)
+    share_coal = fuel_priors.get("coal", 0.2)
+    share_gas = fuel_priors.get("natural_gas", 0.3)
+
+    clinker_norm = 0.0
+    s1_combustion = s1_norm
+    if sector_info.get("has_process_emissions"):
+        proc_factor = sector_info.get("process_emission_factor", 0.20)
+        e_proc = s1_norm * proc_factor
+        s1_combustion = s1_norm - e_proc
+        clinker_norm = round(
+            e_proc / STOICHIOMETRIC_FACTORS["cement_clinker_calcination_tco2e_per_ton"], 2
+        )
+
+    default_stat = round(
+        (s1_combustion * share_solar * 0.8)
+        / STOICHIOMETRIC_FACTORS["solar_diesel_tco2e_per_liter"],
+        2,
+    )
+    default_mob = round(
+        (s1_combustion * share_solar * 0.2)
+        / STOICHIOMETRIC_FACTORS["solar_diesel_tco2e_per_liter"],
+        2,
+    )
+    default_coal = round(
+        (s1_combustion * share_coal) / STOICHIOMETRIC_FACTORS["coal_tco2e_per_kg"], 2
+    )
+    default_gas = round(
+        (s1_combustion * share_gas) / STOICHIOMETRIC_FACTORS["natural_gas_tco2e_per_m3"], 2
+    )
+    default_elec = round(s2_norm / STOICHIOMETRIC_FACTORS["grid_electricity_tco2e_per_kwh"], 2)
+
+    default_cost_solar = round(
+        (default_stat + default_mob) * MARKET_PRICE_RANGES["solar_diesel"]["nominal"], 2
+    )
+    default_cost_coal = round(default_coal * MARKET_PRICE_RANGES["coal"]["nominal"], 2)
+    default_cost_gas = round(default_gas * MARKET_PRICE_RANGES["natural_gas"]["nominal"], 2)
+    default_cost_pln = round(default_elec * MARKET_PRICE_RANGES["grid_electricity"]["nominal"], 2)
+
+    default_s1 = s1_norm
+    default_s2 = s2_norm
+    default_s3 = s3_norm
+    default_reported = round(default_s1 + default_s2 + default_s3, 2)
+    default_hist = default_reported
+
+    if preset == "Anomali: Under-Reporting Ekstrim (Greenwashing)":
+        default_s1 = round(s1_norm * 0.25, 2)
+        default_reported = round(default_s1 + default_s2 + default_s3, 2)
     elif preset == "Anomali: e-Faktur Solar Fiktif / Harga Tidak Wajar":
-        default_prod = 450000.0
-        default_clinker = 0.0
-        default_stat = 8000000.0
-        default_mob = 1240000.0
-        default_bio = 0.0
-        default_cost_solar = 8000000.0 * 800.0  # Absurd unit price Rp 800/L
-        default_cost_coal = 12800000000.0
-        default_cost_gas = 3100000000.0
-        default_cost_pln = 8950000000.0
-        default_reported = 48500.0
-        default_hist = 47200.0
-    else:
-        # Anomali: Emisi Proses Kalsinasi Disembunyikan
-        default_prod = 500000.0
-        default_clinker = 0.0  # Clinker omitted
-        default_stat = 2500000.0
-        default_mob = 600000.0
-        default_bio = 5000.0
-        default_cost_solar = 2500000.0 * 20500.0
-        default_cost_coal = 75000000000.0
-        default_cost_gas = 0.0
-        default_cost_pln = 22000000000.0
-        default_reported = 135000.0  # Only fuel combustion reported, missing 190k process tCO2e
-        default_hist = 320000.0
+        default_cost_solar = round((default_stat + default_mob) * 800.0, 2)
+    elif preset == "Anomali: Emisi Proses Kalsinasi Disembunyikan":
+        clinker_norm = 0.0
+        default_reported = round(s1_combustion + default_s2 + default_s3, 2)
 
     with st.form("audit_form"):
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.markdown("##### 1. Aktivitas Fisik & Biomassa")
-            stat_fuel = st.number_input(
-                "BBM Mesin Stasioner (Liter/Thn)", value=float(default_stat), step=100000.0
+            st.markdown("##### 1. Cakupan Emisi GHG (tCO2e)")
+            s1_val = st.number_input("Scope 1 (Emisi Langsung)", value=float(default_s1), step=50.0)
+            s2_val = st.number_input(
+                "Scope 2 (Listrik Tidak Langsung)", value=float(default_s2), step=50.0
             )
-            mob_fuel = st.number_input(
-                "BBM Armada Pabrik (Liter/Thn)", value=float(default_mob), step=50000.0
+            s3_val = st.number_input(
+                "Scope 3 (Opsional - Rantai Pasok)", value=float(default_s3), step=10.0
             )
-            biomass = st.number_input(
-                "Biomassa / Residu (Ton/Thn)", value=float(default_bio), step=1000.0
+            rep_val = st.number_input(
+                "Total Dilaporkan (tCO2e)", value=float(default_reported), step=100.0
             )
-            clinker = st.number_input(
-                "Produksi Klinker Kalsinasi (Ton/Thn)",
-                value=float(default_clinker),
-                step=10000.0,
-                help="Wajib diisi untuk industri Semen & Bahan Bangunan",
+            hist_val = st.number_input(
+                "Historis Tahun Lalu (tCO2e)", value=float(default_hist), step=100.0
             )
 
         with c2:
-            st.markdown("##### 2. Keuangan Utilitas (DJP e-Faktur)")
-            cost_solar = st.number_input(
-                "Biaya Solar / HSD (Rp/Thn)", value=float(default_cost_solar), step=1e8
+            st.markdown("##### 2. Aktivitas Bahan Bakar & Proses Fisik")
+            stat_fuel = st.number_input(
+                "Solar Stasioner (Liter)", value=float(default_stat), step=10000.0
             )
-            cost_coal = st.number_input(
-                "Biaya Batubara (Rp/Thn)", value=float(default_cost_coal), step=1e8
+            mob_fuel = st.number_input(
+                "Solar Armada (Liter)", value=float(default_mob), step=5000.0
             )
-            cost_gas = st.number_input(
-                "Biaya Gas Bumi (Rp/Thn)", value=float(default_cost_gas), step=1e8
-            )
-            cost_pln = st.number_input(
-                "Biaya Listrik PLN (Rp/Thn)", value=float(default_cost_pln), step=1e8
+            coal_kg = st.number_input("Batubara (kg)", value=float(default_coal), step=10000.0)
+            gas_m3 = st.number_input("Gas Alam (m3)", value=float(default_gas), step=5000.0)
+            clinker = st.number_input(
+                "Klinker Kalsinasi (Ton)", value=float(clinker_norm), step=1000.0
             )
 
         with c3:
-            st.markdown("##### 3. Operasional & Riil")
+            st.markdown("##### 3. Data Utilitas & Neraca Finansial (e-Faktur)")
             prod = st.number_input(
-                "Kapasitas Produksi Riil (Ton atau MWh/Thn)",
-                value=float(default_prod),
-                step=10000.0,
+                "Output Produksi Riil (Ton / Skala)", value=float(default_prod), step=5000.0
             )
-            reported = st.number_input(
-                "Total Emisi Dilaporkan (tCO2e)", value=float(default_reported), step=1000.0
+            elec_kwh = st.number_input(
+                "Konsumsi Listrik (kWh)", value=float(default_elec), step=50000.0
             )
-            hist = st.number_input(
-                "Emisi Historis Periode Lalu (tCO2e)", value=float(default_hist), step=1000.0
+            cost_solar = st.number_input(
+                "Biaya Solar (Rp)", value=float(default_cost_solar), step=1e7
+            )
+            cost_pln = st.number_input(
+                "Biaya Listrik PLN (Rp)", value=float(default_cost_pln), step=1e7
             )
 
         submit_btn = st.form_submit_button("🚀 Jalankan Audit AI dMRV", use_container_width=True)
@@ -221,15 +211,21 @@ with tab1:
         sample_payload = {
             "sector": selected_sector,
             "production_tonnes": prod,
-            "reported_emissions_tco2e": reported,
-            "historical_emissions_tco2e": hist,
+            "reported_scope1_tco2e": s1_val,
+            "reported_scope2_tco2e": s2_val,
+            "reported_scope3_tco2e": s3_val,
+            "reported_emissions_tco2e": rep_val,
+            "historical_emissions_tco2e": hist_val,
             "stat_fuel_liters": stat_fuel,
             "mob_fuel_liters": mob_fuel,
-            "biomass_tonnes": biomass,
+            "coal_kg": coal_kg,
+            "gas_m3": gas_m3,
+            "electricity_kwh": elec_kwh,
+            "biomass_tonnes": 0.0,
             "clinker_tonnes": clinker,
             "cost_solar_idr": cost_solar,
-            "cost_coal_idr": cost_coal,
-            "cost_gas_idr": cost_gas,
+            "cost_coal_idr": default_cost_coal,
+            "cost_gas_idr": default_cost_gas,
             "cost_pln_idr": cost_pln,
         }
         st.session_state.audit_res = predictor.predict_single(sample_payload)
@@ -297,7 +293,7 @@ with tab1:
                 payload = st.session_state.last_payload
                 shap_vals = predictor.compute_shap_values(pd.DataFrame([payload]))
                 if shap_vals is not None and shap_vals.size > 0:
-                    from rekakarbon_ml.pipeline.transformers import DERIVED_FEATURE_NAMES
+                    from rekakarbon_ml.training.transformers import DERIVED_FEATURE_NAMES
 
                     shap_df = pd.DataFrame(
                         {

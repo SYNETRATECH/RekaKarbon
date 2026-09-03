@@ -194,10 +194,19 @@ class ModelVisualizer:
         """
         filepath = os.path.join(self.output_dir, filename)
         try:
-            # Extract underlying scikit-learn model or transformer if pipeline
-            if hasattr(model_pipeline, "named_steps"):
-                model = model_pipeline.named_steps.get("isolation_forest", model_pipeline)
-                scaler = model_pipeline.named_steps.get("scaler", None)
+            # Extract underlying scikit-learn pipeline or predictor
+            if hasattr(model_pipeline, "pipeline"):
+                skl_pipe = model_pipeline.pipeline
+            elif hasattr(model_pipeline, "named_steps"):
+                skl_pipe = model_pipeline
+            else:
+                skl_pipe = None
+
+            if skl_pipe is not None and hasattr(skl_pipe, "named_steps"):
+                model = skl_pipe.named_steps.get(
+                    "detector", skl_pipe.named_steps.get("isolation_forest", skl_pipe)
+                )
+                scaler = skl_pipe.named_steps.get("scaler", None)
                 X_trans = scaler.transform(features_df) if scaler else features_df
             elif hasattr(model_pipeline, "model"):
                 model = model_pipeline.model

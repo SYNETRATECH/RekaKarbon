@@ -17,8 +17,8 @@ from rekakarbon_ml.evaluation import (
     generate_model_metadata,
 )
 from rekakarbon_ml.inference.predictor import CarbonAnomalyPredictor
-from rekakarbon_ml.pipeline.onnx_exporter import export_pipeline_to_onnx
-from rekakarbon_ml.pipeline.trainer import train_and_save_pipeline
+from rekakarbon_ml.training.onnx_exporter import export_pipeline_to_onnx
+from rekakarbon_ml.training.trainer import train_and_save_pipeline
 
 
 @pytest.fixture(scope="module")
@@ -64,8 +64,13 @@ def test_model_evaluation_metrics_and_quality_gates(trained_predictor_and_test_d
     assert cm["true_positive"] + cm["false_negative"] == (test_df["is_anomaly"] == 1).sum()
 
     # 3. Critical Fraud Types Detection (Under-reporting must be caught reliably)
-    assert "UNDER_REPORTING_FRAUD" in per_type
-    assert per_type["UNDER_REPORTING_FRAUD"]["recall"] >= 0.90
+    fraud_key = (
+        "SCOPE1_UNDERREPORTING_FRAUD"
+        if "SCOPE1_UNDERREPORTING_FRAUD" in per_type
+        else "UNDER_REPORTING_FRAUD"
+    )
+    assert fraud_key in per_type
+    assert per_type[fraud_key]["recall"] >= 0.90
 
     # 4. Quality Gate Verdict
     assert quality_gate["passed"] is True
@@ -80,8 +85,8 @@ def test_model_evaluation_metrics_and_quality_gates(trained_predictor_and_test_d
         loaded_meta = json.load(f)
 
     assert loaded_meta["version"] == "1.0.0"
-    assert len(loaded_meta["raw_features"]) == 12
-    assert len(loaded_meta["derived_features"]) == 15
+    assert len(loaded_meta["raw_features"]) == 17
+    assert len(loaded_meta["derived_features"]) == 20
     assert len(loaded_meta["supported_sectors"]) == 6
     assert "solar_diesel_tco2e_per_liter" in loaded_meta["stoichiometric_factors"]
 
@@ -99,4 +104,5 @@ def test_model_visualizer_artifact_generation(trained_predictor_and_test_data, t
     assert os.path.exists(artifacts["confusion_matrix_plot"])
     assert os.path.exists(artifacts["roc_pr_curves_plot"])
     assert os.path.exists(artifacts["per_anomaly_recall_plot"])
+    assert os.path.exists(artifacts["shap_summary_plot"])
     assert os.path.exists(artifacts["interactive_html_report"])

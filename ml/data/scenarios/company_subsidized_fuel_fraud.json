@@ -1,0 +1,22 @@
+{
+  "company_name": "PT Tambang Solar Subsidi",
+  "company_id": "COMP-ID-TSS-006",
+  "sector": "pertambangan",
+  "production_tonnes": 300000.0,
+  "reported_scope1_tco2e": 20100.0,
+  "reported_scope2_tco2e": 3000.0,
+  "reported_scope3_tco2e": 0.0,
+  "reported_emissions_tco2e": 23100.0,
+  "historical_emissions_tco2e": 24000.0,
+  "stat_fuel_liters": 6000000.0,
+  "mob_fuel_liters": 2000000.0,
+  "coal_kg": 0.0,
+  "gas_m3": 0.0,
+  "electricity_kwh": 14500000.0,
+  "clinker_tonnes": 0.0,
+  "cost_solar_idr": 54400000000.0,
+  "cost_coal_idr": 0.0,
+  "cost_gas_idr": 0.0,
+  "cost_pln_idr": 21750000000.0,
+  "description": "Fiscal invoice fraud: mining operation burning 8,000,000 L of diesel, but declaring only Rp 54.4B (Rp 6,800/L subsidized rate vs Rp 20,500/L commercial index)."
+}
