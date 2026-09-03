@@ -1305,6 +1305,7 @@ async function main() {
       notes:
         'Nilai ini bukan ambang universal. Nilai resmi harus ditetapkan per perusahaan dan tahun.',
     })),
+    skipDuplicates: true,
   });
 
   // 15. Seed DJP Carbon Tax Assessments & STP Invoices

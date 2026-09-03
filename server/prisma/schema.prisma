@@ -583,6 +583,7 @@ model ForestProject {
   speCertificateId         String?       @map("spe_certificate_id") @db.Text
   coordinatesJson          Json?         @map("coordinates_json")
   bufferAllocatedPercent   Decimal       @default(8.0) @map("buffer_allocated_percent") @db.Decimal(5, 2)
+  bufferUsedPercent        Decimal       @default(0.0) @map("buffer_used_percent") @db.Decimal(5, 2)
   trendDataJson            Json?         @map("trend_data_json")
   createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                DateTime      @updatedAt @map("updated_at") @db.Timestamptz
@@ -747,7 +748,6 @@ model BursaOrder {
   pricePerTonIdr     Decimal     @map("price_per_ton_idr") @db.Decimal(14, 2)
   totalAmountIdr     Decimal     @map("total_amount_idr") @db.Decimal(16, 2)
   txHash             String?     @map("tx_hash") @db.Text
-  status             OrderStatus @default(PENDING)
   createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz
   completedAt        DateTime?   @map("completed_at") @db.Timestamptz
 
