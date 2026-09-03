@@ -3,15 +3,17 @@ import {
   Logger,
   InternalServerErrorException,
   BadRequestException,
+  ConflictException,
   HttpException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { StorageService } from '../storage/storage.service';
 import { ethers } from 'ethers';
-import { ComplianceRating, Prisma } from '@prisma/client';
+import { ComplianceRating, EmissionReportStatus, Prisma } from '@prisma/client';
 import { PtbaeService } from '../compliance/ptbae.service';
 import type { CalculatorCalculationData } from './types';
+import { CalculationService } from './calculation.service';
 
 type CalculatorScopeData = Partial<CalculatorCalculationData>;
 
@@ -30,6 +32,7 @@ export class ReportsService {
     private readonly blockchainService: BlockchainService,
     private readonly storageService: StorageService,
     private readonly ptbaeService: PtbaeService,
+    private readonly calculationService: CalculationService,
   ) {}
 
   private resolveEmitterWallet(user: EmitterWalletUser): string {
@@ -221,9 +224,12 @@ export class ReportsService {
         },
       },
     });
-    if (existingReport) {
-      throw new BadRequestException(
-        `Laporan emisi untuk tahun ${year} sudah pernah dikirimkan oleh perusahaan Anda.`,
+    if (
+      existingReport &&
+      existingReport.status !== EmissionReportStatus.REVISION_REQUIRED
+    ) {
+      throw new ConflictException(
+        `Laporan emisi untuk tahun ${year} sudah dikirimkan dan belum dapat dikirim ulang.`,
       );
     }
 
@@ -279,28 +285,69 @@ export class ReportsService {
         `Successfully submitted report on-chain. TX: ${txHash}, ReportID: ${reportId}`,
       );
 
-      const report = await this.prisma.emissionReport.create({
-        data: {
+      const report = await this.prisma.$transaction(async (tx) => {
+        const reportData = {
           year,
           totalEmissionsTco2e: totalEmissions,
-          status: 'SUBMITTED',
+          status: EmissionReportStatus.SUBMITTED,
           merkleRoot,
           blockchainTxHash: txHash,
           blockchainReportId: BigInt(reportId),
           companyId: company.id,
           sector,
-          files: {
-            create: uploadedFilesData.map((f) => ({
-              originalFileName: f.originalFileName,
-              fileSizeBytes: f.fileSizeBytes,
-              mimeType: f.mimeType,
-              storageKey: f.storageKey,
-              accessUrl: f.accessUrl,
-              category: f.category,
-              uploadedByUserId: user.id,
-            })),
+        };
+        const savedReport = existingReport
+          ? await tx.emissionReport.update({
+              where: { id: existingReport.id },
+              data: {
+                ...reportData,
+                revisionNumber: { increment: 1 },
+                auditedByUserId: null,
+                auditedAt: null,
+                auditorNotes: null,
+                auditBlockchainTxHash: null,
+                auditAnchorStatus: null,
+                files: {
+                  create: uploadedFilesData.map((f) => ({
+                    originalFileName: f.originalFileName,
+                    fileSizeBytes: f.fileSizeBytes,
+                    mimeType: f.mimeType,
+                    storageKey: f.storageKey,
+                    accessUrl: f.accessUrl,
+                    category: f.category,
+                    uploadedByUserId: user.id,
+                  })),
+                },
+              },
+            })
+          : await tx.emissionReport.create({
+              data: {
+                ...reportData,
+                files: {
+                  create: uploadedFilesData.map((f) => ({
+                    originalFileName: f.originalFileName,
+                    fileSizeBytes: f.fileSizeBytes,
+                    mimeType: f.mimeType,
+                    storageKey: f.storageKey,
+                    accessUrl: f.accessUrl,
+                    category: f.category,
+                    uploadedByUserId: user.id,
+                  })),
+                },
+              },
+            });
+
+        await tx.emissionReportAuditEvent.create({
+          data: {
+            emissionReportId: savedReport.id,
+            actorUserId: user.id,
+            action: existingReport ? 'RESUBMITTED' : 'SUBMITTED',
+            fromStatus: existingReport?.status ?? null,
+            toStatus: EmissionReportStatus.SUBMITTED,
+            merkleRoot,
           },
-        },
+        });
+        return savedReport;
       });
       await this.synchronizeCompanyCompliance(
         company.id,
@@ -351,18 +398,34 @@ export class ReportsService {
         },
       },
     });
-    if (existingReport) {
-      throw new BadRequestException(
-        `Laporan emisi untuk tahun ${year} sudah pernah dikirimkan oleh perusahaan Anda.`,
+    if (
+      existingReport &&
+      existingReport.status !== EmissionReportStatus.REVISION_REQUIRED
+    ) {
+      throw new ConflictException(
+        `Laporan emisi untuk tahun ${year} sudah dikirimkan dan belum dapat dikirim ulang.`,
+      );
+    }
+
+    const normalizedCalculationData =
+      this.calculationService.normalize(calculationData);
+    const calculatedTotal =
+      normalizedCalculationData.scope1 +
+      normalizedCalculationData.scope2 +
+      normalizedCalculationData.scope3;
+
+    if (Math.abs(calculatedTotal - totalEmissions) > 0.0001) {
+      this.logger.warn(
+        `Ignoring client total ${totalEmissions}; server recalculated ${calculatedTotal}`,
       );
     }
 
     const reportMetadata = {
       year,
-      totalEmissionsTCO2e: totalEmissions,
+      totalEmissionsTCO2e: calculatedTotal,
       companyId: company.id,
       sector,
-      calculationData,
+      calculationData: normalizedCalculationData,
     };
 
     const merkleRoot = this.generateMerkleRoot(reportMetadata);
@@ -381,23 +444,49 @@ export class ReportsService {
         `Successfully submitted calculator report on-chain. TX: ${txHash}, ReportID: ${reportId}`,
       );
 
-      const report = await this.prisma.emissionReport.create({
-        data: {
+      const report = await this.prisma.$transaction(async (tx) => {
+        const reportData = {
           year,
-          totalEmissionsTco2e: totalEmissions,
-          status: 'SUBMITTED',
-          reportMethod: 'CALCULATOR',
+          totalEmissionsTco2e: calculatedTotal,
+          status: EmissionReportStatus.SUBMITTED,
+          reportMethod: 'CALCULATOR' as const,
           sector,
-          calculationData,
+          calculationData: normalizedCalculationData,
           merkleRoot,
           blockchainTxHash: txHash,
           blockchainReportId: BigInt(reportId),
           companyId: company.id,
-        },
+        };
+        const savedReport = existingReport
+          ? await tx.emissionReport.update({
+              where: { id: existingReport.id },
+              data: {
+                ...reportData,
+                revisionNumber: { increment: 1 },
+                auditedByUserId: null,
+                auditedAt: null,
+                auditorNotes: null,
+                auditBlockchainTxHash: null,
+                auditAnchorStatus: null,
+              },
+            })
+          : await tx.emissionReport.create({ data: reportData });
+
+        await tx.emissionReportAuditEvent.create({
+          data: {
+            emissionReportId: savedReport.id,
+            actorUserId: user.id,
+            action: existingReport ? 'RESUBMITTED' : 'SUBMITTED',
+            fromStatus: existingReport?.status ?? null,
+            toStatus: EmissionReportStatus.SUBMITTED,
+            merkleRoot,
+          },
+        });
+        return savedReport;
       });
       await this.synchronizeCompanyCompliance(
         company.id,
-        totalEmissions,
+        calculatedTotal,
         quota.quotaTCO2e,
       );
 

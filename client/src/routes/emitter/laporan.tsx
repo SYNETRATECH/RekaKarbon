@@ -73,6 +73,7 @@ export function meta() {
 function getReportStatusLabel(status: EmissionReport['status']) {
   if (status === 'approved' || status === 'verified') return 'Terverifikasi';
   if (status === 'submitted' || status === 'audit_in_progress') return 'Menunggu Audit';
+  if (status === 'revision_required') return 'Perlu Revisi';
   if (status === 'rejected') return 'Ditolak';
   return 'Draf';
 }
@@ -181,6 +182,7 @@ export default function EmissionReportsSector() {
   const reportStatusLabel = getReportStatusLabel(activeReport.status);
   const reportIsVerified = isVerifiedReport(activeReport.status);
   const reportIsRejected = activeReport.status === 'rejected';
+  const reportNeedsRevision = activeReport.status === 'revision_required';
 
   const handleDownloadReport = (report: EmissionReport) => {
     const scopeTotals = report.sectors.reduce(
@@ -232,7 +234,7 @@ export default function EmissionReportsSector() {
   //
   // The wizard form (Tab 1→2→3) is shown in ALL other cases.
   // ──────────────────────────────────────────────────────────
-  const hasExistingReport = exactReport !== undefined || isSubmittedLocal;
+  const hasExistingReport = isSubmittedLocal || (exactReport !== undefined && !reportNeedsRevision);
 
   const handleStartAIAudit = async (e: FormEvent) => {
     e.preventDefault();
@@ -370,6 +372,12 @@ export default function EmissionReportsSector() {
       {/* ── ONLY SHOW SELECTION IF REPORT NOT EXISTS ── */}
       {!hasExistingReport ? (
         <>
+          {reportNeedsRevision && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-800">
+              Laporan ini membutuhkan revisi Auditor. Perbaiki data atau dokumen sumber, lalu kirim
+              ulang untuk tahun yang sama.
+            </div>
+          )}
           {/* ── STEP 1: Sector Selection ─────────────────────────── */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
             <div className="flex items-center gap-3 mb-5">

@@ -6,17 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { bursaRepository } from '../../repositories';
 import { useToast } from '@/hooks/use-toast';
-import type { BursaItem } from '@/types';
+import type { BursaItem, BursaPurchaseEligibility } from '@/types';
 
 interface BursaPurchaseModalProps {
   token: BursaItem | null;
-  deficitTCO2e: number | null;
+  purchaseEligibility: BursaPurchaseEligibility | null;
+  onPurchaseComplete: () => void;
   onClose: () => void;
 }
 
 export default function BursaPurchaseModal({
   token,
-  deficitTCO2e,
+  purchaseEligibility,
+  onPurchaseComplete,
   onClose,
 }: BursaPurchaseModalProps) {
   const [buyQuantity, setBuyQuantity] = useState(0);
@@ -24,8 +26,8 @@ export default function BursaPurchaseModal({
   const { toast } = useToast();
 
   const availableTCO2e = token?.volumeAvailableTCO2e ?? 0;
-  const maxPurchaseTCO2e =
-    deficitTCO2e === null ? 0 : Math.min(Math.max(0, deficitTCO2e), availableTCO2e);
+  const purchaseRequirementTCO2e = purchaseEligibility?.purchaseRequirementTCO2e ?? 0;
+  const maxPurchaseTCO2e = Math.min(Math.max(0, purchaseRequirementTCO2e), availableTCO2e);
 
   useEffect(() => {
     if (!token) {
@@ -37,7 +39,11 @@ export default function BursaPurchaseModal({
 
   if (!token) return null;
 
-  const isPurchaseDisabled = isSubmitting || buyQuantity <= 0 || buyQuantity > maxPurchaseTCO2e;
+  const isPurchaseDisabled =
+    isSubmitting ||
+    purchaseEligibility?.canPurchase !== true ||
+    buyQuantity <= 0 ||
+    buyQuantity > maxPurchaseTCO2e;
 
   const handlePurchase = async () => {
     if (isPurchaseDisabled) return;
@@ -55,6 +61,7 @@ export default function BursaPurchaseModal({
         className: 'bg-emerald-600 text-white border-none',
       });
 
+      onPurchaseComplete();
       onClose();
     } catch (error) {
       console.error('Bursa purchase error:', error);
@@ -113,29 +120,35 @@ export default function BursaPurchaseModal({
               className="font-mono text-xs rounded-xl"
             />
             <span className="text-[9px] text-slate-500 font-bold block">
-              Pasokan listing: {formatCarbon(availableTCO2e)}. Batas sesuai defisit:{' '}
-              {deficitTCO2e === null ? 'PTBAE-PU belum tersedia' : formatCarbon(deficitTCO2e)}.
+              Pasokan listing: {formatCarbon(availableTCO2e)}. Kebutuhan pembelian tersisa:{' '}
+              {formatCarbon(purchaseRequirementTCO2e)}.
             </span>
-            {deficitTCO2e === null ? (
+            {purchaseEligibility === null ? (
               <span className="text-[9px] text-amber-700 font-bold block">
-                Nilai pembelian belum dapat ditentukan tanpa PTBAE-PU resmi.
+                Status kewajiban belum berhasil dimuat. Pembelian dinonaktifkan.
+              </span>
+            ) : !purchaseEligibility.canPurchase ? (
+              <span className="text-[9px] text-amber-700 font-bold block">
+                {purchaseEligibility.message}
               </span>
             ) : (
               <span className="text-[9px] text-emerald-700 font-bold block">
                 Nilai otomatis diisi sebesar {formatCarbon(maxPurchaseTCO2e)}.
               </span>
             )}
-            {deficitTCO2e !== null && deficitTCO2e > availableTCO2e && (
+            {purchaseRequirementTCO2e > availableTCO2e && (
               <span className="text-[9px] text-amber-700 font-bold block">
-                Pasokan listing ini belum mencukupi seluruh defisit.
+                Pasokan listing ini belum mencukupi seluruh kebutuhan pembelian.
               </span>
             )}
-            {deficitTCO2e !== null && maxPurchaseTCO2e <= 0 && (
-              <span className="text-[9px] text-status-danger-fg font-bold flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> Tidak ada volume yang dapat dibeli untuk
-                pelunasan.
-              </span>
-            )}
+            {purchaseEligibility !== null &&
+              purchaseEligibility.canPurchase &&
+              maxPurchaseTCO2e <= 0 && (
+                <span className="text-[9px] text-status-danger-fg font-bold flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Tidak ada volume yang dapat dibeli untuk
+                  pelunasan.
+                </span>
+              )}
           </div>
 
           {/* PANEL TRANSPARANSI ALOKASI DANA (3% FEE vs 97% PROJECT FUND DIKURS KE 5 POS) */}

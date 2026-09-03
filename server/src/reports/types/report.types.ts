@@ -11,12 +11,46 @@ export interface SectorBreakdown {
   color: string;
 }
 
+export type CalculatorActivityType =
+  | 'stationary_combustion'
+  | 'mobile_combustion'
+  | 'purchased_electricity'
+  | 'flight'
+  | 'hotel'
+  | 'rail'
+  | 'financed_credit'
+  | 'financed_security';
+
+export type CalculatorCalculationMethod =
+  | 'fuel_consumption'
+  | 'standard_distance'
+  | 'user_distance'
+  | 'location_based'
+  | 'flight_passenger'
+  | 'hotel_room_night'
+  | 'rail_distance'
+  | 'financed_emissions';
+
 export interface CalculationEntry extends Prisma.InputJsonObject {
   id: string;
-  value: number;
+  scope: 1 | 2 | 3;
+  activityType: CalculatorActivityType;
+  calculationMethod: CalculatorCalculationMethod;
+  sourceCode: string;
+  sourceLabel: string;
+  quantity: number;
+  unit: string;
+  factorCode: string;
+  factorSetId: string;
+  emissionFactor: number;
+  factorUnit: string;
+  emissionsTCO2e: number;
+  metadata: Prisma.InputJsonObject;
 }
 
 export interface CalculatorCalculationData extends Prisma.InputJsonObject {
+  schemaVersion: number;
+  factorSetId: string;
   scope1: number;
   scope2: number;
   scope3: number;

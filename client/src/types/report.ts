@@ -1,5 +1,11 @@
 import type { PtbaeQuotaStatus } from './compliance';
 
+export type {
+  CalculationData,
+  CalculationEntry,
+  CalculatorReportSubmission,
+} from './emission-calculator';
+
 export interface SectorBreakdown {
   id: string;
   name: string; // e.g. "Scope 1 - Pembakaran Langsung"
@@ -10,24 +16,6 @@ export interface SectorBreakdown {
   color: string;
 }
 
-export interface CalculationEntry {
-  id: string;
-  value: number;
-}
-
-export interface CalculationData {
-  scope1: number;
-  scope2: number;
-  scope3: number;
-  entries: CalculationEntry[];
-}
-
-export interface CalculatorReportSubmission {
-  merkleRoot: string;
-  txHash: string;
-  blockchainReportId: number;
-}
-
 export interface EmissionReport {
   id: string;
   year: number;
@@ -35,7 +23,14 @@ export interface EmissionReport {
   fileName: string;
   fileSizeBytes: number;
   uploadDate: string;
-  status: 'verified' | 'approved' | 'submitted' | 'rejected' | 'audit_in_progress' | 'draft';
+  status:
+    | 'verified'
+    | 'approved'
+    | 'submitted'
+    | 'revision_required'
+    | 'rejected'
+    | 'audit_in_progress'
+    | 'draft';
   totalEmissionsTCO2e: number;
   sectors: SectorBreakdown[];
   blockchainTxHash?: string | null;

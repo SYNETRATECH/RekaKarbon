@@ -107,6 +107,12 @@ export interface EmissionRegistryContract {
     rootHash: string,
     overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
+  auditReport(
+    reportId: number,
+    status: number,
+    notes: string,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
   anchorPtbaeApplication(
     applicationId: string,
     version: number,

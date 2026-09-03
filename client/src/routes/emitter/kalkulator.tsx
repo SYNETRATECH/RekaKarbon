@@ -1,5 +1,16 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useLoaderData, useNavigate, useSearchParams } from 'react-router';
+import {
+  ArrowLeft,
+  Calculator,
+  CheckCircle2,
+  Download,
+  Leaf,
+  Plus,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,38 +20,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Leaf,
-  ArrowRight,
-  ArrowLeft,
-  Save,
-  Calculator,
-  Factory,
-  Zap,
-  Truck,
-  Building2,
-  Flame,
-  Droplets,
-  Wind,
-  Thermometer,
-  Recycle,
-  Trees,
-  Tractor,
-  HardHat,
-  Hotel,
-  Landmark,
-  BarChart3,
-  CheckCircle2,
-  Download,
-  Loader2,
-  Filter,
-  Plane,
-} from 'lucide-react';
 import { formatCarbon } from '@/lib/formatters';
 import { complianceRepository, reportRepository } from '../../repositories';
 import { generateEmissionReportPDF } from '@/lib/generateEmissionReportPDF';
 import { useToast } from '@/hooks/use-toast';
-import type { CalculationData, CalculatorReportSubmission } from '@/types';
+import type {
+  CalculationData,
+  CalculationEntry,
+  CalculatorReportSubmission,
+  CalculationEntryMetadata,
+  EmissionActivityType,
+  CalculationMethod,
+  ActivityUnit,
+} from '@/types';
+import {
+  CALCULATOR_FACTOR_SET_ID,
+  CALCULATOR_SCHEMA_VERSION,
+  CREDIT_CATEGORY_OPTIONS,
+  ELECTRICITY_LOCATION_OPTIONS,
+  FINANCED_EMISSION_FACTOR,
+  FLIGHT_FACTORS,
+  COUNTRY_OPTIONS,
+  getCountryOption,
+  getElectricityLocation,
+  getFuelOption,
+  getMobileFuelOption,
+  getRailClassOption,
+  MOBILE_FUEL_OPTIONS,
+  RAIL_CLASS_OPTIONS,
+  SECURITY_CATEGORY_OPTIONS,
+  STATIONARY_FUEL_OPTIONS,
+} from '@/lib/emission-calculator';
 import { SECTOR_REFERENCE_THRESHOLDS_TCO2E } from '@/lib/emission-thresholds';
 
 export async function clientLoader() {
@@ -49,217 +59,14 @@ export async function clientLoader() {
 
 clientLoader.hydrate = true as const;
 
-// ─── Constants & Emission Factors (DEFRA 2023 Standard) ────────────────
-const EMISSION_FACTORS: Record<string, number> = {
-  // Scope 1 - Combustion
-  diesel_liter: 2.512, // Solar/Diesel (kg CO₂e/L)
-  gasoline_liter: 2.105, // Bensin/Petrol (kg CO₂e/L)
-  lpg_kg: 2.939, // LPG (kg CO₂e/kg)
-  natural_gas_m3: 2.023, // Gas alam (kg CO₂e/m³)
-  coal_kg: 2.531, // Batu bara (kg CO₂e/kg)
-  heavy_fuel_oil_liter: 3.168, // MFO/Heavy Fuel Oil (kg CO₂e/L)
-
-  // Scope 1 - Fugitive
-  refrigerant_kg: 2088, // Refrigerant R-410A (kg CO₂e/kg)
-  co2_fire_ext_kg: 1.0, // CO₂ pemadam (kg CO₂/kg)
-
-  // Scope 1 - Process (Industrial Averages)
-  cement_clinker_ton: 525, // Semen clinker (kg CO₂/ton)
-  lime_ton: 750, // Kapur (kg CO₂/ton)
-
-  // Scope 1 - Agriculture (IPCC Averages)
-  fertilizer_urea_kg: 0.733, // Urea - N₂O (kg CO₂e/kg)
-  rice_paddy_ha: 5110, // Padi sawah - CH₄ (kg CO₂e/ha/season)
-  livestock_cattle_head: 2070, // Sapi potong - CH₄ (kg CO₂e/head/year)
-
-  // Scope 2 (Grid Electricity)
-  electricity_kwh: 0.207, // Listrik (kg CO₂e/kWh) - Grid Average 2023
-
-  // Scope 3
-  flight_km: 0.244, // Penerbangan domestik (kg CO₂e/passenger-km)
-  car_km: 0.171, // Mobil penumpang rata-rata (kg CO₂e/km)
-  paper_kg: 0.895, // Kertas & kardus (kg CO₂e/kg)
-  water_m3: 0.149, // Air suplai (kg CO₂e/m³)
-  waste_landfill_ton: 588.9, // Limbah komersial ke TPA (kg CO₂e/ton)
-  waste_incineration_ton: 21.3, // Limbah pembakaran/insinerasi (kg CO₂e/ton)
-  freight_tkm: 0.119, // Truk logistik HGV rata-rata (kg CO₂e/ton-km)
-
-  // Direct Input (Financed Emissions)
-  direct_tco2e: 1000, // 1 tCO2e = 1000 kg CO2e
-};
-
-// ─── Sector Definitions with Dynamic Form Fields ─────────────────────
-interface FormField {
-  id: string;
-  label: string;
-  unit: string;
-  placeholder: string;
-  emissionFactorKey: string;
-  scope: 1 | 2 | 3;
-}
-
-interface CategoryDef {
-  id: string;
-  title: string;
-  description: string;
-  scope: 1 | 2 | 3;
-  icon:
-    | 'factory'
-    | 'zap'
-    | 'truck'
-    | 'flame'
-    | 'droplets'
-    | 'wind'
-    | 'recycle'
-    | 'trees'
-    | 'thermometer'
-    | 'landmark'
-    | 'plane';
-  color: string;
-  fields: FormField[];
-}
-
-export const UNIVERSAL_CATEGORIES: CategoryDef[] = [
-  {
-    id: 's1_stationary',
-    title: 'Scope 1: Pembakaran Stasioner',
-    description: 'Genset, boiler, kompor, oven gas',
-    scope: 1,
-    icon: 'flame',
-    color: 'bg-red-100 text-red-700',
-    fields: [
-      {
-        id: 'genset_diesel',
-        label: 'Solar Genset/Boiler',
-        unit: 'Liter',
-        placeholder: '500',
-        emissionFactorKey: 'diesel_liter',
-        scope: 1,
-      },
-      {
-        id: 'natural_gas',
-        label: 'Gas Alam',
-        unit: 'm³',
-        placeholder: '1200',
-        emissionFactorKey: 'natural_gas_m3',
-        scope: 1,
-      },
-      {
-        id: 'coal',
-        label: 'Batu Bara',
-        unit: 'kg',
-        placeholder: '3000',
-        emissionFactorKey: 'coal_kg',
-        scope: 1,
-      },
-      {
-        id: 'lpg',
-        label: 'LPG',
-        unit: 'kg',
-        placeholder: '300',
-        emissionFactorKey: 'lpg_kg',
-        scope: 1,
-      },
-    ],
-  },
-  {
-    id: 's1_mobile',
-    title: 'Scope 1: Pembakaran Bergerak',
-    description: 'Mobil operasional, motor, alat berat',
-    scope: 1,
-    icon: 'truck',
-    color: 'bg-orange-100 text-orange-700',
-    fields: [
-      {
-        id: 'vehicle_diesel',
-        label: 'Solar Kendaraan',
-        unit: 'Liter',
-        placeholder: '800',
-        emissionFactorKey: 'diesel_liter',
-        scope: 1,
-      },
-      {
-        id: 'vehicle_gasoline',
-        label: 'Bensin/Petrol',
-        unit: 'Liter',
-        placeholder: '300',
-        emissionFactorKey: 'gasoline_liter',
-        scope: 1,
-      },
-    ],
-  },
-  {
-    id: 's2_electricity',
-    title: 'Scope 2: Konsumsi Listrik',
-    description: 'Penggunaan listrik PLN',
-    scope: 2,
-    icon: 'zap',
-    color: 'bg-amber-100 text-amber-700',
-    fields: [
-      {
-        id: 'electricity',
-        label: 'Listrik PLN',
-        unit: 'kWh',
-        placeholder: '50000',
-        emissionFactorKey: 'electricity_kwh',
-        scope: 2,
-      },
-    ],
-  },
-  {
-    id: 's3_business_travel',
-    title: 'Scope 3: Perjalanan Dinas',
-    description: 'Business travel, tiket penerbangan',
-    scope: 3,
-    icon: 'plane',
-    color: 'bg-blue-100 text-blue-700',
-    fields: [
-      {
-        id: 'flight',
-        label: 'Penerbangan Domestik',
-        unit: 'passenger-km',
-        placeholder: '5000',
-        emissionFactorKey: 'flight_km',
-        scope: 3,
-      },
-      {
-        id: 'car_travel',
-        label: 'Perjalanan Darat (Mobil)',
-        unit: 'km',
-        placeholder: '1000',
-        emissionFactorKey: 'car_km',
-        scope: 3,
-      },
-    ],
-  },
-  {
-    id: 's3_financed',
-    title: 'Scope 3: Emisi yang Dibiayai',
-    description: 'Financed emissions (investasi, portofolio)',
-    scope: 3,
-    icon: 'landmark',
-    color: 'bg-purple-100 text-purple-700',
-    fields: [
-      {
-        id: 'financed_emissions',
-        label: 'Estimasi Emisi Portofolio',
-        unit: 'tCO₂e',
-        placeholder: '500',
-        emissionFactorKey: 'direct_tco2e',
-        scope: 3,
-      },
-    ],
-  },
-];
-
-interface SectorDef {
+interface SectorDefinition {
   id: string;
   name: string;
   description: string;
   referenceThresholdTCO2e: number;
 }
 
-const SECTORS: SectorDef[] = [
+const SECTORS: SectorDefinition[] = [
   {
     id: 'manufaktur',
     name: 'Manufaktur & Industri',
@@ -269,287 +76,1074 @@ const SECTORS: SectorDef[] = [
   {
     id: 'pertambangan',
     name: 'Pertambangan & Energi',
-    description: 'Pertambangan mineral, batu bara, minyak & gas',
+    description: 'Pertambangan mineral, batu bara, minyak, dan gas',
     referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.pertambangan,
   },
   {
     id: 'perbankan',
     name: 'Perbankan & Jasa Keuangan',
-    description: 'Bank, asuransi, fintech, sekuritas',
+    description: 'Bank, asuransi, fintech, dan sekuritas',
     referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.perbankan,
   },
   {
     id: 'konstruksi',
     name: 'Konstruksi & Properti',
-    description: 'Kontraktor, pengembang, infrastruktur',
+    description: 'Kontraktor, pengembang, dan infrastruktur',
     referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.konstruksi,
   },
   {
     id: 'pertanian',
     name: 'Pertanian & Perkebunan',
-    description: 'Sawah, kebun sawit, peternakan, perikanan',
+    description: 'Sawah, kebun, peternakan, dan perikanan',
     referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.pertanian,
   },
   {
     id: 'perhotelan',
     name: 'Perhotelan & Pariwisata',
-    description: 'Hotel, resort, restoran, wisata',
+    description: 'Hotel, resort, restoran, dan wisata',
     referenceThresholdTCO2e: SECTOR_REFERENCE_THRESHOLDS_TCO2E.perhotelan,
   },
 ];
 
-// ─── Icon Mapper ─────────────────────────────────────────────────────
-const ICON_MAP: Record<string, React.ReactNode> = {
-  factory: <Factory className="w-4 h-4" />,
-  zap: <Zap className="w-4 h-4" />,
-  truck: <Truck className="w-4 h-4" />,
-  flame: <Flame className="w-4 h-4" />,
-  droplets: <Droplets className="w-4 h-4" />,
-  wind: <Wind className="w-4 h-4" />,
-  recycle: <Recycle className="w-4 h-4" />,
-  trees: <Trees className="w-4 h-4" />,
-  thermometer: <Thermometer className="w-4 h-4" />,
-  landmark: <Landmark className="w-4 h-4" />,
-  plane: <Plane className="w-4 h-4" />,
-};
+type DraftScope = 1 | 2 | 3;
+type DraftActivityType =
+  | 'stationary_combustion'
+  | 'mobile_combustion'
+  | 'purchased_electricity'
+  | 'flight'
+  | 'hotel'
+  | 'rail'
+  | 'financed_credit'
+  | 'financed_security';
 
-const SECTOR_ICONS: Record<string, React.ReactNode> = {
-  manufaktur: <Factory className="w-4 h-4" />,
-  pertambangan: <HardHat className="w-4 h-4" />,
-  perbankan: <Landmark className="w-4 h-4" />,
-  konstruksi: <Building2 className="w-4 h-4" />,
-  pertanian: <Tractor className="w-4 h-4" />,
-  perhotelan: <Hotel className="w-4 h-4" />,
-};
+interface ActivityDraft {
+  id: string;
+  scope: DraftScope;
+  activityType: DraftActivityType;
+  mobileMethod?: 'fuel_consumption' | 'distance_travelled';
+  distanceMethod?: 'standard' | 'user_input';
+  fuelCode?: string;
+  electricityLocationCode?: string;
+  flightType?: 'domestic' | 'international';
+  countryCode?: string;
+  railClassCode?: string;
+  financedCategory?: string;
+  financedEntityName?: string;
+  investmentValueIDR?: string;
+  issuerDenominatorIDR?: string;
+  issuerEmissionsTCO2e?: string;
+  quantity?: string;
+  secondaryQuantity?: string;
+  customFactor?: string;
+}
 
-// ─── Meta ────────────────────────────────────────────────────────────
+let draftSequence = 0;
+
+function createDraft(scope: DraftScope, activityType: DraftActivityType): ActivityDraft {
+  draftSequence += 1;
+  return {
+    id: `activity-${Date.now()}-${draftSequence}`,
+    scope,
+    activityType,
+    mobileMethod: activityType === 'mobile_combustion' ? 'fuel_consumption' : undefined,
+    distanceMethod: 'standard',
+    fuelCode:
+      scope === 1 ? (activityType === 'mobile_combustion' ? 'diesel_cn53' : 'coal') : undefined,
+    electricityLocationCode: scope === 2 ? 'jakarta' : undefined,
+    flightType: activityType === 'flight' ? 'domestic' : undefined,
+    countryCode: activityType === 'hotel' ? 'ID' : undefined,
+    railClassCode: activityType === 'rail' ? 'economy' : undefined,
+    financedCategory:
+      activityType === 'financed_credit'
+        ? CREDIT_CATEGORY_OPTIONS[0]?.code
+        : activityType === 'financed_security'
+          ? SECURITY_CATEGORY_OPTIONS[0]?.code
+          : undefined,
+  };
+}
+
+function parseQuantity(value: string | undefined): number {
+  const quantity = Number(value ?? '');
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
+}
+
+function buildEntry(draft: ActivityDraft): CalculationEntry | null {
+  const quantity = parseQuantity(draft.quantity);
+  if (quantity <= 0 && draft.activityType !== 'financed_security') return null;
+
+  let sourceCode: string = draft.activityType;
+  let sourceLabel = 'Aktivitas emisi';
+  let method: CalculationMethod = 'fuel_consumption';
+  let unit: ActivityUnit = 'kg';
+  let emissionFactor = 0;
+  let factorUnit = 'kgCO2e/unit';
+  let metadata: CalculationEntryMetadata = {};
+
+  if (draft.activityType === 'stationary_combustion') {
+    const fuel = getFuelOption(draft.fuelCode ?? '');
+    if (!fuel) return null;
+    sourceCode = fuel.code;
+    sourceLabel = `Pembakaran stasioner - ${fuel.label}`;
+    unit = fuel.unit;
+    emissionFactor = fuel.factor.value;
+    factorUnit = fuel.factor.factorUnit;
+    metadata = { fuelCode: fuel.code, fuelLabel: fuel.label };
+  } else if (draft.activityType === 'mobile_combustion') {
+    const fuel = getMobileFuelOption(draft.fuelCode ?? '');
+    if (!fuel) return null;
+    sourceCode = fuel.code;
+    sourceLabel = `Kendaraan operasional - ${fuel.label}`;
+    metadata = { fuelCode: fuel.code, fuelLabel: fuel.label };
+    if (draft.mobileMethod === 'distance_travelled') {
+      method = draft.distanceMethod === 'user_input' ? 'user_distance' : 'standard_distance';
+      unit = 'km';
+      if (draft.distanceMethod === 'user_input') {
+        emissionFactor = parseQuantity(draft.customFactor);
+        factorUnit = 'kgCO2e/km';
+        if (emissionFactor <= 0) return null;
+      } else {
+        emissionFactor = 0.171;
+        factorUnit = 'kgCO2e/km';
+      }
+      metadata.distanceMethod = draft.distanceMethod;
+    } else {
+      unit = fuel.unit;
+      emissionFactor = fuel.factor.value;
+      factorUnit = fuel.factor.factorUnit;
+    }
+  } else if (draft.activityType === 'purchased_electricity') {
+    const location = getElectricityLocation(draft.electricityLocationCode ?? '');
+    if (!location) return null;
+    sourceCode = location.code;
+    sourceLabel = `Listrik - ${location.label}`;
+    method = 'location_based';
+    unit = 'kwh';
+    emissionFactor = location.factor.value;
+    factorUnit = location.factor.factorUnit;
+    metadata = {
+      electricityLocationCode: location.code,
+      electricityLocationLabel: location.label,
+    };
+  } else if (draft.activityType === 'flight') {
+    const flightType = draft.flightType ?? 'domestic';
+    const flightFactor = FLIGHT_FACTORS[flightType];
+    sourceCode = `flight_${flightType}`;
+    sourceLabel = `Pesawat - ${flightType === 'domestic' ? 'Domestik' : 'Internasional'}`;
+    method = 'flight_passenger';
+    unit = 'passenger';
+    emissionFactor = flightFactor.value;
+    factorUnit = flightFactor.factorUnit;
+    metadata = { flightType };
+  } else if (draft.activityType === 'hotel') {
+    const country = getCountryOption(draft.countryCode ?? '');
+    const nights = parseQuantity(draft.secondaryQuantity);
+    if (!country || nights <= 0) return null;
+    sourceCode = country.code;
+    sourceLabel = `Hotel - ${country.label}`;
+    method = 'hotel_room_night';
+    unit = 'room_night';
+    emissionFactor = country.factor.value;
+    factorUnit = country.factor.factorUnit;
+    const roomNights = quantity * nights;
+    return {
+      id: draft.id,
+      scope: 3,
+      activityType: draft.activityType,
+      calculationMethod: method,
+      sourceCode,
+      sourceLabel,
+      quantity: roomNights,
+      unit,
+      factorCode: country.factor.factorCode,
+      factorSetId: country.factor.factorSetId,
+      emissionFactor,
+      factorUnit,
+      emissionsTCO2e: (roomNights * emissionFactor) / 1000,
+      metadata: { countryCode: country.code, countryLabel: country.label },
+    };
+  } else if (draft.activityType === 'rail') {
+    const railClass = getRailClassOption(draft.railClassCode ?? '');
+    if (!railClass) return null;
+    sourceCode = railClass.code;
+    sourceLabel = railClass.label;
+    method = 'rail_distance';
+    unit = 'km';
+    emissionFactor = railClass.factor.value;
+    factorUnit = railClass.factor.factorUnit;
+    metadata = { railClassCode: railClass.code, railClassLabel: railClass.label };
+  } else if (draft.activityType === 'financed_credit') {
+    const categoryOptions = CREDIT_CATEGORY_OPTIONS;
+    const category = categoryOptions.find((option) => option.code === draft.financedCategory);
+    if (!category) return null;
+    sourceCode = category.code;
+    sourceLabel = category.label;
+    method = 'financed_emissions';
+    unit = 'tco2e';
+    emissionFactor = FINANCED_EMISSION_FACTOR.value;
+    factorUnit = FINANCED_EMISSION_FACTOR.factorUnit;
+    metadata = {
+      financedType: draft.activityType === 'financed_credit' ? 'credit' : 'security',
+      financedCategory: category.code,
+      financedEntityName: draft.financedEntityName,
+    };
+  } else if (draft.activityType === 'financed_security') {
+    const category = SECURITY_CATEGORY_OPTIONS.find(
+      (option) => option.code === draft.financedCategory
+    );
+    if (!category) return null;
+
+    const isGovernmentBond = category.code === 'government_bond';
+    const investmentValueIDR = parseQuantity(draft.investmentValueIDR);
+    if (isGovernmentBond) {
+      if (!draft.countryCode || investmentValueIDR <= 0) return null;
+
+      // Emisi SBN tidak boleh ditebak dari nilai nominal. Perhitungan baru
+      // dapat dibuat setelah referensi resmi negara dikonfigurasi sistem.
+      return null;
+    }
+
+    const issuerDenominatorIDR = parseQuantity(draft.issuerDenominatorIDR);
+    const issuerEmissionsTCO2e = parseQuantity(draft.issuerEmissionsTCO2e);
+    const attributionFactor = investmentValueIDR / issuerDenominatorIDR;
+
+    if (
+      investmentValueIDR <= 0 ||
+      issuerDenominatorIDR <= 0 ||
+      issuerEmissionsTCO2e <= 0 ||
+      !Number.isFinite(attributionFactor) ||
+      attributionFactor <= 0 ||
+      attributionFactor > 1
+    ) {
+      return null;
+    }
+
+    sourceCode = category.code;
+    sourceLabel = category.label;
+    method = 'financed_emissions';
+    unit = 'tco2e';
+    emissionFactor = attributionFactor;
+    factorUnit = 'tCO₂e/tCO₂e';
+    metadata = {
+      financedType: 'security',
+      financedCategory: category.code,
+      financedEntityName: draft.financedEntityName,
+      securityInstrument: category.code as CalculationEntryMetadata['securityInstrument'],
+      investmentValueIDR,
+      issuerDenominatorIDR,
+      issuerEmissionsTCO2e,
+    };
+
+    return {
+      id: draft.id,
+      scope: 3,
+      activityType: draft.activityType,
+      calculationMethod: method,
+      sourceCode,
+      sourceLabel,
+      quantity: issuerEmissionsTCO2e,
+      unit,
+      factorCode: `scope_3_financed_${category.code}`,
+      factorSetId: CALCULATOR_FACTOR_SET_ID,
+      emissionFactor,
+      factorUnit,
+      emissionsTCO2e: issuerEmissionsTCO2e * attributionFactor,
+      metadata,
+    };
+  }
+
+  const factorCode =
+    draft.activityType === 'mobile_combustion' && draft.mobileMethod === 'distance_travelled'
+      ? `scope_1_mobile_${draft.distanceMethod ?? 'standard'}`
+      : sourceCode;
+
+  return {
+    id: draft.id,
+    scope: draft.scope,
+    activityType: draft.activityType as EmissionActivityType,
+    calculationMethod: method,
+    sourceCode,
+    sourceLabel,
+    quantity,
+    unit,
+    factorCode,
+    factorSetId: CALCULATOR_FACTOR_SET_ID,
+    emissionFactor,
+    factorUnit,
+    emissionsTCO2e: (quantity * emissionFactor) / 1000,
+    metadata,
+  };
+}
+
+function SelectField({
+  value,
+  placeholder,
+  onValueChange,
+  children,
+}: {
+  value: string | undefined;
+  placeholder: string;
+  onValueChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <Select value={value ?? ''} onValueChange={onValueChange}>
+      <SelectTrigger className="h-11 rounded-xl border-slate-200 text-sm font-semibold">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>{children}</SelectContent>
+    </Select>
+  );
+}
+
+function NumberField({
+  value,
+  placeholder,
+  unit,
+  onChange,
+}: {
+  value: string | undefined;
+  placeholder: string;
+  unit: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        type="number"
+        min="0"
+        step="0.01"
+        value={value ?? ''}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-11 rounded-xl border-slate-200 font-mono text-sm"
+      />
+      <span className="shrink-0 text-xs font-bold text-slate-500">{unit}</span>
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+  return (
+    <label className="text-xs font-bold uppercase tracking-wide text-slate-600">{children}</label>
+  );
+}
+
+function ActivityForm({
+  draft,
+  update,
+}: {
+  draft: ActivityDraft;
+  update: (changes: Partial<ActivityDraft>) => void;
+}) {
+  if (draft.activityType === 'stationary_combustion') {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <FieldLabel>Jenis bahan bakar</FieldLabel>
+          <SelectField
+            value={draft.fuelCode}
+            placeholder="Pilih bahan bakar"
+            onValueChange={(fuelCode) => update({ fuelCode })}
+          >
+            {STATIONARY_FUEL_OPTIONS.map((fuel) => (
+              <SelectItem key={fuel.code} value={fuel.code}>
+                {fuel.label}
+              </SelectItem>
+            ))}
+          </SelectField>
+        </div>
+        <div className="space-y-2">
+          <FieldLabel>Jumlah konsumsi</FieldLabel>
+          <NumberField
+            value={draft.quantity}
+            placeholder="Contoh: 500"
+            unit={getFuelOption(draft.fuelCode ?? '')?.unit ?? 'unit'}
+            onChange={(quantity) => update({ quantity })}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (draft.activityType === 'mobile_combustion') {
+    const isDistance = draft.mobileMethod === 'distance_travelled';
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <FieldLabel>Metode aktivitas</FieldLabel>
+          <SelectField
+            value={draft.mobileMethod}
+            placeholder="Pilih metode"
+            onValueChange={(mobileMethod) =>
+              update({
+                mobileMethod: mobileMethod as ActivityDraft['mobileMethod'],
+                quantity: '',
+                customFactor: '',
+              })
+            }
+          >
+            <SelectItem value="fuel_consumption">Pemakaian</SelectItem>
+            <SelectItem value="distance_travelled">Jarak Tempuh</SelectItem>
+          </SelectField>
+        </div>
+        {isDistance && (
+          <div className="space-y-2">
+            <FieldLabel>Jenis perhitungan jarak</FieldLabel>
+            <SelectField
+              value={draft.distanceMethod}
+              placeholder="Pilih jenis perhitungan"
+              onValueChange={(distanceMethod) =>
+                update({
+                  distanceMethod: distanceMethod as ActivityDraft['distanceMethod'],
+                  quantity: '',
+                  customFactor: '',
+                })
+              }
+            >
+              <SelectItem value="standard">
+                Berdasarkan Permen LHK No. 12 Tahun 2010 (Terstandar)
+              </SelectItem>
+              <SelectItem value="user_input">
+                Berdasarkan Data Input Pengguna (Non-Standar)
+              </SelectItem>
+            </SelectField>
+          </div>
+        )}
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <FieldLabel>Jenis bahan bakar</FieldLabel>
+            <SelectField
+              value={draft.fuelCode}
+              placeholder="Pilih bahan bakar"
+              onValueChange={(fuelCode) => update({ fuelCode })}
+            >
+              {MOBILE_FUEL_OPTIONS.map((fuel) => (
+                <SelectItem key={fuel.code} value={fuel.code}>
+                  {fuel.label}
+                </SelectItem>
+              ))}
+            </SelectField>
+          </div>
+          <div className="space-y-2">
+            <FieldLabel>{isDistance ? 'Jarak tempuh' : 'Jumlah konsumsi bahan bakar'}</FieldLabel>
+            <NumberField
+              value={draft.quantity}
+              placeholder={isDistance ? 'Contoh: 1000' : 'Contoh: 500'}
+              unit={
+                isDistance ? 'km' : (getMobileFuelOption(draft.fuelCode ?? '')?.unit ?? 'liter')
+              }
+              onChange={(quantity) => update({ quantity })}
+            />
+          </div>
+        </div>
+        {isDistance && draft.distanceMethod === 'user_input' && (
+          <div className="space-y-2">
+            <FieldLabel>Faktor emisi input pengguna</FieldLabel>
+            <NumberField
+              value={draft.customFactor}
+              placeholder="Contoh: 0,171"
+              unit="kgCO₂e/km"
+              onChange={(customFactor) => update({ customFactor })}
+            />
+            <p className="text-[11px] font-medium text-slate-500">
+              Cantumkan sumber faktor pada dokumen pendukung agar dapat diperiksa auditor.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (draft.activityType === 'purchased_electricity') {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <FieldLabel>Lokasi atau sistem kelistrikan</FieldLabel>
+          <SelectField
+            value={draft.electricityLocationCode}
+            placeholder="Pilih lokasi listrik"
+            onValueChange={(electricityLocationCode) => update({ electricityLocationCode })}
+          >
+            {ELECTRICITY_LOCATION_OPTIONS.map((location) => (
+              <SelectItem key={location.code} value={location.code}>
+                {location.label}
+              </SelectItem>
+            ))}
+          </SelectField>
+        </div>
+        <div className="space-y-2">
+          <FieldLabel>Jumlah pemakaian listrik</FieldLabel>
+          <NumberField
+            value={draft.quantity}
+            placeholder="Contoh: 50000"
+            unit="kWh"
+            onChange={(quantity) => update({ quantity })}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (draft.activityType === 'flight') {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <FieldLabel>Jenis penerbangan</FieldLabel>
+          <SelectField
+            value={draft.flightType}
+            placeholder="Pilih jenis penerbangan"
+            onValueChange={(flightType) =>
+              update({ flightType: flightType as ActivityDraft['flightType'] })
+            }
+          >
+            <SelectItem value="domestic">Domestik</SelectItem>
+            <SelectItem value="international">Internasional</SelectItem>
+          </SelectField>
+        </div>
+        <div className="space-y-2">
+          <FieldLabel>Jumlah penumpang</FieldLabel>
+          <NumberField
+            value={draft.quantity}
+            placeholder="Contoh: 25"
+            unit="penumpang"
+            onChange={(quantity) => update({ quantity })}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (draft.activityType === 'hotel') {
+    return (
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="space-y-2">
+          <FieldLabel>Negara</FieldLabel>
+          <SelectField
+            value={draft.countryCode}
+            placeholder="Pilih negara"
+            onValueChange={(countryCode) => update({ countryCode })}
+          >
+            {COUNTRY_OPTIONS.map((country) => (
+              <SelectItem key={country.code} value={country.code}>
+                {country.label}
+              </SelectItem>
+            ))}
+          </SelectField>
+        </div>
+        <div className="space-y-2">
+          <FieldLabel>Jumlah hari menginap</FieldLabel>
+          <NumberField
+            value={draft.secondaryQuantity}
+            placeholder="Contoh: 3"
+            unit="hari"
+            onChange={(secondaryQuantity) => update({ secondaryQuantity })}
+          />
+        </div>
+        <div className="space-y-2">
+          <FieldLabel>Jumlah kamar</FieldLabel>
+          <NumberField
+            value={draft.quantity}
+            placeholder="Contoh: 5"
+            unit="kamar"
+            onChange={(quantity) => update({ quantity })}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (draft.activityType === 'rail') {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <FieldLabel>Kelas kereta</FieldLabel>
+          <SelectField
+            value={draft.railClassCode}
+            placeholder="Pilih kelas kereta"
+            onValueChange={(railClassCode) => update({ railClassCode })}
+          >
+            {RAIL_CLASS_OPTIONS.map((railClass) => (
+              <SelectItem key={railClass.code} value={railClass.code}>
+                {railClass.label}
+              </SelectItem>
+            ))}
+          </SelectField>
+        </div>
+        <div className="space-y-2">
+          <FieldLabel>Jarak tempuh</FieldLabel>
+          <NumberField
+            value={draft.quantity}
+            placeholder="Contoh: 800"
+            unit="km"
+            onChange={(quantity) => update({ quantity })}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (draft.activityType === 'financed_credit') {
+    return (
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="space-y-2 md:col-span-2">
+          <FieldLabel>Jenis kredit</FieldLabel>
+          <SelectField
+            value={draft.financedCategory}
+            placeholder="Pilih jenis kredit"
+            onValueChange={(financedCategory) => update({ financedCategory })}
+          >
+            {CREDIT_CATEGORY_OPTIONS.map((option) => (
+              <SelectItem key={option.code} value={option.code}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectField>
+        </div>
+        <div className="space-y-2">
+          <FieldLabel>Emisi entitas yang dibiayai</FieldLabel>
+          <NumberField
+            value={draft.quantity}
+            placeholder="Contoh: 500"
+            unit="tCO₂e"
+            onChange={(quantity) => update({ quantity })}
+          />
+        </div>
+        <div className="space-y-2 md:col-span-3">
+          <FieldLabel>Nama entitas atau proyek</FieldLabel>
+          <Input
+            value={draft.financedEntityName ?? ''}
+            placeholder="Nama perusahaan atau proyek"
+            onChange={(event) => update({ financedEntityName: event.target.value })}
+            className="h-11 rounded-xl border-slate-200 text-sm"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const securityCategory = SECURITY_CATEGORY_OPTIONS.find(
+    (option) => option.code === draft.financedCategory
+  );
+  const isGovernmentBond = securityCategory?.code === 'government_bond';
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <FieldLabel>Jenis surat berharga</FieldLabel>
+        <SelectField
+          value={draft.financedCategory}
+          placeholder="Pilih jenis surat berharga"
+          onValueChange={(financedCategory) => update({ financedCategory })}
+        >
+          {SECURITY_CATEGORY_OPTIONS.map((option) => (
+            <SelectItem key={option.code} value={option.code}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectField>
+      </div>
+
+      {isGovernmentBond ? (
+        <>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <FieldLabel>Negara penerbit</FieldLabel>
+              <SelectField
+                value={draft.countryCode}
+                placeholder="Pilih negara penerbit"
+                onValueChange={(countryCode) => update({ countryCode })}
+              >
+                {COUNTRY_OPTIONS.map((country) => (
+                  <SelectItem key={country.code} value={country.code}>
+                    {country.label}
+                  </SelectItem>
+                ))}
+              </SelectField>
+            </div>
+            <div className="space-y-2">
+              <FieldLabel>Nilai SBN yang dimiliki</FieldLabel>
+              <NumberField
+                value={draft.investmentValueIDR}
+                placeholder="Contoh: 1000000000"
+                unit="IDR"
+                onChange={(investmentValueIDR) => update({ investmentValueIDR })}
+              />
+            </div>
+          </div>
+          <p className="text-[11px] font-medium text-slate-500">
+            Perhitungan emisi SBN menggunakan referensi resmi negara yang dikelola sistem. Emitter
+            cukup memilih negara penerbit dan mengisi nilai SBN yang dimiliki.
+          </p>
+        </>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <FieldLabel>Nilai pasar/buku investasi</FieldLabel>
+            <NumberField
+              value={draft.investmentValueIDR}
+              placeholder="Contoh: 1000000000"
+              unit="IDR"
+              onChange={(investmentValueIDR) => update({ investmentValueIDR })}
+            />
+          </div>
+          <div className="space-y-2">
+            <FieldLabel>Nilai EVIC atau utang + modal penerbit</FieldLabel>
+            <NumberField
+              value={draft.issuerDenominatorIDR}
+              placeholder="Contoh: 10000000000"
+              unit="IDR"
+              onChange={(issuerDenominatorIDR) => update({ issuerDenominatorIDR })}
+            />
+          </div>
+          <div className="space-y-2">
+            <FieldLabel>Total emisi penerbit</FieldLabel>
+            <NumberField
+              value={draft.issuerEmissionsTCO2e}
+              placeholder="Contoh: 25000"
+              unit="tCO₂e"
+              onChange={(issuerEmissionsTCO2e) => update({ issuerEmissionsTCO2e })}
+            />
+          </div>
+        </div>
+      )}
+
+      {!isGovernmentBond && (
+        <div className="space-y-2">
+          <FieldLabel>Nama penerbit</FieldLabel>
+          <Input
+            value={draft.financedEntityName ?? ''}
+            placeholder="Nama perusahaan penerbit"
+            onChange={(event) => update({ financedEntityName: event.target.value })}
+            className="h-11 rounded-xl border-slate-200 text-sm"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getActivityTitle(activityType: DraftActivityType): string {
+  const labels: Record<DraftActivityType, string> = {
+    stationary_combustion: 'Pembakaran stasioner',
+    mobile_combustion: 'Kendaraan operasional',
+    purchased_electricity: 'Pemakaian listrik',
+    flight: 'Pesawat',
+    hotel: 'Hotel',
+    rail: 'Kereta api',
+    financed_credit: 'Kredit',
+    financed_security: 'Surat berharga',
+  };
+  return labels[activityType];
+}
+
+function ScopeSection({
+  scope,
+  drafts,
+  onAdd,
+  onUpdate,
+  onRemove,
+}: {
+  scope: DraftScope;
+  drafts: ActivityDraft[];
+  onAdd: (activityType: DraftActivityType) => void;
+  onUpdate: (id: string, changes: Partial<ActivityDraft>) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [activityType, setActivityType] = useState<DraftActivityType>(
+    scope === 1 ? 'stationary_combustion' : scope === 2 ? 'purchased_electricity' : 'flight'
+  );
+  const scopeDrafts = drafts.filter((draft) => draft.scope === scope);
+  const scopeColor =
+    scope === 1
+      ? 'border-red-100 bg-red-50/30'
+      : scope === 2
+        ? 'border-amber-100 bg-amber-50/30'
+        : 'border-blue-100 bg-blue-50/30';
+
+  return (
+    <section className={`space-y-5 rounded-3xl border p-6 ${scopeColor}`}>
+      <div>
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+          Scope {scope}
+        </p>
+        <h3 className="mt-1 text-xl font-black text-slate-900">
+          {scope === 1
+            ? 'Direct Emissions'
+            : scope === 2
+              ? 'Indirect Emissions from Purchased Energy'
+              : 'Value Chain Indirect Emissions'}
+        </h3>
+        <p className="mt-1 text-xs font-medium text-slate-500">
+          {scope === 1
+            ? 'Emisi langsung dari pembakaran dan kendaraan operasional.'
+            : scope === 2
+              ? 'Emisi tidak langsung dari listrik yang dibeli.'
+              : 'Emisi tidak langsung dari perjalanan, akomodasi, dan pembiayaan.'}
+        </p>
+      </div>
+
+      {scopeDrafts.map((draft, index) => (
+        <div key={draft.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <h4 className="text-sm font-black text-slate-900">
+              Aktivitas {index + 1}: {getActivityTitle(draft.activityType)}
+            </h4>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onRemove(draft.id)}
+              className="h-9 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" /> Hapus
+            </Button>
+          </div>
+          <ActivityForm draft={draft} update={(changes) => onUpdate(draft.id, changes)} />
+        </div>
+      ))}
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex-1 space-y-2">
+          <FieldLabel>Tambah jenis aktivitas</FieldLabel>
+          <SelectField
+            value={activityType}
+            placeholder="Pilih aktivitas"
+            onValueChange={(value) => setActivityType(value as DraftActivityType)}
+          >
+            {scope === 1 ? (
+              <>
+                <SelectItem value="stationary_combustion">Pembakaran stasioner</SelectItem>
+                <SelectItem value="mobile_combustion">Kendaraan operasional</SelectItem>
+              </>
+            ) : scope === 2 ? (
+              <SelectItem value="purchased_electricity">Pemakaian listrik</SelectItem>
+            ) : (
+              <>
+                <SelectItem value="flight">Pesawat</SelectItem>
+                <SelectItem value="hotel">Hotel</SelectItem>
+                <SelectItem value="rail">Kereta api</SelectItem>
+                <SelectItem value="financed_credit">Kredit</SelectItem>
+                <SelectItem value="financed_security">Surat berharga</SelectItem>
+              </>
+            )}
+          </SelectField>
+        </div>
+        <Button
+          type="button"
+          onClick={() => onAdd(activityType)}
+          className="h-11 rounded-xl bg-slate-900 px-5 text-xs font-bold text-white hover:bg-slate-800"
+        >
+          <Plus className="mr-1.5 h-4 w-4" /> Tambah Aktivitas
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 export function meta() {
   return [
-    { title: 'Kalkulator Hijau BI | RekaKarbon' },
-    { name: 'description', content: 'Kalkulator Emisi Karbon berbasis Sektor Industri' },
+    { title: 'Kalkulator Hijau | RekaKarbon' },
+    { name: 'description', content: 'Kalkulator emisi Scope 1, Scope 2, dan Scope 3 RekaKarbon' },
   ];
 }
 
-// ─── Page Component ──────────────────────────────────────────────────
 export default function KalkulatorHijauPage() {
   const navigate = useNavigate();
   const complianceData = useLoaderData<typeof clientLoader>();
   const [searchParams] = useSearchParams();
-  const sectorFromUrl = searchParams.get('sector');
-  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(sectorFromUrl);
-  const [activeCategoryIdx, setActiveCategoryIdx] = useState(0);
-  const [values, setValues] = useState<Record<string, string>>({});
-
+  const [selectedSectorId, setSelectedSectorId] = useState(searchParams.get('sector') ?? '');
   const [selectedYear, setSelectedYear] = useState(2026);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [generatedPdfData, setGeneratedPdfData] = useState<CalculatorReportSubmission | null>(null);
+  const [drafts, setDrafts] = useState<ActivityDraft[]>([
+    createDraft(1, 'stationary_combustion'),
+    createDraft(2, 'purchased_electricity'),
+    createDraft(3, 'flight'),
+  ]);
   const [selectedComplianceData, setSelectedComplianceData] = useState(complianceData);
   const [isQuotaLoading, setIsQuotaLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [generatedPdfData, setGeneratedPdfData] = useState<{
+    submission: CalculatorReportSubmission;
+    calculationData: CalculationData;
+  } | null>(null);
   const { toast } = useToast();
 
   const selectedSector = useMemo(
-    () => SECTORS.find((s) => s.id === selectedSectorId) ?? null,
+    () => SECTORS.find((sector) => sector.id === selectedSectorId) ?? null,
     [selectedSectorId]
   );
 
-  const categories = UNIVERSAL_CATEGORIES;
-  const activeCategory = categories[activeCategoryIdx] ?? null;
-
   useEffect(() => {
-    let isCancelled = false;
-
+    let cancelled = false;
     if (complianceData?.complianceYear === selectedYear) {
       setSelectedComplianceData(complianceData);
       setIsQuotaLoading(false);
       return () => {
-        isCancelled = true;
+        cancelled = true;
       };
     }
-
-    setSelectedComplianceData(null);
     setIsQuotaLoading(true);
-
+    setSelectedComplianceData(null);
     void complianceRepository
       .getComplianceData(selectedYear)
       .then((data) => {
-        if (!isCancelled && data.complianceYear === selectedYear) {
-          setSelectedComplianceData(data);
-        }
+        if (!cancelled) setSelectedComplianceData(data);
       })
       .catch(() => {
-        if (!isCancelled) {
-          setSelectedComplianceData(null);
-        }
+        if (!cancelled) setSelectedComplianceData(null);
       })
       .finally(() => {
-        if (!isCancelled) {
-          setIsQuotaLoading(false);
-        }
+        if (!cancelled) setIsQuotaLoading(false);
       });
-
     return () => {
-      isCancelled = true;
+      cancelled = true;
     };
   }, [complianceData, selectedYear]);
 
-  const hasMatchingQuota = selectedComplianceData?.complianceYear === selectedYear;
-  const officialQuotaTCO2e = hasMatchingQuota ? selectedComplianceData.quotaPTBAE : null;
+  const entries = useMemo(
+    () => drafts.map(buildEntry).filter((entry): entry is CalculationEntry => entry !== null),
+    [drafts]
+  );
+  const totals = useMemo(() => {
+    const scope1 = entries
+      .filter((entry) => entry.scope === 1)
+      .reduce((sum, entry) => sum + entry.emissionsTCO2e, 0);
+    const scope2 = entries
+      .filter((entry) => entry.scope === 2)
+      .reduce((sum, entry) => sum + entry.emissionsTCO2e, 0);
+    const scope3 = entries
+      .filter((entry) => entry.scope === 3)
+      .reduce((sum, entry) => sum + entry.emissionsTCO2e, 0);
+    return { scope1, scope2, scope3, total: scope1 + scope2 + scope3 };
+  }, [entries]);
 
-  // Reset form when sector changes
-  const handleSectorChange = (sectorId: string) => {
-    setSelectedSectorId(sectorId);
-    setActiveCategoryIdx(0);
-    setValues({});
+  const calculationData: CalculationData = {
+    schemaVersion: CALCULATOR_SCHEMA_VERSION,
+    factorSetId: CALCULATOR_FACTOR_SET_ID,
+    ...totals,
+    entries,
   };
 
-  const handleValueChange = (fieldId: string, val: string) => {
-    setValues((prev) => ({ ...prev, [fieldId]: val }));
+  const addDraft = (scope: DraftScope, activityType: DraftActivityType) => {
+    setDrafts((current) => [...current, createDraft(scope, activityType)]);
   };
 
-  // Calculate emissions per scope + total
-  const { scope1, scope2, scope3, total } = useMemo(() => {
-    if (!selectedSector) return { scope1: 0, scope2: 0, scope3: 0, total: 0 };
-
-    let s1 = 0,
-      s2 = 0,
-      s3 = 0;
-    for (const cat of UNIVERSAL_CATEGORIES) {
-      for (const field of cat.fields) {
-        const raw = Number(values[field.id] || 0);
-        const factor = EMISSION_FACTORS[field.emissionFactorKey] ?? 0;
-        const emission = (raw * factor) / 1000; // convert kg to ton (tCO₂e)
-        if (field.scope === 1) s1 += emission;
-        else if (field.scope === 2) s2 += emission;
-        else s3 += emission;
-      }
-    }
-    return { scope1: s1, scope2: s2, scope3: s3, total: s1 + s2 + s3 };
-  }, [selectedSector, values]);
-
-  const handleNext = () => {
-    if (activeCategoryIdx < categories.length - 1) setActiveCategoryIdx(activeCategoryIdx + 1);
+  const updateDraft = (id: string, changes: Partial<ActivityDraft>) => {
+    setDrafts((current) =>
+      current.map((draft) => (draft.id === id ? { ...draft, ...changes } : draft))
+    );
   };
 
-  const handleApply = async () => {
-    if (!selectedSectorId) return;
+  const removeDraft = (id: string) => {
+    setDrafts((current) => current.filter((draft) => draft.id !== id));
+  };
 
-    setIsSubmitting(true);
-
-    try {
-      // Kumpulkan data kalkulasi
-      const calculationData: CalculationData = {
-        scope1,
-        scope2,
-        scope3,
-        entries: Object.entries(values).map(([id, val]) => ({
-          id,
-          value: Number(val),
-        })),
-      };
-
-      // 1. Submit ke backend
-      const res = await reportRepository.submitCalculatorReport(
-        selectedYear,
-        selectedSectorId,
-        total,
-        calculationData
-      );
-
-      // 2. Animasi "Convert to PDF" selama 3 detik
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setSubmitSuccess(true);
-        setGeneratedPdfData(res);
-      }, 3000);
-    } catch (error: unknown) {
-      console.error(error);
-      setIsSubmitting(false);
+  const handleSubmit = async () => {
+    if (!selectedSectorId) {
       toast({
         variant: 'destructive',
-        title: 'Gagal Menyimpan Laporan',
+        title: 'Sektor belum dipilih',
+        description: 'Pilih sektor industri terlebih dahulu.',
+      });
+      return;
+    }
+    if (entries.length === 0 || totals.total <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Data aktivitas belum lengkap',
+        description: 'Isi minimal satu aktivitas dengan nilai lebih besar dari nol.',
+      });
+      return;
+    }
+    if (drafts.some((draft) => parseQuantity(draft.quantity) > 0 && !buildEntry(draft))) {
+      toast({
+        variant: 'destructive',
+        title: 'Data aktivitas belum valid',
+        description: 'Lengkapi pilihan dan nilai pada setiap aktivitas yang diisi.',
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const submission = await reportRepository.submitCalculatorReport(
+        selectedYear,
+        selectedSectorId,
+        totals.total,
+        calculationData
+      );
+      setGeneratedPdfData({ submission, calculationData });
+    } catch (error: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Gagal menyimpan laporan',
         description: error instanceof Error ? error.message : 'Gagal menyimpan laporan kalkulator.',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDownloadPDF = () => {
-    try {
-      generateEmissionReportPDF({
-        year: selectedYear,
-        sectorName: selectedSector?.name || '-',
-        reportTitle: `Laporan Emisi ${selectedSector?.name || ''} Tahun ${selectedYear}`.trim(),
-        reportMethod: 'CALCULATOR',
-        reportStatus: 'submitted',
-        total,
-        scope1,
-        scope2,
-        scope3,
-        merkleRoot: generatedPdfData?.merkleRoot || '-',
-        txHash: generatedPdfData?.txHash,
-        blockchainReportId: generatedPdfData?.blockchainReportId,
-        thresholdTCO2e: selectedSector?.referenceThresholdTCO2e,
-        fieldValues: values,
-      });
-    } catch (err) {
-      console.error('Failed to generate PDF:', err);
-      toast({
-        variant: 'destructive',
-        title: 'Gagal Mengunduh PDF',
-        description: 'Terjadi kesalahan saat membuat PDF.',
-      });
-    }
+    if (!generatedPdfData || !selectedSector) return;
+    const fieldValues: Record<string, string> = Object.fromEntries(
+      generatedPdfData.calculationData.entries.map((entry) => [entry.id, String(entry.quantity)])
+    );
+    generateEmissionReportPDF({
+      year: selectedYear,
+      sectorName: selectedSector.name,
+      reportTitle: `Laporan Emisi ${selectedSector.name} Tahun ${selectedYear}`,
+      reportMethod: 'CALCULATOR',
+      reportStatus: 'submitted',
+      total: totals.total,
+      scope1: totals.scope1,
+      scope2: totals.scope2,
+      scope3: totals.scope3,
+      merkleRoot: generatedPdfData.submission.merkleRoot,
+      txHash: generatedPdfData.submission.txHash,
+      blockchainReportId: generatedPdfData.submission.blockchainReportId,
+      thresholdTCO2e: selectedSector.referenceThresholdTCO2e,
+      fieldValues,
+      calculationData: generatedPdfData.calculationData,
+    });
   };
 
-  // ─── Render ──────────────────────────────────────────────────────
-  if (submitSuccess && generatedPdfData) {
+  const hasMatchingQuota = selectedComplianceData?.complianceYear === selectedYear;
+  const officialQuotaTCO2e = hasMatchingQuota ? selectedComplianceData.quotaPTBAE : null;
+
+  if (generatedPdfData) {
     return (
-      <div className="space-y-8 animate-fade-in text-center py-12 max-w-2xl mx-auto">
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-10 flex flex-col items-center">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
-            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+      <div className="mx-auto max-w-2xl py-12 text-center">
+        <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-xl">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+            <CheckCircle2 className="h-10 w-10 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Laporan Emisi Berhasil Dibuat</h2>
-          <p className="text-sm text-slate-500 mb-8 max-w-md">
-            Data kalkulator hijau Anda telah dikonversi menjadi laporan emisi dan diamankan di
-            jaringan blockchain (dMRV).
+          <h2 className="mb-2 text-2xl font-black text-slate-900">Laporan Emisi Berhasil Dibuat</h2>
+          <p className="mb-8 text-sm text-slate-500">
+            Laporan telah tersimpan dan menunggu proses audit.
           </p>
-
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 w-full text-left space-y-4 mb-8">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-200">
-              <span className="text-xs font-bold text-slate-500 uppercase">Tahun Kepatuhan</span>
-              <span className="text-sm font-black text-slate-900">{selectedYear}</span>
+          <div className="mb-8 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-left">
+            <div className="flex justify-between border-b border-slate-200 pb-4 text-sm">
+              <span className="font-bold text-slate-500">Total Emisi</span>
+              <span className="font-black text-emerald-700">{formatCarbon(totals.total)}</span>
             </div>
-            <div className="flex justify-between items-center pb-4 border-b border-slate-200">
-              <span className="text-xs font-bold text-slate-500 uppercase">Total Emisi</span>
-              <span className="text-lg font-black text-emerald-700 font-mono">
-                {formatCarbon(total)} tCO₂e
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">
-                Sidik Jari Merkle Root
-              </span>
-              <span className="text-xs font-mono text-slate-700 break-all bg-slate-200/50 p-2 rounded-lg border border-slate-200">
-                {generatedPdfData.merkleRoot}
-              </span>
+            <div>
+              <span className="text-[10px] font-bold uppercase text-slate-400">Merkle Root</span>
+              <p className="mt-1 break-all rounded-lg bg-slate-200/60 p-2 font-mono text-xs text-slate-700">
+                {generatedPdfData.submission.merkleRoot}
+              </p>
             </div>
           </div>
-
-          <div className="flex gap-4 w-full">
+          <div className="flex gap-3">
             <Button
               onClick={() => navigate('/laporan')}
               variant="outline"
-              className="flex-1 h-12 rounded-xl border-slate-200 text-slate-600 font-bold"
+              className="h-12 flex-1 rounded-xl font-bold"
             >
-              Kembali ke Beranda
+              Kembali ke Laporan
             </Button>
             <Button
               onClick={handleDownloadPDF}
-              className="flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center justify-center gap-2"
+              className="h-12 flex-1 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700"
             >
-              <Download className="w-5 h-5" />
-              Download PDF Laporan
+              <Download className="mr-2 h-4 w-4" /> Download PDF
             </Button>
           </div>
         </div>
@@ -558,87 +1152,52 @@ export default function KalkulatorHijauPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in text-left pb-12">
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-8 pb-12 text-left">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center gap-2">
-            <Calculator className="w-7 h-7 text-emerald-600" />
-            Kalkulator Hijau Bank Indonesia
+          <h2 className="flex items-center gap-2 text-2xl font-black tracking-tight text-slate-900">
+            <Calculator className="h-7 w-7 text-emerald-600" /> Kalkulator Hijau
           </h2>
-          <p className="text-xs text-slate-500 font-semibold mt-1 max-w-3xl">
-            Alat bantu perhitungan estimasi emisi GRK berbasis sektor industri. Pilih sektor usaha
-            Anda, lalu isi data aktivitas per kategori emisi (Scope 1, 2, 3).
+          <p className="mt-1 max-w-3xl text-xs font-semibold text-slate-500">
+            Hitung emisi berdasarkan tiga scope GHG dan aktivitas aktual perusahaan.
           </p>
         </div>
-
         <Button
           variant="outline"
           onClick={() => navigate('/laporan')}
-          className="self-start md:self-auto rounded-xl border-slate-200 text-slate-600 hover:text-slate-900 h-9 font-bold text-xs"
+          className="h-9 rounded-xl border-slate-200 text-xs font-bold"
         >
-          <ArrowLeft className="w-4 h-4 mr-1.5" />
-          Kembali ke Laporan
+          <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali
         </Button>
       </div>
 
-      {/* ── Year Selector & Sector Selector ────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Year Selector */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center shrink-0">
-              <Filter className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Tahun Kepatuhan</h3>
-              <p className="text-[10px] text-slate-500 font-semibold">
-                Pilih tahun laporan emisi ini
-              </p>
-            </div>
-          </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <FieldLabel>Tahun kepatuhan</FieldLabel>
           <Select
             value={String(selectedYear)}
-            onValueChange={(val) => setSelectedYear(Number(val))}
+            onValueChange={(value) => setSelectedYear(Number(value))}
           >
-            <SelectTrigger className="h-12 rounded-xl text-sm font-bold w-full border-slate-200">
-              <SelectValue placeholder="— Pilih Tahun —" />
+            <SelectTrigger className="mt-2 h-11 rounded-xl border-slate-200 text-sm font-bold">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2026">FY 2026 (Aktif)</SelectItem>
-              <SelectItem value="2025">FY 2025 (Arsip)</SelectItem>
-              <SelectItem value="2024">FY 2024 (Arsip)</SelectItem>
+              <SelectItem value="2026">FY 2026</SelectItem>
+              <SelectItem value="2025">FY 2025</SelectItem>
+              <SelectItem value="2024">FY 2024</SelectItem>
             </SelectContent>
           </Select>
         </div>
-
-        {/* Sector Selector */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0">
-              <Building2 className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Sektor Industri</h3>
-              <p className="text-[10px] text-slate-500 font-semibold">
-                Menyesuaikan form kategori emisi
-              </p>
-            </div>
-          </div>
-          <Select value={selectedSectorId ?? ''} onValueChange={handleSectorChange}>
-            <SelectTrigger className="h-12 rounded-xl text-sm font-bold w-full border-slate-200">
-              <SelectValue placeholder="— Pilih Sektor Industri —" />
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <FieldLabel>Sektor industri</FieldLabel>
+          <Select value={selectedSectorId} onValueChange={(value) => setSelectedSectorId(value)}>
+            <SelectTrigger className="mt-2 h-11 rounded-xl border-slate-200 text-sm font-bold">
+              <SelectValue placeholder="Pilih sektor industri" />
             </SelectTrigger>
             <SelectContent>
-              {SECTORS.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  <span className="flex items-center gap-2">
-                    {SECTOR_ICONS[s.id]}
-                    <span className="font-bold">{s.name}</span>
-                    <span className="text-slate-400 text-xs ml-1 hidden sm:inline">
-                      — {s.description}
-                    </span>
-                  </span>
+              {SECTORS.map((sector) => (
+                <SelectItem key={sector.id} value={sector.id}>
+                  {sector.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -646,234 +1205,79 @@ export default function KalkulatorHijauPage() {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-sm font-extrabold text-emerald-950">
-              PTBAE-PU Perusahaan Tahun {selectedYear}
-            </h3>
-            <p className="text-[10px] text-emerald-800/80 font-semibold mt-1">
-              Kuota resmi perusahaan digunakan untuk menghitung defisit di Laporan dan Bursa.
-            </p>
-          </div>
-          <span className="text-base font-black text-emerald-900 font-mono">
-            {isQuotaLoading
-              ? 'Memuat...'
-              : officialQuotaTCO2e === null
-                ? 'Belum tersedia'
-                : `${formatCarbon(officialQuotaTCO2e)}`}
-          </span>
+      <div className="flex items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+        <div>
+          <p className="text-xs font-black uppercase text-emerald-800">
+            PTBAE-PU tahun {selectedYear}
+          </p>
+          <p className="mt-1 text-[11px] font-semibold text-emerald-800/80">
+            Kuota resmi dipakai untuk perhitungan kepatuhan dan defisit.
+          </p>
         </div>
-        {hasMatchingQuota && selectedComplianceData.quotaPTBAEStatus === 'LEGACY' && (
-          <p className="text-[10px] text-amber-700 font-semibold mt-3">
-            Data saat ini masih kompatibilitas legacy. Ambang referensi sektor di bawah bukan
-            pengganti PTBAE-PU resmi.
-          </p>
-        )}
-        {!isQuotaLoading && !hasMatchingQuota && (
-          <p className="text-[10px] text-amber-700 font-semibold mt-3">
-            Belum ada alokasi PTBAE-PU untuk tahun yang dipilih. Nilai ambang sektor hanya untuk
-            simulasi dan tidak menjadi dasar pembelian Bursa.
-          </p>
-        )}
+        <span className="font-mono text-sm font-black text-emerald-900">
+          {isQuotaLoading
+            ? 'Memuat...'
+            : officialQuotaTCO2e === null
+              ? 'Belum tersedia'
+              : formatCarbon(officialQuotaTCO2e)}
+        </span>
       </div>
 
-      {/* ── Main Form (only shown when sector selected) ────────── */}
-      {selectedSector && (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden flex flex-col md:flex-row">
-          {/* LEFT PANEL: Category Navigation */}
-          <div className="md:w-72 bg-slate-50/80 border-r border-slate-200 p-4 space-y-2 shrink-0">
-            {categories.map((cat, idx) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategoryIdx(idx)}
-                className={`w-full p-4 rounded-2xl text-left transition-all cursor-pointer flex items-center gap-3 border ${
-                  activeCategoryIdx === idx
-                    ? 'bg-white border-emerald-500 shadow-sm'
-                    : 'border-transparent text-slate-500 hover:bg-slate-100/70'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                    activeCategoryIdx === idx ? cat.color : 'bg-slate-200 text-slate-500'
-                  }`}
-                >
-                  {ICON_MAP[cat.icon]}
-                </div>
-                <div>
-                  <h4
-                    className={`text-xs font-extrabold leading-snug ${activeCategoryIdx === idx ? 'text-slate-900' : 'text-slate-600'}`}
-                  >
-                    {cat.title}
-                  </h4>
-                  <span className="text-[10px] font-semibold block mt-0.5 opacity-80">
-                    Scope {cat.scope} — {cat.description}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
+      <div className="space-y-6">
+        <ScopeSection
+          scope={1}
+          drafts={drafts}
+          onAdd={(activityType) => addDraft(1, activityType)}
+          onUpdate={updateDraft}
+          onRemove={removeDraft}
+        />
+        <ScopeSection
+          scope={2}
+          drafts={drafts}
+          onAdd={(activityType) => addDraft(2, activityType)}
+          onUpdate={updateDraft}
+          onRemove={removeDraft}
+        />
+        <ScopeSection
+          scope={3}
+          drafts={drafts}
+          onAdd={(activityType) => addDraft(3, activityType)}
+          onUpdate={updateDraft}
+          onRemove={removeDraft}
+        />
+      </div>
 
-          {/* RIGHT PANEL: Form Details */}
-          <div className="flex-1 p-6 md:p-10 bg-white min-h-[400px] flex flex-col justify-between">
-            {activeCategory && (
-              <div
-                className="space-y-8 max-w-xl animate-in slide-in-from-right-4 fade-in duration-300"
-                key={activeCategory.id}
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                        activeCategory.scope === 1
-                          ? 'bg-red-100 text-red-700'
-                          : activeCategory.scope === 2
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-blue-100 text-blue-700'
-                      }`}
-                    >
-                      Scope {activeCategory.scope}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-lg text-slate-900">{activeCategory.title}</h3>
-                  <p className="text-xs text-slate-500 font-medium">{activeCategory.description}</p>
-                </div>
-
-                <div className="space-y-5">
-                  {activeCategory.fields.map((field) => (
-                    <div key={field.id} className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">
-                        {field.label}{' '}
-                        <span className="text-slate-400 font-semibold">({field.unit})</span>
-                      </label>
-                      <Input
-                        type="number"
-                        value={values[field.id] ?? ''}
-                        onChange={(e) => handleValueChange(field.id, e.target.value)}
-                        className="rounded-xl border-slate-200 h-11 w-full max-w-sm font-mono text-sm"
-                        placeholder={field.placeholder}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Summary & Actions ───────────────────────────── */}
-            <div className="mt-12 flex flex-col gap-4 border-t border-slate-100 pt-6">
-              {/* Scope breakdown */}
-              <div className="flex flex-wrap gap-3">
-                <div className="bg-red-50 rounded-xl py-2 px-4 border border-red-100 text-center min-w-[120px]">
-                  <span className="text-[9px] font-bold text-red-500 block uppercase">Scope 1</span>
-                  <span className="text-sm font-black text-red-900 font-mono">
-                    {formatCarbon(scope1)}
-                  </span>
-                </div>
-                <div className="bg-amber-50 rounded-xl py-2 px-4 border border-amber-100 text-center min-w-[120px]">
-                  <span className="text-[9px] font-bold text-amber-500 block uppercase">
-                    Scope 2
-                  </span>
-                  <span className="text-sm font-black text-amber-900 font-mono">
-                    {formatCarbon(scope2)}
-                  </span>
-                </div>
-                <div className="bg-blue-50 rounded-xl py-2 px-4 border border-blue-100 text-center min-w-[120px]">
-                  <span className="text-[9px] font-bold text-blue-500 block uppercase">
-                    Scope 3
-                  </span>
-                  <span className="text-sm font-black text-blue-900 font-mono">
-                    {formatCarbon(scope3)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
-                <div className="bg-emerald-50 rounded-2xl py-3 px-5 flex items-center justify-between border border-emerald-100 w-full sm:w-auto shrink-0 gap-8">
-                  <div>
-                    <span className="text-[10px] font-bold text-emerald-600 block uppercase tracking-wide">
-                      Total Emisi GRK
-                    </span>
-                    <span className="text-2xl font-black text-emerald-950 mt-0.5 block font-mono">
-                      {formatCarbon(total)}
-                    </span>
-                  </div>
-                  <Leaf className="w-8 h-8 text-emerald-200" />
-                </div>
-
-                <div className="flex gap-2 w-full sm:w-auto">
-                  {activeCategoryIdx < categories.length - 1 ? (
-                    <Button
-                      className="w-full sm:w-auto px-6 rounded-xl h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md"
-                      onClick={handleNext}
-                      disabled={isSubmitting}
-                    >
-                      Selanjutnya <ArrowRight className="w-4 h-4 ml-1.5" />
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full sm:w-auto px-6 rounded-xl h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md"
-                      onClick={handleApply}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Mengonversi form ke
-                          PDF...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-1.5" /> Selesai & Simpan Data
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </div>
-              {/* Progress bar vs threshold */}
-              <div className="mt-4 pt-4 border-t border-slate-100">
-                <div className="flex justify-between items-end mb-1">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                    Ambang Referensi Sektor (Simulasi) {selectedSector.name}
-                  </span>
-                  <span className="text-xs font-black text-slate-700 font-mono">
-                    {formatCarbon(selectedSector.referenceThresholdTCO2e)} tCO₂e
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${total > selectedSector.referenceThresholdTCO2e ? 'bg-red-500' : 'bg-emerald-500'}`}
-                    style={{
-                      width: `${Math.min((total / selectedSector.referenceThresholdTCO2e) * 100, 100)}%`,
-                    }}
-                  />
-                </div>
-                {total > selectedSector.referenceThresholdTCO2e && (
-                  <p className="text-[10px] font-bold text-red-600 mt-1.5 flex items-center gap-1">
-                    <Flame className="w-3 h-3" /> Emisi melebihi ambang referensi simulasi sektor.
-                  </p>
-                )}
-              </div>
+      <div className="sticky bottom-4 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-xl backdrop-blur">
+        <div className="grid gap-3 md:grid-cols-4">
+          {[
+            ['Scope 1', totals.scope1, 'text-red-700'],
+            ['Scope 2', totals.scope2, 'text-amber-700'],
+            ['Scope 3', totals.scope3, 'text-blue-700'],
+            ['Total Emisi', totals.total, 'text-emerald-700'],
+          ].map(([label, value, color]) => (
+            <div key={String(label)} className="rounded-xl bg-slate-50 px-4 py-3">
+              <span className="block text-[10px] font-bold uppercase text-slate-500">{label}</span>
+              <span className={`font-mono text-sm font-black ${String(color)}`}>
+                {formatCarbon(Number(value))}
+              </span>
             </div>
-          </div>
+          ))}
         </div>
-      )}
-
-      {/* Empty state if no sector selected */}
-      {!selectedSector && (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-16 flex flex-col items-center justify-center text-center space-y-4">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
-            <BarChart3 className="w-8 h-8 text-slate-300" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-600">Pilih Sektor Industri</h3>
-            <p className="text-xs text-slate-400 font-medium mt-1">
-              Silakan pilih sektor usaha perusahaan Anda di atas untuk menampilkan
-              <br />
-              formulir perhitungan emisi yang sesuai.
-            </p>
-          </div>
+        <div className="mt-4 flex items-center justify-between gap-4 border-t border-slate-100 pt-4">
+          <span className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+            <Leaf className="h-4 w-4 text-emerald-600" /> Hasil dihitung ulang oleh server saat
+            disubmit.
+          </span>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="h-11 rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white hover:bg-emerald-700"
+          >
+            <Save className="mr-1.5 h-4 w-4" />{' '}
+            {isSubmitting ? 'Menyimpan...' : 'Selesai & Simpan Data'}
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

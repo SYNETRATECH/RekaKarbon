@@ -237,21 +237,22 @@ model User {
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
 
   kybProfile                      KybProfile?
-  verifiedKybProfiles             KybProfile[]              @relation("KybVerifier")
+  verifiedKybProfiles             KybProfile[]               @relation("KybVerifier")
   companies                       Company[]
-  bursaListings                   BursaListing[]            @relation("SellerListings")
-  bursaOrders                     BursaOrder[]              @relation("BuyerOrders")
-  multisigRequests                MultiSigRequest[]         @relation("ApplicantRequests")
+  bursaListings                   BursaListing[]             @relation("SellerListings")
+  bursaOrders                     BursaOrder[]               @relation("BuyerOrders")
+  multisigRequests                MultiSigRequest[]          @relation("ApplicantRequests")
   multisigSignatures              MultiSigSignature[]
   uploadedFiles                   StoredFile[]
   systemNotifications             SystemNotification[]
   pushSubscriptions               WebPushSubscription[]
-  auditedReports                  EmissionReport[]          @relation("AuditorReports")
-  submittedPtbaeApplications      PtbaeApplication[]        @relation("PtbaeApplicationSubmitter")
-  auditedPtbaeApplications        PtbaeApplication[]        @relation("PtbaeApplicationAuditor")
-  decidedPtbaeApplications        PtbaeApplication[]        @relation("PtbaeApplicationDecider")
-  createdPtbaeApplicationVersions PtbaeApplicationVersion[] @relation("PtbaeApplicationVersionCreator")
-  issuedPtbaeAllocations          PtbaeAllocation[]         @relation("PtbaeAllocationIssuer")
+  auditedReports                  EmissionReport[]           @relation("AuditorReports")
+  emissionReportAuditEvents       EmissionReportAuditEvent[] @relation("EmissionReportAuditActor")
+  submittedPtbaeApplications      PtbaeApplication[]         @relation("PtbaeApplicationSubmitter")
+  auditedPtbaeApplications        PtbaeApplication[]         @relation("PtbaeApplicationAuditor")
+  decidedPtbaeApplications        PtbaeApplication[]         @relation("PtbaeApplicationDecider")
+  createdPtbaeApplicationVersions PtbaeApplicationVersion[]  @relation("PtbaeApplicationVersionCreator")
+  issuedPtbaeAllocations          PtbaeAllocation[]          @relation("PtbaeAllocationIssuer")
 
   @@map("users")
 }
@@ -738,15 +739,17 @@ model BursaOrder {
   listingId      String      @map("listing_id") @db.Uuid
   buyerUserId    String      @map("buyer_user_id") @db.Uuid
   volumeTco2e    Decimal     @map("volume_tco2e") @db.Decimal(12, 2)
-  pricePerTonIdr Decimal     @map("price_per_ton_idr") @db.Decimal(14, 2)
-  totalAmountIdr Decimal     @map("total_amount_idr") @db.Decimal(16, 2)
-  txHash             String?     @map("tx_hash") @db.Text
   blockNumber        String?     @map("block_number") @db.Text
   verificationStatus String      @default("Terverifikasi (KLHK On-Chain)") @map("verification_status") @db.Text
   auditorName        String?     @map("auditor_name") @db.Text
   status             OrderStatus @default(PENDING)
+  retiredVolumeTco2e Decimal     @default(0) @map("retired_volume_tco2e") @db.Decimal(12, 2)
+  pricePerTonIdr     Decimal     @map("price_per_ton_idr") @db.Decimal(14, 2)
+  totalAmountIdr     Decimal     @map("total_amount_idr") @db.Decimal(16, 2)
+  txHash             String?     @map("tx_hash") @db.Text
+  status             OrderStatus @default(PENDING)
   createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  completedAt    DateTime?   @map("completed_at") @db.Timestamptz
+  completedAt        DateTime?   @map("completed_at") @db.Timestamptz
 
   listing BursaListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   buyer   User         @relation("BuyerOrders", fields: [buyerUserId], references: [id])
@@ -865,8 +868,16 @@ model StpInvoice {
 enum EmissionReportStatus {
   DRAFT
   SUBMITTED
+  REVISION_REQUIRED
   APPROVED
   REJECTED
+}
+
+enum EmissionReportAuditAction {
+  SUBMITTED
+  REVISION_REQUESTED
+  RESUBMITTED
+  APPROVED
 }
 
 enum ReportMethod {
@@ -875,31 +886,56 @@ enum ReportMethod {
 }
 
 model EmissionReport {
-  id                  String               @id @default(uuid()) @db.Uuid
-  companyId           String               @map("company_id") @db.Uuid
-  year                Int
-  totalEmissionsTco2e Decimal              @map("total_emissions_tco2e") @db.Decimal(14, 2)
-  merkleRoot          String               @map("merkle_root") @db.Text
-  blockchainTxHash    String?              @map("blockchain_tx_hash") @db.Text
-  blockchainReportId  BigInt?              @map("blockchain_report_id")
-  status              EmissionReportStatus @default(SUBMITTED)
-  reportMethod        ReportMethod         @default(UPLOAD) @map("report_method")
-  sector              String?              @db.Text
-  calculationData     Json?                @map("calculation_data")
-  submittedAt         DateTime             @default(now()) @map("submitted_at") @db.Timestamptz
-  auditedByUserId     String?              @map("audited_by_user_id") @db.Uuid
-  auditorNotes        String?              @map("auditor_notes") @db.Text
-  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+  id                    String                       @id @default(uuid()) @db.Uuid
+  companyId             String                       @map("company_id") @db.Uuid
+  year                  Int
+  totalEmissionsTco2e   Decimal                      @map("total_emissions_tco2e") @db.Decimal(14, 2)
+  merkleRoot            String                       @map("merkle_root") @db.Text
+  blockchainTxHash      String?                      @map("blockchain_tx_hash") @db.Text
+  blockchainReportId    BigInt?                      @map("blockchain_report_id")
+  status                EmissionReportStatus         @default(SUBMITTED)
+  reportMethod          ReportMethod                 @default(UPLOAD) @map("report_method")
+  sector                String?                      @db.Text
+  calculationData       Json?                        @map("calculation_data")
+  submittedAt           DateTime                     @default(now()) @map("submitted_at") @db.Timestamptz
+  auditedByUserId       String?                      @map("audited_by_user_id") @db.Uuid
+  auditorNotes          String?                      @map("auditor_notes") @db.Text
+  auditedAt             DateTime?                    @map("audited_at") @db.Timestamptz
+  auditBlockchainTxHash String?                      @map("audit_blockchain_tx_hash") @db.Text
+  auditAnchorStatus     PtbaeBlockchainAnchorStatus? @map("audit_anchor_status")
+  revisionNumber        Int                          @default(0) @map("revision_number")
+  createdAt             DateTime                     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime                     @updatedAt @map("updated_at") @db.Timestamptz
 
-  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  auditor           User?              @relation("AuditorReports", fields: [auditedByUserId], references: [id])
+  company           Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  auditor           User?                      @relation("AuditorReports", fields: [auditedByUserId], references: [id])
   files             StoredFile[]
   ptbaeApplications PtbaeApplication[]
+  auditEvents       EmissionReportAuditEvent[]
 
   @@unique([companyId, year])
   @@index([status])
   @@map("emission_reports")
+}
+
+model EmissionReportAuditEvent {
+  id               String                    @id @default(uuid()) @db.Uuid
+  emissionReportId String                    @map("emission_report_id") @db.Uuid
+  actorUserId      String                    @map("actor_user_id") @db.Uuid
+  action           EmissionReportAuditAction
+  fromStatus       EmissionReportStatus?     @map("from_status")
+  toStatus         EmissionReportStatus      @map("to_status")
+  notes            String?                   @db.Text
+  merkleRoot       String?                   @map("merkle_root") @db.Text
+  blockchainTxHash String?                   @map("blockchain_tx_hash") @db.Text
+  createdAt        DateTime                  @default(now()) @map("created_at") @db.Timestamptz
+
+  emissionReport EmissionReport @relation(fields: [emissionReportId], references: [id], onDelete: Cascade)
+  actor          User           @relation("EmissionReportAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([emissionReportId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("emission_report_audit_events")
 }
 
 model StoredFile {
