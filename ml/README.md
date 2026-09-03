@@ -266,8 +266,9 @@ The ML pipeline implements the comprehensive testing methodology defined in the 
 | **5. Performance Benchmarks**           | [`test_performance_benchmarks.py`](tests/test_performance_benchmarks.py) | Single predict latency benchmark (p50 < 30 ms, p95 < 40 ms), batch 500 records throughput benchmark (> 400 records/sec).                                                                                                   | ✅ **2 Passed** |
 | **6. ONNX Parity**                      | [`test_onnx_parity.py`](tests/test_onnx_parity.py)                       | 100.0% prediction parity between Scikit-Learn `.predict()` and ONNX Runtime `session.run()`, decision score diff < 10⁻⁴ across all 20 features.                                                                            | ✅ **3 Passed** |
 | **7. Configuration & Env**              | [`test_config.py`](tests/test_config.py)                                 | Environment variable overrides, model hyperparameters, random state reproducibility.                                                                                                                                       | ✅ **8 Passed** |
+| **8. Industry Archetype Scenarios**     | [`test_industry_scenarios.py`](tests/test_industry_scenarios.py)         | End-to-end simulation of 6 concrete 'Company X' filings (Heavy cement, banking, plantation, greenwashing under-reporting, math tampering, subsidized fuel fraud).                                                          | ✅ **7 Passed** |
 
-**Total Test Coverage:** **37 / 37 Tests Passing (100.0%)**
+**Total Test Coverage:** **44 / 44 Tests Passing (100.0%)**
 
 ---
 
@@ -288,6 +289,32 @@ Evaluated on an independent stratified holdout test dataset (375 samples) genera
 | **Single Predict Latency (p95)**      | ≤ 40 ms         | **28.3 ms**         | ✅ **PASSED** |
 
 Model metadata, feature specifications, and evaluation results are exported to [`models/model_metadata.json`](models/model_metadata.json) and visual plots in [`models/reports/`](models/reports/).
+
+---
+
+## 🏢 Enterprise Simulation & Scenario Auditing CLI (`simulation/`)
+
+Before deploying models to production, developers and carbon verificators can dry-run and inspect how the engine evaluates specific **'Company X'** filings using the scenario simulation CLI:
+
+```bash
+# Dry-run audit on a single enterprise scenario
+poetry run python -m rekakarbon_ml.simulation.scenario_runner --scenario data/scenarios/company_semen_heavy_industry.json
+
+# Batch dry-run across all 6 golden industry archetypes
+poetry run python -m rekakarbon_ml.simulation.scenario_runner --all
+
+# Machine-readable JSON output for automated integration testing
+poetry run python -m rekakarbon_ml.simulation.scenario_runner --scenario data/scenarios/company_greenwashing_fraud.json --json
+```
+
+### Supported Industry Archetype Fixtures (`ml/data/scenarios/`):
+
+1. **`company_semen_heavy_industry.json`**: Blended cement manufacturing with clinker calcination ($0.525\text{ tCO}_2\text{e/ton}$), industrial steam coal, and PLN power. (_Verdict: Compliant, Trust: 97.9%, Priority: LOW_).
+2. **`company_bank_services.json`**: Commercial banking headquarters with 0 direct combustion and Scope 3 omitted. (_Verdict: Compliant, Trust: 98.0%, Priority: LOW, zero Scope 3 false-positive penalty_).
+3. **`company_sawit_plantation.json`**: Palm oil agribusiness with mobile vehicle fleets and mill boilers. (_Verdict: Compliant, Trust: 97.8%, Priority: LOW_).
+4. **`company_greenwashing_fraud.json`**: Steel manufacturer burning 5M L diesel and 15M kg coal, but suppressing reported Scope 1 to 15,000 tCO₂e. (_Verdict: Anomaly, Priority: CRITICAL, Trust: 41.5%_).
+5. **`company_math_tampering_fraud.json`**: Arithmetic tampering forging declared total lower than sum of scopes. (_Verdict: Anomaly, Priority: CRITICAL, Math Coherence: FAILED_).
+6. **`company_subsidized_fuel_fraud.json`**: Mining site claiming subsidized diesel at Rp 6,800/L. (_Verdict: Anomaly, Priority: HIGH, DJP Index: 45.2%_).
 
 ---
 

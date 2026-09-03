@@ -178,11 +178,16 @@ class CarbonAnomalyPredictor:
                 * self.factors["natural_gas_tco2e_per_m3"]
             )
             e_proc = clinker * self.factors["cement_clinker_calcination_tco2e_per_ton"]
+            has_s1_combustion = (tot_diesel + coal_kg + gas_m3 + clinker) > 0.0
             e_s1_expected = max(e_diesel + e_coal + e_gas + e_proc, 0.001)
 
-            div_s1_pct = round(abs(e_s1_expected - s1_rep) / (e_s1_expected + 1e-6) * 100.0, 1)
+            if not has_s1_combustion and s1_rep == 0.0:
+                div_s1_pct = 0.0
+            else:
+                div_s1_pct = round(abs(e_s1_expected - s1_rep) / (e_s1_expected + 1e-6) * 100.0, 1)
 
             # --- TIER 2: SCOPE 2 GRID ELECTRICITY ---
+            has_s2_consumption = elec_kwh > 0.0 or c_pln > 0.0
             e_s2_expected = (
                 (elec_kwh * self.factors["grid_electricity_tco2e_per_kwh"])
                 if elec_kwh > 0
@@ -191,7 +196,10 @@ class CarbonAnomalyPredictor:
             )
             e_s2_expected = max(e_s2_expected, 0.001)
 
-            div_s2_pct = round(abs(e_s2_expected - s2_rep) / (e_s2_expected + 1e-6) * 100.0, 1)
+            if not has_s2_consumption and s2_rep == 0.0:
+                div_s2_pct = 0.0
+            else:
+                div_s2_pct = round(abs(e_s2_expected - s2_rep) / (e_s2_expected + 1e-6) * 100.0, 1)
 
             # --- TIER 3: MATH COHERENCE ---
             scope_sum = s1_rep + s2_rep + s3_rep
@@ -200,13 +208,13 @@ class CarbonAnomalyPredictor:
             )
 
             # --- TIER 4: FISCAL PRICE CHECK (DJP e-Faktur) ---
-            unit_solar = c_solar / (stat_fuel + 1e-6) if stat_fuel > 0 else 20500.0
+            unit_solar = c_solar / (tot_diesel + 1e-6) if tot_diesel > 0 else 20500.0
             solar_min, solar_max = (
                 self.prices["solar_diesel"]["min"],
                 self.prices["solar_diesel"]["max"],
             )
 
-            if solar_min <= unit_solar <= solar_max or stat_fuel == 0:
+            if solar_min <= unit_solar <= solar_max or tot_diesel == 0:
                 score_djp = 98.5
             else:
                 deviation = min(abs(unit_solar - 20500.0), 30000.0)
@@ -266,7 +274,11 @@ class CarbonAnomalyPredictor:
             # Determine alert priority level for the auditor
             if math_discrepancy_pct > 25.0 or div_s1_pct > 65.0 or composite_trust < 40.0:
                 priority = "critical"
-            elif is_alert and (composite_trust < 65.0 or anomaly_prob > 0.75):
+            elif is_alert and (
+                composite_trust < 68.0
+                or anomaly_prob > 0.75
+                or "BIAYA_SOLAR_TIDAK_REALISTIS" in flags
+            ):
                 priority = "high"
             elif is_alert:
                 priority = "medium"
@@ -301,7 +313,7 @@ class CarbonAnomalyPredictor:
                     }
                 )
 
-            if stat_fuel > 0 and score_djp < 85.0:
+            if tot_diesel > 0 and score_djp < 85.0:
                 unit_solar_val = unit_solar
                 drivers.append(
                     {
@@ -424,7 +436,7 @@ class CarbonAnomalyPredictor:
                     "physical_fuel_delta_pct": div_s1_pct,
                     "electricity_delta_pct": div_s2_pct,
                     "fiscal_price_delta_pct": round(abs(unit_solar - 20500.0) / 20500.0 * 100.0, 1)
-                    if stat_fuel > 0
+                    if tot_diesel > 0
                     else 0.0,
                     "sector_intensity_zscore": round(intensity_z, 2),
                 },

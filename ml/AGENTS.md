@@ -26,7 +26,7 @@ poetry install               # Install environment and dependencies
 poetry run ruff format .     # Format all Python files (PEP 8, 100 cols)
 poetry run ruff check .      # Lint check with auto-fixes
 poetry run mypy src tests    # Static type analysis across package and tests
-poetry run pytest -v         # Run all 37 tests across 7 testing suites
+poetry run pytest -v         # Run all 44 tests across 8 testing suites
 poetry run preprocess        # Run batch schema validation, stratified split & feature registry CLI
 poetry run train             # Train IsolationForest on train.csv & export ONNX artifact
 poetry run eval              # Run model evaluation on test.csv & quality gate assessment
@@ -83,6 +83,9 @@ ml/
 │       ├── inference/          # RUNTIME INFERENCE ENGINE FOR SERVER
 │       │   ├── __init__.py
 │       │   └── predictor.py       # High-level diagnostic predictor
+│       ├── simulation/         # ENTERPRISE SCENARIO SIMULATION & AUDITOR CLI
+│       │   ├── __init__.py
+│       │   └── scenario_runner.py # Company X dry-run auditor & report card CLI
 │       ├── pipeline/           # WORKFLOW ORCHESTRATION MODULE
 │       │   ├── __init__.py
 │       │   └── orchestrator.py    # End-to-end MLOps workflow coordinator CLI
@@ -90,7 +93,7 @@ ml/
 │           ├── __init__.py
 │           ├── app.py             # Development studio dashboard
 │           └── cli.py             # Studio launcher entrypoint
-└── tests/                      # AUTOMATED TEST SUITE (37 Tests)
+└── tests/                      # AUTOMATED TEST SUITE (44 Tests)
     ├── __init__.py
     ├── test_config.py                  # Configuration & hyperparameter tests (8 tests)
     ├── test_data_validation.py         # Layer 1: Multi-scope schema & registry tests (9 tests)
@@ -98,7 +101,8 @@ ml/
     ├── test_model_evaluation.py        # Layer 3 & 4: Evaluation metrics & quality gates (2 tests)
     ├── test_behavioral_robustness.py   # Layer 5: Scope 3 optionality & math fraud tests (7 tests)
     ├── test_performance_benchmarks.py  # Layer 6 & 7: Inference latency & throughput (2 tests)
-    └── test_onnx_parity.py             # Layer 8 & 9: 20-Feature Scikit-Learn vs ONNX parity (3 tests)
+    ├── test_onnx_parity.py             # Layer 8: 20-Feature Scikit-Learn vs ONNX parity (3 tests)
+    └── test_industry_scenarios.py      # Layer 8: Industry Archetype Scenarios / Company X (7 tests)
 ```
 
 ---
