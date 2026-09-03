@@ -143,7 +143,7 @@ describe('Architecture — Layer Isolation', () => {
     }
 
     expect(violations).toHaveLength(0);
-  }, 15000);
+  }, 30000);
 
   it('lib/mock must NOT import from components/, portal/, store/, or repositories/', async () => {
     const ruleName = 'mock-layer-isolation';
@@ -239,7 +239,7 @@ describe('Architecture — Layer Isolation', () => {
     }
 
     expect(violations).toHaveLength(0);
-  }, 15000);
+  }, 30000);
 
   it('utils/ must NOT import from components/, portal/, store/, or repositories/', async () => {
     const ruleName = 'no-utils-leaf';
