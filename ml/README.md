@@ -44,7 +44,7 @@ flowchart TD
         TSFeature["EmissionFeatureEngineer (20-Dim Feature Extractor)"]
         NodeOnnx["onnxruntime-node Engine (In-Process Execution)"]
         AuditEngine["MlAuditEngineService (Multi-Tier Rules & Diagnostics)"]
-        Prisma[(PostgreSQL Database)]
+        Prisma[("PostgreSQL Database")]
     end
 
     subgraph MLPackage ["5-Stage MLOps Lifecycle (ml/)"]
@@ -59,7 +59,7 @@ flowchart TD
         SklearnPipe --> Evaluator["evaluation/evaluator.py (Quality Gates & Metrics)"]
         Evaluator --> MetadataFile["models/model_metadata.json"]
         Evaluator --> VisualReports["models/reports/ (HTML, ROC, CM Plots, SHAP)"]
-        Orchestrator["pipeline/orchestrator.py (Top-Level MLOps Workflow CLI)"] -.-> MLPackage
+        Orchestrator["pipeline/orchestrator.py (Top-Level MLOps Workflow CLI)"] -.-> SklearnPipe
     end
 
     UI -->|"Submit GHG Scope 1, 2, 3 Data"| AuditCtrl
@@ -80,14 +80,14 @@ flowchart TD
 
 Every design choice in the RekaKarbon ML pipeline is grounded in regulatory standards, thermodynamic principles, and low-latency system integration:
 
-| Decision Area            | Technical Choice                                          | Strategic & Engineering Rationale ("Why")                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| :----------------------- | :-------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Multi-Scope Modeling** | **GHG Protocol Scope 1, 2, & Optional 3**                 | • **Standard Compliance**: Directly mirrors the international GHG Protocol Corporate Standard and Indonesian carbon taxonomy (SRN-PPI, IDXCarbon).<br>• **Scope 3 Optionality**: Indonesian industrial facilities (especially SMEs) rarely possess supply-chain telemetry; treating Scope 3 as optional avoids false-positive rejection while validating Scope 1 and 2 thoroughly.<br>• **Mathematical Coherence**: Dedicated feature verifies $\text{Scope 1} + \text{Scope 2} + \text{Scope 3} = \text{Total}$ to eliminate arithmetic fraud. |
-| **Configurable Sectors** | **External `data/sectors.json` Configuration**            | • **Zero Hardcoding**: Sector thresholds, intensity priors, and emission factors are decoupled from Python code, allowing regulatory adjustments without code refactoring.<br>• **Client Synchronization**: Perfectly mirrors the 6 standard sectors in the client frontend (`manufaktur`, `pertambangan`, `perbankan`, `konstruksi`, `pertanian`, `perhotelan`).                                                                                                                                                                               |
-| **Model Selection**      | **Isolation Forest** (`sklearn.ensemble.IsolationForest`) | • **Unsupervised Reality**: Fraudulent and anomalous submissions are zero-day, unlabelled, and diverse. Isolation Forest isolates outliers through recursive partitioning without requiring balanced fraud labels.<br>• **Linear Time Complexity**: $O(n \cdot t \cdot \psi)$ scaling ensures inference takes $< 2\text{ ms}$.<br>• **Standard ONNX Compatibility**: Converts natively to ONNX `TreeEnsembleRegressor` nodes.                                                                                                                   |
-| **Deployment Runtime**   | **In-Process ONNX** (`onnxruntime-node`) in NestJS        | • **Zero Network Latency**: Executing inside the Node.js event loop eliminates HTTP serialization and inter-service network hops, dropping inference latency from $\sim 30\text{--}50\text{ ms}$ (external Python service) to **$< 2\text{ ms}$**.<br>• **Operational Simplicity**: Avoids operating a separate Python microservice in production.<br>• **100% Parity**: Guaranteed identical decision scores ($< 10^{-6}$ diff) between Python training and Node.js serving.                                                                   |
-| **Feature Engineering**  | **20-Dimensional Physics & Fiscal Matrix**                | • **Thermodynamic Grounding**: Incorporates stoichiometric combustion factors aligned with client calculators (`diesel: 2.512 kgCO2e/L`, `coal: 2.531 kgCO2e/kg`, `gas: 2.023 kgCO2e/m3`, `grid: 0.207 kgCO2e/kWh`).<br>• **Fiscal Cross-Verification**: Cross-checks fuel volume against DJP e-Faktur market pricing (Rp 16,000 – 25,000 / L for solar diesel).<br>• **Auditor Explainability**: Every derived feature maps to a concrete regulatory rule with human-readable XAI recommendations.                                             |
-| **Data Normalization**   | **RobustScaler** (Median & IQR)                           | • **Extreme Scale Variance**: Industrial facilities span multiple orders of magnitude (from small hotels emitting 200 tons to giant mining conglomerates emitting hundreds of thousands of tons).<br>• **Outlier Resilience**: Unlike `StandardScaler`, `RobustScaler` uses the median and IQR, preventing fraud outliers from distorting scaling parameters.                                                                                                                                                                                   |
+| Decision Area            | Technical Choice                                          | Strategic & Engineering Rationale ("Why")                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| :----------------------- | :-------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Multi-Scope Modeling** | **GHG Protocol Scope 1, 2, & Optional 3**                 | • **Standard Compliance**: Directly mirrors the international GHG Protocol Corporate Standard and Indonesian carbon taxonomy (SRN-PPI, IDXCarbon).<br>• **Scope 3 Optionality**: Indonesian industrial facilities (especially SMEs) rarely possess supply-chain telemetry; treating Scope 3 as optional avoids false-positive rejection while validating Scope 1 and 2 thoroughly.<br>• **Mathematical Coherence**: Dedicated feature verifies `Scope 1 + Scope 2 + Scope 3 = Total` to eliminate arithmetic fraud. |
+| **Configurable Sectors** | **External `data/sectors.json` Configuration**            | • **Zero Hardcoding**: Sector thresholds, intensity priors, and emission factors are decoupled from Python code, allowing regulatory adjustments without code refactoring.<br>• **Client Synchronization**: Perfectly mirrors the 6 standard sectors in the client frontend (`manufaktur`, `pertambangan`, `perbankan`, `konstruksi`, `pertanian`, `perhotelan`).                                                                                                                                                   |
+| **Model Selection**      | **Isolation Forest** (`sklearn.ensemble.IsolationForest`) | • **Unsupervised Reality**: Fraudulent and anomalous submissions are zero-day, unlabelled, and diverse. Isolation Forest isolates outliers through recursive partitioning without requiring balanced fraud labels.<br>• **Linear Time Complexity**: `O(n · t · ψ)` scaling ensures inference takes < 2 ms.<br>• **Standard ONNX Compatibility**: Converts natively to ONNX `TreeEnsembleRegressor` nodes.                                                                                                           |
+| **Deployment Runtime**   | **In-Process ONNX** (`onnxruntime-node`) in NestJS        | • **Zero Network Latency**: Executing inside the Node.js event loop eliminates HTTP serialization and inter-service network hops, dropping inference latency from ~30–50 ms (external Python service) to **< 2 ms**.<br>• **Operational Simplicity**: Avoids operating a separate Python microservice in production.<br>• **100% Parity**: Guaranteed identical decision scores (diff < 1e-6) between Python training and Node.js serving.                                                                          |
+| **Feature Engineering**  | **20-Dimensional Physics & Fiscal Matrix**                | • **Thermodynamic Grounding**: Incorporates stoichiometric combustion factors aligned with client calculators (`diesel: 2.512 kgCO2e/L`, `coal: 2.531 kgCO2e/kg`, `gas: 2.023 kgCO2e/m3`, `grid: 0.207 kgCO2e/kWh`).<br>• **Fiscal Cross-Verification**: Cross-checks fuel volume against DJP e-Faktur market pricing (Rp 16,000 – 25,000 / L for solar diesel).<br>• **Auditor Explainability**: Every derived feature maps to a concrete regulatory rule with human-readable XAI recommendations.                 |
+| **Data Normalization**   | **RobustScaler** (Median & IQR)                           | • **Extreme Scale Variance**: Industrial facilities span multiple orders of magnitude (from small hotels emitting 200 tons to giant mining conglomerates emitting hundreds of thousands of tons).<br>• **Outlier Resilience**: Unlike `StandardScaler`, `RobustScaler` uses the median and IQR, preventing fraud outliers from distorting scaling parameters.                                                                                                                                                       |
 
 ---
 
@@ -98,12 +98,13 @@ Every design choice in the RekaKarbon ML pipeline is grounded in regulatory stan
 To ensure data quality, regulatory adherence, and prevent evaluation leakage, the data preparation lifecycle enforces five fundamental protocols:
 
 - **Configurable Sectoral Benchmarks (`data/sectors.json` & `data/benchmark_loader.py`)**: Sector parameters (reference thresholds, average intensities, fuel priors, and process emission flags) are dynamically loaded from `ml/data/sectors.json`. This directly mirrors the 6 industrial sectors defined in the client application:
-  1. `manufaktur` (Manufaktur & Industri Berat — Threshold: $50{,}000\text{ tCO}_2\text{e}$)
-  2. `pertambangan` (Pertambangan & Energi — Threshold: $100{,}000\text{ tCO}_2\text{e}$)
-  3. `perbankan` (Perbankan & Jasa Keuangan — Threshold: $5{,}000\text{ tCO}_2\text{e}$)
-  4. `konstruksi` (Konstruksi & Properti — Threshold: $25{,}000\text{ tCO}_2\text{e}$)
-  5. `pertanian` (Pertanian & Perkebunan — Threshold: $15{,}000\text{ tCO}_2\text{e}$)
-  6. `perhotelan` (Perhotelan & Pariwisata — Threshold: $10{,}000\text{ tCO}_2\text{e}$)
+  1. `manufaktur` (Manufaktur & Industri Berat — Threshold: 50,000 tCO₂e)
+  2. `pertambangan` (Pertambangan & Energi — Threshold: 100,000 tCO₂e)
+  3. `perbankan` (Perbankan & Jasa Keuangan — Threshold: 5,000 tCO₂e)
+  4. `konstruksi` (Konstruksi & Properti — Threshold: 25,000 tCO₂e)
+  5. `pertanian` (Pertanian & Perkebunan — Threshold: 15,000 tCO₂e)
+  6. `perhotelan` (Perhotelan & Pariwisata — Threshold: 10,000 tCO₂e)
+
 - **Batch Schema Validation (`data/validator.py`)**: Raw reporting records loaded during batch preprocessing are validated against `EmissionReportInput` Pydantic boundary checks. Out-of-bounds inputs (e.g., negative production, impossible clinker ratios) are flagged and documented in `data/dataset_summary.json`.
 - **Stratified Dataset Splitting (`data/generator.py` & `data/preprocess.py`)**: Splitting into `data/splits/train.csv` (1,750 samples), `val.csv` (375 samples), and `test.csv` (375 samples) uses stratified sampling on `is_anomaly` and sector to guarantee identical class distributions across training and evaluation sets.
 - **Feature Store Registry Specification (`data/feature_registry.py`)**: All 20 derived features are declared with formal metadata (data types, physical units, descriptions, stoichiometric formulas) and exported to `data/feature_manifest.json`.
@@ -166,25 +167,25 @@ Rather than generating arbitrary random numbers, the engine enforces strict phys
 
 Every company emission report provides 17 raw parameters across GHG scopes, physical energy consumption, and utility expenditures:
 
-| Category            | Parameter                    | Unit                          | Description                                                     |
-| :------------------ | :--------------------------- | :---------------------------- | :-------------------------------------------------------------- |
-| **GHG Scopes**      | `reported_scope1_tco2e`      | $\text{tCO}_2\text{e}$ / Year | Direct emissions from fuel combustion & process IPPU            |
-| **GHG Scopes**      | `reported_scope2_tco2e`      | $\text{tCO}_2\text{e}$ / Year | Indirect emissions from purchased PLN grid electricity          |
-| **GHG Scopes**      | `reported_scope3_tco2e`      | $\text{tCO}_2\text{e}$ / Year | Value chain emissions (**fully optional**; $0$ if absent)       |
-| **GHG Scopes**      | `reported_emissions_tco2e`   | $\text{tCO}_2\text{e}$ / Year | Declared total gross GHG emissions                              |
-| **Operational**     | `production_tonnes`          | Ton or MWh / Year             | Real finished output or facility scale metric                   |
-| **Operational**     | `historical_emissions_tco2e` | $\text{tCO}_2\text{e}$ / Year | Verified emissions from previous reporting period               |
-| **Operational**     | `sector`                     | String / Enum                 | Declared industrial sector (`manufaktur`, `pertambangan`, etc.) |
-| **Physical Fuel**   | `stat_fuel_liters`           | Liter / Year                  | Solar/diesel for stationary boilers, kilns, generators          |
-| **Physical Fuel**   | `mob_fuel_liters`            | Liter / Year                  | Solar/diesel for factory vehicle fleets & logistics             |
-| **Physical Fuel**   | `coal_kg`                    | kg / Year                     | Industrial steam coal consumption                               |
-| **Physical Fuel**   | `gas_m3`                     | $\text{m}^3$ / Year           | PGN natural gas consumption                                     |
-| **Physical Grid**   | `electricity_kwh`            | kWh / Year                    | Real metered electrical power consumption                       |
-| **Process IPPU**    | `clinker_tonnes`             | Ton / Year                    | Limestone calcination for cement/clinker production             |
-| **Fiscal e-Faktur** | `cost_solar_idr`             | IDR / Year                    | Annual expenditure on Solar / High-Speed Diesel                 |
-| **Fiscal e-Faktur** | `cost_coal_idr`              | IDR / Year                    | Annual expenditure on Steam Coal                                |
-| **Fiscal e-Faktur** | `cost_gas_idr`               | IDR / Year                    | Annual expenditure on Natural Gas                               |
-| **Fiscal e-Faktur** | `cost_pln_idr`               | IDR / Year                    | Annual expenditure on PLN Grid Electricity                      |
+| Category            | Parameter                    | Unit              | Description                                                     |
+| :------------------ | :--------------------------- | :---------------- | :-------------------------------------------------------------- |
+| **GHG Scopes**      | `reported_scope1_tco2e`      | tCO₂e / Year      | Direct emissions from fuel combustion & process IPPU            |
+| **GHG Scopes**      | `reported_scope2_tco2e`      | tCO₂e / Year      | Indirect emissions from purchased PLN grid electricity          |
+| **GHG Scopes**      | `reported_scope3_tco2e`      | tCO₂e / Year      | Value chain emissions (**fully optional**; 0 if absent)         |
+| **GHG Scopes**      | `reported_emissions_tco2e`   | tCO₂e / Year      | Declared total gross GHG emissions                              |
+| **Operational**     | `production_tonnes`          | Ton or MWh / Year | Real finished output or facility scale metric                   |
+| **Operational**     | `historical_emissions_tco2e` | tCO₂e / Year      | Verified emissions from previous reporting period               |
+| **Operational**     | `sector`                     | String / Enum     | Declared industrial sector (`manufaktur`, `pertambangan`, etc.) |
+| **Physical Fuel**   | `stat_fuel_liters`           | Liter / Year      | Solar/diesel for stationary boilers, kilns, generators          |
+| **Physical Fuel**   | `mob_fuel_liters`            | Liter / Year      | Solar/diesel for factory vehicle fleets & logistics             |
+| **Physical Fuel**   | `coal_kg`                    | kg / Year         | Industrial steam coal consumption                               |
+| **Physical Fuel**   | `gas_m3`                     | m³ / Year         | PGN natural gas consumption                                     |
+| **Physical Grid**   | `electricity_kwh`            | kWh / Year        | Real metered electrical power consumption                       |
+| **Process IPPU**    | `clinker_tonnes`             | Ton / Year        | Limestone calcination for cement/clinker production             |
+| **Fiscal e-Faktur** | `cost_solar_idr`             | IDR / Year        | Annual expenditure on Solar / High-Speed Diesel                 |
+| **Fiscal e-Faktur** | `cost_coal_idr`              | IDR / Year        | Annual expenditure on Steam Coal                                |
+| **Fiscal e-Faktur** | `cost_gas_idr`               | IDR / Year        | Annual expenditure on Natural Gas                               |
+| **Fiscal e-Faktur** | `cost_pln_idr`               | IDR / Year        | Annual expenditure on PLN Grid Electricity                      |
 
 ---
 
@@ -196,13 +197,17 @@ The `EmissionFeatureEngineer` (`src/rekakarbon_ml/training/transformers.py`) tra
 
 Stoichiometric emission factors are synchronized with the client application calculator:
 
-$$E_{\text{diesel}} = (\text{Fuel}_{\text{stat}} + \text{Fuel}_{\text{mob}}) \times 0.002512 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{coal}} = \text{Coal}_{\text{kg}} \times 0.002531 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{gas}} = \text{Gas}_{\text{m}^3} \times 0.002023 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{pln}} = \text{Electricity}_{\text{kWh}} \times 0.000207 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{process}} = \text{Clinker}_{\text{tonnes}} \times 0.525000 \quad (\text{tCO}_2\text{e})$$
-$$E_{\text{Scope1, expected}} = \max(E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}} + E_{\text{process}},\, 0.001)$$
-$$E_{\text{Scope2, expected}} = \max(E_{\text{pln}},\, 0.001)$$
+$$
+\begin{aligned}
+E_{\text{diesel}} &= (\text{Fuel}_{\text{stat}} + \text{Fuel}_{\text{mob}}) \times 0.002512 \quad (\text{tCO}_2\text{e}) \\
+E_{\text{coal}} &= \text{Coal}_{\text{kg}} \times 0.002531 \quad (\text{tCO}_2\text{e}) \\
+E_{\text{gas}} &= \text{Gas}_{\text{m}^3} \times 0.002023 \quad (\text{tCO}_2\text{e}) \\
+E_{\text{pln}} &= \text{Electricity}_{\text{kWh}} \times 0.000207 \quad (\text{tCO}_2\text{e}) \\
+E_{\text{process}} &= \text{Clinker}_{\text{tonnes}} \times 0.525000 \quad (\text{tCO}_2\text{e}) \\
+E_{\text{Scope1, expected}} &= \max(E_{\text{diesel}} + E_{\text{coal}} + E_{\text{gas}} + E_{\text{process}},\, 0.001) \\
+E_{\text{Scope2, expected}} &= \max(E_{\text{pln}},\, 0.001)
+\end{aligned}
+$$
 
 #### B. The 20 Engineered Features
 
@@ -229,12 +234,14 @@ $$E_{\text{Scope2, expected}} = \max(E_{\text{pln}},\, 0.001)$$
 The engine is engineered as a **decision-support copilot** for human auditors. Output diagnostics include:
 
 - **Auditor Priority (`priority`)**: Classifies filings into action urgency tiers:
-  - `"critical"`: Severe fraud suspected ($\text{Math Discrepancy} > 25\%$, $\text{Scope 1 Divergence} > 65\%$, or $\text{Trust} < 40\%$). Immediate manual review mandatory.
-  - `"high"`: Significant divergence detected ($\text{Trust} < 65\%$ or $\text{Anomaly Probability} > 0.75$).
+  - `"critical"`: Severe fraud suspected (Math Discrepancy > 25%, Scope 1 Divergence > 65%, or Trust < 40%). Immediate manual review mandatory.
+  - `"high"`: Significant divergence detected (Trust < 65% or Anomaly Probability > 0.75).
   - `"medium"`: Minor statistical outlier requiring standard auditor check.
-  - `"low"`: Fully compliant filing ($\text{Trust} \ge 80\%$).
+  - `"low"`: Fully compliant filing (Trust ≥ 80%).
 - **Composite Trust Score (`trust_score`)**:
-  $$\text{Trust Score} = 0.25 \times \text{Score}_{\text{DJP}} + 0.45 \times \text{Score}_{\text{BBM}} + 0.30 \times \text{Score}_{\text{CEMS}} \quad (0\text{--}100\%)$$
+  $$
+  \text{Trust Score} = 0.25 \times \text{Score}_{\text{DJP}} + 0.45 \times \text{Score}_{\text{BBM}} + 0.30 \times \text{Score}_{\text{CEMS}} \quad (0\text{--}100\%)
+  $$
 - **Scope Diagnostics Breakdown (`scope_diagnostics`)**:
   - `scope1`: Reported vs expected combustion emissions, divergence percentage, and fuel flags.
   - `scope2`: Reported vs expected grid emissions and power tariff flags.
@@ -254,29 +261,29 @@ The ML pipeline implements the comprehensive testing methodology defined in the 
 | **2. Preprocessing & Invariance**       | [`test_pipeline.py`](tests/test_pipeline.py)                             | Feature engineering matrix shape $(N, 20)$, NaN/Inf sanitization, stratified dataset split creation, Scikit-Learn pipeline fitting, full orchestrator execution.                                                           | ✅ **6 Passed** |
 | **3. Model Evaluation & Quality Gates** | [`test_model_evaluation.py`](tests/test_model_evaluation.py)             | Evaluation on independent stratified holdout split ($375$ samples), precision/recall/F1 calculation, per-fraud recall assertion (`SCOPE1_UNDERREPORTING_FRAUD`).                                                           | ✅ **2 Passed** |
 | **4. Behavioral & Metamorphic**         | [`test_behavioral_robustness.py`](tests/test_behavioral_robustness.py)   | Directional monotonicity, Scope 3 optionality (Scope 3 = 0 zero-penalty invariance), scope math summation discrepancy detection, DJP e-Faktur price bounds, $\pm 1\%$ sensor noise invariance, extreme scale non-crashing. | ✅ **7 Passed** |
-| **5. Performance Benchmarks**           | [`test_performance_benchmarks.py`](tests/test_performance_benchmarks.py) | Single predict latency benchmark (p50 $< 30\text{ms}$, p95 $< 40\text{ms}$), batch 500 records throughput benchmark ($> 400\text{ records/sec}$).                                                                          | ✅ **2 Passed** |
-| **6. ONNX Parity**                      | [`test_onnx_parity.py`](tests/test_onnx_parity.py)                       | $100.0\%$ prediction parity between Scikit-Learn `.predict()` and ONNX Runtime `session.run()`, decision score diff $< 10^{-4}$ across all 20 features.                                                                    | ✅ **3 Passed** |
+| **5. Performance Benchmarks**           | [`test_performance_benchmarks.py`](tests/test_performance_benchmarks.py) | Single predict latency benchmark (p50 < 30 ms, p95 < 40 ms), batch 500 records throughput benchmark (> 400 records/sec).                                                                                                   | ✅ **2 Passed** |
+| **6. ONNX Parity**                      | [`test_onnx_parity.py`](tests/test_onnx_parity.py)                       | 100.0% prediction parity between Scikit-Learn `.predict()` and ONNX Runtime `session.run()`, decision score diff < 10⁻⁴ across all 20 features.                                                                            | ✅ **3 Passed** |
 | **7. Configuration & Env**              | [`test_config.py`](tests/test_config.py)                                 | Environment variable overrides, model hyperparameters, random state reproducibility.                                                                                                                                       | ✅ **8 Passed** |
 
-**Total Test Coverage:** **37 / 37 Tests Passing ($100.0\%$)**
+**Total Test Coverage:** **37 / 37 Tests Passing (100.0%)**
 
 ---
 
 ## 📊 Evaluation Benchmark Results & Quality Gates
 
-Evaluated on an independent stratified holdout test dataset ($375$ samples) generated across the 6 Indonesian industrial sectors:
+Evaluated on an independent stratified holdout test dataset (375 samples) generated across the 6 Indonesian industrial sectors:
 
-| Metric                                | Acceptance Gate    | Measured Score      | Verdict       |
-| :------------------------------------ | :----------------- | :------------------ | :------------ |
-| **F1 Score**                          | $\ge 0.85$         | **1.0000**          | ✅ **PASSED** |
-| **Recall (Overall)**                  | $\ge 0.88$         | **1.0000**          | ✅ **PASSED** |
-| **Precision**                         | $\ge 0.70$         | **1.0000**          | ✅ **PASSED** |
-| **Accuracy**                          | $\ge 0.90$         | **1.0000**          | ✅ **PASSED** |
-| **ROC-AUC**                           | $\ge 0.90$         | **0.9845**          | ✅ **PASSED** |
-| **False Positive Rate (FPR)**         | $\le 10.0\%$       | **0.0000 (0.0%)**   | ✅ **PASSED** |
-| **Scope 1 Under-Reporting Recall**    | $\ge 92.0\%$       | **1.0000 (100.0%)** | ✅ **PASSED** |
-| **Scope Math Summation Fraud Recall** | $\ge 90.0\%$       | **1.0000 (100.0%)** | ✅ **PASSED** |
-| **Single Predict Latency (p95)**      | $\le 40\text{ ms}$ | **28.3 ms**         | ✅ **PASSED** |
+| Metric                                | Acceptance Gate | Measured Score      | Verdict       |
+| :------------------------------------ | :-------------- | :------------------ | :------------ |
+| **F1 Score**                          | ≥ 0.85          | **1.0000**          | ✅ **PASSED** |
+| **Recall (Overall)**                  | ≥ 0.88          | **1.0000**          | ✅ **PASSED** |
+| **Precision**                         | ≥ 0.70          | **1.0000**          | ✅ **PASSED** |
+| **Accuracy**                          | ≥ 0.90          | **1.0000**          | ✅ **PASSED** |
+| **ROC-AUC**                           | ≥ 0.90          | **0.9845**          | ✅ **PASSED** |
+| **False Positive Rate (FPR)**         | ≤ 10.0%         | **0.0000 (0.0%)**   | ✅ **PASSED** |
+| **Scope 1 Under-Reporting Recall**    | ≥ 92.0%         | **1.0000 (100.0%)** | ✅ **PASSED** |
+| **Scope Math Summation Fraud Recall** | ≥ 90.0%         | **1.0000 (100.0%)** | ✅ **PASSED** |
+| **Single Predict Latency (p95)**      | ≤ 40 ms         | **28.3 ms**         | ✅ **PASSED** |
 
 Model metadata, feature specifications, and evaluation results are exported to [`models/model_metadata.json`](models/model_metadata.json) and visual plots in [`models/reports/`](models/reports/).
 

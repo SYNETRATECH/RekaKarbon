@@ -21,32 +21,32 @@ RekaKarbon/
 ```mermaid
 graph TD
     subgraph Client ["Frontend (client/)"]
-        FE[React 19 + Tailwind v4 + Zustand UI]
+        FE["React 19 + Tailwind v4 + Zustand UI"]
     end
 
     subgraph Server ["Backend (server/)"]
-        API[NestJS REST API]
-        ONNX[onnxruntime-node ML Engine]
-        DB[(PostgreSQL)]
+        API["NestJS REST API"]
+        ONNX["onnxruntime-node ML Engine"]
+        DB[("PostgreSQL")]
         API --> ONNX
         API --> DB
     end
 
     subgraph ML ["AI/ML Engine (ml/)"]
-        PY[Scikit-Learn + IPCC Stoichiometry]
-        ONNX_FILE[models/anomaly_pipeline.onnx]
+        PY["Scikit-Learn + IPCC Stoichiometry"]
+        ONNX_FILE["models/anomaly_pipeline.onnx"]
         PY --> ONNX_FILE
     end
 
     subgraph Blockchain ["Blockchain (blockchain/)"]
-        BESU[Hyperledger Besu EVM Node]
-        CONTRACTS[ERC-20 Carbon Token & DEX Orderbook]
+        BESU["Hyperledger Besu EVM Node"]
+        CONTRACTS["ERC-20 Carbon Token & DEX Orderbook"]
         BESU --> CONTRACTS
     end
 
-    FE <-->|REST API / JWT| API
-    ONNX_FILE -.->|In-Process Embedded Inference| ONNX
-    API <-->|Ethers.js / JSON-RPC| BESU
+    FE <-->|"REST API / JWT"| API
+    ONNX_FILE -.->|"In-Process Embedded Inference"| ONNX
+    API <-->|"Ethers.js / JSON-RPC"| BESU
 ```
 
 ---
