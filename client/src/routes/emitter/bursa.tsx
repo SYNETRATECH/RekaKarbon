@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useLoaderData } from 'react-router';
+import { useLoaderData, useRevalidator } from 'react-router';
 import { formatCarbon, formatCurrency, formatNumber } from '@/lib/formatters';
-import { bursaRepository, complianceRepository, reportRepository } from '../../repositories';
+import { bursaRepository, complianceRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import BursaPurchaseModal from '../../components/modals/BursaPurchaseModal';
@@ -27,12 +27,12 @@ import {
 import type { BursaItem } from '@/types';
 
 export async function clientLoader() {
-  const [bursaItems, complianceData, emissionReports] = await Promise.all([
+  const [bursaItems, complianceData, purchaseEligibility] = await Promise.all([
     bursaRepository.getBursaItems().catch(() => []),
     complianceRepository.getComplianceData().catch(() => null),
-    reportRepository.getEmissionReports().catch(() => []),
+    bursaRepository.getPurchaseEligibility().catch(() => null),
   ]);
-  return { bursaItems, complianceData, emissionReports };
+  return { bursaItems, complianceData, purchaseEligibility };
 }
 
 clientLoader.hydrate = true as const;
@@ -49,25 +49,20 @@ export function meta() {
 }
 
 export default function CarbonDexMarket() {
-  const { bursaItems, complianceData, emissionReports } = useLoaderData<typeof clientLoader>();
+  const { bursaItems, complianceData, purchaseEligibility } = useLoaderData<typeof clientLoader>();
+  const { revalidate } = useRevalidator();
 
   const [bursaFilter, setBursaFilter] = useState<'all' | 'hutan' | 'mangrove' | 'gambut'>('all');
   const [sortBy, setSortBy] = useState<'pasokan' | 'harga' | 'perubahan'>('pasokan');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBursaToken, setSelectedBursaToken] = useState<BursaItem | null>(null);
 
-  const activeReport = emissionReports.find((report) => report.status !== 'rejected') ?? null;
-  const actualEmissionTCO2e =
-    activeReport?.totalEmissionsTCO2e ?? complianceData?.actualEmissions ?? 0;
-  const quotaPTBAETCO2e = activeReport?.quotaPTBAETCO2e ?? complianceData?.quotaPTBAE ?? null;
-  const calculatedDeficitTCO2e =
-    quotaPTBAETCO2e === null ? null : Math.max(0, actualEmissionTCO2e - quotaPTBAETCO2e);
-  const deficitTCO2e = calculatedDeficitTCO2e ?? complianceData?.carbonDeficit ?? null;
+  const actualEmissionTCO2e = purchaseEligibility?.approvedEmissionsTCO2e ?? null;
+  const quotaPTBAETCO2e = purchaseEligibility?.ptbaeQuotaTCO2e ?? null;
+  const purchaseRequirementTCO2e = purchaseEligibility?.purchaseRequirementTCO2e ?? 0;
   const estimatedOffsetCostIDR =
-    deficitTCO2e === null ? null : deficitTCO2e * (complianceData?.carbonPricePerTon ?? 650000);
-  const complianceBasis = activeReport
-    ? `laporan emisi tahun ${activeReport.year}`
-    : 'data kepatuhan aktif';
+    purchaseRequirementTCO2e * (complianceData?.carbonPricePerTon ?? 650000);
+  const needsPurchase = purchaseEligibility?.canPurchase === true && purchaseRequirementTCO2e > 0;
 
   // Sorting and Searching logic
   const sortedItems = [...bursaItems]
@@ -99,10 +94,10 @@ export default function CarbonDexMarket() {
       </div>
 
       {/* 2. TOP ALERT BOX (WARNING BANNER) */}
-      <Alert variant={deficitTCO2e !== null && deficitTCO2e > 0 ? 'destructive' : 'default'}>
-        {deficitTCO2e !== null && deficitTCO2e > 0 ? (
+      <Alert variant={needsPurchase ? 'destructive' : 'default'}>
+        {needsPurchase ? (
           <AlertTriangle className="w-4 h-4 text-status-danger-fg" />
-        ) : deficitTCO2e === null ? (
+        ) : purchaseEligibility === null ? (
           <Info className="w-4 h-4 text-amber-600" />
         ) : (
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -110,33 +105,37 @@ export default function CarbonDexMarket() {
         <div>
           <AlertTitle
             className={
-              deficitTCO2e !== null && deficitTCO2e > 0
+              needsPurchase
                 ? 'text-status-danger-fg'
-                : deficitTCO2e === null
+                : purchaseEligibility === null
                   ? 'text-amber-700'
                   : 'text-emerald-700'
             }
           >
-            {deficitTCO2e !== null && deficitTCO2e > 0
-              ? `Defisit aktif: ${formatCarbon(deficitTCO2e)}`
-              : deficitTCO2e === null
-                ? 'PTBAE-PU belum tersedia'
-                : 'Tidak ada defisit emisi aktif'}
+            {needsPurchase
+              ? `Kebutuhan pembelian: ${formatCarbon(purchaseRequirementTCO2e)}`
+              : purchaseEligibility === null
+                ? 'Status kewajiban belum tersedia'
+                : purchaseEligibility.reason === 'offset_tokens_available'
+                  ? 'Token pelunasan sudah tersedia'
+                  : purchaseEligibility.reason === 'no_deficit'
+                    ? 'Tidak ada defisit emisi aktif'
+                    : purchaseEligibility.message}
           </AlertTitle>
           <AlertDescription
             className={
-              deficitTCO2e !== null && deficitTCO2e > 0
+              needsPurchase
                 ? 'text-status-danger-fg/90'
-                : deficitTCO2e === null
+                : purchaseEligibility === null
                   ? 'text-amber-700/90'
                   : 'text-emerald-700/90'
             }
           >
-            {deficitTCO2e !== null && deficitTCO2e > 0
-              ? `Batas pembelian otomatis disetel sebesar ${formatCarbon(deficitTCO2e)} berdasarkan ${complianceBasis} (${formatCarbon(actualEmissionTCO2e)} emisi - ${formatCarbon(quotaPTBAETCO2e)} kuota). Estimasi nilai offset ${formatCurrency(estimatedOffsetCostIDR)}.`
-              : deficitTCO2e === null
-                ? 'Pembelian untuk pelunasan dinonaktifkan sampai kuota PTBAE-PU resmi tersedia.'
-                : 'Pembelian token untuk pelunasan defisit tidak tersedia sampai sistem menerima emisi yang melebihi kuota.'}
+            {purchaseEligibility === null
+              ? 'Pembelian dinonaktifkan sampai status audit, PTBAE-PU resmi, dan saldo token dapat diverifikasi.'
+              : needsPurchase
+                ? `${purchaseEligibility.message} Dasar: ${formatCarbon(actualEmissionTCO2e ?? 0)} emisi disetujui - ${formatCarbon(quotaPTBAETCO2e ?? 0)} kuota resmi - ${formatCarbon(purchaseEligibility.retiredTCO2e)} tCO₂e yang sudah di-retire - ${formatCarbon(purchaseEligibility.availableTokenBalanceTCO2e)} tCO₂e token tersedia. Estimasi kebutuhan dana ${formatCurrency(estimatedOffsetCostIDR)}.`
+                : purchaseEligibility.message}
           </AlertDescription>
         </div>
       </Alert>
@@ -418,7 +417,8 @@ export default function CarbonDexMarket() {
       {/* 7. MODULAR BURSA PURCHASE & TRANSPARENCY ALLOCATION MODAL */}
       <BursaPurchaseModal
         token={selectedBursaToken}
-        deficitTCO2e={deficitTCO2e}
+        purchaseEligibility={purchaseEligibility}
+        onPurchaseComplete={() => revalidate()}
         onClose={() => setSelectedBursaToken(null)}
       />
     </div>

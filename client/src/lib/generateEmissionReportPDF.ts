@@ -5,9 +5,9 @@
  * Format mengikuti struktur Buku Panduan Hijau BI 2026.
  */
 import { jsPDF } from 'jspdf';
-import { formatNumber, formatPercent } from '@/lib/formatters';
+import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatters';
 import { formatDate, formatDateTime } from '@/lib/dates';
-import type { SectorBreakdown } from '@/types';
+import type { CalculationData, SectorBreakdown } from '@/types';
 import pdfBrandIcon from '@/assets/icon-pdf.png?inline';
 
 // Inline field definitions to avoid circular dependency with kalkulator.tsx
@@ -196,6 +196,7 @@ interface PdfReportParams {
   sectorBreakdown?: SectorBreakdown[];
   /** key-value pairs of field values, e.g. { genset_diesel: '500', electricity: '50000' } */
   fieldValues?: Record<string, string | number>;
+  calculationData?: CalculationData;
 }
 
 // ─── Color constants (RGB) ─────────────────────────────────
@@ -395,6 +396,114 @@ function drawBlockchainVerification(
   return y + verificationHeight + 6;
 }
 
+function drawCalculationDataDetails(
+  doc: jsPDF,
+  pageW: number,
+  pageH: number,
+  marginX: number,
+  contentW: number,
+  year: number,
+  sectorName: string,
+  total: number,
+  calculationData: CalculationData
+) {
+  doc.addPage();
+  let y = 20;
+  doc.setFillColor(...EMERALD);
+  doc.rect(0, 0, pageW, 18, 'F');
+  doc.setFontSize(12);
+  doc.setFont('times', 'bold');
+  doc.setTextColor(...WHITE);
+  doc.text('REKAKARBON - Detail Perhitungan Emisi', marginX, 12);
+  doc.setFontSize(8);
+  doc.text(`Tahun ${year} | ${sectorName}`, pageW - marginX, 12, { align: 'right' });
+
+  y = drawSectionTitle(doc, 'Rincian Aktivitas Kalkulator', marginX, y + 8);
+  doc.setFontSize(7);
+  doc.setFont('times', 'italic');
+  doc.setTextColor(...SLATE_500);
+  doc.text(
+    `Versi data: ${calculationData.schemaVersion} | Versi faktor: ${calculationData.factorSetId}`,
+    marginX,
+    y
+  );
+  y += 8;
+
+  for (const scope of [1, 2, 3] as const) {
+    const scopeEntries = calculationData.entries.filter((entry) => entry.scope === scope);
+    if (scopeEntries.length === 0) continue;
+
+    if (y > pageH - 35) {
+      doc.addPage();
+      y = 20;
+    }
+    const scopeColor: RGB = scope === 1 ? RED_600 : scope === 2 ? AMBER_600 : BLUE_600;
+    doc.setFillColor(...scopeColor);
+    doc.rect(marginX, y, contentW, 8, 'F');
+    doc.setFontSize(9);
+    doc.setFont('times', 'bold');
+    doc.setTextColor(...WHITE);
+    doc.text(`Scope ${scope}`, marginX + 4, y + 5.5);
+    y += 8;
+
+    for (const entry of scopeEntries) {
+      const detail = getCalculationEntryDetail(entry);
+      const labelLines = doc.splitTextToSize(entry.sourceLabel, 62) as string[];
+      const detailLines = detail ? (doc.splitTextToSize(detail, 62) as string[]) : [];
+      const textLines = [...labelLines, ...detailLines];
+      const rowHeight = Math.max(9, textLines.length * 3.5 + 3);
+      if (y + rowHeight > pageH - 35) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFillColor(...(scopeEntries.indexOf(entry) % 2 === 0 ? WHITE : SLATE_100));
+      doc.rect(marginX, y, contentW, rowHeight, 'F');
+      doc.setFontSize(7);
+      doc.setFont('times', 'normal');
+      doc.setTextColor(...SLATE_800);
+      textLines.forEach((line, index) => doc.text(line, marginX + 3, y + 4 + index * 3.5));
+      doc.setFont('times', 'bold');
+      doc.text(`${formatNumber(entry.quantity, 0, 2)} ${entry.unit}`, marginX + 70, y + 4);
+      doc.setFont('times', 'normal');
+      doc.setTextColor(...SLATE_500);
+      doc.text(formatNumber(entry.emissionFactor, 0, 3), marginX + 103, y + 4);
+      doc.setFont('times', 'bold');
+      doc.setTextColor(...EMERALD);
+      doc.text(formatPdfCarbon(entry.emissionsTCO2e), pageW - marginX - 3, y + 4, {
+        align: 'right',
+      });
+      y += rowHeight;
+    }
+    y += 4;
+  }
+
+  if (y > pageH - 45) {
+    doc.addPage();
+    y = 20;
+  }
+  doc.setFillColor(...EMERALD_BG);
+  doc.rect(marginX, y, contentW, 13, 'F');
+  doc.setFontSize(10);
+  doc.setFont('times', 'bold');
+  doc.setTextColor(...EMERALD);
+  doc.text('TOTAL EMISI', marginX + 5, y + 8);
+  doc.text(formatPdfCarbon(total), pageW - marginX - 5, y + 8, { align: 'right' });
+}
+
+function getCalculationEntryDetail(entry: CalculationData['entries'][number]): string | null {
+  if (entry.activityType !== 'financed_security') return null;
+
+  const metadata = entry.metadata;
+  if (metadata.securityInstrument === 'government_bond') {
+    return [
+      `Negara: ${metadata.countryLabel ?? metadata.countryCode ?? '-'}`,
+      `Nilai SBN: ${formatCurrency(metadata.investmentValueIDR ?? 0)}`,
+    ].join(' | ');
+  }
+
+  return `Nilai pasar/buku: ${formatCurrency(metadata.investmentValueIDR ?? 0)} | EVIC/Utang+Modal: ${formatCurrency(metadata.issuerDenominatorIDR ?? 0)} | Emisi penerbit: ${formatPdfCarbon(metadata.issuerEmissionsTCO2e ?? 0)}`;
+}
+
 export function generateEmissionReportPDF(params: PdfReportParams) {
   const {
     year,
@@ -414,6 +523,7 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
     thresholdTCO2e,
     sectorBreakdown,
     fieldValues,
+    calculationData,
   } = params;
 
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -858,7 +968,19 @@ export function generateEmissionReportPDF(params: PdfReportParams) {
     direct_tco2e: { factor: 1000, factorLabel: '1.000 kg CO2e/tCO2e' },
   };
 
-  if (fieldValues && Object.keys(fieldValues).length > 0) {
+  if (calculationData && calculationData.entries.length > 0) {
+    drawCalculationDataDetails(
+      doc,
+      pageW,
+      pageH,
+      marginX,
+      contentW,
+      year,
+      sectorName,
+      total,
+      calculationData
+    );
+  } else if (fieldValues && Object.keys(fieldValues).length > 0) {
     // Always start on a new page for detail
     doc.addPage();
     y = 20;

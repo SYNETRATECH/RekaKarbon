@@ -3,3 +3,5 @@ export * from './verify-anomaly.dto';
 export * from './audit-query.dto';
 export * from './drone-query.dto';
 export * from './audit-emission-report.dto';
+export * from './audit-emission-report-decision.dto';
+export * from './audit-emission-report-query.dto';

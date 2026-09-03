@@ -5,11 +5,12 @@ import { BlockchainModule } from '../blockchain/blockchain.module';
 import { StorageModule } from '../storage/storage.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ComplianceModule } from '../compliance/compliance.module';
+import { CalculationService } from './calculation.service';
 
 @Module({
   imports: [BlockchainModule, StorageModule, PrismaModule, ComplianceModule],
   controllers: [ReportsController],
-  providers: [ReportsService],
+  providers: [ReportsService, CalculationService],
   exports: [ReportsService],
 })
 export class ReportsModule {}

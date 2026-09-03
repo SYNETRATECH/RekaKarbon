@@ -23,7 +23,34 @@ export class SubmitCalculatorDto {
 
   @ApiProperty({
     description: 'Detailed calculation data',
-    example: { scope1: 100, scope2: 200, scope3: 300, entries: [] },
+    example: {
+      schemaVersion: 2,
+      factorSetId: 'rekakarbon-2026-v1',
+      scope1: 12.56,
+      scope2: 10.35,
+      scope3: 6.1,
+      entries: [
+        {
+          id: 'activity-example-1',
+          scope: 1,
+          activityType: 'mobile_combustion',
+          calculationMethod: 'fuel_consumption',
+          sourceCode: 'diesel_cn53',
+          sourceLabel: 'Kendaraan operasional - Minyak Solar CN53',
+          quantity: 5000,
+          unit: 'liter',
+          factorCode: 'diesel_cn53',
+          factorSetId: 'rekakarbon-2026-v1',
+          emissionFactor: 2.512,
+          factorUnit: 'kgCO2e/liter',
+          emissionsTCO2e: 12.56,
+          metadata: {
+            fuelCode: 'diesel_cn53',
+            fuelLabel: 'Minyak Solar CN53',
+          },
+        },
+      ],
+    },
   })
   @IsNotEmpty()
   @IsObject()

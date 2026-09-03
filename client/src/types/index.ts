@@ -8,6 +8,8 @@ export * from './compliance';
 export * from './ptbae';
 export * from './ptbae-application';
 export * from './report';
+export * from './emission-calculator';
+export * from './emission-report-audit';
 export * from './certificate';
 export * from './bursa';
 export * from './regulator';
