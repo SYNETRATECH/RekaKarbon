@@ -60,7 +60,7 @@ export interface ForestProjectProgressDetail {
   survivalRatePercent: number;
   canopyHeightMeters: number;
   bufferAllocatedPercent: number;
-  bufferUsedPercent: number;
+  bufferUsedPercent?: number;
   reforestationStatusText: string;
   reforestationPartner: string;
   reforestationSite: string;
