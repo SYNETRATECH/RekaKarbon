@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:contracts": "vitest run src/tests/api-contracts.test.ts",
     "test:watch": "vitest",
     "test:arch": "vitest run src/tests/architecture.test.ts",
     "preview": "vite preview"

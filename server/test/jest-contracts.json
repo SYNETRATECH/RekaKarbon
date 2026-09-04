@@ -2,7 +2,7 @@
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "../..",
   "testEnvironment": "node",
-  "testMatch": ["<rootDir>/server/test/**/*.e2e-spec.ts"],
+  "testMatch": ["<rootDir>/server/test/contracts/**/*.contract.spec.ts"],
   "modulePathIgnorePatterns": ["<rootDir>/ml/"],
   "transform": {
     "^.+\\.(t|j)s$": [
