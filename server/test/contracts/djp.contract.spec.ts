@@ -10,11 +10,15 @@ import {
   StpDocumentSchema,
 } from '../../../client/src/schemas';
 import { z } from 'zod';
+import {
+  createMockCarbonTaxCalculation,
+  createMockStpDocument,
+} from '../factories';
 
 describe('DJP Carbon Tax API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockCalculation = {
+  const mockCalculation = createMockCarbonTaxCalculation({
     companyId: 'a1b2c3d4-0001-4000-8000-000000000001',
     companyName: 'PT Semen Gresik Pabrik Tuban',
     npwp: '01.234.567.8-012.000',
@@ -25,9 +29,9 @@ describe('DJP Carbon Tax API Contract Test', () => {
     totalTaxPayableIDR: 69900000,
     governingRegulation: 'UU No. 7/2021 (HPP) & Permen LHK 21/2022',
     calculatedAt: '2026-02-14T08:00:00.000Z',
-  };
+  });
 
-  const mockStpDoc = {
+  const mockStpDoc = createMockStpDocument({
     id: 'b2c3d4e5-0001-4000-8000-000000000001',
     stpDocNumber: 'STP-DJP-2026-98124',
     companyId: 'a1b2c3d4-0001-4000-8000-000000000001',
@@ -38,7 +42,7 @@ describe('DJP Carbon Tax API Contract Test', () => {
     dueDate: '2026-12-31',
     paymentStatus: 'unpaid' as const,
     issuedAt: '2026-02-14T08:00:00.000Z',
-  };
+  });
 
   const mockDjpService = {
     calculateTax: jest.fn().mockResolvedValue(mockCalculation),

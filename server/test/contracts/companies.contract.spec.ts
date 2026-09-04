@@ -8,11 +8,12 @@ import {
 } from '../../src/common/testing/contract-test-harness';
 import { CompanySchema } from '../../../client/src/schemas';
 import { z } from 'zod';
+import { createMockCompany } from '../factories';
 
 describe('Companies API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockCompany = {
+  const mockCompany = createMockCompany({
     id: 'a1b2c3d4-0001-4000-8000-000000000001',
     name: 'PT Semen Gresik Pabrik Tuban',
     sector: 'Semen & Manufaktur Berat',
@@ -31,7 +32,7 @@ describe('Companies API Contract Test', () => {
     recommendedPartner: 'Dinas Kehutanan Jatim',
     picAuditor: 'Budi Santoso, S.T., M.Env',
     description: 'Fasilitas produksi klinker semen.',
-  };
+  });
 
   const mockCompaniesService = {
     findAll: jest.fn().mockResolvedValue([mockCompany]),

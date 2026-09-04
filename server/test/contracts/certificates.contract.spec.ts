@@ -11,11 +11,15 @@ import {
   RetirementCertificateHistorySchema,
 } from '../../../client/src/schemas';
 import { z } from 'zod';
+import {
+  createMockPurchasedCertificate,
+  createMockRetirementRecord,
+} from '../factories';
 
 describe('Certificates API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockCertificate = {
+  const mockCertificate = createMockPurchasedCertificate({
     id: 'c1e2f3a4-0001-4000-8000-000000000001',
     certificateNumber: 'SPE-BALURAN-2025-001',
     projectName: 'TN Baluran Restorasi',
@@ -36,9 +40,9 @@ describe('Certificates API Contract Test', () => {
       droneAuditStatus: 'Terverifikasi (LiDAR Multi-Spectral)',
       lastSpatialAuditDate: '2026-02-10',
     },
-  };
+  });
 
-  const mockRetirementItem = {
+  const mockRetirementItem = createMockRetirementRecord({
     certificateId: 101,
     certificateNumber: 'SPE-BALURAN-2025-001',
     retiree: '0x8f2a948571029485710294857102948571029485',
@@ -50,7 +54,7 @@ describe('Certificates API Contract Test', () => {
     retiredAt: '2026-02-14T12:00:00Z',
     chainId: 1337,
     contractAddress: '0x7a250d5630b4cf539739df2c5dacb4c659f2488d',
-  };
+  });
 
   const mockCertificatesService = {
     getPurchasedCertificates: jest.fn().mockResolvedValue([mockCertificate]),

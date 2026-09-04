@@ -11,11 +11,16 @@ import {
   DjpLogItemSchema,
 } from '../../../client/src/schemas';
 import { z } from 'zod';
+import {
+  createMockMultiSigRequest,
+  createMockKybQueueItem,
+  createMockDjpLogItem,
+} from '../factories';
 
 describe('Governance API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockMultiSigItem = {
+  const mockMultiSigItem = createMockMultiSigRequest({
     id: 'b2c3d4e5-0001-4000-8000-000000000001',
     txType: 'Pencairan Dana Tahap 2 Restorasi Baluran',
     applicant: 'Admin Operasional',
@@ -25,9 +30,9 @@ describe('Governance API Contract Test', () => {
     requiredSigners: 3,
     status: 'pending' as const,
     date: '2026-02-14',
-  };
+  });
 
-  const mockKybItem = {
+  const mockKybItem = createMockKybQueueItem({
     id: 'b2c3d4e5-0002-4000-8000-000000000002',
     entityName: 'PT Semen Gresik Pabrik Tuban',
     category: 'corporate' as const,
@@ -35,9 +40,9 @@ describe('Governance API Contract Test', () => {
     documentsCount: 4,
     verificationStatus: 'verified' as const,
     assignedVerifier: 'Auditor KLHK',
-  };
+  });
 
-  const mockDjpItem = {
+  const mockDjpItem = createMockDjpLogItem({
     id: 'b2c3d4e5-0003-4000-8000-000000000003',
     timestamp: '2026-02-14T08:00:00.000Z',
     taxPayerName: 'PT Semen Gresik Pabrik Tuban',
@@ -45,7 +50,7 @@ describe('Governance API Contract Test', () => {
     stpDocId: 'STP-DJP-2026-001',
     carbonTaxCalculatedIDR: 69900000,
     status: 'synced' as const,
-  };
+  });
 
   const mockGovernanceService = {
     getMultiSigRequests: jest.fn().mockResolvedValue([mockMultiSigItem]),

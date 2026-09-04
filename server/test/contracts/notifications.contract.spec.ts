@@ -11,11 +11,12 @@ import {
   VapidKeyResponseSchema,
 } from '../../../client/src/schemas';
 import { z } from 'zod';
+import { createMockNotification } from '../factories';
 
 describe('Notifications API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockNotification = {
+  const mockNotification = createMockNotification({
     id: 'b2c3d4e5-0001-4000-8000-000000000001',
     title: 'Anomali Emisi Terdeteksi',
     message: 'Cerobong STACK-01 melebihi ambang batas SO2 sebesar 420 mg/m3.',
@@ -24,7 +25,7 @@ describe('Notifications API Contract Test', () => {
     isRead: false,
     actionUrl: '/emitter/reports',
     createdAt: '2026-02-14T08:00:00.000Z',
-  };
+  });
 
   const mockNotificationsService = {
     getNotifications: jest.fn().mockResolvedValue([mockNotification]),

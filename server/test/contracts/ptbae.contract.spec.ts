@@ -9,11 +9,12 @@ import {
 } from '../../src/common/testing/contract-test-harness';
 import { PtbaeApplicationSchema } from '../../../client/src/schemas';
 import { z } from 'zod';
+import { createMockPtbaeApplication } from '../factories';
 
 describe('PTBAE Applications API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockApplication = {
+  const mockApplication = createMockPtbaeApplication({
     id: 'b2c3d4e5-0001-4000-8000-000000000001',
     companyId: 'a1b2c3d4-0001-4000-8000-000000000001',
     companyName: 'PT Semen Gresik Pabrik Tuban',
@@ -50,7 +51,7 @@ describe('PTBAE Applications API Contract Test', () => {
     documents: [],
     createdAt: '2026-02-14T08:00:00.000Z',
     updatedAt: '2026-02-14T08:00:00.000Z',
-  };
+  });
 
   const mockPtbaeService = {
     getEmitterApplications: jest.fn().mockResolvedValue([mockApplication]),

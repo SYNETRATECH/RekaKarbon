@@ -10,38 +10,32 @@ import {
   BursaItemSchema,
   BursaPurchaseEligibilitySchema,
 } from '../../../client/src/schemas';
+import {
+  createMockBursaItem,
+  createMockPurchaseEligibility,
+  seedFaker,
+} from '../factories';
 import { z } from 'zod';
 
 describe('Bursa DEX Marketplace API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockBursaItem = {
+  beforeAll(() => {
+    seedFaker();
+  });
+
+  const mockBursaItem = createMockBursaItem({
     id: 'b1c2d3e4-0001-4000-8000-000000000001',
     name: 'Restorasi Mangrove Teluk Benoa',
-    verified: true,
-    category: 'mangrove' as const,
-    categoryLabel: 'Mangrove & Coastal Blue Carbon',
-    location: 'Bali',
     pricePerTonIDR: 260000,
-    change24h: 3.8,
     volumeAvailableTCO2e: 4500,
-    supplyPercent: 78.5,
-  };
+  });
 
-  const mockEligibility = {
+  const mockEligibility = createMockPurchaseEligibility({
     canPurchase: true,
-    reason: 'eligible' as const,
-    message: 'Perusahaan berhak melakukan pembelian kredit karbon.',
-    complianceYear: 2026,
-    reportId: 'c1e2f3a4-0001-4000-8000-000000000001',
-    reportStatus: 'verified',
     approvedEmissionsTCO2e: 17330,
     ptbaeQuotaTCO2e: 15000,
-    retiredTCO2e: 0,
-    availableTokenBalanceTCO2e: 0,
-    complianceDeficitTCO2e: 2330,
-    purchaseRequirementTCO2e: 2330,
-  };
+  });
 
   const mockBursaService = {
     getBursaItems: jest.fn().mockResolvedValue([mockBursaItem]),

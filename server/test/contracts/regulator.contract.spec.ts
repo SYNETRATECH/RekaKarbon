@@ -14,6 +14,11 @@ import {
   RegulationDocumentUploadItemSchema,
 } from '../../../client/src/schemas';
 import { z } from 'zod';
+import {
+  createMockKTHGroup,
+  createMockKTHTransaction,
+  createMockRegulationDocument,
+} from '../factories';
 
 describe('Regulator API Contract Test', () => {
   let harness: ContractTestHarness;
@@ -70,7 +75,7 @@ describe('Regulator API Contract Test', () => {
     },
   };
 
-  const mockKthGroup = {
+  const mockKthGroup = createMockKTHGroup({
     id: 'b2c3d4e5-0003-4000-8000-000000000001',
     groupName: 'KTH Mangrove Tuban Mandiri',
     leaderName: 'H. Sudirman',
@@ -80,9 +85,9 @@ describe('Regulator API Contract Test', () => {
     registrationNumber: 'SK.LHK-8832/KTH/2023',
     totalIncentiveReceivedIDR: 340000000,
     walletAddress: '0x8a1c948571029485710294857102948571029485',
-  };
+  });
 
-  const mockKthTransaction = {
+  const mockKthTransaction = createMockKTHTransaction({
     id: 'b2c3d4e5-0004-4000-8000-000000000001',
     txHash:
       '0x8f3a9b2c1d4e7f0a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a',
@@ -92,9 +97,9 @@ describe('Regulator API Contract Test', () => {
     volumeTCO2e: 450,
     amountIDR: 117000000,
     status: 'completed' as const,
-  };
+  });
 
-  const mockRegulationUpload = {
+  const mockRegulationUpload = createMockRegulationDocument({
     id: 'b2c3d4e5-0005-4000-8000-000000000001',
     documentTitle: 'SK Alokasi PTBAE PU Semen Gresik 2026',
     category: 'sk_ptbae' as const,
@@ -106,7 +111,7 @@ describe('Regulator API Contract Test', () => {
     signatoryPerson: 'Direktorat Jenderal PPI KLHK',
     targetEntityName: 'PT Semen Gresik Pabrik Tuban',
     status: 'published' as const,
-  };
+  });
 
   const mockRegulatorService = {
     getNationalForestRegions: jest.fn().mockResolvedValue([mockForestRegion]),

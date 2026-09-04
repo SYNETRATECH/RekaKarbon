@@ -4,6 +4,7 @@
   "testEnvironment": "node",
   "testMatch": ["<rootDir>/server/test/contracts/**/*.contract.spec.ts"],
   "modulePathIgnorePatterns": ["<rootDir>/ml/"],
+  "transformIgnorePatterns": ["node_modules[\\\\/](?!.*@faker-js)"],
   "transform": {
     "^.+\\.(t|j)s$": [
       "ts-jest",

@@ -13,11 +13,12 @@ import {
   ForestProjectApiItemSchema,
 } from '../../../client/src/schemas';
 import { z } from 'zod';
+import { createMockProject } from '../factories';
 
 describe('Projects API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockProject = {
+  const mockProject = createMockProject({
     id: 'b2c3d4e5-0002-4000-8000-000000000001',
     name: 'TN Baluran Restorasi',
     region: 'Jawa Timur',
@@ -109,7 +110,7 @@ describe('Projects API Contract Test', () => {
         auditor: 'Sucofindo',
       },
     ],
-  };
+  });
 
   const mockForestRegion = {
     id: 'b2c3d4e5-0001-4000-8000-000000000001',

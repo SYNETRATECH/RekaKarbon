@@ -43,6 +43,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@react-router/dev": "^7.18.2",
     "@react-router/node": "^7.18.2",
     "@types/leaflet": "^1.9.22",
