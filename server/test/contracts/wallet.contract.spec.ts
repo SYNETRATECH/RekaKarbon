@@ -12,20 +12,21 @@ import {
   CreateDepositResultSchema,
 } from '../../../client/src/schemas';
 import { z } from 'zod';
+import { createMockWalletTransaction, fakeWalletAddress } from '../factories';
 
 describe('Wallet API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockWalletAddress = '0x1234567890abcdef1234567890abcdef12345678';
+  const mockWalletAddress = fakeWalletAddress();
 
-  const mockTransaction = {
+  const mockTransaction = createMockWalletTransaction({
     id: 'tx-001',
     type: 'DEPOSIT' as const,
     title: 'Top-up Xendit Saldo',
     amount: 50000000,
     date: '2026-02-14T08:00:00.000Z',
     status: 'SUCCESS' as const,
-  };
+  });
 
   const mockUsersService = {
     findById: jest.fn().mockResolvedValue({

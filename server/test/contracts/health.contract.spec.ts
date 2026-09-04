@@ -7,30 +7,13 @@ import {
   getResponseBody,
 } from '../../src/common/testing/contract-test-harness';
 import { HealthStatusResponseSchema } from '../../../client/src/schemas';
+import { createMockSystemHealth } from '../factories';
 
 describe('Health & Probes API Contract Test', () => {
   let harness: ContractTestHarness;
 
   const mockHealthService = {
-    getSystemHealth: jest.fn().mockResolvedValue({
-      status: 'ok',
-      service: 'RekaKarbon Core Backend API',
-      version: '1.0.0',
-      uptimeSeconds: 3600,
-      timestamp: new Date().toISOString(),
-      environment: 'development',
-      services: {
-        database: { status: 'connected', latencyMs: 2.1 },
-        blockchain: {
-          status: 'synced',
-          network: 'Hyperledger Besu (IBFT 2.0)',
-          latestBlock: 12480,
-          chainId: 1337,
-        },
-        storage: { status: 'operational' },
-      },
-      memory: { heapUsedMB: 50.2, heapTotalMB: 80.5, rssMB: 110.0 },
-    }),
+    getSystemHealth: jest.fn().mockResolvedValue(createMockSystemHealth()),
     getDatabaseHealth: jest.fn().mockResolvedValue({
       status: 'healthy',
       database: 'PostgreSQL (Prisma)',

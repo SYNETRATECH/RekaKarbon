@@ -10,11 +10,12 @@ import {
 } from '../../src/common/testing/contract-test-harness';
 import { AuthResponseSchema, UserSchema } from '../../../client/src/schemas';
 import { Role } from '@prisma/client';
+import { createMockUser } from '../factories';
 
 describe('Auth API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockUserRecord = {
+  const mockUserRecord = createMockUser({
     id: '00000000-0000-4000-8000-000000000001',
     email: 'admin@rekakarbon.id',
     name: 'Super Admin RekaKarbon',
@@ -22,7 +23,7 @@ describe('Auth API Contract Test', () => {
     agency: 'Kementerian Lingkungan Hidup dan Kehutanan',
     walletAddress: '0x8f2a948571029485710294857102948571029485',
     createdAt: '2026-01-01T00:00:00.000Z',
-  };
+  });
 
   const mockAuthService = {
     login: jest.fn().mockResolvedValue({

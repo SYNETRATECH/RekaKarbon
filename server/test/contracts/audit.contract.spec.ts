@@ -14,11 +14,16 @@ import {
   SpatialSummarySchema,
 } from '../../../client/src/schemas';
 import { z } from 'zod';
+import {
+  createMockAnomalyLog,
+  createMockAnomalySummary,
+  createMockSpatialSummary,
+} from '../factories';
 
 describe('Audit & dMRV API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockAnomalyLog = {
+  const mockAnomalyLog = createMockAnomalyLog({
     id: 'a1e2f3a4-0001-4000-8000-000000000001',
     company: 'PT Semen Gresik',
     sector: 'Manufaktur Berat',
@@ -32,16 +37,16 @@ describe('Audit & dMRV API Contract Test', () => {
     estimatedEmission: 19200,
     desc: 'Deviasi konsumsi batu bara terdeteksi',
     auditStatus: 'pending' as const,
-  };
+  });
 
-  const mockAnomalySummary = {
+  const mockAnomalySummary = createMockAnomalySummary({
     emitenTerdeteksiAnomali: 3,
     totalEmitenAktif: 24,
     rataDeviasiEmisi: 18.4,
     descDeviasi: 'Rata-rata selisih laporan CEMS vs e-Faktur',
     eFakturTidakCocok: 2,
     descEFaktur: 'Faktur PPN batu bara tidak sinkron',
-  };
+  });
 
   const mockEnergyCorrelation = [
     {
@@ -51,7 +56,7 @@ describe('Audit & dMRV API Contract Test', () => {
     },
   ];
 
-  const mockSpatialSummary = {
+  const mockSpatialSummary = createMockSpatialSummary({
     totalAreaTerverifikasi: '124.500 Ha',
     subArea: 'Total wilayah hutan restorasi',
     totalKreditKarbon: '4.250.000 tCO2e',
@@ -63,8 +68,8 @@ describe('Audit & dMRV API Contract Test', () => {
     avgCanopyDensity: 82.5,
     estimatedBiomassTCO2e: 4250000,
     droneAuditCoveragePercent: 94.0,
-    lastFlyoverDate: '2026-02-14',
-  };
+    lastAuditDate: '2026-02-14',
+  });
 
   const mockAuditService = {
     getAiAnomalyLogs: jest.fn().mockResolvedValue([mockAnomalyLog]),

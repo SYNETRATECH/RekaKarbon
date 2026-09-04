@@ -7,11 +7,12 @@ import {
 } from '../../src/common/testing/contract-test-harness';
 import { EmissionReportSchema } from '../../../client/src/schemas';
 import { z } from 'zod';
+import { createMockEmissionReport } from '../factories';
 
 describe('Emission Reports API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockReport = {
+  const mockReport = createMockEmissionReport({
     id: 'e1e2f3a4-0001-4000-8000-000000000001',
     year: 2025,
     title: 'Laporan Emisi GRK Tahunan 2025',
@@ -40,7 +41,7 @@ describe('Emission Reports API Contract Test', () => {
     quotaPTBAEStatus: 'VERIFIED' as const,
     quotaPTBAESourceDocument: 'SK-MENLHK-2025-091',
     method: 'CALCULATOR' as const,
-  };
+  });
 
   const mockReportsService = {
     getEmissionReports: jest.fn().mockResolvedValue([mockReport]),

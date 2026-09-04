@@ -101,7 +101,7 @@ jobs:
         run: pnpm format:check
 
   verify-client:
-    name: Verify Client (React & Tailwind)
+    name: Verify Client (React Router)
     needs: detect-changes
     if: needs.detect-changes.outputs.client == 'true'
     runs-on: ubuntu-latest
@@ -138,7 +138,7 @@ jobs:
         run: pnpm client:build
 
   verify-server:
-    name: Verify Server (NestJS & Prisma)
+    name: Verify Server (NestJS)
     needs: detect-changes
     if: needs.detect-changes.outputs.server == 'true'
     runs-on: ubuntu-latest

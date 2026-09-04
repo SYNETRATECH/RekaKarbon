@@ -9,12 +9,21 @@ import {
   CemsReadingSchema,
   ForestSensorReadingSchema,
 } from '../../../client/src/schemas';
+import {
+  createMockCemsReading,
+  createMockForestSensorReading,
+  seedFaker,
+} from '../factories';
 import { z } from 'zod';
 
 describe('Telemetry API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockCemsReading = {
+  beforeAll(() => {
+    seedFaker();
+  });
+
+  const mockCemsReading = createMockCemsReading({
     id: '1',
     companyId: 'a1b2c3d4-0001-4000-8000-000000000001',
     companyName: 'PT Semen Gresik Pabrik Tuban',
@@ -26,9 +35,9 @@ describe('Telemetry API Contract Test', () => {
     temperatureC: 185.6,
     timestamp: '2026-02-14T08:00:00.000Z',
     isAnomaly: false,
-  };
+  });
 
-  const mockForestReading = {
+  const mockForestReading = createMockForestSensorReading({
     id: '2',
     projectId: 'b2c3d4e5-0002-4000-8000-000000000001',
     projectName: 'TN Baluran Restorasi',
@@ -38,7 +47,7 @@ describe('Telemetry API Contract Test', () => {
     ambientTempC: 27.8,
     solarRadiationWPerm2: 650.0,
     timestamp: '2026-02-14T08:00:00.000Z',
-  };
+  });
 
   const mockTelemetryService = {
     getCemsReadings: jest.fn().mockResolvedValue([mockCemsReading]),

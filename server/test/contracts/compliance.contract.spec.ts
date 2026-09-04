@@ -6,11 +6,12 @@ import {
   expectContract,
 } from '../../src/common/testing/contract-test-harness';
 import { ComplianceDataSchema } from '../../../client/src/schemas';
+import { createMockComplianceData } from '../factories';
 
 describe('Compliance Ledger API Contract Test', () => {
   let harness: ContractTestHarness;
 
-  const mockComplianceData = {
+  const mockComplianceData = createMockComplianceData({
     complianceYear: 2026,
     emissionVsQuotaPercent: 115.5,
     emissionIntensity: 0.85,
@@ -32,7 +33,7 @@ describe('Compliance Ledger API Contract Test', () => {
       { year: '2025', historis: 17100 },
       { year: '2026', historis: 17330, proyeksi: 15000 },
     ],
-  };
+  });
 
   const mockComplianceService = {
     getComplianceData: jest.fn().mockResolvedValue(mockComplianceData),
