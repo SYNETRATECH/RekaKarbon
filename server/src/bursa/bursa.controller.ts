@@ -17,11 +17,14 @@ import { BursaService } from './bursa.service';
 import { BursaQueryDto, CreateOrderDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 import type { AuthenticatedRequest } from '../auth/types';
 
 @ApiTags('Carbon Bursa / DEX Marketplace')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.emitter, Role.buyer, Role.superadmin)
 @Controller('emitter/bursa')
 export class BursaController {
   constructor(private readonly bursaService: BursaService) {}

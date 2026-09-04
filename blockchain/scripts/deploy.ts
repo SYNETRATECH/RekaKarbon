@@ -37,6 +37,7 @@ async function main(): Promise<void> {
   console.log('\nMemproses pengaturan otorisasi (Roles)...');
   const ORACLE_ROLE: string = await rekaKarbon.ORACLE_ROLE();
   const DEPOSIT_ROLE: string = await rekaKarbon.DEPOSIT_ROLE();
+  const MARKET_OPERATOR_ROLE: string = await rekaKarbon.MARKET_OPERATOR_ROLE();
   const AUDITOR_ROLE: string = await registry.AUDITOR_ROLE();
   const REPORTER_ROLE: string = await registry.REPORTER_ROLE();
 
@@ -45,6 +46,20 @@ async function main(): Promise<void> {
 
   await rekaKarbon.grantRole(DEPOSIT_ROLE, deployer.address, transactionOverrides);
   console.log('✅ DEPOSIT_ROLE (RekaKarbon) diberikan kepada Backend.');
+
+  await rekaKarbon.grantRole(MARKET_OPERATOR_ROLE, deployer.address, transactionOverrides);
+  console.log('✅ MARKET_OPERATOR_ROLE (Bursa) diberikan kepada Backend.');
+
+  await rekaKarbon.setBursaRevenueRecipients(
+    deployer.address,
+    deployer.address,
+    deployer.address,
+    deployer.address,
+    deployer.address,
+    deployer.address,
+    transactionOverrides
+  );
+  console.log('✅ Penerima settlement bursa dikonfigurasi untuk jaringan lokal.');
 
   await registry.grantRole(AUDITOR_ROLE, deployer.address, transactionOverrides);
   console.log('✅ AUDITOR_ROLE (EmissionReportRegistry) diberikan kepada Backend.');
@@ -56,6 +71,7 @@ async function main(): Promise<void> {
   const deploymentInfo = {
     rekaKarbonAddress: rekaKarbonAddress,
     emissionReportRegistryAddress: registryAddress,
+    marketOperator: deployer.address,
     network: 'besu_dev',
     deployer: deployer.address,
     timestamp: new Date().toISOString(),

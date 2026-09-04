@@ -1,18 +1,39 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  EcosystemType,
+  Prisma,
+  ProjectStatus,
+  UserStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
 import {
   DisbursementItem,
   Project,
   ProjectCoordinate,
   ReforestationStage,
   TokenBuyer,
+  ForestProjectEcosystem,
+  KthDmrvSubmissionResult,
+  KthForestProjectItem,
+  KthForestProjectStatus,
 } from './types';
-import { ForestProjectItem, NationalForestRegion } from '../regulator/types';
+import {
+  ForestProjectItem,
+  ForestProjectMintResult,
+  NationalForestRegion,
+} from '../regulator/types';
+import { CreateForestProjectDto, SubmitKthDmrvDto } from './dto';
 
 const projectIncludeConfig = Prisma.validator<Prisma.ForestProjectInclude>()({
   stages: { orderBy: { yearNumber: 'asc' } },
   kthGroup: true,
+  auditor: true,
   disbursements: { orderBy: { disbursedAt: 'desc' } },
   carbonTokens: {
     include: {
@@ -53,12 +74,226 @@ function generatePerimeterCoordinates(
   ];
 }
 
+const ecosystemTypeByInput: Record<ForestProjectEcosystem, EcosystemType> = {
+  mangrove_blue_carbon: EcosystemType.MANGROVE_BLUE_CARBON,
+  peatland_restoration: EcosystemType.PEATLAND_RESTORATION,
+  agroforestry: EcosystemType.AGROFORESTRY,
+  tropical_rainforest: EcosystemType.TROPICAL_RAINFOREST,
+};
+
+const kthProjectStatusByProjectStatus: Record<
+  ProjectStatus,
+  KthForestProjectStatus
+> = {
+  [ProjectStatus.DRAFT]: 'draft',
+  [ProjectStatus.ACTIVE_DMRV]: 'active_dmrv',
+  [ProjectStatus.AUDITED]: 'audited',
+  [ProjectStatus.MINTED]: 'minted',
+};
+
+function calculatePolygonAreaHectares(
+  coordinates: CreateForestProjectDto['coordinates'],
+): number {
+  const centerLat =
+    coordinates.reduce((sum, coordinate) => sum + coordinate.lat, 0) /
+    coordinates.length;
+  const centerLng =
+    coordinates.reduce((sum, coordinate) => sum + coordinate.lng, 0) /
+    coordinates.length;
+  const latMetersPerDegree = 111132;
+  const lngMetersPerDegree =
+    latMetersPerDegree * Math.cos((centerLat * Math.PI) / 180);
+  const orderedCoordinates = [...coordinates].sort(
+    (first, second) =>
+      Math.atan2(first.lat - centerLat, first.lng - centerLng) -
+      Math.atan2(second.lat - centerLat, second.lng - centerLng),
+  );
+  const projected = orderedCoordinates.map((coordinate) => ({
+    x: (coordinate.lng - centerLng) * lngMetersPerDegree,
+    y: (coordinate.lat - centerLat) * latMetersPerDegree,
+  }));
+
+  const areaSum = projected.reduce((sum, point, index) => {
+    const nextPoint = projected[(index + 1) % projected.length];
+    return sum + point.x * nextPoint.y - nextPoint.x * point.y;
+  }, 0);
+
+  return Math.abs(areaSum) / 2 / 10000;
+}
+
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly blockchainService: BlockchainService,
+  ) {}
 
   private get projectInclude() {
     return projectIncludeConfig;
+  }
+
+  private async findKthGroupForUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { walletAddress: true, status: true },
+    });
+
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new ForbiddenException({
+        success: false,
+        error: {
+          code: 'KTH_USER_NOT_ACTIVE',
+          message: 'Akun KTH tidak aktif atau tidak ditemukan.',
+        },
+      });
+    }
+
+    if (!user.walletAddress) {
+      throw new ForbiddenException({
+        success: false,
+        error: {
+          code: 'KTH_WALLET_REQUIRED',
+          message:
+            'Wallet akun KTH belum tertaut. Hubungi Regulator untuk menautkan wallet KTH.',
+        },
+      });
+    }
+
+    const kthGroup = await this.prisma.kthGroup.findFirst({
+      where: {
+        walletAddress: {
+          equals: user.walletAddress,
+          mode: 'insensitive',
+        },
+      },
+      select: { id: true, groupName: true },
+    });
+
+    if (!kthGroup) {
+      throw new ForbiddenException({
+        success: false,
+        error: {
+          code: 'KTH_GROUP_NOT_LINKED',
+          message:
+            'Wallet akun KTH belum terhubung ke kelompok tani yang terdaftar.',
+        },
+      });
+    }
+
+    return kthGroup;
+  }
+
+  async getKthForestProjects(userId: string): Promise<KthForestProjectItem[]> {
+    const kthGroup = await this.findKthGroupForUser(userId);
+    const projects = await this.prisma.forestProject.findMany({
+      where: { kthGroupId: kthGroup.id },
+      select: {
+        id: true,
+        projectName: true,
+        province: true,
+        areaHectares: true,
+        targetSequestrationTco2e: true,
+        actualSequestrationTco2e: true,
+        carbonStockTco2e: true,
+        status: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return projects.map((project) => ({
+      id: project.id,
+      projectName: project.projectName,
+      province: project.province,
+      areaHectares: Number(project.areaHectares),
+      targetSequestrationTCO2e: Number(project.targetSequestrationTco2e),
+      actualSequestrationTCO2e: Number(project.actualSequestrationTco2e),
+      carbonStockTCO2e: Number(project.carbonStockTco2e),
+      status: kthProjectStatusByProjectStatus[project.status],
+    }));
+  }
+
+  async submitKthDmrv(
+    projectId: string,
+    userId: string,
+    dto: SubmitKthDmrvDto,
+  ): Promise<KthDmrvSubmissionResult> {
+    const kthGroup = await this.findKthGroupForUser(userId);
+    const project = await this.prisma.forestProject.findFirst({
+      where: { id: projectId, kthGroupId: kthGroup.id },
+      select: {
+        id: true,
+        projectName: true,
+        areaHectares: true,
+        targetSequestrationTco2e: true,
+        status: true,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException({
+        success: false,
+        error: {
+          code: 'KTH_PROJECT_NOT_FOUND',
+          message: 'Proyek kehutanan tidak ditemukan untuk akun KTH ini.',
+        },
+      });
+    }
+
+    if (project.status === ProjectStatus.MINTED) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'KTH_PROJECT_ALREADY_MINTED',
+          message:
+            'dMRV tidak dapat diubah setelah SPE-GRK diterbitkan untuk proyek ini.',
+        },
+      });
+    }
+
+    const projectArea = Number(project.areaHectares);
+    if (dto.areaHectares > projectArea) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'KTH_AREA_EXCEEDS_PROJECT',
+          message: `Luas petak (${dto.areaHectares} ha) melebihi luas polygon proyek (${projectArea} ha).`,
+        },
+      });
+    }
+
+    const projectTarget = Number(project.targetSequestrationTco2e);
+    const estimatedCarbon = Math.min(
+      Math.round(dto.areaHectares * 37.5 * 100) / 100,
+      projectTarget,
+    );
+    const updated = await this.prisma.forestProject.update({
+      where: { id: project.id },
+      data: {
+        actualSequestrationTco2e: estimatedCarbon,
+        carbonStockTco2e: estimatedCarbon,
+        status: ProjectStatus.ACTIVE_DMRV,
+        auditorNotes: null,
+        auditedAt: null,
+      },
+      select: {
+        updatedAt: true,
+        status: true,
+        actualSequestrationTco2e: true,
+        carbonStockTco2e: true,
+      },
+    });
+
+    return {
+      projectId: project.id,
+      projectName: project.projectName,
+      landName: dto.landName.trim(),
+      areaHectares: dto.areaHectares,
+      estimatedCarbonTCO2e: estimatedCarbon,
+      actualSequestrationTCO2e: Number(updated.actualSequestrationTco2e),
+      carbonStockTCO2e: Number(updated.carbonStockTco2e),
+      status: kthProjectStatusByProjectStatus[updated.status],
+      submittedAt: updated.updatedAt.toISOString(),
+    };
   }
 
   async findProjects(): Promise<Project[]> {
@@ -127,6 +362,247 @@ export class ProjectsService {
     return this.mapRecordToProject(created);
   }
 
+  async createForestProject(
+    dto: CreateForestProjectDto,
+  ): Promise<ForestProjectItem> {
+    const kthGroup = await this.prisma.kthGroup.findFirst({
+      where: {
+        groupName: {
+          equals: dto.kthGroupName.trim(),
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    if (!kthGroup) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'KTH_GROUP_NOT_FOUND',
+          message: `Kelompok Tani Hutan '${dto.kthGroupName}' belum terdaftar.`,
+        },
+      });
+    }
+
+    const areaHectares = calculatePolygonAreaHectares(dto.coordinates);
+    if (!Number.isFinite(areaHectares) || areaHectares <= 0) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'INVALID_PROJECT_POLYGON',
+          message: 'Polygon proyek harus membentuk area yang valid.',
+        },
+      });
+    }
+
+    const centerLatitude =
+      dto.coordinates.reduce((sum, coordinate) => sum + coordinate.lat, 0) /
+      dto.coordinates.length;
+    const centerLongitude =
+      dto.coordinates.reduce((sum, coordinate) => sum + coordinate.lng, 0) /
+      dto.coordinates.length;
+
+    let region = await this.prisma.nationalForestRegion.findFirst({
+      where: {
+        regionName: {
+          equals: dto.province.trim(),
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    if (!region) {
+      region = await this.prisma.nationalForestRegion.create({
+        data: {
+          regionName: dto.province.trim(),
+          areaHectares,
+          carbonSequestrationTco2e: dto.targetSequestrationTCO2e,
+          fundingDisbursedIdr: 0,
+          forestHealthPercent: 0,
+        },
+      });
+    }
+
+    const created = await this.prisma.forestProject.create({
+      data: {
+        regionId: region.id,
+        kthGroupId: kthGroup.id,
+        projectName: dto.projectName.trim(),
+        ecosystemType: ecosystemTypeByInput[dto.ecosystemType],
+        province: dto.province.trim(),
+        latitude: centerLatitude,
+        longitude: centerLongitude,
+        areaHectares,
+        targetSequestrationTco2e: dto.targetSequestrationTCO2e,
+        actualSequestrationTco2e: 0,
+        carbonStockTco2e: 0,
+        budgetTotalIdr: dto.budgetTotalIDR,
+        budgetDisbursedIdr: 0,
+        status: ProjectStatus.DRAFT,
+        coordinatesJson: dto.coordinates as unknown as Prisma.InputJsonValue,
+      },
+      include: projectIncludeConfig,
+    });
+
+    const projects = await this.findForestProjects();
+    const project = projects.find((item) => item.id === created.id);
+    if (!project) {
+      throw new NotFoundException(
+        `Forest project with ID '${created.id}' was not found after creation.`,
+      );
+    }
+    return project;
+  }
+
+  async mintForestProjectSpe(
+    projectId: string,
+    regulatorUserId: string,
+  ): Promise<ForestProjectMintResult> {
+    const project = await this.prisma.forestProject.findUnique({
+      where: { id: projectId },
+      include: {
+        carbonTokens: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException(
+        `Forest project with ID '${projectId}' was not found.`,
+      );
+    }
+
+    const regulator = await this.prisma.user.findUnique({
+      where: { id: regulatorUserId },
+      select: { walletAddress: true },
+    });
+    if (!regulator?.walletAddress) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'REGULATOR_WALLET_REQUIRED',
+          message:
+            'Wallet Regulator belum tersedia. Lengkapi wallet sebelum menerbitkan SPE-GRK.',
+        },
+      });
+    }
+
+    const existingToken = project.carbonTokens.find(
+      (token) =>
+        token.blockchainTokenId !== null &&
+        token.mintTxHash !== null &&
+        token.mintedAt !== null,
+    );
+    if (existingToken) {
+      if (!project.speCertificateId) {
+        await this.prisma.forestProject.update({
+          where: { id: project.id },
+          data: {
+            status: ProjectStatus.MINTED,
+            speCertificateId: existingToken.speCertificateNumber,
+          },
+        });
+      }
+
+      return {
+        projectId: project.id,
+        speCertificateId: existingToken.speCertificateNumber,
+        blockchainTokenId: existingToken.blockchainTokenId!.toString(),
+        mintTxHash: existingToken.mintTxHash!,
+        mintedVolumeTCO2e: Number(existingToken.totalMintedTco2e),
+        availableVolumeTCO2e: Number(existingToken.availableBalanceTco2e),
+        recipientWallet: regulator.walletAddress,
+      };
+    }
+
+    if (project.status !== ProjectStatus.AUDITED) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'FOREST_PROJECT_NOT_AUDITED',
+          message:
+            'SPE-GRK hanya dapat diterbitkan setelah proyek disetujui Auditor.',
+        },
+      });
+    }
+
+    const measuredVolume = Number(project.actualSequestrationTco2e);
+    const carbonStock = Number(project.carbonStockTco2e);
+    const verifiedVolume = measuredVolume > 0 ? measuredVolume : carbonStock;
+    if (!Number.isFinite(verifiedVolume) || verifiedVolume <= 0) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'FOREST_PROJECT_VOLUME_NOT_VERIFIED',
+          message:
+            'Belum ada volume serapan karbon terverifikasi yang dapat diterbitkan.',
+        },
+      });
+    }
+
+    const mintVolume = Math.floor(verifiedVolume);
+    if (mintVolume <= 0) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'FOREST_PROJECT_VOLUME_TOO_SMALL',
+          message:
+            'Volume serapan harus minimal 1 tCO₂e untuk penerbitan SPE-GRK.',
+        },
+      });
+    }
+
+    const coordinates = project.coordinatesJson
+      ? JSON.stringify(project.coordinatesJson)
+      : JSON.stringify({
+          latitude: project.latitude,
+          longitude: project.longitude,
+        });
+    const blockchainResult =
+      await this.blockchainService.mintOffsetCreditWithTokenId(
+        regulator.walletAddress,
+        mintVolume,
+        coordinates,
+      );
+    const reserveVolume = Math.floor(mintVolume * 0.05);
+    const availableVolume = mintVolume - reserveVolume;
+    const vintageYear = new Date().getUTCFullYear();
+    const certificateNumber = `SPE-GRK-${vintageYear}-${project.id
+      .slice(0, 8)
+      .toUpperCase()}`;
+
+    await this.prisma.$transaction(async (transaction) => {
+      await transaction.carbonToken.create({
+        data: {
+          speCertificateNumber: certificateNumber,
+          projectId: project.id,
+          totalMintedTco2e: mintVolume,
+          availableBalanceTco2e: availableVolume,
+          vintageYear,
+          blockchainTokenId: BigInt(blockchainResult.tokenId),
+          mintTxHash: blockchainResult.txHash,
+          mintedAt: new Date(),
+        },
+      });
+      await transaction.forestProject.update({
+        where: { id: project.id },
+        data: {
+          status: ProjectStatus.MINTED,
+          speCertificateId: certificateNumber,
+        },
+      });
+    });
+
+    return {
+      projectId: project.id,
+      speCertificateId: certificateNumber,
+      blockchainTokenId: String(blockchainResult.tokenId),
+      mintTxHash: blockchainResult.txHash,
+      mintedVolumeTCO2e: mintVolume,
+      availableVolumeTCO2e: availableVolume,
+      recipientWallet: regulator.walletAddress,
+    };
+  }
+
   async findNationalForestRegions(): Promise<NationalForestRegion[]> {
     const records = await this.prisma.nationalForestRegion.findMany({
       orderBy: { createdAt: 'desc' },
@@ -147,8 +623,16 @@ export class ProjectsService {
       orderBy: { createdAt: 'desc' },
     });
     return records.map((r: FullProjectRecord) => {
+      const mintedToken = r.carbonTokens.find(
+        (token) =>
+          token.blockchainTokenId !== null &&
+          token.mintTxHash !== null &&
+          token.mintedAt !== null,
+      );
       const auditStatus: 'verified' | 'in_review' | 'flagged' =
-        r.status.toLowerCase() === 'active' ? 'verified' : 'in_review';
+        r.status === ProjectStatus.AUDITED || r.status === ProjectStatus.MINTED
+          ? 'verified'
+          : 'in_review';
 
       const projectFull = this.mapRecordToProject(r);
       const kth = r.kthGroup as {
@@ -162,6 +646,11 @@ export class ProjectsService {
         projectName: r.projectName,
         region: r.province,
         ecosystemType: r.ecosystemType.toLowerCase().replace(/_/g, ' '),
+        coordinates: [r.latitude, r.longitude],
+        polygonCoords:
+          projectFull.coordinates.length >= 3
+            ? projectFull.coordinates
+            : undefined,
         areaHectares: Number(r.areaHectares),
         targetSequestrationTCO2e: Number(r.targetSequestrationTco2e),
         actualSequestrationTCO2e: Number(r.actualSequestrationTco2e),
@@ -174,19 +663,27 @@ export class ProjectsService {
         auditStatus,
         droneAuditCount: 0,
         lastDroneAuditDate: '',
-        speCertificateId: r.speCertificateId || '',
+        speCertificateId:
+          mintedToken?.speCertificateNumber || r.speCertificateId || undefined,
+        speMinted: Boolean(mintedToken),
+        speTokenId: mintedToken?.blockchainTokenId?.toString(),
+        speMintTxHash: mintedToken?.mintTxHash || undefined,
+        speAvailableVolumeTCO2e: mintedToken
+          ? Number(mintedToken.availableBalanceTco2e)
+          : undefined,
         ndviScore: Number(r.ndviScore),
         eviScore: Number(r.eviScore),
         progressDetail: {
           survivalRatePercent: Number(r.survivalRatePercent),
           canopyHeightMeters: Number(r.canopyHeightMeters),
-          bufferAllocatedPercent: Number(r.bufferAllocatedPercent || 8),
+          bufferAllocatedPercent: Number(r.bufferAllocatedPercent ?? 0),
+          bufferUsedPercent: Number(r.bufferUsedPercent ?? 0),
           reforestationStatusText: r.status,
           reforestationPartner: kth?.groupName || '',
           reforestationSite: r.province,
-          targetTrees: projectFull.targetTrees || 200000,
-          plantedTrees: projectFull.plantedTrees || 174000,
-          remainingTrees: projectFull.remainingTrees || 26000,
+          targetTrees: projectFull.targetTrees ?? 0,
+          plantedTrees: projectFull.plantedTrees ?? 0,
+          remainingTrees: projectFull.remainingTrees ?? 0,
           carbonPricePerTonIDR: Number(r.carbonPricePerTonIdr || 260000),
           totalBudgetIDR: Number(r.budgetTotalIdr),
           disbursedBudgetIDR: Number(r.budgetDisbursedIdr),
@@ -242,6 +739,15 @@ export class ProjectsService {
           })),
         },
         forestHealthPercent: Number(r.ndviScore || 0.82) * 100,
+        assignedAuditor: r.auditor
+          ? {
+              id: r.auditor.id,
+              email: r.auditor.email,
+              fullName: r.auditor.fullName ?? r.auditor.email,
+            }
+          : null,
+        auditorAssignedAt: r.auditorAssignedAt?.toISOString() ?? null,
+        auditedAt: r.auditedAt?.toISOString() ?? null,
       };
     });
   }
@@ -289,6 +795,7 @@ export class ProjectsService {
       (sum, s) => sum + (s.plantedTrees || 0),
       0,
     );
+    const targetTrees = totalTargetTrees > 0 ? totalTargetTrees : undefined;
 
     const partnerName =
       r.kthGroup?.groupName || 'Dinas Kehutanan Jawa Timur & KTH Tuban';
@@ -413,7 +920,7 @@ export class ProjectsService {
       reforestationStatus: r.status || 'ACTIVE_DMRV',
       reforestationPartner: partnerName,
       reforestationSite: r.province,
-      targetTrees: totalTargetTrees,
+      targetTrees,
       plantedTrees: totalPlantedTrees,
       remainingTrees: Math.max(0, totalTargetTrees - totalPlantedTrees),
       carbonPricePerTon: Number(r.carbonPricePerTonIdr || 260000),

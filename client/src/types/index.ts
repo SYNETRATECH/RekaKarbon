@@ -12,6 +12,7 @@ export * from './emission-calculator';
 export * from './emission-report-audit';
 export * from './certificate';
 export * from './bursa';
+export * from './kth';
 export * from './regulator';
 export * from './store';
 export * from './storage';

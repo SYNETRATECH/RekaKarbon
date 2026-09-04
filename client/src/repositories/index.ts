@@ -27,6 +27,18 @@ export type { CertificateRepository } from './certificate.repository';
 
 export { bursaRepository } from './bursa.repository';
 export type { BursaRepository } from './bursa.repository';
+export { ApiBursaListingRepository } from './bursa-listing.repository';
+export { MockBursaListingRepository } from './bursa-listing.mock.repository';
+export type { BursaListingRepository } from './bursa-listing.repository';
+
+import { ApiBursaListingRepository } from './bursa-listing.repository';
+import { MockBursaListingRepository } from './bursa-listing.mock.repository';
+import type { BursaListingRepository } from './bursa-listing.repository';
+
+export const bursaListingRepository: BursaListingRepository =
+  import.meta.env.VITE_USE_MOCK_DATA === 'true'
+    ? new MockBursaListingRepository()
+    : new ApiBursaListingRepository();
 
 export { regulatorRepository } from './regulator.repository';
 export type { RegulatorRepository } from './regulator.repository';
@@ -51,5 +63,8 @@ export type { HealthRepository } from './health.repository';
 
 export { walletRepository } from './wallet.repository';
 export type { WalletRepository } from './wallet.repository';
+
+export { kthRepository } from './kth.repository';
+export type { KthRepository } from './kth.repository';
 
 export type { AuthCredentials, AuthResponse } from '../types';

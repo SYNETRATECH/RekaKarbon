@@ -92,4 +92,18 @@ export class MockAuditRepository implements AuditRepository {
         : 'Laporan terverifikasi konsisten dengan model ONNX dan indeks fiskal.',
     };
   }
+  async getForestProjectAuditQueue() {
+    return [];
+  }
+  async getForestProjectAuditDetail(
+    _projectId: string
+  ): Promise<import('../types').ForestProjectAuditDetail> {
+    throw new Error('Data audit proyek kehutanan mock belum tersedia.');
+  }
+  async decideForestProjectAudit(
+    _projectId: string,
+    _input: import('../types').ForestProjectAuditDecisionInput
+  ): Promise<import('../types').ForestProjectAuditDetail> {
+    throw new Error('Data audit proyek kehutanan mock belum tersedia.');
+  }
 }

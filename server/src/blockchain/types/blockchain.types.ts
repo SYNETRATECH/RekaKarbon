@@ -36,6 +36,30 @@ export interface BlockchainRetirementCertificate {
   contractAddress: string;
 }
 
+export interface BlockchainBursaListingResult {
+  listingId: number;
+  txHash: string;
+}
+
+export interface BlockchainBursaQuote {
+  unitPricePerTonIdr: number;
+  totalCostRkb: number;
+}
+
+export interface BlockchainBursaRevenueRecipients {
+  platform: string;
+  restoration: string;
+  maintenance: string;
+  monitoring: string;
+  buffer: string;
+  environmentalIntelligence: string;
+}
+
+export interface BlockchainMintOffsetCreditResult {
+  tokenId: number;
+  txHash: string;
+}
+
 export interface BlockchainEvent {
   args: readonly [string, string, string, bigint, bigint];
   getBlock(): Promise<{ timestamp: number }>;
@@ -84,6 +108,56 @@ export interface CarbonTokenContract {
     assetId: number,
     amountTco2e: number,
     certNumber: string,
+  ): Promise<BlockchainTransaction>;
+  createBursaListing(
+    seller: string,
+    assetId: bigint,
+    amount: bigint,
+    floorPricePerTonIdr: bigint,
+    projectId: string,
+    kthGroupId: string,
+    projectSnapshotMerkleRoot: string,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
+  setBursaListingKthRecipient(
+    listingId: bigint,
+    kthRecipient: string,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
+  confirmBursaListing(
+    listingId: bigint,
+    kthRepresentative: string,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
+  activateBursaListing(
+    listingId: bigint,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
+  updateBursaMarketPrice(
+    listingId: bigint,
+    newMarketPricePerTonIdr: bigint,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
+  quoteBursaPurchase(
+    listingId: bigint,
+    amount: bigint,
+  ): Promise<readonly [bigint, bigint]>;
+  platformRecipient(): Promise<string>;
+  restorationRecipient(): Promise<string>;
+  maintenanceRecipient(): Promise<string>;
+  monitoringRecipient(): Promise<string>;
+  bufferRecipient(): Promise<string>;
+  environmentalIntelligenceRecipient(): Promise<string>;
+  purchaseBursaListing(
+    listingId: bigint,
+    buyer: string,
+    amount: bigint,
+    maxTotalCostRkb: bigint,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
+  cancelBursaListing(
+    listingId: bigint,
+    overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
   filters: {
     TransferSingle(

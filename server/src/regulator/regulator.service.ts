@@ -1,8 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { KybStatus, ProjectStatus, Role, UserStatus } from '@prisma/client';
+import { AssignForestProjectAuditorDto, CreateKthGroupDto } from './dto';
 import type {
   NationalForestRegion,
   ForestProjectItem,
+  ForestProjectAuditorOption,
+  KTHGroupItem,
   KTHTransactionItem,
   RegulationDocumentUploadItem,
 } from './types';
@@ -27,12 +35,14 @@ export class RegulatorService {
 
   async getForestProjects(): Promise<ForestProjectItem[]> {
     const records = await this.prisma.forestProject.findMany({
-      include: { kthGroup: true, stages: true },
+      include: { kthGroup: true, stages: true, auditor: true },
       orderBy: { createdAt: 'desc' },
     });
     return records.map((r) => {
       const auditStatus: 'verified' | 'in_review' | 'flagged' =
-        r.status.toLowerCase() === 'active' ? 'verified' : 'in_review';
+        r.status === ProjectStatus.AUDITED || r.status === ProjectStatus.MINTED
+          ? 'verified'
+          : 'in_review';
 
       return {
         id: r.id,
@@ -94,11 +104,108 @@ export class RegulatorService {
           disbursements: [],
           tokenBuyers: [],
         },
+        assignedAuditor: r.auditor
+          ? {
+              id: r.auditor.id,
+              email: r.auditor.email,
+              fullName: r.auditor.fullName ?? r.auditor.email,
+            }
+          : null,
+        auditorAssignedAt: r.auditorAssignedAt?.toISOString() ?? null,
+        auditedAt: r.auditedAt?.toISOString() ?? null,
       };
     });
   }
 
-  async getKTHGroups() {
+  async getForestProjectAuditors(): Promise<ForestProjectAuditorOption[]> {
+    const auditors = await this.prisma.user.findMany({
+      where: {
+        role: Role.auditor,
+        status: UserStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+      },
+      orderBy: [{ fullName: 'asc' }, { email: 'asc' }],
+    });
+
+    return auditors.map((auditor) => ({
+      id: auditor.id,
+      email: auditor.email,
+      fullName: auditor.fullName ?? auditor.email,
+    }));
+  }
+
+  async assignForestProjectAuditor(
+    projectId: string,
+    dto: AssignForestProjectAuditorDto,
+  ): Promise<ForestProjectItem> {
+    const project = await this.prisma.forestProject.findUnique({
+      where: { id: projectId },
+      select: { id: true, status: true },
+    });
+    if (!project) {
+      throw new NotFoundException(
+        `Forest project with ID '${projectId}' was not found.`,
+      );
+    }
+
+    if (
+      project.status === ProjectStatus.AUDITED ||
+      project.status === ProjectStatus.MINTED
+    ) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'FOREST_PROJECT_ALREADY_AUDITED',
+          message:
+            'Auditor tidak dapat ditugaskan ulang setelah proyek melewati audit.',
+        },
+      });
+    }
+
+    const auditor = await this.prisma.user.findFirst({
+      where: {
+        id: dto.auditorUserId,
+        role: Role.auditor,
+        status: UserStatus.ACTIVE,
+      },
+      select: { id: true },
+    });
+    if (!auditor) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'AUDITOR_NOT_AVAILABLE',
+          message: 'Akun Auditor aktif tidak ditemukan.',
+        },
+      });
+    }
+
+    await this.prisma.forestProject.update({
+      where: { id: projectId },
+      data: {
+        auditorUserId: auditor.id,
+        auditorAssignedAt: new Date(),
+        auditorNotes: null,
+        auditedAt: null,
+        status: ProjectStatus.ACTIVE_DMRV,
+      },
+    });
+
+    const projects = await this.getForestProjects();
+    const assignedProject = projects.find((item) => item.id === projectId);
+    if (!assignedProject) {
+      throw new NotFoundException(
+        `Forest project with ID '${projectId}' was not found after assignment.`,
+      );
+    }
+    return assignedProject;
+  }
+
+  async getKTHGroups(): Promise<KTHGroupItem[]> {
     const records = await this.prisma.kthGroup.findMany({
       orderBy: { createdAt: 'desc' },
     });
@@ -108,12 +215,62 @@ export class RegulatorService {
       leaderName: g.leaderName,
       memberCount: g.memberCount,
       location: g.location,
-      kybStatus: g.kybStatus.toLowerCase(),
-      registrationNumber: g.registrationNumber || 'SK.LHK-8832/KTH/2023',
+      kybStatus: g.kybStatus.toLowerCase() as KTHGroupItem['kybStatus'],
+      ...(g.registrationNumber
+        ? { registrationNumber: g.registrationNumber }
+        : {}),
       totalIncentiveReceivedIDR: Number(g.totalIncentiveReceivedIdr),
-      walletAddress:
-        g.walletAddress || '0x8a1c948571029485710294857102948571029485',
+      ...(g.walletAddress ? { walletAddress: g.walletAddress } : {}),
     }));
+  }
+
+  async createKTHGroup(dto: CreateKthGroupDto): Promise<KTHGroupItem> {
+    const groupName = dto.groupName.trim();
+    const existing = await this.prisma.kthGroup.findFirst({
+      where: {
+        groupName: {
+          equals: groupName,
+          mode: 'insensitive',
+        },
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'KTH_GROUP_ALREADY_EXISTS',
+          message: `KTH '${groupName}' sudah terdaftar.`,
+        },
+      });
+    }
+
+    const created = await this.prisma.kthGroup.create({
+      data: {
+        groupName,
+        leaderName: dto.leaderName.trim(),
+        memberCount: dto.memberCount,
+        location: dto.location.trim(),
+        registrationNumber: dto.registrationNumber.trim(),
+        walletAddress: dto.walletAddress?.trim() || null,
+        kybStatus: KybStatus.VERIFIED,
+      },
+      select: { id: true },
+    });
+
+    const groups = await this.getKTHGroups();
+    const group = groups.find((item) => item.id === created.id);
+    if (!group) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'KTH_GROUP_CREATE_FAILED',
+          message: 'Data KTH berhasil dibuat tetapi gagal dimuat kembali.',
+        },
+      });
+    }
+    return group;
   }
 
   async getKTHTransactions(): Promise<KTHTransactionItem[]> {

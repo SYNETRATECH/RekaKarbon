@@ -24,6 +24,7 @@ import {
   AuditEmissionReportDto,
   AuditEmissionReportDecisionDto,
   AuditEmissionReportQueryDto,
+  ForestProjectAuditDecisionDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -45,6 +46,64 @@ export class AuditController {
     private readonly mlAuditEngineService: MlAuditEngineService,
     private readonly emissionReportAuditService: EmissionReportAuditService,
   ) {}
+
+  @ApiOperation({
+    summary: 'Retrieve assigned forestry projects awaiting audit',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Forest project audit queue retrieved.',
+  })
+  @Get('forest-projects')
+  async getForestProjectAuditQueue(@Req() request: AuthenticatedRequest) {
+    const data = await this.auditService.getForestProjectAuditQueue(
+      request.user.userId,
+      request.user.role === Role.superadmin,
+    );
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve one assigned forestry project for audit' })
+  @ApiResponse({
+    status: 200,
+    description: 'Forest project audit detail retrieved.',
+  })
+  @ApiParam({ name: 'id', description: 'Forest project UUID' })
+  @Get('forest-projects/:id')
+  async getForestProjectAuditDetail(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    const data = await this.auditService.getForestProjectAuditDetail(
+      id,
+      request.user.userId,
+      request.user.role === Role.superadmin,
+    );
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Approve or request revision for a forestry project',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Forest project audit decision recorded.',
+  })
+  @ApiParam({ name: 'id', description: 'Forest project UUID' })
+  @Post('forest-projects/:id/decision')
+  async decideForestProjectAudit(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() dto: ForestProjectAuditDecisionDto,
+  ) {
+    const data = await this.auditService.decideForestProjectAudit(
+      id,
+      request.user.userId,
+      request.user.role === Role.superadmin,
+      dto,
+    );
+    return { success: true, data };
+  }
 
   @ApiOperation({
     summary: 'Retrieve emission reports awaiting Auditor review',

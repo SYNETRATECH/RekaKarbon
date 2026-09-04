@@ -1,5 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProjectStatus } from '@prisma/client';
 import type {
   AnomalySummary,
   AiAnomalyLog,
@@ -11,12 +17,188 @@ import type {
   DroneScan,
   KthPolygon,
   KthLog,
+  ForestProjectAuditDetail,
+  ForestProjectAuditListItem,
 } from './types';
-import type { AuthorizeMintingDto } from './dto';
+import { ForestProjectAuditDecision } from './dto';
+import type { AuthorizeMintingDto, ForestProjectAuditDecisionDto } from './dto';
+
+function parseProjectCoordinates(
+  value: unknown,
+): Array<{ lat: number; lng: number }> {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((coordinate) => {
+    if (Array.isArray(coordinate) && coordinate.length >= 2) {
+      const lat = Number(coordinate[0]);
+      const lng = Number(coordinate[1]);
+      return Number.isFinite(lat) && Number.isFinite(lng) ? [{ lat, lng }] : [];
+    }
+
+    if (typeof coordinate === 'object' && coordinate !== null) {
+      const candidate = coordinate as { lat?: unknown; lng?: unknown };
+      const lat = Number(candidate.lat);
+      const lng = Number(candidate.lng);
+      return Number.isFinite(lat) && Number.isFinite(lng) ? [{ lat, lng }] : [];
+    }
+
+    return [];
+  });
+}
 
 @Injectable()
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private toForestProjectAuditStatus(
+    status: ProjectStatus,
+    auditorNotes: string | null,
+  ): 'pending' | 'revision_required' | 'approved' {
+    if (status === ProjectStatus.AUDITED || status === ProjectStatus.MINTED) {
+      return 'approved';
+    }
+    return auditorNotes ? 'revision_required' : 'pending';
+  }
+
+  private toForestProjectAuditListItem(project: {
+    id: string;
+    projectName: string;
+    province: string;
+    ecosystemType: string;
+    areaHectares: unknown;
+    targetSequestrationTco2e: unknown;
+    actualSequestrationTco2e: unknown;
+    status: ProjectStatus;
+    auditorAssignedAt: Date | null;
+    auditedAt: Date | null;
+    auditorNotes: string | null;
+    kthGroup: { groupName: string } | null;
+  }): ForestProjectAuditListItem {
+    return {
+      id: project.id,
+      projectName: project.projectName,
+      region: project.province,
+      ecosystemType: String(project.ecosystemType).toLowerCase(),
+      partnerKTH: project.kthGroup?.groupName ?? 'Belum ditetapkan',
+      areaHectares: Number(project.areaHectares),
+      targetSequestrationTCO2e: Number(project.targetSequestrationTco2e),
+      actualSequestrationTCO2e: Number(project.actualSequestrationTco2e),
+      auditStatus: this.toForestProjectAuditStatus(
+        project.status,
+        project.auditorNotes,
+      ),
+      assignedAt: project.auditorAssignedAt?.toISOString() ?? null,
+      auditedAt: project.auditedAt?.toISOString() ?? null,
+    };
+  }
+
+  async getForestProjectAuditQueue(
+    auditorUserId: string,
+    isSuperadmin: boolean,
+  ): Promise<ForestProjectAuditListItem[]> {
+    const projects = await this.prisma.forestProject.findMany({
+      where: {
+        auditorUserId: isSuperadmin ? undefined : auditorUserId,
+        status: { in: [ProjectStatus.DRAFT, ProjectStatus.ACTIVE_DMRV] },
+      },
+      include: { kthGroup: true },
+      orderBy: { auditorAssignedAt: 'asc' },
+    });
+
+    return projects.map((project) =>
+      this.toForestProjectAuditListItem(project),
+    );
+  }
+
+  async getForestProjectAuditDetail(
+    projectId: string,
+    auditorUserId: string,
+    isSuperadmin: boolean,
+  ): Promise<ForestProjectAuditDetail> {
+    const project = await this.prisma.forestProject.findUnique({
+      where: { id: projectId },
+      include: { kthGroup: true },
+    });
+    if (!project) {
+      throw new NotFoundException(
+        `Forest project with ID '${projectId}' was not found.`,
+      );
+    }
+    if (!isSuperadmin && project.auditorUserId !== auditorUserId) {
+      throw new ForbiddenException(
+        'Proyek ini tidak ditugaskan kepada Auditor Anda.',
+      );
+    }
+
+    const listItem = this.toForestProjectAuditListItem(project);
+    return {
+      ...listItem,
+      coordinates: parseProjectCoordinates(project.coordinatesJson),
+      carbonStockTCO2e: Number(project.carbonStockTco2e),
+      fundingBudgetIDR: Number(project.budgetTotalIdr),
+      kthLeader: project.kthGroup?.leaderName ?? 'Belum ditetapkan',
+      kthMembersCount: project.kthGroup?.memberCount ?? 0,
+      auditorNotes: project.auditorNotes,
+    };
+  }
+
+  async decideForestProjectAudit(
+    projectId: string,
+    auditorUserId: string,
+    isSuperadmin: boolean,
+    dto: ForestProjectAuditDecisionDto,
+  ): Promise<ForestProjectAuditDetail> {
+    const project = await this.prisma.forestProject.findUnique({
+      where: { id: projectId },
+      select: { id: true, auditorUserId: true, status: true },
+    });
+    if (!project) {
+      throw new NotFoundException(
+        `Forest project with ID '${projectId}' was not found.`,
+      );
+    }
+    if (!isSuperadmin && project.auditorUserId !== auditorUserId) {
+      throw new ForbiddenException(
+        'Proyek ini tidak ditugaskan kepada Auditor Anda.',
+      );
+    }
+    if (
+      project.status !== ProjectStatus.DRAFT &&
+      project.status !== ProjectStatus.ACTIVE_DMRV
+    ) {
+      throw new BadRequestException(
+        'Proyek ini sudah melewati tahap audit Auditor.',
+      );
+    }
+
+    const notes = dto.notes?.trim() || null;
+    if (
+      dto.decision === ForestProjectAuditDecision.REQUEST_REVISION &&
+      !notes
+    ) {
+      throw new BadRequestException(
+        'Catatan wajib diisi saat meminta revisi proyek.',
+      );
+    }
+
+    await this.prisma.forestProject.update({
+      where: { id: projectId },
+      data: {
+        status:
+          dto.decision === ForestProjectAuditDecision.APPROVE
+            ? ProjectStatus.AUDITED
+            : ProjectStatus.DRAFT,
+        auditorNotes: notes,
+        auditedAt: new Date(),
+      },
+    });
+
+    return this.getForestProjectAuditDetail(
+      projectId,
+      auditorUserId,
+      isSuperadmin,
+    );
+  }
 
   async getAiAnomalyLogs(): Promise<AiAnomalyLog[]> {
     const records = await this.prisma.auditAnomaly.findMany({

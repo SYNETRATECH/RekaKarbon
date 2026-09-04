@@ -21,6 +21,8 @@ export default [
       route('kth', 'routes/regulator/kth.tsx'),
       route('transactions', 'routes/regulator/transactions.tsx'),
       route('upload', 'routes/regulator/upload.tsx'),
+      route('regulator/bursa', 'routes/regulator/bursa.tsx'),
+      route('auditor-assignments', 'routes/regulator/auditor-assignments.tsx'),
     ]),
 
     // Auditor Protected Routes
@@ -31,12 +33,14 @@ export default [
       route('gate', 'routes/auditor/gate.tsx'),
       route('audit/ptbae', 'routes/auditor/ptbae.tsx'),
       route('audit/emission-reports', 'routes/auditor/emission-reports.tsx'),
+      route('audit/forest-projects', 'routes/auditor/forest-projects.tsx'),
     ]),
 
     // KTH Protected Routes
     layout('routes/guards/kth.tsx', [
       route('polygon', 'routes/kth/dashboard.tsx'),
       route('wallet', 'routes/kth/wallet.tsx'),
+      route('kth/bursa', 'routes/kth/bursa.tsx'),
     ]),
 
     // Emitter Protected Routes (emitter + buyer roles)

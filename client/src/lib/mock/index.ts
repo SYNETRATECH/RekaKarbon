@@ -11,3 +11,4 @@ export * from './regulator';
 export * from './auth';
 export * from './ptbae-applications';
 export * from './emission-report-audit';
+export * from './kth';

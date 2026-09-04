@@ -27,7 +27,10 @@ export default function BursaPurchaseModal({
 
   const availableTCO2e = token?.volumeAvailableTCO2e ?? 0;
   const purchaseRequirementTCO2e = purchaseEligibility?.purchaseRequirementTCO2e ?? 0;
-  const maxPurchaseTCO2e = Math.min(Math.max(0, purchaseRequirementTCO2e), availableTCO2e);
+  const maxPurchaseTCO2e = Math.min(
+    Math.ceil(Math.max(0, purchaseRequirementTCO2e)),
+    Math.floor(Math.max(0, availableTCO2e))
+  );
 
   useEffect(() => {
     if (!token) {
@@ -107,7 +110,7 @@ export default function BursaPurchaseModal({
               type="number"
               min={0}
               max={maxPurchaseTCO2e}
-              step="0.1"
+              step="1"
               value={buyQuantity}
               onChange={(e) => {
                 const nextValue = Number(e.target.value);
@@ -120,8 +123,9 @@ export default function BursaPurchaseModal({
               className="font-mono text-xs rounded-xl"
             />
             <span className="text-[9px] text-slate-500 font-bold block">
-              Pasokan listing: {formatCarbon(availableTCO2e)}. Kebutuhan pembelian tersisa:{' '}
-              {formatCarbon(purchaseRequirementTCO2e)}.
+              Pasokan listing: {formatCarbon(availableTCO2e)} tCO₂e. Kebutuhan pembelian tersisa:{' '}
+              {formatCarbon(purchaseRequirementTCO2e)} tCO₂e. Pembelian diproses dalam satuan ton
+              penuh.
             </span>
             {purchaseEligibility === null ? (
               <span className="text-[9px] text-amber-700 font-bold block">
@@ -133,7 +137,7 @@ export default function BursaPurchaseModal({
               </span>
             ) : (
               <span className="text-[9px] text-emerald-700 font-bold block">
-                Nilai otomatis diisi sebesar {formatCarbon(maxPurchaseTCO2e)}.
+                Nilai awal otomatis diisi sebesar {formatCarbon(maxPurchaseTCO2e)} tCO₂e.
               </span>
             )}
             {purchaseRequirementTCO2e > availableTCO2e && (
