@@ -21,6 +21,7 @@ jobs:
       formatting: ${{ steps.changes.outputs.formatting }}
       client: ${{ steps.changes.outputs.client }}
       server: ${{ steps.changes.outputs.server }}
+      contracts: ${{ steps.changes.outputs.contracts }}
       blockchain: ${{ steps.changes.outputs.blockchain }}
       ml: ${{ steps.changes.outputs.ml }}
     steps:
@@ -48,6 +49,17 @@ jobs:
               - '.github/workflows/pr-check.yml'
             server:
               - 'server/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/pr-check.yml'
+            contracts:
+              - 'client/src/schemas/**'
+              - 'client/src/lib/api.ts'
+              - 'client/src/tests/api-contracts.test.ts'
+              - 'server/src/**'
+              - 'server/test/contracts/**'
+              - 'server/test/jest-contracts.json'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
@@ -166,6 +178,35 @@ jobs:
       - name: Build server
         run: pnpm server:build
 
+  verify-contracts:
+    name: Verify API Contracts (Client <-> Server)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.contracts == 'true' || needs.detect-changes.outputs.client == 'true' || needs.detect-changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter ./server prisma:generate
+
+      - name: Run API Contract Tests (Server & Client)
+        run: pnpm test:contracts
+
   verify-blockchain:
     name: Verify Blockchain (Hardhat & Smart Contracts)
     needs: detect-changes
@@ -259,6 +300,7 @@ jobs:
       - format-check
       - verify-client
       - verify-server
+      - verify-contracts
       - verify-blockchain
       - verify-ml
     if: always()
@@ -269,6 +311,7 @@ jobs:
           echo "Format check result: ${{ needs.format-check.result }}"
           echo "Client verification result: ${{ needs.verify-client.result }}"
           echo "Server verification result: ${{ needs.verify-server.result }}"
+          echo "Contracts verification result: ${{ needs.verify-contracts.result }}"
           echo "Blockchain verification result: ${{ needs.verify-blockchain.result }}"
           echo "ML verification result: ${{ needs.verify-ml.result }}"
 
