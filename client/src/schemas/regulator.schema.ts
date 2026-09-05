@@ -48,7 +48,7 @@ export const ForestProjectTokenBuyerSchema = z.object({
   companyName: z.string().min(1),
   tCO2e: CarbonVolumeSchema,
   sector: z.string().min(1),
-  speCertificateId: SpeCertificateIdSchema,
+  speCertificateId: z.string().min(1),
   txHash: TxHashSchema,
   date: DateStringSchema,
 });
@@ -99,6 +99,12 @@ const ForestProjectApiEcosystemSchema = z.enum([
   'tropical rainforest',
 ]);
 
+export const ForestProjectAuditorOptionSchema = z.object({
+  id: UuidSchema,
+  email: z.string().email(),
+  fullName: z.string().min(1),
+});
+
 const ForestProjectApiStageSchema = z.object({
   year: z.number().int().positive(),
   title: z.string().min(1),
@@ -121,7 +127,7 @@ const ForestProjectApiTokenBuyerSchema = z.object({
   companyName: z.string().min(1),
   tCO2e: CarbonVolumeSchema,
   sector: z.string().min(1),
-  speCertificateId: z.string().min(1),
+  speCertificateId: SpeCertificateIdSchema,
   txHash: z.string().min(1),
   date: z.string().min(1),
 });
@@ -175,6 +181,7 @@ export const ForestProjectApiItemSchema = z.object({
   region: z.string().min(1),
   ecosystemType: ForestProjectApiEcosystemSchema,
   coordinates: z.tuple([LatitudeSchema, LongitudeSchema]),
+  polygonCoords: z.array(z.object({ lat: LatitudeSchema, lng: LongitudeSchema })).optional(),
   areaHectares: HectaresSchema,
   targetSequestrationTCO2e: CarbonVolumeSchema,
   actualSequestrationTCO2e: CarbonVolumeSchema,
@@ -187,10 +194,17 @@ export const ForestProjectApiItemSchema = z.object({
   auditStatus: z.enum(['verified', 'in_review', 'flagged']),
   droneAuditCount: z.number().int().nonnegative(),
   lastDroneAuditDate: z.string(),
-  speCertificateId: z.string().min(1),
+  speCertificateId: z.string().min(1).optional(),
+  speMinted: z.boolean().optional(),
+  speTokenId: z.string().optional(),
+  speMintTxHash: TxHashSchema.optional(),
+  speAvailableVolumeTCO2e: CarbonVolumeSchema.optional(),
   ndviScore: VegetationIndexSchema,
   eviScore: VegetationIndexSchema,
   progressDetail: ForestProjectApiProgressDetailSchema,
+  assignedAuditor: ForestProjectAuditorOptionSchema.nullable().optional(),
+  auditorAssignedAt: DateTimeStringSchema.nullable().optional(),
+  auditedAt: DateTimeStringSchema.nullable().optional(),
 });
 
 export const ForestProjectItemSchema = z.object({
@@ -214,6 +228,19 @@ export const ForestProjectItemSchema = z.object({
     ])
     .optional(),
   progressDetail: ForestProjectProgressDetailSchema.optional(),
+  assignedAuditor: ForestProjectAuditorOptionSchema.nullable().optional(),
+  auditorAssignedAt: DateTimeStringSchema.nullable().optional(),
+  auditedAt: DateTimeStringSchema.nullable().optional(),
+});
+
+export const ForestProjectMintResultSchema = z.object({
+  projectId: UuidSchema,
+  speCertificateId: SpeCertificateIdSchema,
+  blockchainTokenId: z.string().min(1),
+  mintTxHash: TxHashSchema,
+  mintedVolumeTCO2e: CarbonVolumeSchema,
+  availableVolumeTCO2e: CarbonVolumeSchema,
+  recipientWallet: WalletAddressSchema,
 });
 
 export const KTHGroupItemSchema = z.object({
@@ -223,9 +250,9 @@ export const KTHGroupItemSchema = z.object({
   memberCount: z.number().int().positive(),
   location: z.string().min(1),
   kybStatus: z.enum(['verified', 'pending', 'rejected']),
-  registrationNumber: z.string().min(1),
+  registrationNumber: z.string().min(1).optional(),
   totalIncentiveReceivedIDR: IdrAmountSchema,
-  walletAddress: WalletAddressSchema,
+  walletAddress: WalletAddressSchema.optional(),
 });
 
 export const KTHTransactionItemSchema = z.object({

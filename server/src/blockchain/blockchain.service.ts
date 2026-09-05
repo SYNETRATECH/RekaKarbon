@@ -2,6 +2,7 @@ import {
   Injectable,
   OnModuleInit,
   InternalServerErrorException,
+  BadRequestException,
   ConflictException,
   Logger,
 } from '@nestjs/common';
@@ -10,10 +11,15 @@ import * as RekaKarbonABI from './config/RekaKarbon.json';
 import * as EmissionRegistryABI from './config/EmissionReportRegistry.json';
 import type {
   BlockchainEvent,
+  BlockchainBursaListingResult,
+  BlockchainBursaQuote,
+  BlockchainBursaRevenueRecipients,
   BlockchainHealth,
+  BlockchainMintOffsetCreditResult,
   BlockchainRetirementCertificate,
   CarbonTokenContract,
   EmissionRegistryContract,
+  BlockchainTransactionReceipt,
 } from './types';
 
 const WALLET_HISTORY_BLOCK_CHUNK = 500;
@@ -222,6 +228,42 @@ export class BlockchainService implements OnModuleInit {
     }
   }
 
+  async mintOffsetCreditWithTokenId(
+    toAddress: string,
+    amount: number,
+    coordinates: string,
+  ): Promise<BlockchainMintOffsetCreditResult> {
+    const contract = this.ensureRekaKarbon();
+    const validAddress = this.normalizeAddress(toAddress, 'Recipient wallet');
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      throw new BadRequestException(
+        'Volume SPE-GRK yang diterbitkan harus berupa bilangan bulat positif.',
+      );
+    }
+
+    try {
+      const tx = await contract.mintOffsetCredit(
+        validAddress,
+        amount,
+        coordinates,
+      );
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+
+      const tokenId = this.getReceiptEventArg(receipt, 'TransferSingle', 3);
+      if (tokenId === null || tokenId > BigInt(Number.MAX_SAFE_INTEGER)) {
+        throw new Error('SPE-GRK token ID was not returned by the contract');
+      }
+
+      return { tokenId: Number(tokenId), txHash: receipt.hash };
+    } catch (error: unknown) {
+      this.logger.error('Error minting SPE-GRK with token ID:', error);
+      throw new InternalServerErrorException(
+        'Gagal menerbitkan SPE-GRK ke blockchain',
+      );
+    }
+  }
+
   async issueQuota(toAddress: string, quotaTCO2e: number): Promise<string> {
     const contract = this.ensureRekaKarbon();
     if (!Number.isFinite(quotaTCO2e) || quotaTCO2e <= 0) {
@@ -374,6 +416,296 @@ export class BlockchainService implements OnModuleInit {
       this.logger.warn(`Invalid address detected: ${address}. Using fallback.`);
       return fallback;
     }
+  }
+
+  private normalizeAddress(address: string, fieldName: string): string {
+    try {
+      return ethers.getAddress(address.toLowerCase());
+    } catch {
+      throw new InternalServerErrorException(
+        `${fieldName} must be a valid EVM address`,
+      );
+    }
+  }
+
+  private toPositiveInteger(value: number, fieldName: string): bigint {
+    if (!Number.isSafeInteger(value) || value <= 0) {
+      throw new InternalServerErrorException(
+        `${fieldName} must be a positive integer`,
+      );
+    }
+    return BigInt(value);
+  }
+
+  private getReceiptEventArg(
+    receipt: BlockchainTransactionReceipt,
+    eventName: string,
+    argumentIndex: number,
+  ): bigint | null {
+    const event = receipt.logs.find((log) => log.fragment?.name === eventName);
+    const value = event?.args?.[argumentIndex];
+    return typeof value === 'bigint' ? value : null;
+  }
+
+  async createBursaListing(
+    seller: string,
+    assetId: number,
+    amountTco2e: number,
+    floorPricePerTonIdr: number,
+    projectId: string,
+    kthGroupId: string,
+    projectSnapshotMerkleRoot: string,
+  ): Promise<BlockchainBursaListingResult> {
+    const contract = this.ensureRekaKarbon();
+    const validSeller = this.normalizeAddress(seller, 'Seller wallet');
+    const validAssetId = this.toPositiveInteger(assetId, 'Asset ID');
+    const validAmount = this.toPositiveInteger(amountTco2e, 'Listing amount');
+    const validFloorPrice = this.toPositiveInteger(
+      floorPricePerTonIdr,
+      'Floor price',
+    );
+    if (!ethers.isHexString(projectSnapshotMerkleRoot, 32)) {
+      throw new InternalServerErrorException(
+        'Invalid project snapshot Merkle root',
+      );
+    }
+
+    try {
+      const tx = await contract.createBursaListing(
+        validSeller,
+        validAssetId,
+        validAmount,
+        validFloorPrice,
+        this.applicationIdToBytes32(projectId),
+        this.applicationIdToBytes32(kthGroupId),
+        projectSnapshotMerkleRoot,
+        { gasPrice: 0 },
+      );
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+
+      const listingId = this.getReceiptEventArg(
+        receipt,
+        'BursaListingCreated',
+        0,
+      );
+      if (listingId === null) {
+        throw new Error('Bursa listing ID was not returned by the contract');
+      }
+
+      return { listingId: Number(listingId), txHash: receipt.hash };
+    } catch (error: unknown) {
+      this.logger.error('Error creating Bursa listing:', error);
+      throw new InternalServerErrorException(
+        'Failed to create Bursa listing on-chain',
+      );
+    }
+  }
+
+  async setBursaListingKthRecipient(
+    listingId: number,
+    kthRecipient: string,
+  ): Promise<string> {
+    const contract = this.ensureRekaKarbon();
+    const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
+    const validKthRecipient = this.normalizeAddress(
+      kthRecipient,
+      'KTH recipient wallet',
+    );
+
+    try {
+      const tx = await contract.setBursaListingKthRecipient(
+        validListingId,
+        validKthRecipient,
+        { gasPrice: 0 },
+      );
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+      return receipt.hash;
+    } catch (error: unknown) {
+      this.logger.error('Error configuring Bursa KTH recipient:', error);
+      throw new InternalServerErrorException(
+        'Failed to configure Bursa KTH recipient on-chain',
+      );
+    }
+  }
+
+  async confirmBursaListing(
+    listingId: number,
+    kthRepresentative: string,
+  ): Promise<string> {
+    const contract = this.ensureRekaKarbon();
+    const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
+    const validRepresentative = this.normalizeAddress(
+      kthRepresentative,
+      'KTH representative wallet',
+    );
+
+    try {
+      const tx = await contract.confirmBursaListing(
+        validListingId,
+        validRepresentative,
+        { gasPrice: 0 },
+      );
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+      return receipt.hash;
+    } catch (error: unknown) {
+      this.logger.error('Error confirming Bursa listing:', error);
+      throw new InternalServerErrorException(
+        'Failed to confirm Bursa listing on-chain',
+      );
+    }
+  }
+
+  async activateBursaListing(listingId: number): Promise<string> {
+    const contract = this.ensureRekaKarbon();
+    const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
+
+    try {
+      const tx = await contract.activateBursaListing(validListingId, {
+        gasPrice: 0,
+      });
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+      return receipt.hash;
+    } catch (error: unknown) {
+      this.logger.error('Error activating Bursa listing:', error);
+      throw new InternalServerErrorException(
+        'Failed to activate Bursa listing on-chain',
+      );
+    }
+  }
+
+  async updateBursaMarketPrice(
+    listingId: number,
+    marketPricePerTonIdr: number,
+  ): Promise<string> {
+    const contract = this.ensureRekaKarbon();
+    const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
+    const validPrice = this.toPositiveInteger(
+      marketPricePerTonIdr,
+      'Market price',
+    );
+
+    try {
+      const tx = await contract.updateBursaMarketPrice(
+        validListingId,
+        validPrice,
+        { gasPrice: 0 },
+      );
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+      return receipt.hash;
+    } catch (error: unknown) {
+      this.logger.error('Error updating Bursa market price:', error);
+      throw new InternalServerErrorException(
+        'Failed to update Bursa market price on-chain',
+      );
+    }
+  }
+
+  async quoteBursaPurchase(
+    listingId: number,
+    amountTco2e: number,
+  ): Promise<BlockchainBursaQuote> {
+    const contract = this.ensureRekaKarbon();
+    const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
+    const validAmount = this.toPositiveInteger(amountTco2e, 'Purchase amount');
+
+    try {
+      const [unitPrice, totalCost] = await contract.quoteBursaPurchase(
+        validListingId,
+        validAmount,
+      );
+      return {
+        unitPricePerTonIdr: Number(unitPrice),
+        totalCostRkb: Number(totalCost),
+      };
+    } catch (error: unknown) {
+      this.logger.error('Error quoting Bursa purchase:', error);
+      throw new BadRequestException('Unable to quote Bursa purchase');
+    }
+  }
+
+  async purchaseBursaListing(
+    listingId: number,
+    buyer: string,
+    amountTco2e: number,
+    maxTotalCostRkb: number,
+  ): Promise<string> {
+    const contract = this.ensureRekaKarbon();
+    const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
+    const validBuyer = this.normalizeAddress(buyer, 'Buyer wallet');
+    const validAmount = this.toPositiveInteger(amountTco2e, 'Purchase amount');
+    const validMaxCost = this.toPositiveInteger(
+      maxTotalCostRkb,
+      'Maximum purchase cost',
+    );
+
+    try {
+      const tx = await contract.purchaseBursaListing(
+        validListingId,
+        validBuyer,
+        validAmount,
+        validMaxCost,
+        { gasPrice: 0 },
+      );
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+      return receipt.hash;
+    } catch (error: unknown) {
+      this.logger.error('Error settling Bursa purchase:', error);
+      throw new BadRequestException('Failed to settle Bursa purchase on-chain');
+    }
+  }
+
+  async cancelBursaListing(listingId: number): Promise<string> {
+    const contract = this.ensureRekaKarbon();
+    const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
+
+    try {
+      const tx = await contract.cancelBursaListing(validListingId, {
+        gasPrice: 0,
+      });
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error('Transaction receipt was not returned');
+      return receipt.hash;
+    } catch (error: unknown) {
+      this.logger.error('Error cancelling Bursa listing:', error);
+      throw new BadRequestException('Failed to cancel Bursa listing on-chain');
+    }
+  }
+
+  async getBursaRevenueRecipients(): Promise<BlockchainBursaRevenueRecipients> {
+    const contract = this.ensureRekaKarbon();
+    const [
+      platform,
+      restoration,
+      maintenance,
+      monitoring,
+      buffer,
+      environmentalIntelligence,
+    ] = await Promise.all([
+      contract.platformRecipient(),
+      contract.restorationRecipient(),
+      contract.maintenanceRecipient(),
+      contract.monitoringRecipient(),
+      contract.bufferRecipient(),
+      contract.environmentalIntelligenceRecipient(),
+    ]);
+
+    return {
+      platform: this.normalizeAddress(platform, 'Platform recipient'),
+      restoration: this.normalizeAddress(restoration, 'Restoration recipient'),
+      maintenance: this.normalizeAddress(maintenance, 'Maintenance recipient'),
+      monitoring: this.normalizeAddress(monitoring, 'Monitoring recipient'),
+      buffer: this.normalizeAddress(buffer, 'Buffer recipient'),
+      environmentalIntelligence: this.normalizeAddress(
+        environmentalIntelligence,
+        'Environmental intelligence recipient',
+      ),
+    };
   }
 
   async executeBursaPurchase(

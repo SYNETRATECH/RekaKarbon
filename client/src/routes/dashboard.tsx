@@ -8,6 +8,7 @@ import {
   regulatorRepository,
   projectRepository,
   companyRepository,
+  kthRepository,
 } from '../repositories';
 import { isClientUserRole, type ClientUserRole } from '../store/useAuthStore';
 import { RouteSkeletonLoader } from '../components/ui/RouteSkeletonLoader';
@@ -67,12 +68,11 @@ export async function clientLoader() {
     ]);
     return { role, aiAnomalyLogs, anomalySummary, energyCorrelationData };
   } else if (role === 'kth') {
-    const [kthPolygons, kthLogs, projects] = await Promise.all([
-      auditRepository.getKthPolygons().catch(() => []),
-      auditRepository.getKthLogs().catch(() => []),
+    const [kthProjects, projects] = await Promise.all([
+      kthRepository.getForestProjects().catch(() => []),
       projectRepository.getProjects().catch(() => []),
     ]);
-    return { role, kthPolygons, kthLogs, projects };
+    return { role, kthProjects, projects };
   }
 
   return { role };

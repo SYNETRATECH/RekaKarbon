@@ -1,0 +1,15 @@
+candidate,family,onnx_exportable,contamination,roc_auc_mean,roc_auc_std,f1_mean,cv_recall_mild_mean,cv_recall_moderate_mean,cv_recall_strong_mean,holdout_auc,promotable
+elliptic_envelope,statistical,False,0.05,0.997072,0.004141,0.990868,0.981481,0.981481,0.984127,1.0,False
+gradient_boosting_ceiling,supervised,True,0.05,0.995556,0.006285,0.995495,0.981481,1.0,0.984127,1.0,False
+gaussian_mixture,statistical,False,0.05,0.978845,0.01161,0.851118,0.662582,0.871087,0.984127,0.971433,False
+isolation_forest,baseline,True,0.05,0.964768,0.006303,0.789621,0.601035,0.780287,0.918254,0.950915,False
+hbos,statistical,False,0.05,0.939817,0.01172,0.713476,0.463508,0.710275,0.692063,0.947285,False
+deep_svdd_dl,dl,False,0.05,0.835556,0.027398,0.910168,0.920207,0.788471,0.842857,0.818182,False
+lof,ml,False,0.05,0.790724,0.053406,0.58213,0.555283,0.576882,0.540476,0.716225,False
+robust_zscore,statistical,False,0.05,0.662803,0.030027,0.463257,0.262255,0.340084,0.370635,0.673611,False
+pca_qresidual,statistical,True,0.05,0.523618,0.013881,0.285452,0.925926,0.942593,0.959524,0.577809,False
+ecod,ml,False,0.05,0.180905,0.028573,0.26087,1.0,1.0,1.0,0.175821,False
+copod,ml,False,0.05,0.106071,0.024132,0.26087,1.0,1.0,1.0,0.107639,False
+iforest_pyod,ml,False,0.05,0.035232,0.006303,0.26087,1.0,1.0,1.0,0.049085,False
+autoencoder_dl,dl,False,0.05,0.0,0.0,0.26087,1.0,1.0,1.0,0.0,False
+vae_dl,dl,False,0.05,0.0,0.0,0.26087,1.0,1.0,1.0,0.0,False

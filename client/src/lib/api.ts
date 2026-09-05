@@ -18,7 +18,11 @@ function getAuthToken(): string | null {
   return localStorage.getItem('rekakarbon_token');
 }
 
-async function apiFetch<T>(path: string, options?: RequestInit, schema?: ZodType<T>): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  options?: RequestInit,
+  schema?: ZodType<T>
+): Promise<T> {
   const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

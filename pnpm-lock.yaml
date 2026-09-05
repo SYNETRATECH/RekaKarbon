@@ -397,6 +397,9 @@ importers:
         specifier: ^4.5.2
         version: 4.5.7(@types/react@19.2.18)(immer@11.1.16)(react@19.2.8)
     devDependencies:
+      '@faker-js/faker':
+        specifier: ^10.6.0
+        version: 10.6.0
       '@react-router/dev':
         specifier: ^7.18.2
         version: 7.18.2(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(react-router@7.18.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(supports-color@8.1.1)(terser@5.49.2)(tsx@4.23.12)(typescript@5.9.3)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(tsx@4.23.12)(yaml@2.9.0))(yaml@2.9.0)
@@ -515,6 +518,9 @@ importers:
       '@eslint/js':
         specifier: ^9.18.0
         version: 9.39.5
+      '@faker-js/faker':
+        specifier: ^10.6.0
+        version: 10.6.0
       '@nestjs/cli':
         specifier: ^11.0.0
         version: 11.0.24(@types/node@24.13.3)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.26)(prettier@3.9.6)(uglify-js@3.19.3)
@@ -602,6 +608,9 @@ importers:
       typescript-eslint:
         specifier: ^8.20.0
         version: 8.66.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3)
+      zod:
+        specifier: ^4.5.2
+        version: 4.5.2
 
 packages:
   '@adraffy/ens-normalize@1.11.1':
@@ -1559,6 +1568,13 @@ packages:
       {
         integrity: sha512-j7+Ksi/9KfGviws6Qtf9Q7KCqRhpwrYKQPs+JBA/rKVFF/yaWLHJEH3zfVP2plVu+eys0d2DlFmhoQJayFewcw==,
       }
+
+  '@faker-js/faker@10.6.0':
+    resolution:
+      {
+        integrity: sha512-3RQHgEtvL1Frl/d1cSreo7qhJ3Gk1OdNUai/CtZ8G+wYeRQnJih3s9xJ9/kgYekPQRdwgh0HXRPqMlzWGwivIQ==,
+      }
+    engines: { node: ^20.19.0 || ^22.13.0 || ^23.5.0 || >=24.0.0, npm: '>=10' }
 
   '@fastify/busboy@2.1.1':
     resolution:
@@ -13003,6 +13019,8 @@ snapshots:
       '@ethersproject/logger': 5.8.0
       '@ethersproject/properties': 5.8.0
       '@ethersproject/strings': 5.8.0
+
+  '@faker-js/faker@10.6.0': {}
 
   '@fastify/busboy@2.1.1': {}
 

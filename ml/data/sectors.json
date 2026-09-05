@@ -1,0 +1,138 @@
+{
+  "version": "2.0.0",
+  "factor_set_id": "rekakarbon-2026-v1",
+  "sectors": {
+    "manufaktur": {
+      "id": "manufaktur",
+      "name": "Manufaktur & Industri",
+      "description": "Pabrik, pengolahan, dan produksi barang",
+      "reference_threshold_tco2e": 50000.0,
+      "avg_intensity_tco2e_per_ton": 0.28,
+      "min_intensity": 0.1,
+      "max_intensity": 0.65,
+      "std_intensity": 0.08,
+      "expected_scope_shares": {
+        "scope1": 0.55,
+        "scope2": 0.4,
+        "scope3": 0.05
+      },
+      "fuel_share_priors": {
+        "solar_diesel": 0.35,
+        "coal": 0.3,
+        "natural_gas": 0.35
+      },
+      "has_process_emissions": false,
+      "process_emission_factor": 0.0
+    },
+    "pertambangan": {
+      "id": "pertambangan",
+      "name": "Pertambangan & Energi",
+      "description": "Pertambangan mineral, batu bara, minyak, dan gas",
+      "reference_threshold_tco2e": 100000.0,
+      "avg_intensity_tco2e_per_ton": 1.25,
+      "min_intensity": 0.6,
+      "max_intensity": 2.5,
+      "std_intensity": 0.25,
+      "expected_scope_shares": {
+        "scope1": 0.8,
+        "scope2": 0.15,
+        "scope3": 0.05
+      },
+      "fuel_share_priors": {
+        "solar_diesel": 0.7,
+        "coal": 0.2,
+        "natural_gas": 0.1
+      },
+      "has_process_emissions": true,
+      "process_emission_factor": 0.2
+    },
+    "perbankan": {
+      "id": "perbankan",
+      "name": "Perbankan & Jasa Keuangan",
+      "description": "Bank, asuransi, fintech, dan sekuritas",
+      "reference_threshold_tco2e": 5000.0,
+      "avg_intensity_tco2e_per_ton": 0.04,
+      "min_intensity": 0.01,
+      "max_intensity": 0.12,
+      "std_intensity": 0.02,
+      "expected_scope_shares": {
+        "scope1": 0.1,
+        "scope2": 0.75,
+        "scope3": 0.15
+      },
+      "fuel_share_priors": {
+        "solar_diesel": 0.85,
+        "coal": 0.0,
+        "natural_gas": 0.15
+      },
+      "has_process_emissions": false,
+      "process_emission_factor": 0.0
+    },
+    "konstruksi": {
+      "id": "konstruksi",
+      "name": "Konstruksi & Properti",
+      "description": "Kontraktor, pengembang, dan infrastruktur",
+      "reference_threshold_tco2e": 25000.0,
+      "avg_intensity_tco2e_per_ton": 0.42,
+      "min_intensity": 0.15,
+      "max_intensity": 0.95,
+      "std_intensity": 0.12,
+      "expected_scope_shares": {
+        "scope1": 0.65,
+        "scope2": 0.25,
+        "scope3": 0.1
+      },
+      "fuel_share_priors": {
+        "solar_diesel": 0.75,
+        "coal": 0.05,
+        "natural_gas": 0.2
+      },
+      "has_process_emissions": false,
+      "process_emission_factor": 0.0
+    },
+    "pertanian": {
+      "id": "pertanian",
+      "name": "Pertanian & Perkebunan",
+      "description": "Sawah, kebun, peternakan, dan perikanan",
+      "reference_threshold_tco2e": 15000.0,
+      "avg_intensity_tco2e_per_ton": 0.18,
+      "min_intensity": 0.05,
+      "max_intensity": 0.45,
+      "std_intensity": 0.06,
+      "expected_scope_shares": {
+        "scope1": 0.7,
+        "scope2": 0.25,
+        "scope3": 0.05
+      },
+      "fuel_share_priors": {
+        "solar_diesel": 0.8,
+        "coal": 0.0,
+        "natural_gas": 0.2
+      },
+      "has_process_emissions": false,
+      "process_emission_factor": 0.0
+    },
+    "perhotelan": {
+      "id": "perhotelan",
+      "name": "Perhotelan & Pariwisata",
+      "description": "Hotel, resort, restoran, dan wisata",
+      "reference_threshold_tco2e": 10000.0,
+      "avg_intensity_tco2e_per_ton": 0.08,
+      "min_intensity": 0.02,
+      "max_intensity": 0.22,
+      "std_intensity": 0.03,
+      "expected_scope_shares": {
+        "scope1": 0.25,
+        "scope2": 0.65,
+        "scope3": 0.1
+      },
+      "fuel_share_priors": {
+        "solar_diesel": 0.4,
+        "coal": 0.0,
+        "natural_gas": 0.6
+      },
+      "has_process_emissions": false,
+      "process_emission_factor": 0.0
+    }
+  }
+}

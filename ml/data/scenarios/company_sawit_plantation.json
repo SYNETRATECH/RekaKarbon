@@ -1,0 +1,22 @@
+{
+  "company_name": "PT Sawit Lestari Mandiri",
+  "company_id": "COMP-ID-SLM-003",
+  "sector": "pertanian",
+  "production_tonnes": 25000.0,
+  "reported_scope1_tco2e": 3550.0,
+  "reported_scope2_tco2e": 520.0,
+  "reported_scope3_tco2e": 0.0,
+  "reported_emissions_tco2e": 4070.0,
+  "historical_emissions_tco2e": 4150.0,
+  "stat_fuel_liters": 600000.0,
+  "mob_fuel_liters": 800000.0,
+  "coal_kg": 0.0,
+  "gas_m3": 0.0,
+  "electricity_kwh": 2500000.0,
+  "clinker_tonnes": 0.0,
+  "cost_solar_idr": 29120000000.0,
+  "cost_coal_idr": 0.0,
+  "cost_gas_idr": 0.0,
+  "cost_pln_idr": 3750000000.0,
+  "description": "Compliant palm oil plantation with fleet logistics, mill boilers, and normal operational fuel consumption."
+}

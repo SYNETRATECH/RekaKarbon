@@ -83,6 +83,7 @@ export interface ForestProjectItem {
   region: string;
   ecosystemType: string;
   coordinates?: [number, number];
+  polygonCoords?: Array<{ lat: number; lng: number }>;
   areaHectares: number;
   targetSequestrationTCO2e: number;
   actualSequestrationTCO2e: number;
@@ -95,10 +96,33 @@ export interface ForestProjectItem {
   auditStatus: 'verified' | 'in_review' | 'flagged';
   droneAuditCount: number;
   lastDroneAuditDate: string;
-  speCertificateId: string;
+  speCertificateId?: string;
+  speMinted?: boolean;
+  speTokenId?: string;
+  speMintTxHash?: string;
+  speAvailableVolumeTCO2e?: number;
   ndviScore: number;
   eviScore: number;
   progressDetail: ForestProjectProgressDetail;
+  assignedAuditor: ForestProjectAuditorOption | null;
+  auditorAssignedAt: string | null;
+  auditedAt: string | null;
+}
+
+export interface ForestProjectMintResult {
+  projectId: string;
+  speCertificateId: string;
+  blockchainTokenId: string;
+  mintTxHash: string;
+  mintedVolumeTCO2e: number;
+  availableVolumeTCO2e: number;
+  recipientWallet: string;
+}
+
+export interface ForestProjectAuditorOption {
+  id: string;
+  email: string;
+  fullName: string;
 }
 
 export interface KTHMember {
@@ -113,16 +137,14 @@ export interface KTHMember {
 
 export interface KTHGroupItem {
   id: string;
-  kthName: string;
-  region: string;
+  groupName: string;
   leaderName: string;
-  membersCount: number;
-  members: KTHMember[];
-  assignedAreaHectares: number;
-  targetTrees: number;
-  plantedTrees: number;
+  memberCount: number;
+  location: string;
+  kybStatus: 'verified' | 'pending' | 'rejected';
+  registrationNumber?: string;
   totalIncentiveReceivedIDR: number;
-  walletAddress: string;
+  walletAddress?: string;
 }
 
 export interface KTHTransactionItem {

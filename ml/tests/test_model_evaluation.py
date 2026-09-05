@@ -17,8 +17,8 @@ from rekakarbon_ml.evaluation import (
     generate_model_metadata,
 )
 from rekakarbon_ml.inference.predictor import CarbonAnomalyPredictor
-from rekakarbon_ml.pipeline.onnx_exporter import export_pipeline_to_onnx
-from rekakarbon_ml.pipeline.trainer import train_and_save_pipeline
+from rekakarbon_ml.training.onnx_exporter import export_pipeline_to_onnx
+from rekakarbon_ml.training.trainer import train_and_save_pipeline
 
 
 @pytest.fixture(scope="module")
@@ -46,7 +46,7 @@ def test_model_evaluation_metrics_and_quality_gates(trained_predictor_and_test_d
     predictor, train_df, val_df, test_df, model_dir = trained_predictor_and_test_data
 
     evaluator = ModelEvaluator(predictor)
-    eval_results = evaluator.evaluate(test_df)
+    eval_results = evaluator.evaluate(test_df, train_df=train_df)
 
     summary = eval_results["summary"]
     cm = eval_results["confusion_matrix"]
@@ -59,17 +59,32 @@ def test_model_evaluation_metrics_and_quality_gates(trained_predictor_and_test_d
     assert summary["precision"] >= 0.70
     assert summary["false_positive_rate"] <= QUALITY_GATE_THRESHOLDS["max_false_positive_rate"]
 
+    # 1b. Extended Quality Gate Metrics
+    assert summary["roc_auc"] >= QUALITY_GATE_THRESHOLDS["min_roc_auc"]
+    assert summary["average_precision"] >= QUALITY_GATE_THRESHOLDS["min_avg_precision"]
+    assert summary["expected_calibration_error"] <= QUALITY_GATE_THRESHOLDS["max_calibration_error"]
+    assert summary["cross_fold_f1_std"] is not None
+    assert summary["cross_fold_f1_std"] <= QUALITY_GATE_THRESHOLDS["max_crossfold_f1_std"]
+
     # 2. Confusion Matrix Consistency
     assert cm["total_samples"] == len(test_df)
     assert cm["true_positive"] + cm["false_negative"] == (test_df["is_anomaly"] == 1).sum()
 
     # 3. Critical Fraud Types Detection (Under-reporting must be caught reliably)
-    assert "UNDER_REPORTING_FRAUD" in per_type
-    assert per_type["UNDER_REPORTING_FRAUD"]["recall"] >= 0.90
+    fraud_key = (
+        "SCOPE1_UNDERREPORTING_FRAUD"
+        if "SCOPE1_UNDERREPORTING_FRAUD" in per_type
+        else "UNDER_REPORTING_FRAUD"
+    )
+    assert fraud_key in per_type
+    assert per_type[fraud_key]["recall"] >= 0.90
 
     # 4. Quality Gate Verdict
     assert quality_gate["passed"] is True
     assert quality_gate["status"] == "PASSED"
+    assert quality_gate["evaluated_metrics"]["cross_fold_f1_std"] is not None
+    assert "min_roc_auc" in quality_gate["thresholds"]
+    assert "max_crossfold_f1_std" in quality_gate["thresholds"]
 
     # 5. Metadata Export Verification
     meta_path = os.path.join(model_dir, "model_metadata.json")
@@ -80,10 +95,20 @@ def test_model_evaluation_metrics_and_quality_gates(trained_predictor_and_test_d
         loaded_meta = json.load(f)
 
     assert loaded_meta["version"] == "1.0.0"
-    assert len(loaded_meta["raw_features"]) == 12
-    assert len(loaded_meta["derived_features"]) == 15
+    assert len(loaded_meta["raw_features"]) == 17
+    assert len(loaded_meta["derived_features"]) == 20
     assert len(loaded_meta["supported_sectors"]) == 6
     assert "solar_diesel_tco2e_per_liter" in loaded_meta["stoichiometric_factors"]
+    assert loaded_meta["evaluation_metrics"]["average_precision"] > 0.0
+    assert loaded_meta["evaluation_metrics"]["expected_calibration_error"] is not None
+
+
+def test_evaluate_without_train_split_skips_crossfold_gate(trained_predictor_and_test_data):
+    predictor, _, _, test_df, _ = trained_predictor_and_test_data
+    evaluator = ModelEvaluator(predictor)
+    eval_results = evaluator.evaluate(test_df, train_df=None)
+    assert eval_results["summary"]["cross_fold_f1_std"] is None
+    assert eval_results["quality_gate"]["evaluated_metrics"]["cross_fold_f1_std"] is None
 
 
 def test_model_visualizer_artifact_generation(trained_predictor_and_test_data, tmp_path):
@@ -99,4 +124,5 @@ def test_model_visualizer_artifact_generation(trained_predictor_and_test_data, t
     assert os.path.exists(artifacts["confusion_matrix_plot"])
     assert os.path.exists(artifacts["roc_pr_curves_plot"])
     assert os.path.exists(artifacts["per_anomaly_recall_plot"])
+    assert os.path.exists(artifacts["shap_summary_plot"])
     assert os.path.exists(artifacts["interactive_html_report"])

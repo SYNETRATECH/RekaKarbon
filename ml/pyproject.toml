@@ -26,14 +26,20 @@ dependencies = [
     "shap (>=0.52.0,<0.53.0)",
     "python-dotenv>=1.0.0",
     "matplotlib (>=3.11.1,<4.0.0)",
-    "seaborn (>=0.13.2,<0.14.0)"
+    "seaborn (>=0.13.2,<0.14.0)",
+    "pyod>=1.1.0",
+    "torch>=2.3.0"
 ]
 
 [project.scripts]
-train = "rekakarbon_ml.pipeline.trainer:main"
+train = "rekakarbon_ml.training.trainer:main"
 preprocess = "rekakarbon_ml.data.preprocess:main"
 eval = "rekakarbon_ml.evaluation.evaluator:main"
 studio = "rekakarbon_ml.studio.cli:main"
+pipeline = "rekakarbon_ml.pipeline.orchestrator:main"
+benchmark = "rekakarbon_ml.experiments.benchmark:main"
+
+
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

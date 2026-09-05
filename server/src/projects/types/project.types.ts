@@ -3,6 +3,12 @@ export interface ProjectCoordinate {
   lng: number;
 }
 
+export type ForestProjectEcosystem =
+  | 'mangrove_blue_carbon'
+  | 'peatland_restoration'
+  | 'agroforestry'
+  | 'tropical_rainforest';
+
 export interface ReforestationStage {
   year: number;
   title: string;

@@ -1,0 +1,189 @@
+"""
+Feature Store Registry & Metadata Manifest for RekaKarbon ML Engine.
+Maintains comprehensive specifications for all 20 derived features.
+"""
+
+import json
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any, Dict, List
+
+
+@dataclass
+class FeatureSpec:
+    name: str
+    data_type: str
+    physical_unit: str
+    description: str
+    formula: str
+    is_one_hot: bool = False
+
+
+FEATURE_REGISTRY: List[FeatureSpec] = [
+    FeatureSpec(
+        name="scope1_stoichiometric_divergence",
+        data_type="float32",
+        physical_unit="ratio (dimensionless)",
+        description="Relative divergence between physics/fuel-expected Scope 1 emissions and reported Scope 1",
+        formula="|E_expected_s1 - reported_scope1| / (E_expected_s1 + eps)",
+    ),
+    FeatureSpec(
+        name="scope2_grid_divergence",
+        data_type="float32",
+        physical_unit="ratio (dimensionless)",
+        description="Relative divergence between purchased electricity grid factor emissions and reported Scope 2",
+        formula="|kWh * EF_grid - reported_scope2| / (kWh * EF_grid + eps)",
+    ),
+    FeatureSpec(
+        name="solar_unit_cost_log",
+        data_type="float32",
+        physical_unit="log(IDR / Liter)",
+        description="Log-transformed unit purchasing price of industrial solar diesel fuel",
+        formula="log(1 + cost_solar / stat_fuel_liters)",
+    ),
+    FeatureSpec(
+        name="electricity_unit_cost_log",
+        data_type="float32",
+        physical_unit="log(IDR / kWh)",
+        description="Log-transformed unit tariff of purchased grid electricity",
+        formula="log(1 + cost_pln / electricity_kwh)",
+    ),
+    FeatureSpec(
+        name="emission_intensity",
+        data_type="float32",
+        physical_unit="tCO2e / Ton Product",
+        description="Total carbon intensity per unit of industrial production output",
+        formula="reported_total_tco2e / production_tonnes",
+    ),
+    FeatureSpec(
+        name="sector_intensity_zscore",
+        data_type="float32",
+        physical_unit="z-score (std deviations)",
+        description="Sector-normalized emission intensity z-score relative to sector benchmark prior",
+        formula="(emission_intensity - sector_avg_intensity) / sector_std_intensity",
+    ),
+    FeatureSpec(
+        name="scope1_to_total_ratio",
+        data_type="float32",
+        physical_unit="ratio (0 to 1)",
+        description="Proportion of total emissions originating from Scope 1 direct sources",
+        formula="reported_scope1_tco2e / reported_total_tco2e",
+    ),
+    FeatureSpec(
+        name="scope2_to_total_ratio",
+        data_type="float32",
+        physical_unit="ratio (0 to 1)",
+        description="Proportion of total emissions originating from Scope 2 purchased electricity",
+        formula="reported_scope2_tco2e / reported_total_tco2e",
+    ),
+    FeatureSpec(
+        name="scope3_presence_ratio",
+        data_type="float32",
+        physical_unit="ratio (0 to 1)",
+        description="Proportion of total emissions from Scope 3 value chain (0 if Scope 3 omitted)",
+        formula="reported_scope3_tco2e / reported_total_tco2e",
+    ),
+    FeatureSpec(
+        name="scope_summation_discrepancy",
+        data_type="float32",
+        physical_unit="ratio (dimensionless)",
+        description="Discrepancy between the sum of Scope 1, 2, 3 and the self-reported total",
+        formula="|(Scope1 + Scope2 + Scope3) - reported_total| / reported_total",
+    ),
+    FeatureSpec(
+        name="solar_price_residual_ratio",
+        data_type="float32",
+        physical_unit="ratio (dimensionless)",
+        description="Relative price anomaly of solar diesel compared to official BPH Migas index",
+        formula="|solar_unit_price - nominal_solar_price| / nominal_solar_price",
+    ),
+    FeatureSpec(
+        name="electricity_price_residual_ratio",
+        data_type="float32",
+        physical_unit="ratio (dimensionless)",
+        description="Relative price anomaly of electricity tariff compared to official PLN tariff",
+        formula="|elec_unit_price - nominal_elec_tariff| / nominal_elec_tariff",
+    ),
+    FeatureSpec(
+        name="yoy_change_ratio",
+        data_type="float32",
+        physical_unit="ratio (dimensionless)",
+        description="Year-over-year reported emission growth or collapse ratio relative to historical baseline",
+        formula="(reported - historical) / historical",
+    ),
+    FeatureSpec(
+        name="energy_spend_per_ton",
+        data_type="float32",
+        physical_unit="IDR / Ton Product",
+        description="Total utility and fuel expenditure per ton of production output",
+        formula="(cost_solar + cost_coal + cost_gas + cost_pln) / production_tonnes",
+    ),
+    FeatureSpec(
+        name="sector_is_manufaktur",
+        data_type="float32",
+        physical_unit="binary flag (0 or 1)",
+        description="One-hot indicator for Manufaktur & Industri sector",
+        formula="1.0 if sector == 'manufaktur' else 0.0",
+        is_one_hot=True,
+    ),
+    FeatureSpec(
+        name="sector_is_pertambangan",
+        data_type="float32",
+        physical_unit="binary flag (0 or 1)",
+        description="One-hot indicator for Pertambangan & Energi sector",
+        formula="1.0 if sector == 'pertambangan' else 0.0",
+        is_one_hot=True,
+    ),
+    FeatureSpec(
+        name="sector_is_perbankan",
+        data_type="float32",
+        physical_unit="binary flag (0 or 1)",
+        description="One-hot indicator for Perbankan & Jasa Keuangan sector",
+        formula="1.0 if sector == 'perbankan' else 0.0",
+        is_one_hot=True,
+    ),
+    FeatureSpec(
+        name="sector_is_konstruksi",
+        data_type="float32",
+        physical_unit="binary flag (0 or 1)",
+        description="One-hot indicator for Konstruksi & Properti sector",
+        formula="1.0 if sector == 'konstruksi' else 0.0",
+        is_one_hot=True,
+    ),
+    FeatureSpec(
+        name="sector_is_pertanian",
+        data_type="float32",
+        physical_unit="binary flag (0 or 1)",
+        description="One-hot indicator for Pertanian & Perkebunan sector",
+        formula="1.0 if sector == 'pertanian' else 0.0",
+        is_one_hot=True,
+    ),
+    FeatureSpec(
+        name="sector_is_perhotelan",
+        data_type="float32",
+        physical_unit="binary flag (0 or 1)",
+        description="One-hot indicator for Perhotelan & Pariwisata sector",
+        formula="1.0 if sector == 'perhotelan' else 0.0",
+        is_one_hot=True,
+    ),
+]
+
+
+def export_feature_manifest(
+    output_path: str = "data/feature_manifest.json",
+    version: str = "2.0.0",
+) -> Dict[str, Any]:
+    manifest = {
+        "version": version,
+        "total_features": len(FEATURE_REGISTRY),
+        "derived_feature_names": [f.name for f in FEATURE_REGISTRY],
+        "features": [asdict(f) for f in FEATURE_REGISTRY],
+    }
+    target = Path(output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with open(target, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+    return manifest
+
+
+generate_feature_manifest = export_feature_manifest

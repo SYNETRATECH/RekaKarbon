@@ -3,6 +3,8 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
@@ -12,9 +14,14 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { RegulatorService } from './regulator.service';
-import { RegulatorQueryDto } from './dto';
+import {
+  AssignForestProjectAuditorDto,
+  CreateKthGroupDto,
+  RegulatorQueryDto,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -59,6 +66,56 @@ export class RegulatorController {
   @Get('kth-groups')
   async getKthGroups(@Query() _query: RegulatorQueryDto) {
     const data = await this.regulatorService.getKTHGroups();
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Retrieve active Auditors available for forest projects',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Available forest project Auditors retrieved.',
+  })
+  @Get('forest-project-auditors')
+  async getForestProjectAuditors() {
+    const data = await this.regulatorService.getForestProjectAuditors();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Assign an Auditor to a forest project' })
+  @ApiResponse({
+    status: 200,
+    description: 'Forest project Auditor assignment saved.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Auditor is unavailable or project cannot be assigned.',
+  })
+  @ApiParam({ name: 'id', description: 'Forest project UUID' })
+  @Post('forest-projects/:id/assign-auditor')
+  async assignForestProjectAuditor(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() dto: AssignForestProjectAuditorDto,
+  ) {
+    const data = await this.regulatorService.assignForestProjectAuditor(
+      id,
+      dto,
+    );
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Register a Kelompok Tani Hutan (KTH) group' })
+  @ApiResponse({
+    status: 201,
+    description: 'KTH group registered successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'KTH data is invalid or already registered.',
+  })
+  @Post('kth-groups')
+  async createKthGroup(@Body() dto: CreateKthGroupDto) {
+    const data = await this.regulatorService.createKTHGroup(dto);
     return { success: true, data };
   }
 

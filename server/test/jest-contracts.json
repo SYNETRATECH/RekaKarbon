@@ -1,0 +1,26 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "../..",
+  "testEnvironment": "node",
+  "testMatch": ["<rootDir>/server/test/contracts/**/*.contract.spec.ts"],
+  "modulePathIgnorePatterns": ["<rootDir>/ml/"],
+  "transformIgnorePatterns": ["node_modules[\\\\/](?!.*@faker-js)"],
+  "transform": {
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": {
+          "isolatedModules": true,
+          "module": "commonjs",
+          "target": "es2022",
+          "resolveJsonModule": true,
+          "esModuleInterop": true,
+          "allowSyntheticDefaultImports": true,
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "skipLibCheck": true
+        }
+      }
+    ]
+  }
+}
