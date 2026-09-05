@@ -98,6 +98,16 @@ class QualityGateConfig:
     max_false_positive_rate: float = field(
         default_factory=lambda: float(os.getenv("ML_MAX_FALSE_POSITIVE_RATE", "0.10"))
     )
+    min_roc_auc: float = field(default_factory=lambda: float(os.getenv("ML_MIN_ROC_AUC", "0.90")))
+    min_avg_precision: float = field(
+        default_factory=lambda: float(os.getenv("ML_MIN_AVG_PRECISION", "0.60"))
+    )
+    max_calibration_error: float = field(
+        default_factory=lambda: float(os.getenv("ML_MAX_CALIBRATION_ERROR", "0.15"))
+    )
+    max_crossfold_f1_std: float = field(
+        default_factory=lambda: float(os.getenv("ML_MAX_CROSSFOLD_F1_STD", "0.05"))
+    )
 
     def to_dict(self) -> Dict[str, float]:
         """Returns thresholds dictionary for Quality Gate check."""
@@ -106,6 +116,10 @@ class QualityGateConfig:
             "min_overall_recall": self.min_overall_recall,
             "min_under_reporting_recall": self.min_under_reporting_recall,
             "max_false_positive_rate": self.max_false_positive_rate,
+            "min_roc_auc": self.min_roc_auc,
+            "min_avg_precision": self.min_avg_precision,
+            "max_calibration_error": self.max_calibration_error,
+            "max_crossfold_f1_std": self.max_crossfold_f1_std,
         }
 
 

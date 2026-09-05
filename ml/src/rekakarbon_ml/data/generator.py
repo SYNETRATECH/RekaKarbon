@@ -16,6 +16,12 @@ from .benchmark_loader import (
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
 )
+from .severity import (
+    ANOMALY_TYPES,
+    get_injection_band,
+    resolve_severity,
+    validate_severity_distribution,
+)
 
 
 class EmissionDataGenerator:
@@ -38,6 +44,8 @@ class EmissionDataGenerator:
         n_samples: int | None = None,
         anomaly_ratio: float | None = None,
         sectors: List[str] | None = None,
+        severity: str | None = None,
+        severity_distribution: dict[str, float] | None = None,
     ) -> pd.DataFrame:
         self.rng = np.random.RandomState(self.random_state)
         samples = n_samples if n_samples is not None else self.dataset_config.default_n_samples
@@ -47,6 +55,11 @@ class EmissionDataGenerator:
             else self.dataset_config.default_anomaly_ratio
         )
         sectors_to_use = sectors or SUPPORTED_SECTORS
+        normalized_severity_distribution = validate_severity_distribution(severity_distribution)
+        # Backward compatibility: default ladder is "strong", matching legacy injections.
+        ref_severity: str | None = severity if severity is not None else None
+        if ref_severity is None and normalized_severity_distribution is None:
+            ref_severity = "strong"
         data = []
 
         n_anomalies = int(samples * ratio)
@@ -192,23 +205,20 @@ class EmissionDataGenerator:
                     "cost_pln_idr": round(cost_pln, 2),
                     "is_anomaly": 0,
                     "anomaly_type": "NORMAL",
+                    "severity_level": "none",
                 }
             )
 
         # 2. Generate Labeled Anomalies
-        anomaly_types = [
-            "SCOPE1_UNDERREPORTING_FRAUD",
-            "SCOPE2_ELECTRICITY_MISMATCH",
-            "SCOPE_MATH_DISCREPANCY",
-            "FUEL_PRICE_INVOICE_FRAUD",
-            "EXTREME_YOY_COLLAPSE",
-            "SECTOR_INTENSITY_ANOMALY",
-        ]
-
         for _ in range(n_anomalies):
             sector = self.rng.choice(sectors_to_use)
             bench = self.sector_benchmarks.get(sector, self.sector_benchmarks[sectors_to_use[0]])
-            atype = self.rng.choice(anomaly_types)
+            atype = self.rng.choice(ANOMALY_TYPES)
+            severity_tier = resolve_severity(
+                ref_severity,
+                self.rng,
+                normalized_severity_distribution,
+            )
 
             production = float(self.rng.uniform(50000, 400000))
             normal_intensity = float(
@@ -249,28 +259,30 @@ class EmissionDataGenerator:
             rep_s3 = real_s3
             rep_total = real_s1 + real_s2 + real_s3
 
+            band = get_injection_band(atype, severity_tier)
+
             if atype == "SCOPE1_UNDERREPORTING_FRAUD":
                 # High fuel physical consumption, but Scope 1 reported fraudulently low
-                rep_s1 = real_s1 * float(self.rng.uniform(0.18, 0.42))
+                rep_s1 = real_s1 * float(self.rng.uniform(*band))
                 rep_total = rep_s1 + rep_s2 + rep_s3
             elif atype == "SCOPE2_ELECTRICITY_MISMATCH":
                 # High electricity consumption, but Scope 2 reported tiny
-                rep_s2 = real_s2 * float(self.rng.uniform(0.15, 0.38))
+                rep_s2 = real_s2 * float(self.rng.uniform(*band))
                 rep_total = rep_s1 + rep_s2 + rep_s3
             elif atype == "SCOPE_MATH_DISCREPANCY":
                 # Math fraud: reported total is forged lower than the actual sum of scopes
-                rep_total = (rep_s1 + rep_s2 + rep_s3) * float(self.rng.uniform(0.40, 0.70))
+                rep_total = (rep_s1 + rep_s2 + rep_s3) * float(self.rng.uniform(*band))
             elif atype == "FUEL_PRICE_INVOICE_FRAUD":
                 # Subsidized or fictitious invoice unit price (e.g. Rp 800/L vs Rp 20,500 market nominal)
-                cost_solar = stat_fuel_liters * float(self.rng.uniform(500, 2000))
+                cost_solar = stat_fuel_liters * float(self.rng.uniform(*band))
             elif atype == "EXTREME_YOY_COLLAPSE":
-                # Reported emissions suddenly collapse 80% without output change
-                rep_s1 = real_s1 * float(self.rng.uniform(0.10, 0.25))
-                rep_s2 = real_s2 * float(self.rng.uniform(0.10, 0.25))
+                # Reported emissions suddenly collapse without output change
+                rep_s1 = real_s1 * float(self.rng.uniform(*band))
+                rep_s2 = real_s2 * float(self.rng.uniform(*band))
                 rep_s3 = 0.0
                 rep_total = rep_s1 + rep_s2
             else:  # SECTOR_INTENSITY_ANOMALY
-                rep_s1 = production * bench["min_intensity"] * float(self.rng.uniform(0.08, 0.22))
+                rep_s1 = production * bench["min_intensity"] * float(self.rng.uniform(*band))
                 rep_s2 = rep_s1 * 0.5
                 rep_s3 = 0.0
                 rep_total = rep_s1 + rep_s2
@@ -297,6 +309,7 @@ class EmissionDataGenerator:
                     "cost_pln_idr": round(cost_pln, 2),
                     "is_anomaly": 1,
                     "anomaly_type": atype,
+                    "severity_level": severity_tier,
                 }
             )
 

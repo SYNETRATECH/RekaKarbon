@@ -38,6 +38,7 @@
     "ml:train": "poetry --directory ./ml run train",
     "ml:preprocess": "poetry --directory ./ml run preprocess",
     "ml:eval": "poetry --directory ./ml run eval",
+    "ml:benchmark": "poetry --directory ./ml run benchmark",
     "ml:studio": "poetry --directory ./ml run studio",
     "db:generate": "pnpm --filter ./server prisma:generate",
     "db:migrate": "pnpm --filter ./server prisma:migrate",

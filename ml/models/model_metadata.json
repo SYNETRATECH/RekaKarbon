@@ -1,7 +1,7 @@
 {
   "model_name": "RekaKarbon Carbon Anomaly Detector",
   "version": "1.0.0",
-  "release_timestamp": "2026-09-03T11:50:58.070318+00:00",
+  "release_timestamp": "2026-09-05T09:26:54.159252+00:00",
   "framework": "Scikit-Learn (IsolationForest + RobustScaler) & ONNX Runtime",
   "target_opset": {
     "": 15,
@@ -268,6 +268,9 @@
     "f1_score": 0.9483,
     "accuracy": 0.984,
     "roc_auc": 0.9788,
+    "average_precision": 0.9033,
+    "expected_calibration_error": 0.1423,
+    "cross_fold_f1_std": 0.0298,
     "false_positive_rate": 0.0157,
     "false_negative_rate": 0.0179
   },
@@ -310,9 +313,25 @@
       "min_overall_f1": 0.85,
       "min_overall_recall": 0.88,
       "min_under_reporting_recall": 0.92,
-      "max_false_positive_rate": 0.1
+      "max_false_positive_rate": 0.1,
+      "min_roc_auc": 0.9,
+      "min_avg_precision": 0.6,
+      "max_calibration_error": 0.15,
+      "max_crossfold_f1_std": 0.05
+    },
+    "evaluated_metrics": {
+      "roc_auc": 0.9788,
+      "average_precision": 0.9033,
+      "expected_calibration_error": 0.1423,
+      "cross_fold_f1_std": 0.0298
     },
     "passed": true
   },
-  "visual_artifacts": {}
+  "visual_artifacts": {
+    "confusion_matrix_plot": "models/reports\\confusion_matrix.png",
+    "roc_pr_curves_plot": "models/reports\\roc_pr_curves.png",
+    "per_anomaly_recall_plot": "models/reports\\anomaly_type_recall.png",
+    "shap_summary_plot": "models/reports\\shap_summary.png",
+    "interactive_html_report": "models/reports\\evaluation_report.html"
+  }
 }
