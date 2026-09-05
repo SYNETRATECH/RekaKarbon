@@ -89,11 +89,24 @@ ml/
 │       ├── pipeline/           # WORKFLOW ORCHESTRATION MODULE
 │       │   ├── __init__.py
 │       │   └── orchestrator.py    # End-to-end MLOps workflow coordinator CLI
-│       └── studio/             # STREAMLIT PROTOTYPING STUDIO
+│       └── studio/             # STREAMLIT PROTOTYPING STUDIO (MODULAR)
 │           ├── __init__.py
-│           ├── app.py             # Development studio dashboard
-│           └── cli.py             # Studio launcher entrypoint
-└── tests/                      # AUTOMATED TEST SUITE (44 Tests)
+│           ├── app.py             # Lean orchestrator dashboard entrypoint
+│           ├── cli.py             # Studio launcher entrypoint (poetry run studio)
+│           ├── state.py           # Resource caching (@st.cache_resource, @st.cache_data)
+│           ├── presets.py         # Sector baseline & anomaly scenario domain math
+│           ├── components/        # Reusable UI component modules & Plotly builders
+│           │   ├── __init__.py
+│           │   ├── audit_form.py      # Input form for GHG scopes, fuels, financial
+│           │   ├── audit_results.py   # Verdict banner & 3-pillar metric cards
+│           │   ├── xai_view.py        # Top anomaly drivers table & SHAP plot
+│           │   └── charts.py          # Plotly waterfall, SHAP bar & scatter builders
+│           └── views/             # Tab view coordinators
+│               ├── __init__.py
+│               ├── single_audit.py    # Tab 1: Single Company Audit Simulator
+│               ├── batch_auditor.py   # Tab 2: Batch CSV Auditor & Benchmark Map
+│               └── onnx_parity.py     # Tab 3: ONNX Runtime Parity & Architecture
+└── tests/                      # AUTOMATED TEST SUITE (51 Tests)
     ├── __init__.py
     ├── test_config.py                  # Configuration & hyperparameter tests (8 tests)
     ├── test_data_validation.py         # Layer 1: Multi-scope schema & registry tests (9 tests)
@@ -102,7 +115,8 @@ ml/
     ├── test_behavioral_robustness.py   # Layer 5: Scope 3 optionality & math fraud tests (7 tests)
     ├── test_performance_benchmarks.py  # Layer 6 & 7: Inference latency & throughput (2 tests)
     ├── test_onnx_parity.py             # Layer 8: 20-Feature Scikit-Learn vs ONNX parity (3 tests)
-    └── test_industry_scenarios.py      # Layer 8: Industry Archetype Scenarios / Company X (7 tests)
+    ├── test_industry_scenarios.py      # Layer 8: Industry Archetype Scenarios / Company X (7 tests)
+    └── test_studio.py                  # Layer 9: Studio presets & Plotly chart builders (7 tests)
 ```
 
 ---
