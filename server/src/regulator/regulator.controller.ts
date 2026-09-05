@@ -40,6 +40,25 @@ export class RegulatorController {
     private readonly ptbaeService: PtbaeService,
   ) {}
 
+  @ApiOperation({ summary: 'Retrieve national forest regions carbon data' })
+  @ApiResponse({
+    status: 200,
+    description: 'National forest regions retrieved.',
+  })
+  @Get('forest-regions')
+  async getForestRegions(@Query() _query: RegulatorQueryDto) {
+    const data = await this.regulatorService.getNationalForestRegions();
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve regulator oversight forest projects' })
+  @ApiResponse({ status: 200, description: 'Forest projects retrieved.' })
+  @Get('forest-projects')
+  async getForestProjects(@Query() _query: RegulatorQueryDto) {
+    const data = await this.regulatorService.getForestProjects();
+    return { success: true, data };
+  }
+
   @ApiOperation({
     summary: 'Retrieve registered Kelompok Tani Hutan (KTH) groups',
   })
