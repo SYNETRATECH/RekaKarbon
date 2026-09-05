@@ -175,6 +175,29 @@ export const AuditEmissionReportParamsSchema = z.object({
   costPlnIdr: IdrAmountSchema.optional(),
 });
 
+export const ForestProjectAuditListItemSchema = z.object({
+  id: UuidSchema,
+  projectName: z.string().min(1),
+  region: z.string().min(1),
+  ecosystemType: z.string().min(1),
+  partnerKTH: z.string().min(1),
+  areaHectares: HectaresSchema,
+  targetSequestrationTCO2e: CarbonVolumeSchema,
+  actualSequestrationTCO2e: CarbonVolumeSchema,
+  auditStatus: z.enum(['pending', 'revision_required', 'approved']),
+  assignedAt: DateTimeStringSchema.nullable(),
+  auditedAt: DateTimeStringSchema.nullable(),
+});
+
+export const ForestProjectAuditDetailSchema = ForestProjectAuditListItemSchema.extend({
+  coordinates: z.array(z.object({ lat: z.number(), lng: z.number() })),
+  carbonStockTCO2e: CarbonVolumeSchema,
+  fundingBudgetIDR: IdrAmountSchema,
+  kthLeader: z.string().min(1),
+  kthMembersCount: z.number().int().nonnegative(),
+  auditorNotes: z.string().nullable(),
+});
+
 export type AnomalySummaryType = z.infer<typeof AnomalySummarySchema>;
 export type EnergyCorrelationItemType = z.infer<typeof EnergyCorrelationItemSchema>;
 export type AiAnomalyLogType = z.infer<typeof AiAnomalyLogSchema>;

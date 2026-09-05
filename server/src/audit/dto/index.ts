@@ -5,3 +5,4 @@ export * from './drone-query.dto';
 export * from './audit-emission-report.dto';
 export * from './audit-emission-report-decision.dto';
 export * from './audit-emission-report-query.dto';
+export * from './forest-project-audit-decision.dto';

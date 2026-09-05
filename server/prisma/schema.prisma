@@ -156,15 +156,33 @@ enum MissionStatus {
 }
 
 enum ListingStatus {
+  DRAFT
+  AWAITING_KTH_CONFIRMATION
+  ACTIVATING
   ACTIVE
   PARTIALLY_FILLED
   FILLED
+  FROZEN
   CANCELLED
+  BLOCKCHAIN_FAILED
 }
 
 enum OrderStatus {
   PENDING
+  PENDING_BLOCKCHAIN
   COMPLETED
+  FAILED
+}
+
+enum BursaAttestationStatus {
+  PENDING
+  CONFIRMED
+  REVISION_REQUIRED
+}
+
+enum BursaSettlementStatus {
+  PENDING
+  CONFIRMED
   FAILED
 }
 
@@ -253,6 +271,7 @@ model User {
   decidedPtbaeApplications        PtbaeApplication[]         @relation("PtbaeApplicationDecider")
   createdPtbaeApplicationVersions PtbaeApplicationVersion[]  @relation("PtbaeApplicationVersionCreator")
   issuedPtbaeAllocations          PtbaeAllocation[]          @relation("PtbaeAllocationIssuer")
+  assignedForestProjects           ForestProject[]           @relation("ForestProjectAuditor")
 
   @@map("users")
 }
@@ -553,8 +572,10 @@ model KthGroup {
   createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                 DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  projects      ForestProject[]
-  disbursements KthIncentiveDisbursement[]
+  projects                 ForestProject[]
+  disbursements            KthIncentiveDisbursement[]
+  bursaListings            BursaListing[]
+  bursaListingAttestations BursaListingAttestation[]
 
   @@map("kth_groups")
 }
@@ -580,6 +601,10 @@ model ForestProject {
   budgetTotalIdr           Decimal       @default(0) @map("budget_total_idr") @db.Decimal(16, 2)
   budgetDisbursedIdr       Decimal       @default(0) @map("budget_disbursed_idr") @db.Decimal(16, 2)
   status                   ProjectStatus @default(ACTIVE_DMRV)
+  auditorUserId            String?       @map("auditor_user_id") @db.Uuid
+  auditorAssignedAt        DateTime?     @map("auditor_assigned_at") @db.Timestamptz
+  auditorNotes             String?       @map("auditor_notes") @db.Text
+  auditedAt                DateTime?     @map("audited_at") @db.Timestamptz
   speCertificateId         String?       @map("spe_certificate_id") @db.Text
   coordinatesJson          Json?         @map("coordinates_json")
   bufferAllocatedPercent   Decimal       @default(8.0) @map("buffer_allocated_percent") @db.Decimal(5, 2)
@@ -590,14 +615,17 @@ model ForestProject {
 
   region           NationalForestRegion       @relation(fields: [regionId], references: [id])
   kthGroup         KthGroup?                  @relation(fields: [kthGroupId], references: [id], onDelete: SetNull)
+  auditor          User?                       @relation("ForestProjectAuditor", fields: [auditorUserId], references: [id], onDelete: SetNull)
   stages           ProjectStage[]
   droneMissions    DroneMission[]
   forestSensorLogs ForestSensorTelemetryLog[]
   carbonTokens     CarbonToken[]
   disbursements    KthIncentiveDisbursement[]
+  bursaListings    BursaListing[]
 
   @@index([regionId])
   @@index([kthGroupId])
+  @@index([auditorUserId, status])
   @@index([status])
   @@map("forest_projects")
 }
@@ -715,31 +743,59 @@ model CarbonToken {
 }
 
 model BursaListing {
-  id                   String        @id @default(uuid()) @db.Uuid
-  sellerUserId         String        @map("seller_user_id") @db.Uuid
-  carbonTokenId        String        @map("carbon_token_id") @db.Uuid
-  projectName          String        @map("project_name") @db.Text
-  volumeAvailableTco2e Decimal       @map("volume_available_tco2e") @db.Decimal(12, 2)
-  pricePerTonIdr       Decimal       @map("price_per_ton_idr") @db.Decimal(14, 2)
-  status               ListingStatus @default(ACTIVE)
-  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  id                          String                 @id @default(uuid()) @db.Uuid
+  sellerUserId                String                 @map("seller_user_id") @db.Uuid
+  carbonTokenId               String                 @map("carbon_token_id") @db.Uuid
+  projectId                   String?                @map("project_id") @db.Uuid
+  kthGroupId                  String?                @map("kth_group_id") @db.Uuid
+  projectName                 String                 @map("project_name") @db.Text
+  vintageYear                 Int?                   @map("vintage_year")
+  initialVolumeTco2e          Decimal                @default(0) @map("initial_volume_tco2e") @db.Decimal(14, 2)
+  verifiedSaleableVolumeTco2e Decimal                @default(0) @map("verified_saleable_volume_tco2e") @db.Decimal(14, 2)
+  volumeLockedTco2e           Decimal                @default(0) @map("volume_locked_tco2e") @db.Decimal(14, 2)
+  volumeAvailableTco2e        Decimal                @map("volume_available_tco2e") @db.Decimal(14, 2)
+  volumeSoldTco2e             Decimal                @default(0) @map("volume_sold_tco2e") @db.Decimal(14, 2)
+  eligibleProjectCostIdr      Decimal                @default(0) @map("eligible_project_cost_idr") @db.Decimal(16, 2)
+  floorPricePerTonIdr         Decimal                @default(0) @map("floor_price_per_ton_idr") @db.Decimal(14, 2)
+  currentPricePerTonIdr       Decimal                @default(0) @map("current_price_per_ton_idr") @db.Decimal(14, 2)
+  pricePerTonIdr              Decimal                @map("price_per_ton_idr") @db.Decimal(14, 2)
+  pricingFormulaVersion       String                 @default("v1") @map("pricing_formula_version") @db.Text
+  projectSnapshotMerkleRoot   String?                @map("project_snapshot_merkle_root") @db.Text
+  blockchainListingId         BigInt?                @unique @map("blockchain_listing_id")
+  draftTxHash                 String?                @map("draft_tx_hash") @db.Text
+  kthRecipientTxHash          String?                @map("kth_recipient_tx_hash") @db.Text
+  kthConfirmationTxHash       String?                @map("kth_confirmation_tx_hash") @db.Text
+  activationTxHash            String?                @map("activation_tx_hash") @db.Text
+  cancellationTxHash          String?                @map("cancellation_tx_hash") @db.Text
+  closingTxHash               String?                @map("closing_tx_hash") @db.Text
+  kthConfirmationStatus       BursaAttestationStatus @default(PENDING) @map("kth_confirmation_status")
+  kthConfirmedAt              DateTime?              @map("kth_confirmed_at") @db.Timestamptz
+  status                      ListingStatus          @default(DRAFT)
+  createdAt                   DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                   DateTime               @updatedAt @map("updated_at") @db.Timestamptz
 
-  seller      User         @relation("SellerListings", fields: [sellerUserId], references: [id])
-  carbonToken CarbonToken  @relation(fields: [carbonTokenId], references: [id], onDelete: Cascade)
-  orders      BursaOrder[]
+  seller         User                      @relation("SellerListings", fields: [sellerUserId], references: [id])
+  carbonToken    CarbonToken               @relation(fields: [carbonTokenId], references: [id], onDelete: Cascade)
+  project        ForestProject?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  kthGroup       KthGroup?                 @relation(fields: [kthGroupId], references: [id], onDelete: SetNull)
+  orders         BursaOrder[]
+  attestations   BursaListingAttestation[]
+  priceSnapshots BursaPriceSnapshot[]
 
   @@index([sellerUserId])
   @@index([carbonTokenId])
+  @@index([projectId])
+  @@index([kthGroupId])
+  @@index([vintageYear])
   @@index([status])
   @@map("bursa_listings")
 }
 
 model BursaOrder {
-  id             String      @id @default(uuid()) @db.Uuid
-  listingId      String      @map("listing_id") @db.Uuid
-  buyerUserId    String      @map("buyer_user_id") @db.Uuid
-  volumeTco2e    Decimal     @map("volume_tco2e") @db.Decimal(12, 2)
+  id                 String      @id @default(uuid()) @db.Uuid
+  listingId          String      @map("listing_id") @db.Uuid
+  buyerUserId        String      @map("buyer_user_id") @db.Uuid
+  volumeTco2e        Decimal     @map("volume_tco2e") @db.Decimal(12, 2)
   blockNumber        String?     @map("block_number") @db.Text
   verificationStatus String      @default("Terverifikasi (KLHK On-Chain)") @map("verification_status") @db.Text
   auditorName        String?     @map("auditor_name") @db.Text
@@ -751,19 +807,75 @@ model BursaOrder {
   createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz
   completedAt        DateTime?   @map("completed_at") @db.Timestamptz
 
-  listing BursaListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyer   User         @relation("BuyerOrders", fields: [buyerUserId], references: [id])
+  listing     BursaListing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer       User                     @relation("BuyerOrders", fields: [buyerUserId], references: [id])
+  allocations BursaRevenueAllocation[]
 
   @@index([listingId])
   @@index([buyerUserId, status])
   @@map("bursa_orders")
 }
 
+model BursaListingAttestation {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  listingId          String                 @map("listing_id") @db.Uuid
+  kthGroupId         String?                @map("kth_group_id") @db.Uuid
+  actorUserId        String                 @map("actor_user_id") @db.Uuid
+  snapshotMerkleRoot String                 @map("snapshot_merkle_root") @db.Text
+  decision           BursaAttestationStatus
+  notes              String?                @db.Text
+  txHash             String?                @map("tx_hash") @db.Text
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz
+
+  listing  BursaListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  kthGroup KthGroup?    @relation(fields: [kthGroupId], references: [id], onDelete: SetNull)
+
+  @@index([listingId, createdAt])
+  @@index([kthGroupId])
+  @@map("bursa_listing_attestations")
+}
+
+model BursaPriceSnapshot {
+  id                   String   @id @default(uuid()) @db.Uuid
+  listingId            String   @map("listing_id") @db.Uuid
+  floorPricePerTonIdr  Decimal  @map("floor_price_per_ton_idr") @db.Decimal(14, 2)
+  marketPricePerTonIdr Decimal  @map("market_price_per_ton_idr") @db.Decimal(14, 2)
+  volumeAvailableTco2e Decimal  @map("volume_available_tco2e") @db.Decimal(14, 2)
+  volumeSoldTco2e      Decimal  @map("volume_sold_tco2e") @db.Decimal(14, 2)
+  formulaVersion       String   @map("formula_version") @db.Text
+  oracleMerkleRoot     String?  @map("oracle_merkle_root") @db.Text
+  txHash               String?  @map("tx_hash") @db.Text
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  listing BursaListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, createdAt])
+  @@map("bursa_price_snapshots")
+}
+
+model BursaRevenueAllocation {
+  id                     String                @id @default(uuid()) @db.Uuid
+  orderId                String                @map("order_id") @db.Uuid
+  category               String                @db.Text
+  recipientWalletAddress String                @map("recipient_wallet_address") @db.Text
+  basisPoints            Int                   @map("basis_points")
+  amountIdr              Decimal               @map("amount_idr") @db.Decimal(16, 2)
+  status                 BursaSettlementStatus @default(PENDING)
+  txHash                 String?               @map("tx_hash") @db.Text
+  createdAt              DateTime              @default(now()) @map("created_at") @db.Timestamptz
+
+  order BursaOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+  @@map("bursa_revenue_allocations")
+}
+
 model KthIncentiveDisbursement {
-  id          String   @id @default(uuid()) @db.Uuid
-  projectId   String   @map("project_id") @db.Uuid
-  kthGroupId  String   @map("kth_group_id") @db.Uuid
-  stageId     String?  @map("stage_id") @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  projectId       String   @map("project_id") @db.Uuid
+  kthGroupId      String   @map("kth_group_id") @db.Uuid
+  stageId         String?  @map("stage_id") @db.Uuid
   amountIdr       Decimal  @map("amount_idr") @db.Decimal(16, 2)
   volumeTco2e     Decimal  @map("volume_tco2e") @db.Decimal(12, 2)
   category        String   @default("Restorasi & Pemeliharaan") @db.Text

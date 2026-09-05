@@ -2,6 +2,7 @@ export * from './common.schema';
 export * from './auth.schema';
 export * from './project.schema';
 export * from './bursa.schema';
+export * from './kth.schema';
 export * from './company.schema';
 export * from './compliance.schema';
 export * from './report.schema';

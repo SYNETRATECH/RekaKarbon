@@ -1,3 +1,5 @@
+import type { Project } from './project';
+
 export interface NationalForestRegion {
   id: string;
   regionName: string; // e.g. "Kalimantan"
@@ -82,6 +84,90 @@ export interface ForestProjectItem {
   budgetReportFileSize?: number;
   polygonCoords?: Array<{ lat: number; lng: number }> | Array<[number, number]>;
   progressDetail?: ForestProjectProgressDetail;
+  assignedAuditor?: ForestProjectAuditorOption | null;
+  auditorAssignedAt?: string | null;
+  auditedAt?: string | null;
+  speCertificateId?: string;
+  speMinted?: boolean;
+  speTokenId?: string;
+  speMintTxHash?: string;
+  speAvailableVolumeTCO2e?: number;
+}
+
+export interface ForestProjectMintResult {
+  projectId: string;
+  speCertificateId: string;
+  blockchainTokenId: string;
+  mintTxHash: string;
+  mintedVolumeTCO2e: number;
+  availableVolumeTCO2e: number;
+  recipientWallet: string;
+}
+
+export interface ForestProjectAuditorOption {
+  id: string;
+  email: string;
+  fullName: string;
+}
+
+export type ForestProjectCategory = ForestProjectItem['category'];
+
+export type ForestProjectEcosystem =
+  'mangrove_blue_carbon' | 'peatland_restoration' | 'agroforestry' | 'tropical_rainforest';
+
+export interface ForestProjectCoordinate {
+  lat: number;
+  lng: number;
+}
+
+export interface CreateForestProjectInput {
+  projectName: string;
+  ecosystemType: ForestProjectEcosystem;
+  province: string;
+  coordinates: ForestProjectCoordinate[];
+  targetSequestrationTCO2e: number;
+  budgetTotalIDR: number;
+  kthGroupName: string;
+  budgetReportFileName?: string;
+  budgetReportFileSizeBytes?: number;
+}
+
+export interface ForestProjectEditorFormData {
+  projectName: string;
+  category: ForestProjectCategory;
+  categoryLabel: string;
+  location: string;
+  targetSequestrationTCO2e: string;
+  fundingBudgetIDR: string;
+  assignedKTH: string;
+  budgetReportFileName: string;
+  budgetReportFileSize: number;
+}
+
+export interface VerichainLedgerItem {
+  id?: string;
+  txHash: string;
+  blockNumber?: string;
+  companyName?: string;
+  vendor?: string;
+  sector?: string;
+  category?: string;
+  tCO2e?: number;
+  carbon?: number;
+  amountIDR?: number;
+  amount?: number;
+  date?: string;
+  purchaseDate?: string;
+  speCertificateId?: string;
+  verificationStatus?: string;
+  auditor?: string;
+  desc?: string;
+}
+
+export interface VerichainLedgerSearchResult {
+  item: VerichainLedgerItem;
+  type: 'vendor' | 'tokenBuyer';
+  project: Project;
 }
 
 export interface KTHGroupItem {
@@ -91,9 +177,28 @@ export interface KTHGroupItem {
   memberCount: number;
   location: string;
   kybStatus: 'verified' | 'pending' | 'rejected';
+  registrationNumber?: string;
+  totalIncentiveReceivedIDR: number;
+  walletAddress?: string;
+}
+
+export interface KTHGroupFormData {
+  groupName: string;
+  leaderName: string;
+  memberCount: number;
+  location: string;
   registrationNumber: string;
   totalIncentiveReceivedIDR: number;
   walletAddress: string;
+}
+
+export interface CreateKTHGroupInput {
+  groupName: string;
+  leaderName: string;
+  memberCount: number;
+  location: string;
+  registrationNumber: string;
+  walletAddress?: string;
 }
 
 export interface KTHTransactionItem {

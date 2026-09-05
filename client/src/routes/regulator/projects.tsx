@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLoaderData } from 'react-router';
+import { useNavigate, useLoaderData, useRevalidator } from 'react-router';
 import ProjectProgressModal from '../../components/modals/ProjectProgressModal';
 import DroneAuditModal from '../../components/modals/DroneAuditModal';
 import TransactionReceiptModal from '../../components/modals/TransactionReceiptModal';
@@ -15,6 +15,7 @@ import {
   Activity,
   FileText,
   Eye,
+  Coins,
 } from 'lucide-react';
 import { formatCurrency, parseNumeric } from '../../lib/formatters';
 import {
@@ -39,6 +40,7 @@ import { Progress } from '@/components/ui/progress';
 
 import { regulatorRepository, projectRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+import { useToast } from '../../hooks/use-toast';
 
 export async function clientLoader() {
   const [forestProjects, projects] = await Promise.all([
@@ -63,6 +65,8 @@ export function meta() {
 
 export default function ForestProjectsManagement() {
   const navigate = useNavigate();
+  const { revalidate } = useRevalidator();
+  const { toast } = useToast();
   const { forestProjects: projects, projects: landingProjects } =
     useLoaderData<typeof clientLoader>();
 
@@ -71,6 +75,7 @@ export default function ForestProjectsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const [selectedProgressProject, setSelectedProgressProject] = useState<any>(null);
+  const [mintingProjectId, setMintingProjectId] = useState<string | null>(null);
 
   const openCreatePage = () => {
     navigate('/project-editor');
@@ -78,6 +83,37 @@ export default function ForestProjectsManagement() {
 
   const openEditPage = (prj: any) => {
     navigate('/project-editor', { state: { project: prj } });
+  };
+
+  const mintForestProjectSpe = async (project: ForestProjectItem) => {
+    if (project.speMinted || project.actualSequestrationTCO2e <= 0) return;
+    if (
+      !window.confirm(
+        `Terbitkan SPE-GRK untuk proyek "${project.projectName}" berdasarkan ${project.actualSequestrationTCO2e.toLocaleString('id-ID')} tCO₂e terverifikasi?`
+      )
+    ) {
+      return;
+    }
+
+    setMintingProjectId(project.id);
+    try {
+      const result = await regulatorRepository.mintForestProjectSpe(project.id);
+      toast({
+        title: 'SPE-GRK berhasil diterbitkan',
+        description: `${result.speCertificateId} tercatat pada blockchain dengan transaksi ${result.mintTxHash.slice(0, 12)}…`,
+        className: 'border-none bg-emerald-600 text-white',
+      });
+      await revalidate();
+    } catch (error) {
+      toast({
+        title: 'Penerbitan SPE-GRK gagal',
+        description:
+          error instanceof Error ? error.message : 'Terjadi kesalahan pada penerbitan token.',
+        variant: 'destructive',
+      });
+    } finally {
+      setMintingProjectId(null);
+    }
   };
 
   const filteredProjects = projects.filter(
@@ -294,28 +330,51 @@ export default function ForestProjectsManagement() {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <button
-                      onClick={() => openEditPage(prj)}
-                      className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors cursor-pointer"
-                      title="Lihat Detail Transaksi Blockchain & Pembeli"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setSelectedProgressProject(prj)}
-                      className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors cursor-pointer"
-                      title="Lihat Progress & Pembeli"
-                    >
-                      <Activity className="w-3.5 h-3.5 text-emerald-600" />
-                    </button>
-                    <button
-                      onClick={() => openEditPage(prj)}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-                      title="Edit Proyek Kehutanan"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
+                  <TableCell className="text-right">
+                    <div className="flex flex-wrap items-center justify-end gap-1">
+                      {prj.dMRVStatus === 'verified' && prj.speMinted ? (
+                        <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-extrabold text-emerald-700">
+                          SPE-GRK Terbit
+                        </span>
+                      ) : prj.dMRVStatus === 'verified' ? (
+                        <button
+                          onClick={() => mintForestProjectSpe(prj as ForestProjectItem)}
+                          disabled={
+                            mintingProjectId === prj.id || prj.actualSequestrationTCO2e <= 0
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2 py-1.5 text-[10px] font-extrabold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                          title={
+                            prj.actualSequestrationTCO2e > 0
+                              ? 'Terbitkan SPE-GRK ke wallet Regulator'
+                              : 'Belum ada volume serapan terverifikasi'
+                          }
+                        >
+                          <Coins className="h-3.5 w-3.5" />
+                          {mintingProjectId === prj.id ? 'Memproses…' : 'Terbitkan SPE-GRK'}
+                        </button>
+                      ) : null}
+                      <button
+                        onClick={() => openEditPage(prj)}
+                        className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors cursor-pointer"
+                        title="Lihat Detail Transaksi Blockchain & Pembeli"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setSelectedProgressProject(prj)}
+                        className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors cursor-pointer"
+                        title="Lihat Progress & Pembeli"
+                      >
+                        <Activity className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                      <button
+                        onClick={() => openEditPage(prj)}
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                        title="Edit Proyek Kehutanan"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );

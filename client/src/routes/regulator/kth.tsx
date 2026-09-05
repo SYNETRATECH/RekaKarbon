@@ -1,19 +1,9 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useLoaderData } from 'react-router';
 import KthFormModal from '../../components/modals/KthFormModal';
 import KthDeleteModal from '../../components/modals/KthDeleteModal';
-import {
-  Users,
-  UserPlus,
-  Edit2,
-  Trash2,
-  CheckCircle2,
-  Clock,
-  X,
-  Search,
-  Wallet,
-  AlertTriangle,
-} from 'lucide-react';
+import { Users, UserPlus, Edit2, Trash2, CheckCircle2, Clock, Search, Wallet } from 'lucide-react';
 import { formatCurrency } from '../../lib/formatters';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,6 +17,7 @@ import {
 
 import { regulatorRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+import type { CreateKTHGroupInput, KTHGroupFormData, KTHGroupItem } from '../../types';
 
 export async function clientLoader() {
   const kthGroups = await regulatorRepository.getKTHGroups().catch(() => []);
@@ -48,15 +39,18 @@ export function meta() {
 
 export default function KthFarmersManagement() {
   const { kthGroups: initialGroups } = useLoaderData<typeof clientLoader>();
-  const [groups, setGroups] = useState<any[]>(initialGroups);
+  const [groups, setGroups] = useState<KTHGroupItem[]>(initialGroups);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingKTH, setEditingKTH] = useState<any>(null);
+  const [editingKTH, setEditingKTH] = useState<KTHGroupItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   // Form State
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<KTHGroupFormData>({
     groupName: '',
     leaderName: '',
     memberCount: 30,
@@ -73,42 +67,71 @@ export default function KthFarmersManagement() {
       leaderName: '',
       memberCount: 30,
       location: '',
-      registrationNumber: `SK.LHK-${Math.floor(1000 + Math.random() * 9000)}/KTH/2026`,
+      registrationNumber: '',
       totalIncentiveReceivedIDR: 0,
-      walletAddress:
-        '0x' +
-        Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+      walletAddress: '',
     });
     setIsModalOpen(true);
   };
 
-  const openEditModal = (kth: any) => {
+  const openEditModal = (kth: KTHGroupItem) => {
     setEditingKTH(kth);
     setFormData({
       groupName: kth.groupName,
       leaderName: kth.leaderName,
       memberCount: kth.memberCount,
       location: kth.location,
-      registrationNumber: kth.registrationNumber,
+      registrationNumber: kth.registrationNumber || '',
       totalIncentiveReceivedIDR: kth.totalIncentiveReceivedIDR,
-      walletAddress: kth.walletAddress,
+      walletAddress: kth.walletAddress || '',
     });
     setIsModalOpen(true);
   };
 
-  const handleFormSubmit = (e: FormEvent) => {
+  const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setActionError(null);
+    setActionSuccess(null);
+
+    if (!formData.groupName.trim() || !formData.leaderName.trim()) {
+      setActionError('Nama KTH dan nama ketua pengurus wajib diisi.');
+      return;
+    }
+    if (formData.memberCount < 1) {
+      setActionError('Jumlah anggota minimal 1 orang.');
+      return;
+    }
+    if (!formData.location.trim() || !formData.registrationNumber.trim()) {
+      setActionError('Wilayah operasional dan nomor registrasi SK KLHK wajib diisi.');
+      return;
+    }
+
     if (editingKTH) {
       setGroups((prev) => prev.map((k) => (k.id === editingKTH.id ? { ...k, ...formData } : k)));
+      setActionSuccess('Perubahan KTH diperbarui pada tampilan ini.');
+      setIsModalOpen(false);
     } else {
-      const newKTH = {
-        id: `KTH-00${groups.length + 1}`,
-        ...formData,
-        kybStatus: 'verified',
+      const input: CreateKTHGroupInput = {
+        groupName: formData.groupName.trim(),
+        leaderName: formData.leaderName.trim(),
+        memberCount: formData.memberCount,
+        location: formData.location.trim(),
+        registrationNumber: formData.registrationNumber.trim(),
+        ...(formData.walletAddress.trim() ? { walletAddress: formData.walletAddress.trim() } : {}),
       };
-      setGroups((prev) => [newKTH, ...prev]);
+
+      setIsSaving(true);
+      try {
+        const created = await regulatorRepository.createKTHGroup(input);
+        setGroups((prev) => [created, ...prev]);
+        setActionSuccess(`KTH '${created.groupName}' berhasil disimpan ke database.`);
+        setIsModalOpen(false);
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'KTH gagal disimpan.');
+      } finally {
+        setIsSaving(false);
+      }
     }
-    setIsModalOpen(false);
   };
 
   const handleDelete = (id: string) => {
@@ -117,7 +140,7 @@ export default function KthFarmersManagement() {
   };
 
   const filteredGroups = groups.filter(
-    (g: any) =>
+    (g: KTHGroupItem) =>
       !searchTerm ||
       g.groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       g.leaderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -182,7 +205,7 @@ export default function KthFarmersManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredGroups.map((kth: any, index: number) => (
+            {filteredGroups.map((kth: KTHGroupItem, index: number) => (
               <TableRow key={kth.id}>
                 <TableCell className="text-center font-mono font-bold text-slate-500 text-xs">
                   {index + 1}
@@ -195,7 +218,9 @@ export default function KthFarmersManagement() {
                       <span className="font-extrabold text-slate-900 block">{kth.groupName}</span>
                       <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
                         <Wallet className="w-3 h-3 text-slate-300" />
-                        {kth.walletAddress.substring(0, 10)}...{kth.walletAddress.substring(34)}
+                        {kth.walletAddress
+                          ? `${kth.walletAddress.substring(0, 10)}...${kth.walletAddress.substring(34)}`
+                          : 'Dompet belum ditautkan'}
                       </span>
                     </div>
                   </div>
@@ -208,7 +233,7 @@ export default function KthFarmersManagement() {
                 </TableCell>
                 <TableCell className="text-slate-600 font-semibold">{kth.location}</TableCell>
                 <TableCell className="font-mono text-[11px] font-bold text-slate-800">
-                  {kth.registrationNumber}
+                  {kth.registrationNumber || 'Belum tersedia'}
                 </TableCell>
                 <TableCell className="font-black text-emerald-700">
                   {formatCurrency(kth.totalIncentiveReceivedIDR)}
@@ -248,6 +273,17 @@ export default function KthFarmersManagement() {
         </Table>
       </div>
 
+      {actionError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">
+          {actionError}
+        </div>
+      )}
+      {actionSuccess && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700">
+          {actionSuccess}
+        </div>
+      )}
+
       {/* CREATE / EDIT MODAL */}
       <KthFormModal
         isOpen={isModalOpen}
@@ -256,6 +292,7 @@ export default function KthFarmersManagement() {
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleFormSubmit}
+        isSubmitting={isSaving}
       />
 
       {/* DELETE CONFIRMATION MODAL */}

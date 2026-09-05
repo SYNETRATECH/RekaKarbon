@@ -14,21 +14,32 @@ export function createMockBursaItem(overrides?: Partial<BursaItem>): BursaItem {
     overrides?.pricePerTonIDR ?? faker.number.int({ min: 180000, max: 350000 });
 
   return {
+    ...overrides,
     id,
+    blockchainListingId: overrides?.blockchainListingId ?? null,
+    projectId: overrides?.projectId ?? null,
+    kthGroupId: overrides?.kthGroupId ?? null,
     name: overrides?.name ?? `Restorasi ${faker.location.city()}`,
     verified: overrides?.verified ?? true,
     category: overrides?.category ?? 'mangrove',
     categoryLabel: overrides?.categoryLabel ?? 'Mangrove & Coastal Blue Carbon',
     location: overrides?.location ?? 'Bali',
     pricePerTonIDR: price,
+    floorPricePerTonIDR: overrides?.floorPricePerTonIDR ?? price,
     change24h:
       overrides?.change24h ??
       Number(faker.number.float({ min: -5.0, max: 8.0, fractionDigits: 1 })),
     volumeAvailableTCO2e: volume,
+    volumeSoldTCO2e: overrides?.volumeSoldTCO2e ?? 0,
     supplyPercent:
       overrides?.supplyPercent ??
       Number(faker.number.float({ min: 50.0, max: 95.0, fractionDigits: 1 })),
-    ...overrides,
+    vintageYear: overrides?.vintageYear ?? 2026,
+    speCertificateNumber:
+      overrides?.speCertificateNumber ??
+      `SPE-GRK-2026-${id.slice(0, 8).toUpperCase()}`,
+    projectSnapshotMerkleRoot: overrides?.projectSnapshotMerkleRoot ?? null,
+    priceUpdatedAt: overrides?.priceUpdatedAt ?? null,
   };
 }
 
@@ -40,6 +51,7 @@ export function createMockPurchaseEligibility(
   const deficit = Math.max(0, approved - quota);
 
   return {
+    ...overrides,
     canPurchase: overrides?.canPurchase ?? true,
     reason: overrides?.reason ?? 'eligible',
     message:
@@ -54,6 +66,5 @@ export function createMockPurchaseEligibility(
     availableTokenBalanceTCO2e: overrides?.availableTokenBalanceTCO2e ?? 0,
     complianceDeficitTCO2e: overrides?.complianceDeficitTCO2e ?? deficit,
     purchaseRequirementTCO2e: overrides?.purchaseRequirementTCO2e ?? deficit,
-    ...overrides,
   };
 }

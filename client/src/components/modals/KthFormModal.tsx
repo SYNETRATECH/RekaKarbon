@@ -1,20 +1,17 @@
+import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { KTHGroupFormData, KTHGroupItem } from '../../types';
 
 interface KthFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  editingKTH: any | null;
-  formData: {
-    groupName: string;
-    leaderName: string;
-    memberCount: number;
-    location: string;
-    registrationNumber: string;
-  };
-  setFormData: (data: any) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  editingKTH: KTHGroupItem | null;
+  formData: KTHGroupFormData;
+  setFormData: Dispatch<SetStateAction<KTHGroupFormData>>;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  isSubmitting?: boolean;
 }
 
 export default function KthFormModal({
@@ -24,6 +21,7 @@ export default function KthFormModal({
   formData,
   setFormData,
   onSubmit,
+  isSubmitting = false,
 }: KthFormModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -106,9 +104,10 @@ export default function KthFormModal({
             </Button>
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="px-4 py-2.5 rounded-xl bg-primary-gradient text-white font-extrabold shadow-md hover:opacity-95"
             >
-              Simpan KTH
+              {isSubmitting ? 'Menyimpan...' : 'Simpan KTH'}
             </Button>
           </div>
         </form>

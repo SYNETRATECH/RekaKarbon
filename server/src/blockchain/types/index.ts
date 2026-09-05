@@ -1,8 +1,12 @@
 export type {
+  BlockchainBursaListingResult,
+  BlockchainBursaQuote,
+  BlockchainBursaRevenueRecipients,
   BlockchainEvent,
   BlockchainHealth,
   BlockchainRetirementCertificate,
   BlockchainLog,
+  BlockchainMintOffsetCreditResult,
   BlockchainTransaction,
   BlockchainTransactionOverrides,
   BlockchainTransactionReceipt,

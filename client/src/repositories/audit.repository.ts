@@ -12,6 +12,9 @@ import type {
   DroneSchedules,
   KthPolygon,
   KthLog,
+  ForestProjectAuditListItem,
+  ForestProjectAuditDetail,
+  ForestProjectAuditDecisionInput,
 } from '../types';
 import {
   AiAnomalyLogSchema,
@@ -25,6 +28,8 @@ import {
   KthPolygonSchema,
   KthLogSchema,
   MlAuditResultSchema,
+  ForestProjectAuditListItemSchema,
+  ForestProjectAuditDetailSchema,
 } from '../schemas';
 import { z } from 'zod';
 
@@ -43,6 +48,12 @@ export interface AuditRepository {
   getKthPolygons(): Promise<KthPolygon[]>;
   getKthLogs(): Promise<KthLog[]>;
   evaluateEmissionReport(params: AuditEmissionReportParams): Promise<MlAuditResult>;
+  getForestProjectAuditQueue(): Promise<ForestProjectAuditListItem[]>;
+  getForestProjectAuditDetail(projectId: string): Promise<ForestProjectAuditDetail>;
+  decideForestProjectAudit(
+    projectId: string,
+    input: ForestProjectAuditDecisionInput
+  ): Promise<ForestProjectAuditDetail>;
 }
 
 export class ApiAuditRepository implements AuditRepository {
@@ -103,6 +114,28 @@ export class ApiAuditRepository implements AuditRepository {
   }
   async evaluateEmissionReport(params: AuditEmissionReportParams): Promise<MlAuditResult> {
     return api.post<MlAuditResult>('/audit/evaluate-emission', params, MlAuditResultSchema);
+  }
+  async getForestProjectAuditQueue(): Promise<ForestProjectAuditListItem[]> {
+    return api.get<ForestProjectAuditListItem[]>(
+      '/audit/forest-projects',
+      z.array(ForestProjectAuditListItemSchema)
+    );
+  }
+  async getForestProjectAuditDetail(projectId: string): Promise<ForestProjectAuditDetail> {
+    return api.get<ForestProjectAuditDetail>(
+      `/audit/forest-projects/${encodeURIComponent(projectId)}`,
+      ForestProjectAuditDetailSchema
+    );
+  }
+  async decideForestProjectAudit(
+    projectId: string,
+    input: ForestProjectAuditDecisionInput
+  ): Promise<ForestProjectAuditDetail> {
+    return api.post<ForestProjectAuditDetail>(
+      `/audit/forest-projects/${encodeURIComponent(projectId)}/decision`,
+      input,
+      ForestProjectAuditDetailSchema
+    );
   }
 }
 

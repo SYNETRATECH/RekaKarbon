@@ -14,12 +14,96 @@ interface CarbonAsset {
   isFrozen: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RekaKarbonContract = any;
+interface RetirementCertificate {
+  retiree: string;
+  amountRetired: bigint;
+  certificateNumber: string;
+  isActive: boolean;
+}
+
+interface BursaListingState {
+  soldAmount: bigint;
+  kthConfirmedBy: string;
+  status: bigint;
+}
+
+interface RekaKarbonContract {
+  connect(signer: HardhatEthersSigner): RekaKarbonContract;
+  waitForDeployment(): Promise<RekaKarbonContract>;
+  getAddress(): Promise<string>;
+  MINISTRY_ROLE(): Promise<string>;
+  ORACLE_ROLE(): Promise<string>;
+  DEPOSIT_ROLE(): Promise<string>;
+  grantRole(role: string, account: string): Promise<ContractTransactionResponse>;
+  issueQuota(to: string, amount: bigint): Promise<ContractTransactionResponse>;
+  balanceOf(account: string, assetId: bigint): Promise<bigint>;
+  safeTransferFrom(
+    from: string,
+    to: string,
+    assetId: bigint,
+    amount: bigint,
+    data: string
+  ): Promise<ContractTransactionResponse>;
+  mintOffsetCredit(
+    to: string,
+    amount: bigint,
+    metadata: string
+  ): Promise<ContractTransactionResponse>;
+  carbonAssets(assetId: bigint): Promise<CarbonAsset>;
+  freezeAsset(assetId: bigint): Promise<ContractTransactionResponse>;
+  unfreezeAsset(assetId: bigint): Promise<ContractTransactionResponse>;
+  retireCarbon(assetId: bigint, amount: bigint): Promise<ContractTransactionResponse>;
+  retireCarbonWithCertificate(
+    assetId: bigint,
+    amount: bigint,
+    certificateNumber: string
+  ): Promise<ContractTransactionResponse>;
+  retireCarbonWithCertificateFor(
+    retiree: string,
+    assetId: bigint,
+    amount: bigint,
+    certificateNumber: string
+  ): Promise<ContractTransactionResponse>;
+  swapFrozenAsset(assetId: bigint, amount: bigint): Promise<ContractTransactionResponse>;
+  mintWalletCredit(to: string, amount: bigint): Promise<ContractTransactionResponse>;
+  spendWalletCredit(to: string, amount: bigint): Promise<ContractTransactionResponse>;
+  executeBursaPurchase(
+    buyer: string,
+    seller: string,
+    assetId: bigint,
+    amount: bigint,
+    totalCostRkb: bigint
+  ): Promise<ContractTransactionResponse>;
+  createBursaListing(
+    seller: string,
+    assetId: bigint,
+    amount: bigint,
+    floorPricePerTonIdr: bigint,
+    projectId: string,
+    kthGroupId: string,
+    projectSnapshotMerkleRoot: string
+  ): Promise<ContractTransactionResponse>;
+  setBursaListingKthRecipient(
+    listingId: bigint,
+    kthRecipient: string
+  ): Promise<ContractTransactionResponse>;
+  bursaListings(listingId: bigint): Promise<BursaListingState>;
+  confirmBursaListing(
+    listingId: bigint,
+    kthRepresentative: string
+  ): Promise<ContractTransactionResponse>;
+  activateBursaListing(listingId: bigint): Promise<ContractTransactionResponse>;
+  purchaseBursaListing(
+    listingId: bigint,
+    buyer: string,
+    amount: bigint,
+    maxTotalCostRkb: bigint
+  ): Promise<ContractTransactionResponse>;
+  getCertsByRetiree(retiree: string): Promise<bigint[]>;
+  retirementCerts(certId: bigint): Promise<RetirementCertificate>;
+}
 
 describe('RekaKarbon Smart Contract', function () {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let RekaKarbon: any;
   let rekaKarbon: RekaKarbonContract;
   let admin: HardhatEthersSigner,
     ministry: HardhatEthersSigner,
@@ -36,8 +120,8 @@ describe('RekaKarbon Smart Contract', function () {
   before(async function () {
     [admin, ministry, oracle, deposit, corpA, corpB] = await ethers.getSigners();
 
-    RekaKarbon = await ethers.getContractFactory('RekaKarbon');
-    rekaKarbon = await RekaKarbon.deploy();
+    const rekaKarbonFactory = await ethers.getContractFactory('RekaKarbon');
+    rekaKarbon = (await rekaKarbonFactory.deploy()) as unknown as RekaKarbonContract;
     await rekaKarbon.waitForDeployment();
 
     contractAddress = await rekaKarbon.getAddress();
@@ -259,6 +343,59 @@ describe('RekaKarbon Smart Contract', function () {
       }
       expect(error).to.not.be.undefined;
       expect(error?.message).to.include('RekaKarbon: Pasokan SPE-GRK tidak cukup');
+    });
+
+    it('Harus mengunci listing sampai KTH mengonfirmasi snapshot proyek', async function () {
+      const listingId = 1n;
+      const snapshotRoot = ethers.keccak256(ethers.toUtf8Bytes('project-snapshot-1'));
+      const sellerBalanceBefore = await rekaKarbon.balanceOf(corpB.address, assetId);
+
+      await rekaKarbon
+        .connect(admin)
+        .createBursaListing(
+          corpB.address,
+          assetId,
+          100n,
+          15n,
+          ethers.encodeBytes32String('project-1'),
+          ethers.encodeBytes32String('kth-1'),
+          snapshotRoot
+        );
+
+      await rekaKarbon.connect(admin).setBursaListingKthRecipient(listingId, oracle.address);
+
+      const listing = await rekaKarbon.bursaListings(listingId);
+      expect(listing.status).to.equal(0n);
+      expect(await rekaKarbon.balanceOf(corpB.address, assetId)).to.equal(
+        sellerBalanceBefore - 100n
+      );
+      expect(await rekaKarbon.balanceOf(contractAddress, assetId)).to.equal(100n);
+
+      await rekaKarbon.connect(admin).confirmBursaListing(listingId, oracle.address);
+      await rekaKarbon.connect(admin).activateBursaListing(listingId);
+
+      const activeListing = await rekaKarbon.bursaListings(listingId);
+      expect(activeListing.status).to.equal(1n);
+      expect(activeListing.kthConfirmedBy).to.equal(oracle.address);
+    });
+
+    it('Harus menyelesaikan pembelian sebagian dan membagi RKB ke penerima settlement', async function () {
+      const listingId = 1n;
+      const buyerBalanceBefore = await rekaKarbon.balanceOf(corpA.address, assetId);
+      const rkbBefore = await rekaKarbon.balanceOf(corpA.address, RKB_CREDIT);
+      const adminRkbBefore = await rekaKarbon.balanceOf(admin.address, RKB_CREDIT);
+      const kthRkbBefore = await rekaKarbon.balanceOf(oracle.address, RKB_CREDIT);
+
+      await rekaKarbon.connect(admin).purchaseBursaListing(listingId, corpA.address, 10n, 150n);
+
+      expect(await rekaKarbon.balanceOf(corpA.address, assetId)).to.equal(buyerBalanceBefore + 10n);
+      expect(await rekaKarbon.balanceOf(corpA.address, RKB_CREDIT)).to.equal(rkbBefore - 150n);
+      expect(await rekaKarbon.balanceOf(admin.address, RKB_CREDIT)).to.equal(adminRkbBefore + 36n);
+      expect(await rekaKarbon.balanceOf(oracle.address, RKB_CREDIT)).to.equal(kthRkbBefore + 114n);
+
+      const listing = await rekaKarbon.bursaListings(listingId);
+      expect(listing.soldAmount).to.equal(10n);
+      expect(listing.status).to.equal(2n);
     });
   });
 

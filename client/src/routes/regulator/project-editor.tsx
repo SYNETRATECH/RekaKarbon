@@ -1,11 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router';
+import { useNavigate, useLocation, Link, useLoaderData } from 'react-router';
 import type L from 'leaflet';
+import type { DragEndEvent, LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { sortPolygonCoordinates } from '../../utils/geodetics';
 import { Save, Plus, Trash2, UploadCloud, FileText, FileSpreadsheet, X } from 'lucide-react';
-import { ForestProjectItem } from '../../types';
+import type {
+  CreateForestProjectInput,
+  ForestProjectCategory,
+  ForestProjectEditorFormData,
+  ForestProjectItem,
+  KTHGroupItem,
+} from '../../types';
 import { parseNumeric, formatFileSize } from '../../lib/formatters';
+import { regulatorRepository } from '../../repositories';
 import {
   Select,
   SelectContent,
@@ -36,12 +44,36 @@ const TILE_URLS: {
 
 type MapType = 'satellite' | 'topo' | 'street';
 
+const CATEGORY_LABELS: Record<ForestProjectCategory, string> = {
+  mangrove: 'Mangrove & Blue Carbon',
+  gambut: 'Gambut / Peatland Restoration',
+  reforestri: 'Agroforestry & Hutan Rakyat',
+  hutan_hujan: 'Restorasi Hutan Hujan Tropis',
+};
+
+const ECOSYSTEM_BY_CATEGORY: Record<
+  ForestProjectCategory,
+  CreateForestProjectInput['ecosystemType']
+> = {
+  mangrove: 'mangrove_blue_carbon',
+  gambut: 'peatland_restoration',
+  reforestri: 'agroforestry',
+  hutan_hujan: 'tropical_rainforest',
+};
+
 export function meta() {
   return [
     { title: 'Form Editor Proyek | RekaKarbon' },
     { name: 'description', content: 'Form Pendaftaran / Edit Proyek Kehutanan RekaKarbon' },
   ];
 }
+
+export async function clientLoader() {
+  const kthGroups = await regulatorRepository.getKTHGroups().catch(() => []);
+  return { kthGroups };
+}
+
+clientLoader.hydrate = true as const;
 
 function normalizePolygonCoordinates(project: ForestProjectItem | null): [number, number][] {
   if (!project) return [];
@@ -53,20 +85,15 @@ function normalizePolygonCoordinates(project: ForestProjectItem | null): [number
     project.polygonCoords.length > 0
   ) {
     const valid = project.polygonCoords
-      .map((c: any) => {
+      .map((c) => {
         if (Array.isArray(c)) {
-          return [typeof c[0] === 'number' ? c[0] : 0, typeof c[1] === 'number' ? c[1] : 0] as [
-            number,
-            number,
-          ];
+          return typeof c[0] === 'number' && typeof c[1] === 'number'
+            ? ([c[0], c[1]] as [number, number])
+            : null;
         }
-        if (c && typeof c === 'object' && 'lat' in c && 'lng' in c) {
-          return [typeof c.lat === 'number' ? c.lat : 0, typeof c.lng === 'number' ? c.lng : 0] as [
-            number,
-            number,
-          ];
-        }
-        return null;
+        return typeof c.lat === 'number' && typeof c.lng === 'number'
+          ? ([c.lat, c.lng] as [number, number])
+          : null;
       })
       .filter((c): c is [number, number] => c !== null);
 
@@ -92,15 +119,17 @@ function normalizePolygonCoordinates(project: ForestProjectItem | null): [number
 export default function ProjectEditorPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const editingProjectData: ForestProjectItem | null = location.state?.project ?? null;
+  const { kthGroups } = useLoaderData<typeof clientLoader>();
+  const routeState = location.state as { project?: ForestProjectItem } | null;
+  const editingProjectData: ForestProjectItem | null = routeState?.project ?? null;
 
   const isEditing = Boolean(editingProjectData && editingProjectData.id);
 
   // Form State (Clean empty values if creating new project)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ForestProjectEditorFormData>({
     projectName: editingProjectData?.projectName || '',
     category: editingProjectData?.category || 'mangrove',
-    categoryLabel: editingProjectData?.categoryLabel || 'Mangrove & Blue Carbon',
+    categoryLabel: editingProjectData?.categoryLabel || CATEGORY_LABELS.mangrove,
     location: editingProjectData?.location || '',
     targetSequestrationTCO2e: editingProjectData?.targetSequestrationTCO2e
       ? String(editingProjectData.targetSequestrationTCO2e)
@@ -111,8 +140,6 @@ export default function ProjectEditorPage() {
     assignedKTH: editingProjectData?.assignedKTH || '',
     budgetReportFileName: editingProjectData?.budgetReportFileName || '',
     budgetReportFileSize: editingProjectData?.budgetReportFileSize || 0,
-    auditResultStatus: (editingProjectData as any)?.auditResultStatus || 'Mandatory Audit Valid',
-    notes: (editingProjectData as any)?.notes || '',
   });
 
   // Coordinates & Spatial Map State
@@ -122,6 +149,9 @@ export default function ProjectEditorPage() {
 
   const [activeTileType] = useState<MapType>('satellite');
   const [LModule, setLModule] = useState<typeof L | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const registeredKthNames = kthGroups.map((group: KTHGroupItem) => group.groupName);
 
   // Map DOM & Leaflet Refs
   const mapRef = useRef<HTMLDivElement>(null);
@@ -159,7 +189,7 @@ export default function ProjectEditorPage() {
     }).addTo(initMap);
 
     // Allow user to click on the map to add polygon vertices
-    initMap.on('click', (e: any) => {
+    initMap.on('click', (e: LeafletMouseEvent) => {
       const { lat, lng } = e.latlng;
       setCoordinates((prev) => [...prev, [Number(lat.toFixed(6)), Number(lng.toFixed(6))]]);
     });
@@ -232,7 +262,7 @@ export default function ProjectEditorPage() {
 
       const marker = LModule.marker(coord, { icon, draggable: true }).addTo(map);
 
-      marker.on('dragend', (e: any) => {
+      marker.on('dragend', (e: DragEndEvent) => {
         const newLat = e.target.getLatLng().lat;
         const newLng = e.target.getLatLng().lng;
         setCoordinates((prev) => {
@@ -247,7 +277,10 @@ export default function ProjectEditorPage() {
   }, [coordinates, LModule]);
 
   // Form Inputs Handler
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = <K extends keyof ForestProjectEditorFormData>(
+    field: K,
+    value: ForestProjectEditorFormData[K]
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -285,37 +318,73 @@ export default function ProjectEditorPage() {
   };
 
   // Save Action
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (
+    e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>
+  ) => {
     e.preventDefault();
-    const budgetVal = parseNumeric(formData.fundingBudgetIDR);
+    setSaveError(null);
 
-    // Compute center coordinates
-    const centerPoint: [number, number] =
-      coordinates.length > 0
-        ? [
-            Number((coordinates.reduce((s, c) => s + c[0], 0) / coordinates.length).toFixed(6)),
-            Number((coordinates.reduce((s, c) => s + c[1], 0) / coordinates.length).toFixed(6)),
-          ]
-        : [-7.5, 110.0];
+    if (isEditing) {
+      setSaveError(
+        'Pengeditan proyek belum tersedia. Buat proyek baru atau gunakan data yang sudah tersimpan.'
+      );
+      return;
+    }
 
-    const payload: ForestProjectItem = {
-      id: isEditing && editingProjectData ? editingProjectData.id : `PRJ-REG-${Date.now()}`,
-      projectName: formData.projectName,
-      category: formData.category as any,
-      categoryLabel: formData.categoryLabel,
-      location: formData.location,
-      coordinates: centerPoint,
-      polygonCoords: coordinates.map((c) => ({ lat: c[0], lng: c[1] })),
-      targetSequestrationTCO2e: Number(formData.targetSequestrationTCO2e || 0),
-      actualSequestrationTCO2e: Number(formData.targetSequestrationTCO2e || 0),
-      fundingBudgetIDR: budgetVal,
-      assignedKTH: formData.assignedKTH,
-      dMRVStatus: 'verified',
-      budgetReportFileName: formData.budgetReportFileName || undefined,
-      budgetReportFileSize: formData.budgetReportFileSize || undefined,
-    };
+    if (coordinates.length < 3) {
+      setSaveError('Polygon proyek minimal memiliki 3 titik koordinat.');
+      return;
+    }
 
-    navigate('/projects');
+    if (!formData.projectName.trim() || !formData.location.trim()) {
+      setSaveError('Nama proyek dan lokasi wilayah wajib diisi.');
+      return;
+    }
+    if (!formData.assignedKTH.trim()) {
+      setSaveError('Kelompok Tani Hutan wajib diisi.');
+      return;
+    }
+    if (!formData.targetSequestrationTCO2e.trim() || !formData.fundingBudgetIDR.trim()) {
+      setSaveError('Target karbon dan anggaran proyek wajib diisi.');
+      return;
+    }
+
+    const targetSequestrationTCO2e = parseNumeric(formData.targetSequestrationTCO2e);
+    const budgetTotalIDR = parseNumeric(formData.fundingBudgetIDR);
+    if (targetSequestrationTCO2e <= 0) {
+      setSaveError('Target karbon harus lebih besar dari 0.');
+      return;
+    }
+    if (budgetTotalIDR < 0) {
+      setSaveError('Anggaran proyek tidak boleh negatif.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const input: CreateForestProjectInput = {
+        projectName: formData.projectName.trim(),
+        ecosystemType: ECOSYSTEM_BY_CATEGORY[formData.category],
+        province: formData.location.trim(),
+        coordinates: coordinates.map(([lat, lng]) => ({ lat, lng })),
+        targetSequestrationTCO2e,
+        budgetTotalIDR,
+        kthGroupName: formData.assignedKTH.trim(),
+        ...(formData.budgetReportFileName
+          ? {
+              budgetReportFileName: formData.budgetReportFileName,
+              budgetReportFileSizeBytes: formData.budgetReportFileSize,
+            }
+          : {}),
+      };
+
+      await regulatorRepository.createForestProject(input);
+      navigate('/projects');
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Proyek gagal disimpan.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -362,12 +431,19 @@ export default function ProjectEditorPage() {
 
         <button
           onClick={handleSave}
-          className="bg-primary-gradient hover:opacity-95 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+          disabled={isSaving}
+          className="bg-primary-gradient hover:opacity-95 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Save className="w-4 h-4 text-[#00C48C]" />
-          Simpan Data Proyek
+          {isSaving ? 'Menyimpan...' : 'Simpan Data Proyek'}
         </button>
       </div>
+
+      {saveError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">
+          {saveError}
+        </div>
+      )}
 
       {/* Main Grid: Form Inputs & Map Canvas */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -400,15 +476,10 @@ export default function ProjectEditorPage() {
                 <Select
                   value={formData.category}
                   onValueChange={(val) => {
-                    const labelMap: Record<string, string> = {
-                      mangrove: 'Mangrove & Blue Carbon',
-                      peatland: 'Gambut / Peatland Restoration',
-                      agroforestry: 'Agroforestry & Hutan Rakyat',
-                      reforestation: 'Restorasi Hutan Lindung',
-                    };
-                    handleInputChange('category', val);
-                    if (labelMap[val]) {
-                      handleInputChange('categoryLabel', labelMap[val]);
+                    if (val in CATEGORY_LABELS) {
+                      const category = val as ForestProjectCategory;
+                      handleInputChange('category', category);
+                      handleInputChange('categoryLabel', CATEGORY_LABELS[category]);
                     }
                   }}
                 >
@@ -417,9 +488,9 @@ export default function ProjectEditorPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mangrove">Mangrove & Blue Carbon</SelectItem>
-                    <SelectItem value="peatland">Gambut / Peatland Restoration</SelectItem>
-                    <SelectItem value="agroforestry">Agroforestry & Hutan Rakyat</SelectItem>
-                    <SelectItem value="reforestation">Restorasi Hutan Lindung</SelectItem>
+                    <SelectItem value="gambut">Gambut / Peatland Restoration</SelectItem>
+                    <SelectItem value="reforestri">Agroforestry & Hutan Rakyat</SelectItem>
+                    <SelectItem value="hutan_hujan">Restorasi Hutan Hujan Tropis</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -473,14 +544,32 @@ export default function ProjectEditorPage() {
               <label className="text-xs font-extrabold text-slate-700 block mb-1">
                 Kelompok Tani Hutan (KTH)
               </label>
-              <Input
-                type="text"
-                value={formData.assignedKTH}
-                onChange={(e) => handleInputChange('assignedKTH', e.target.value)}
-                placeholder="Contoh: KTH Mangrove Tuban Mandiri"
-                className="rounded-xl text-xs"
-                required
-              />
+              <Select
+                value={formData.assignedKTH || undefined}
+                onValueChange={(value) => handleInputChange('assignedKTH', value)}
+              >
+                <SelectTrigger className="rounded-xl text-xs">
+                  <SelectValue placeholder="Pilih KTH yang sudah terdaftar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {formData.assignedKTH && !registeredKthNames.includes(formData.assignedKTH) && (
+                    <SelectItem value={formData.assignedKTH}>{formData.assignedKTH}</SelectItem>
+                  )}
+                  {kthGroups.map((group: KTHGroupItem) => (
+                    <SelectItem key={group.id} value={group.groupName}>
+                      {group.groupName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {kthGroups.length === 0 && (
+                <p className="mt-1 text-[11px] font-semibold text-amber-700">
+                  Belum ada KTH terdaftar.{' '}
+                  <Link to="/kth" className="underline">
+                    Daftarkan KTH terlebih dahulu.
+                  </Link>
+                </p>
+              )}
             </div>
 
             {/* Input: File Laporan Anggaran (PDF/Excel) */}
