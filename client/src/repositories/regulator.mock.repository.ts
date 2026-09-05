@@ -87,6 +87,13 @@ export class MockRegulatorRepository implements RegulatorRepository {
     };
   }
   async createForestProject(input: CreateForestProjectInput): Promise<ForestProjectItem> {
+    const assignedAuditor = MOCK_FOREST_PROJECT_AUDITORS.find(
+      (auditor) => auditor.id === input.auditorUserId
+    );
+    if (!assignedAuditor) {
+      throw new Error('Auditor independen wajib dipilih.');
+    }
+
     const center: [number, number] = [
       input.coordinates.reduce((sum, coordinate) => sum + coordinate.lat, 0) /
         input.coordinates.length,
@@ -116,6 +123,26 @@ export class MockRegulatorRepository implements RegulatorRepository {
       fundingBudgetIDR: input.budgetTotalIDR,
       assignedKTH: input.kthGroupName,
       dMRVStatus: 'pending_inspection',
+      assignedAuditor,
+      auditorAssignedAt: new Date().toISOString(),
+      inspectionTimeline: input.inspectionCheckpoints.map((checkpoint) => ({
+        id: crypto.randomUUID(),
+        sequenceNo: checkpoint.sequenceNo,
+        title: checkpoint.title,
+        scheduledAt: checkpoint.scheduledAt,
+        submissionDeadline: checkpoint.submissionDeadline ?? null,
+        method: checkpoint.method,
+        instructions: checkpoint.instructions ?? null,
+        status: 'scheduled' as const,
+        indicators: (checkpoint.indicators ?? []).map((indicator) => ({
+          id: crypto.randomUUID(),
+          code: indicator.code,
+          label: indicator.label,
+          targetValue: indicator.targetValue ?? null,
+          unit: indicator.unit ?? null,
+        })),
+        latestSubmission: null,
+      })),
       budgetReportFileName: input.budgetReportFileName,
       budgetReportFileSize: input.budgetReportFileSizeBytes,
       progressDetail: {

@@ -1,3 +1,5 @@
+import type { ForestInspectionCheckpointItem } from './inspection.types';
+
 export type KthForestProjectStatus =
   'draft' | 'active_dmrv' | 'audited' | 'minted';
 
@@ -10,6 +12,7 @@ export interface KthForestProjectItem {
   actualSequestrationTCO2e: number;
   carbonStockTCO2e: number;
   status: KthForestProjectStatus;
+  inspectionTimeline: ForestInspectionCheckpointItem[];
 }
 
 export interface KthDmrvSubmissionResult {
@@ -22,4 +25,7 @@ export interface KthDmrvSubmissionResult {
   carbonStockTCO2e: number;
   status: KthForestProjectStatus;
   submittedAt: string;
+  checkpointId: string;
+  checkpointTitle: string;
+  snapshotHash: string;
 }

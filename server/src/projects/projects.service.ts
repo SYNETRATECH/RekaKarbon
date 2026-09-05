@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   BadRequestException,
   ForbiddenException,
@@ -6,8 +7,12 @@ import {
 } from '@nestjs/common';
 import {
   EcosystemType,
+  ForestInspectionMethod,
+  ForestInspectionStatus,
+  ForestInspectionSubmissionStatus,
   Prisma,
   ProjectStatus,
+  Role,
   UserStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,6 +27,7 @@ import {
   KthDmrvSubmissionResult,
   KthForestProjectItem,
   KthForestProjectStatus,
+  ForestInspectionMethodInput,
 } from './types';
 import {
   ForestProjectItem,
@@ -29,6 +35,20 @@ import {
   NationalForestRegion,
 } from '../regulator/types';
 import { CreateForestProjectDto, SubmitKthDmrvDto } from './dto';
+import {
+  forestInspectionCheckpointIncludeConfig,
+  toForestInspectionCheckpointItem,
+} from './inspection.mapper';
+
+const inspectionMethodByInput: Record<
+  ForestInspectionMethodInput,
+  ForestInspectionMethod
+> = {
+  drone: ForestInspectionMethod.DRONE,
+  satellite: ForestInspectionMethod.SATELLITE,
+  field: ForestInspectionMethod.FIELD,
+  hybrid: ForestInspectionMethod.HYBRID,
+};
 
 const projectIncludeConfig = Prisma.validator<Prisma.ForestProjectInclude>()({
   stages: { orderBy: { yearNumber: 'asc' } },
@@ -52,6 +72,10 @@ const projectIncludeConfig = Prisma.validator<Prisma.ForestProjectInclude>()({
         },
       },
     },
+  },
+  inspectionCheckpoints: {
+    orderBy: { sequenceNo: 'asc' },
+    include: forestInspectionCheckpointIncludeConfig,
   },
 });
 
@@ -196,6 +220,10 @@ export class ProjectsService {
         actualSequestrationTco2e: true,
         carbonStockTco2e: true,
         status: true,
+        inspectionCheckpoints: {
+          orderBy: { sequenceNo: 'asc' },
+          include: forestInspectionCheckpointIncludeConfig,
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -209,6 +237,9 @@ export class ProjectsService {
       actualSequestrationTCO2e: Number(project.actualSequestrationTco2e),
       carbonStockTCO2e: Number(project.carbonStockTco2e),
       status: kthProjectStatusByProjectStatus[project.status],
+      inspectionTimeline: project.inspectionCheckpoints.map(
+        toForestInspectionCheckpointItem,
+      ),
     }));
   }
 
@@ -226,6 +257,10 @@ export class ProjectsService {
         areaHectares: true,
         targetSequestrationTco2e: true,
         status: true,
+        inspectionCheckpoints: {
+          orderBy: { sequenceNo: 'asc' },
+          include: forestInspectionCheckpointIncludeConfig,
+        },
       },
     });
 
@@ -250,6 +285,59 @@ export class ProjectsService {
       });
     }
 
+    const nextCheckpointIndex = project.inspectionCheckpoints.findIndex(
+      (checkpoint) => checkpoint.status !== ForestInspectionStatus.VERIFIED,
+    );
+    if (
+      project.inspectionCheckpoints.length > 0 &&
+      nextCheckpointIndex === -1
+    ) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'KTH_ALL_CHECKPOINTS_VERIFIED',
+          message:
+            'Semua checkpoint inspeksi proyek sudah diverifikasi Auditor.',
+        },
+      });
+    }
+
+    const nextCheckpoint =
+      nextCheckpointIndex >= 0
+        ? project.inspectionCheckpoints[nextCheckpointIndex]
+        : null;
+    const previousCheckpointIncomplete = nextCheckpoint
+      ? project.inspectionCheckpoints
+          .slice(0, nextCheckpointIndex)
+          .some(
+            (checkpoint) =>
+              checkpoint.status !== ForestInspectionStatus.VERIFIED,
+          )
+      : false;
+    if (nextCheckpoint && previousCheckpointIncomplete) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'KTH_PREVIOUS_CHECKPOINT_PENDING',
+          message:
+            'Checkpoint sebelumnya harus diverifikasi Auditor terlebih dahulu.',
+        },
+      });
+    }
+    if (
+      nextCheckpoint &&
+      (nextCheckpoint.status === ForestInspectionStatus.SUBMITTED ||
+        nextCheckpoint.status === ForestInspectionStatus.IN_REVIEW)
+    ) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'KTH_CHECKPOINT_ALREADY_SUBMITTED',
+          message: 'Checkpoint ini masih menunggu pemeriksaan Auditor.',
+        },
+      });
+    }
+
     const projectArea = Number(project.areaHectares);
     if (dto.areaHectares > projectArea) {
       throw new BadRequestException({
@@ -266,21 +354,81 @@ export class ProjectsService {
       Math.round(dto.areaHectares * 37.5 * 100) / 100,
       projectTarget,
     );
-    const updated = await this.prisma.forestProject.update({
-      where: { id: project.id },
-      data: {
-        actualSequestrationTco2e: estimatedCarbon,
-        carbonStockTco2e: estimatedCarbon,
-        status: ProjectStatus.ACTIVE_DMRV,
-        auditorNotes: null,
-        auditedAt: null,
-      },
-      select: {
-        updatedAt: true,
-        status: true,
-        actualSequestrationTco2e: true,
-        carbonStockTco2e: true,
-      },
+    const result = await this.prisma.$transaction(async (tx) => {
+      let checkpointId = nextCheckpoint?.id;
+      let checkpointTitle = nextCheckpoint?.title ?? 'dMRV lapangan';
+
+      if (!checkpointId) {
+        const legacyCheckpoint = await tx.forestInspectionCheckpoint.create({
+          data: {
+            projectId: project.id,
+            sequenceNo: 1,
+            title: 'dMRV lapangan',
+            scheduledAt: new Date(),
+            method: ForestInspectionMethod.FIELD,
+            instructions:
+              'Checkpoint kompatibilitas untuk proyek lama tanpa timeline inspeksi.',
+            status: ForestInspectionStatus.SUBMITTED,
+          },
+        });
+        checkpointId = legacyCheckpoint.id;
+        checkpointTitle = legacyCheckpoint.title;
+      }
+
+      const snapshotHash = `0x${createHash('sha256')
+        .update(
+          JSON.stringify({
+            projectId: project.id,
+            checkpointId,
+            landName: dto.landName.trim(),
+            areaHectares: dto.areaHectares,
+            estimatedCarbon,
+          }),
+        )
+        .digest('hex')}`;
+      const createdSubmission = await tx.forestInspectionSubmission.create({
+        data: {
+          checkpointId,
+          submittedByUserId: userId,
+          landName: dto.landName.trim(),
+          actualSequestrationTco2e: estimatedCarbon,
+          areaHectares: dto.areaHectares,
+          snapshotHash,
+          status: ForestInspectionSubmissionStatus.SUBMITTED,
+        },
+      });
+      const updatedProject = await tx.forestProject.update({
+        where: { id: project.id },
+        data: {
+          actualSequestrationTco2e: estimatedCarbon,
+          carbonStockTco2e: estimatedCarbon,
+          status: ProjectStatus.ACTIVE_DMRV,
+          auditorNotes: null,
+          auditedAt: null,
+          ...(nextCheckpoint
+            ? {
+                inspectionCheckpoints: {
+                  update: {
+                    where: { id: nextCheckpoint.id },
+                    data: { status: ForestInspectionStatus.SUBMITTED },
+                  },
+                },
+              }
+            : {}),
+        },
+        select: {
+          status: true,
+          actualSequestrationTco2e: true,
+          carbonStockTco2e: true,
+        },
+      });
+      return {
+        createdSubmission,
+        updatedProject,
+        checkpointId,
+        checkpointTitle,
+        snapshotHash,
+      } as const;
     });
 
     return {
@@ -289,10 +437,15 @@ export class ProjectsService {
       landName: dto.landName.trim(),
       areaHectares: dto.areaHectares,
       estimatedCarbonTCO2e: estimatedCarbon,
-      actualSequestrationTCO2e: Number(updated.actualSequestrationTco2e),
-      carbonStockTCO2e: Number(updated.carbonStockTco2e),
-      status: kthProjectStatusByProjectStatus[updated.status],
-      submittedAt: updated.updatedAt.toISOString(),
+      actualSequestrationTCO2e: Number(
+        result.updatedProject.actualSequestrationTco2e,
+      ),
+      carbonStockTCO2e: Number(result.updatedProject.carbonStockTco2e),
+      status: kthProjectStatusByProjectStatus[result.updatedProject.status],
+      submittedAt: result.createdSubmission.submittedAt.toISOString(),
+      checkpointId: result.checkpointId,
+      checkpointTitle: result.checkpointTitle,
+      snapshotHash: result.snapshotHash,
     };
   }
 
@@ -384,6 +537,87 @@ export class ProjectsService {
       });
     }
 
+    const auditor = await this.prisma.user.findFirst({
+      where: {
+        id: dto.auditorUserId,
+        role: Role.auditor,
+        status: UserStatus.ACTIVE,
+      },
+      select: { id: true },
+    });
+    if (!auditor) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'AUDITOR_NOT_AVAILABLE',
+          message: 'Auditor aktif yang dipilih tidak ditemukan.',
+        },
+      });
+    }
+
+    const sequenceNumbers = dto.inspectionCheckpoints.map(
+      (checkpoint) => checkpoint.sequenceNo,
+    );
+    if (new Set(sequenceNumbers).size !== sequenceNumbers.length) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'DUPLICATE_INSPECTION_SEQUENCE',
+          message: 'Nomor urut checkpoint inspeksi tidak boleh duplikat.',
+        },
+      });
+    }
+
+    const inspectionCheckpoints = [...dto.inspectionCheckpoints].sort(
+      (first, second) => first.sequenceNo - second.sequenceNo,
+    );
+    const hasContiguousSequence = inspectionCheckpoints.every(
+      (checkpoint, index) => checkpoint.sequenceNo === index + 1,
+    );
+    if (!hasContiguousSequence) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'INVALID_INSPECTION_SEQUENCE',
+          message:
+            'Nomor urut checkpoint inspeksi harus dimulai dari 1 dan berurutan.',
+        },
+      });
+    }
+    const projectStartDate = dto.projectStartDate
+      ? new Date(dto.projectStartDate)
+      : new Date();
+    if (!Number.isFinite(projectStartDate.getTime())) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'INVALID_PROJECT_START_DATE',
+          message: 'Tanggal mulai proyek tidak valid.',
+        },
+      });
+    }
+    for (const checkpoint of inspectionCheckpoints) {
+      const scheduledAt = new Date(checkpoint.scheduledAt);
+      const submissionDeadline = checkpoint.submissionDeadline
+        ? new Date(checkpoint.submissionDeadline)
+        : null;
+      if (
+        !Number.isFinite(scheduledAt.getTime()) ||
+        (submissionDeadline &&
+          (!Number.isFinite(submissionDeadline.getTime()) ||
+            submissionDeadline < scheduledAt))
+      ) {
+        throw new BadRequestException({
+          success: false,
+          error: {
+            code: 'INVALID_INSPECTION_SCHEDULE',
+            message:
+              'Jadwal inspeksi atau batas pengumpulan tidak valid. Batas pengumpulan harus setelah jadwal inspeksi.',
+          },
+        });
+      }
+    }
+
     const areaHectares = calculatePolygonAreaHectares(dto.coordinates);
     if (!Number.isFinite(areaHectares) || areaHectares <= 0) {
       throw new BadRequestException({
@@ -439,6 +673,31 @@ export class ProjectsService {
         budgetTotalIdr: dto.budgetTotalIDR,
         budgetDisbursedIdr: 0,
         status: ProjectStatus.DRAFT,
+        auditorUserId: auditor.id,
+        auditorAssignedAt: new Date(),
+        projectStartDate,
+        inspectionCheckpoints: {
+          create: inspectionCheckpoints.map((checkpoint) => ({
+            sequenceNo: checkpoint.sequenceNo,
+            title: checkpoint.title.trim(),
+            scheduledAt: new Date(checkpoint.scheduledAt),
+            submissionDeadline: checkpoint.submissionDeadline
+              ? new Date(checkpoint.submissionDeadline)
+              : null,
+            method: inspectionMethodByInput[checkpoint.method],
+            instructions: checkpoint.instructions?.trim() || null,
+            indicators: checkpoint.indicators?.length
+              ? {
+                  create: checkpoint.indicators.map((indicator) => ({
+                    code: indicator.code.trim(),
+                    label: indicator.label.trim(),
+                    targetValue: indicator.targetValue ?? null,
+                    unit: indicator.unit?.trim() || null,
+                  })),
+                }
+              : undefined,
+          })),
+        },
         coordinatesJson: dto.coordinates as unknown as Prisma.InputJsonValue,
       },
       include: projectIncludeConfig,
@@ -748,6 +1007,9 @@ export class ProjectsService {
           : null,
         auditorAssignedAt: r.auditorAssignedAt?.toISOString() ?? null,
         auditedAt: r.auditedAt?.toISOString() ?? null,
+        inspectionTimeline: r.inspectionCheckpoints.map(
+          toForestInspectionCheckpointItem,
+        ),
       };
     });
   }

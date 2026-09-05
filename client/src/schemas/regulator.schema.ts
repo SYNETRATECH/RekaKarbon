@@ -105,6 +105,65 @@ export const ForestProjectAuditorOptionSchema = z.object({
   fullName: z.string().min(1),
 });
 
+export const ForestInspectionMethodSchema = z.enum(['drone', 'satellite', 'field', 'hybrid']);
+export const ForestInspectionStatusSchema = z.enum([
+  'scheduled',
+  'due',
+  'submitted',
+  'in_review',
+  'revision_required',
+  'verified',
+  'overdue',
+]);
+
+export const ForestInspectionIndicatorSchema = z.object({
+  id: UuidSchema.optional(),
+  code: z.string().min(1),
+  label: z.string().min(1),
+  targetValue: z.number().nullable(),
+  unit: z.string().nullable(),
+});
+
+export const ForestInspectionDecisionSchema = z.object({
+  id: UuidSchema,
+  decision: z.enum(['approved', 'request_revision']),
+  verifiedSequestrationTCO2e: CarbonVolumeSchema.nullable(),
+  notes: z.string().nullable(),
+  merkleRoot: TxHashSchema.nullable(),
+  blockchainTxHash: TxHashSchema.nullable(),
+  decidedAt: DateTimeStringSchema,
+  auditorUserId: UuidSchema,
+});
+
+export const ForestInspectionSubmissionSchema = z.object({
+  id: UuidSchema,
+  landName: z.string().min(1),
+  actualSequestrationTCO2e: CarbonVolumeSchema,
+  areaHectares: HectaresSchema.nullable(),
+  survivalRatePercent: PercentageSchema.nullable(),
+  canopyHeightMeters: z.number().nonnegative().nullable(),
+  ndviScore: VegetationIndexSchema.nullable(),
+  notes: z.string().nullable(),
+  snapshotHash: TxHashSchema.nullable(),
+  status: ForestInspectionStatusSchema,
+  submittedAt: DateTimeStringSchema,
+  submittedByUserId: UuidSchema,
+  latestDecision: ForestInspectionDecisionSchema.nullable(),
+});
+
+export const ForestInspectionCheckpointSchema = z.object({
+  id: UuidSchema,
+  sequenceNo: z.number().int().positive(),
+  title: z.string().min(1),
+  scheduledAt: DateTimeStringSchema,
+  submissionDeadline: DateTimeStringSchema.nullable(),
+  method: ForestInspectionMethodSchema,
+  instructions: z.string().nullable(),
+  status: ForestInspectionStatusSchema,
+  indicators: z.array(ForestInspectionIndicatorSchema),
+  latestSubmission: ForestInspectionSubmissionSchema.nullable(),
+});
+
 const ForestProjectApiStageSchema = z.object({
   year: z.number().int().positive(),
   title: z.string().min(1),
@@ -205,6 +264,7 @@ export const ForestProjectApiItemSchema = z.object({
   assignedAuditor: ForestProjectAuditorOptionSchema.nullable().optional(),
   auditorAssignedAt: DateTimeStringSchema.nullable().optional(),
   auditedAt: DateTimeStringSchema.nullable().optional(),
+  inspectionTimeline: z.array(ForestInspectionCheckpointSchema).default([]),
 });
 
 export const ForestProjectItemSchema = z.object({
@@ -231,6 +291,7 @@ export const ForestProjectItemSchema = z.object({
   assignedAuditor: ForestProjectAuditorOptionSchema.nullable().optional(),
   auditorAssignedAt: DateTimeStringSchema.nullable().optional(),
   auditedAt: DateTimeStringSchema.nullable().optional(),
+  inspectionTimeline: z.array(ForestInspectionCheckpointSchema).default([]),
 });
 
 export const ForestProjectMintResultSchema = z.object({

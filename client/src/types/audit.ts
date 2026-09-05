@@ -1,3 +1,5 @@
+import type { ForestInspectionCheckpoint } from './regulator';
+
 export interface AnomalySummary {
   emitenTerdeteksiAnomali: number;
   totalEmitenAktif: number;
@@ -196,6 +198,7 @@ export interface ForestProjectAuditListItem {
   auditStatus: ForestProjectAuditStatus;
   assignedAt: string | null;
   auditedAt: string | null;
+  inspectionTimeline: ForestInspectionCheckpoint[];
 }
 
 export interface ForestProjectAuditDetail extends ForestProjectAuditListItem {
@@ -211,5 +214,11 @@ export type ForestProjectAuditDecision = 'approve' | 'request_revision';
 
 export interface ForestProjectAuditDecisionInput {
   decision: ForestProjectAuditDecision;
+  notes?: string;
+}
+
+export interface ForestInspectionDecisionInput {
+  decision: ForestProjectAuditDecision;
+  verifiedSequestrationTCO2e?: number;
   notes?: string;
 }

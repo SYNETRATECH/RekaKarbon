@@ -107,6 +107,7 @@ export interface ForestProjectItem {
   assignedAuditor: ForestProjectAuditorOption | null;
   auditorAssignedAt: string | null;
   auditedAt: string | null;
+  inspectionTimeline: ForestInspectionCheckpointItem[];
 }
 
 export interface ForestProjectMintResult {
@@ -186,3 +187,4 @@ export interface RegulationDocumentUploadItem {
   targetEntityName: string;
   status: 'published' | 'verifying' | 'archived';
 }
+import type { ForestInspectionCheckpointItem } from '../../projects/types';

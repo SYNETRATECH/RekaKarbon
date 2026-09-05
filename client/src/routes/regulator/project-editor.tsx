@@ -7,6 +7,8 @@ import { sortPolygonCoordinates } from '../../utils/geodetics';
 import { Save, Plus, Trash2, UploadCloud, FileText, FileSpreadsheet, X } from 'lucide-react';
 import type {
   CreateForestProjectInput,
+  CreateForestInspectionCheckpointInput,
+  ForestInspectionMethod,
   ForestProjectCategory,
   ForestProjectEditorFormData,
   ForestProjectItem,
@@ -69,8 +71,11 @@ export function meta() {
 }
 
 export async function clientLoader() {
-  const kthGroups = await regulatorRepository.getKTHGroups().catch(() => []);
-  return { kthGroups };
+  const [kthGroups, auditors] = await Promise.all([
+    regulatorRepository.getKTHGroups().catch(() => []),
+    regulatorRepository.getForestProjectAuditors().catch(() => []),
+  ]);
+  return { kthGroups, auditors };
 }
 
 clientLoader.hydrate = true as const;
@@ -116,14 +121,77 @@ function normalizePolygonCoordinates(project: ForestProjectItem | null): [number
   return [];
 }
 
+const INSPECTION_METHOD_LABELS: Record<ForestInspectionMethod, string> = {
+  drone: 'Drone',
+  satellite: 'Satelit',
+  field: 'Inspeksi lapangan',
+  hybrid: 'Gabungan',
+};
+
+function toDateTimeLocal(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 16);
+  const timezoneOffset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16);
+}
+
+function toIsoDateTime(value: string): string {
+  return new Date(value).toISOString();
+}
+
+function addMonths(value: string, months: number): string {
+  const date = new Date(value);
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString();
+}
+
+function addDays(value: string, days: number): string {
+  const date = new Date(value);
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
+}
+
+function createDefaultInspectionCheckpoint(
+  projectStartDate: string,
+  sequenceNo = 1
+): CreateForestInspectionCheckpointInput {
+  const scheduledAt = addMonths(`${projectStartDate}T00:00:00`, sequenceNo * 3);
+  return {
+    sequenceNo,
+    title: `Pemantauan tahap ${sequenceNo}`,
+    scheduledAt: toDateTimeLocal(scheduledAt),
+    submissionDeadline: toDateTimeLocal(addDays(scheduledAt, 14)),
+    method: 'drone',
+    instructions:
+      sequenceNo === 1
+        ? 'Periksa pertumbuhan awal, tutupan tanaman, dan dokumentasi drone pada area proyek.'
+        : 'Periksa perubahan tutupan, kondisi tanaman, dan bukti dMRV dibanding checkpoint sebelumnya.',
+    indicators: [
+      {
+        code: 'CANOPY_COVER',
+        label: 'Tutupan tajuk minimum (%)',
+        targetValue: 70,
+        unit: '%',
+      },
+      {
+        code: 'SURVIVAL_RATE',
+        label: 'Tingkat kelangsungan hidup minimum (%)',
+        targetValue: 80,
+        unit: '%',
+      },
+    ],
+  };
+}
+
 export default function ProjectEditorPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { kthGroups } = useLoaderData<typeof clientLoader>();
+  const { kthGroups, auditors } = useLoaderData<typeof clientLoader>();
   const routeState = location.state as { project?: ForestProjectItem } | null;
   const editingProjectData: ForestProjectItem | null = routeState?.project ?? null;
 
   const isEditing = Boolean(editingProjectData && editingProjectData.id);
+  const initialProjectStartDate = new Date().toISOString().slice(0, 10);
 
   // Form State (Clean empty values if creating new project)
   const [formData, setFormData] = useState<ForestProjectEditorFormData>({
@@ -138,6 +206,9 @@ export default function ProjectEditorPage() {
       ? String(editingProjectData.fundingBudgetIDR)
       : '',
     assignedKTH: editingProjectData?.assignedKTH || '',
+    auditorUserId: editingProjectData?.assignedAuditor?.id || '',
+    projectStartDate: initialProjectStartDate,
+    inspectionCheckpoints: [createDefaultInspectionCheckpoint(initialProjectStartDate)],
     budgetReportFileName: editingProjectData?.budgetReportFileName || '',
     budgetReportFileSize: editingProjectData?.budgetReportFileSize || 0,
   });
@@ -284,6 +355,59 @@ export default function ProjectEditorPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const updateCheckpointText = (
+    index: number,
+    field: 'title' | 'scheduledAt' | 'submissionDeadline' | 'instructions',
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      inspectionCheckpoints: prev.inspectionCheckpoints.map((checkpoint, checkpointIndex) =>
+        checkpointIndex === index ? { ...checkpoint, [field]: value } : checkpoint
+      ),
+    }));
+  };
+
+  const updateCheckpointMethod = (index: number, method: ForestInspectionMethod) => {
+    setFormData((prev) => ({
+      ...prev,
+      inspectionCheckpoints: prev.inspectionCheckpoints.map((checkpoint, checkpointIndex) =>
+        checkpointIndex === index ? { ...checkpoint, method } : checkpoint
+      ),
+    }));
+  };
+
+  const addInspectionCheckpoint = () => {
+    setFormData((prev) => {
+      const sequenceNo = prev.inspectionCheckpoints.length + 1;
+      const lastCheckpoint = prev.inspectionCheckpoints[prev.inspectionCheckpoints.length - 1];
+      const checkpoint = createDefaultInspectionCheckpoint(prev.projectStartDate, sequenceNo);
+      if (lastCheckpoint?.scheduledAt) {
+        checkpoint.scheduledAt = toDateTimeLocal(addMonths(lastCheckpoint.scheduledAt, 3));
+        checkpoint.submissionDeadline = toDateTimeLocal(addDays(checkpoint.scheduledAt, 14));
+      }
+      return {
+        ...prev,
+        inspectionCheckpoints: [...prev.inspectionCheckpoints, checkpoint],
+      };
+    });
+  };
+
+  const removeInspectionCheckpoint = (index: number) => {
+    setFormData((prev) => {
+      if (prev.inspectionCheckpoints.length <= 1) return prev;
+      return {
+        ...prev,
+        inspectionCheckpoints: prev.inspectionCheckpoints
+          .filter((_, checkpointIndex) => checkpointIndex !== index)
+          .map((checkpoint, checkpointIndex) => ({
+            ...checkpoint,
+            sequenceNo: checkpointIndex + 1,
+          })),
+      };
+    });
+  };
+
   // Coordinate Input Handler
   const handleCoordChange = (index: number, field: 'lat' | 'lng', value: string) => {
     const num = parseFloat(value) || 0;
@@ -344,6 +468,30 @@ export default function ProjectEditorPage() {
       setSaveError('Kelompok Tani Hutan wajib diisi.');
       return;
     }
+    if (!formData.auditorUserId) {
+      setSaveError('Auditor independen wajib ditugaskan pada proyek.');
+      return;
+    }
+    if (!formData.projectStartDate || Number.isNaN(new Date(formData.projectStartDate).getTime())) {
+      setSaveError('Tanggal mulai proyek wajib diisi dengan tanggal yang valid.');
+      return;
+    }
+    if (formData.inspectionCheckpoints.length === 0) {
+      setSaveError('Minimal satu timeline pemeriksaan wajib ditambahkan.');
+      return;
+    }
+    if (
+      formData.inspectionCheckpoints.some(
+        (checkpoint) =>
+          !checkpoint.title.trim() ||
+          Number.isNaN(new Date(checkpoint.scheduledAt).getTime()) ||
+          (checkpoint.submissionDeadline &&
+            Number.isNaN(new Date(checkpoint.submissionDeadline).getTime()))
+      )
+    ) {
+      setSaveError('Setiap checkpoint harus memiliki judul dan jadwal yang valid.');
+      return;
+    }
     if (!formData.targetSequestrationTCO2e.trim() || !formData.fundingBudgetIDR.trim()) {
       setSaveError('Target karbon dan anggaran proyek wajib diisi.');
       return;
@@ -370,6 +518,16 @@ export default function ProjectEditorPage() {
         targetSequestrationTCO2e,
         budgetTotalIDR,
         kthGroupName: formData.assignedKTH.trim(),
+        auditorUserId: formData.auditorUserId,
+        projectStartDate: formData.projectStartDate,
+        inspectionCheckpoints: formData.inspectionCheckpoints.map((checkpoint, index) => ({
+          ...checkpoint,
+          sequenceNo: index + 1,
+          scheduledAt: toIsoDateTime(checkpoint.scheduledAt),
+          ...(checkpoint.submissionDeadline
+            ? { submissionDeadline: toIsoDateTime(checkpoint.submissionDeadline) }
+            : {}),
+        })),
         ...(formData.budgetReportFileName
           ? {
               budgetReportFileName: formData.budgetReportFileName,
@@ -570,6 +728,157 @@ export default function ProjectEditorPage() {
                   </Link>
                 </p>
               )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                  Auditor Independen
+                </label>
+                <Select
+                  value={formData.auditorUserId || undefined}
+                  onValueChange={(value) => handleInputChange('auditorUserId', value)}
+                >
+                  <SelectTrigger className="rounded-xl text-xs">
+                    <SelectValue placeholder="Pilih Auditor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {auditors.map((auditor) => (
+                      <SelectItem key={auditor.id} value={auditor.id}>
+                        {auditor.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {auditors.length === 0 && (
+                  <p className="mt-1 text-[11px] font-semibold text-amber-700">
+                    Belum ada akun Auditor independen yang aktif.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                  Tanggal Mulai Proyek
+                </label>
+                <Input
+                  type="date"
+                  value={formData.projectStartDate}
+                  onChange={(event) => handleInputChange('projectStartDate', event.target.value)}
+                  className="rounded-xl text-xs"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50/30 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                    Timeline pemeriksaan Auditor
+                  </h4>
+                  <p className="mt-1 text-[10px] font-semibold leading-relaxed text-slate-500">
+                    Regulator menentukan jadwal, metode, dan indikator yang harus diperiksa Auditor
+                    pada setiap tahap proyek.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addInspectionCheckpoint}
+                  className="shrink-0 rounded-lg bg-emerald-700 px-2.5 py-1.5 text-[10px] font-black text-white transition-opacity hover:opacity-90"
+                >
+                  <Plus className="mr-1 inline h-3 w-3" />
+                  Tahap
+                </button>
+              </div>
+
+              {formData.inspectionCheckpoints.map((checkpoint, index) => (
+                <div
+                  key={`${checkpoint.sequenceNo}-${index}`}
+                  className="space-y-3 rounded-xl border border-slate-200 bg-white p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                      Checkpoint {index + 1}
+                    </span>
+                    {formData.inspectionCheckpoints.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeInspectionCheckpoint(index)}
+                        className="rounded-lg p-1 text-rose-500 hover:bg-rose-50"
+                        title="Hapus checkpoint"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <Input
+                    type="text"
+                    value={checkpoint.title}
+                    onChange={(event) => updateCheckpointText(index, 'title', event.target.value)}
+                    placeholder="Contoh: Pemeriksaan drone triwulan pertama"
+                    className="rounded-xl text-xs"
+                  />
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold text-slate-500">
+                        Metode pemeriksaan
+                      </label>
+                      <Select
+                        value={checkpoint.method}
+                        onValueChange={(value) =>
+                          updateCheckpointMethod(index, value as ForestInspectionMethod)
+                        }
+                      >
+                        <SelectTrigger className="rounded-xl text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(INSPECTION_METHOD_LABELS).map(([method, label]) => (
+                            <SelectItem key={method} value={method}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold text-slate-500">
+                        Jadwal pemeriksaan
+                      </label>
+                      <Input
+                        type="datetime-local"
+                        value={checkpoint.scheduledAt}
+                        onChange={(event) =>
+                          updateCheckpointText(index, 'scheduledAt', event.target.value)
+                        }
+                        className="rounded-xl text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold text-slate-500">
+                      Batas pengiriman data KTH (opsional)
+                    </label>
+                    <Input
+                      type="datetime-local"
+                      value={checkpoint.submissionDeadline ?? ''}
+                      onChange={(event) =>
+                        updateCheckpointText(index, 'submissionDeadline', event.target.value)
+                      }
+                      className="rounded-xl text-xs"
+                    />
+                  </div>
+                  <textarea
+                    value={checkpoint.instructions ?? ''}
+                    onChange={(event) =>
+                      updateCheckpointText(index, 'instructions', event.target.value)
+                    }
+                    placeholder="Instruksi Auditor, contoh indikator drone, kondisi tanaman, dan bukti yang harus dikirim."
+                    className="min-h-20 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </div>
+              ))}
             </div>
 
             {/* Input: File Laporan Anggaran (PDF/Excel) */}

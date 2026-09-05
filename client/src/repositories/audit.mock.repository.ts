@@ -106,4 +106,11 @@ export class MockAuditRepository implements AuditRepository {
   ): Promise<import('../types').ForestProjectAuditDetail> {
     throw new Error('Data audit proyek kehutanan mock belum tersedia.');
   }
+  async decideForestInspectionCheckpoint(
+    _projectId: string,
+    _checkpointId: string,
+    _input: import('../types').ForestInspectionDecisionInput
+  ): Promise<import('../types').ForestProjectAuditDetail> {
+    throw new Error('Data audit checkpoint proyek kehutanan mock belum tersedia.');
+  }
 }

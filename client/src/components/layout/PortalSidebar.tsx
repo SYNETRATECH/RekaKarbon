@@ -155,12 +155,6 @@ export default function PortalSidebar({ role }: PortalSidebarProps) {
             },
             { id: 'upload', label: 'Regulasi & Kuota', icon: FileUp, targetPath: '/upload' },
             {
-              id: 'auditor-assignments',
-              label: 'Penugasan Auditor',
-              icon: ShieldCheck,
-              targetPath: '/auditor-assignments',
-            },
-            {
               id: 'bursa-listings',
               label: 'Listing Bursa Karbon',
               icon: ArrowLeftRight,

@@ -13,8 +13,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { formatArea, formatCarbon } from '../../lib/formatters';
+import { formatDateTime } from '../../lib/dates';
 import { kthRepository } from '../../repositories';
-import type { KthForestProjectStatus } from '../../types';
+import type { ForestInspectionStatus, KthForestProjectStatus } from '../../types';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
@@ -53,6 +54,19 @@ function getStatusVariant(
   return 'secondary';
 }
 
+function getInspectionStatusLabel(status: ForestInspectionStatus): string {
+  const labels: Record<ForestInspectionStatus, string> = {
+    scheduled: 'Terjadwal',
+    due: 'Menunggu kiriman KTH',
+    submitted: 'Menunggu audit',
+    in_review: 'Sedang diaudit',
+    revision_required: 'Perlu revisi',
+    verified: 'Terverifikasi',
+    overdue: 'Terlambat',
+  };
+  return labels[status];
+}
+
 export default function KTHDashboard() {
   const { kthProjects } = useLoaderData<typeof clientLoader>();
   const { revalidate } = useRevalidator();
@@ -70,6 +84,10 @@ export default function KTHDashboard() {
   }, [kthProjects, selectedProjectId]);
 
   const selectedProject = kthProjects.find((project) => project.id === selectedProjectId);
+  const inspectionTimeline = selectedProject?.inspectionTimeline ?? [];
+  const nextCheckpoint = inspectionTimeline.find((checkpoint) => checkpoint.status !== 'verified');
+  const checkpointWaitingForAudit =
+    nextCheckpoint?.status === 'submitted' || nextCheckpoint?.status === 'in_review';
   const previewCarbon = selectedProject
     ? Math.min(newAreaHa * 37.5, selectedProject.targetSequestrationTCO2e)
     : 0;
@@ -80,6 +98,10 @@ export default function KTHDashboard() {
 
     if (!selectedProjectId) {
       setErrorMessage('Belum ada proyek kehutanan yang ditugaskan kepada akun KTH ini.');
+      return;
+    }
+    if (checkpointWaitingForAudit) {
+      setErrorMessage('Checkpoint ini masih menunggu pemeriksaan Auditor.');
       return;
     }
     if (!newLandName.trim()) {
@@ -162,6 +184,55 @@ export default function KTHDashboard() {
                   {selectedProject?.projectName} · Batas proyek{' '}
                   {formatArea(selectedProject?.areaHectares)}
                 </div>
+
+                {selectedProject && inspectionTimeline.length > 0 && (
+                  <div className="space-y-3 rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                        Timeline pemeriksaan Auditor
+                      </p>
+                      <p className="mt-1 text-[10px] font-semibold leading-relaxed text-slate-500">
+                        Kirim data sesuai checkpoint berikut. Checkpoint berikutnya terbuka setelah
+                        checkpoint sebelumnya diverifikasi.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      {inspectionTimeline.map((checkpoint) => (
+                        <div
+                          key={checkpoint.id}
+                          className={`rounded-lg border p-2.5 ${
+                            checkpoint.id === nextCheckpoint?.id
+                              ? 'border-emerald-300 bg-white'
+                              : 'border-slate-200 bg-white/70'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-[10px] font-extrabold text-slate-800">
+                                {checkpoint.sequenceNo}. {checkpoint.title}
+                              </p>
+                              <p className="mt-1 text-[9px] font-semibold text-slate-500">
+                                {checkpoint.method.toUpperCase()} ·{' '}
+                                {formatDateTime(checkpoint.scheduledAt)}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={checkpoint.status === 'verified' ? 'mint' : 'secondary'}
+                              className="text-[9px]"
+                            >
+                              {getInspectionStatusLabel(checkpoint.status)}
+                            </Badge>
+                          </div>
+                          {checkpoint.id === nextCheckpoint?.id && checkpoint.instructions && (
+                            <p className="mt-2 border-t border-slate-100 pt-2 text-[9px] font-semibold leading-relaxed text-slate-500">
+                              {checkpoint.instructions}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700">Nama Petak Lahan Reboisasi:</label>
