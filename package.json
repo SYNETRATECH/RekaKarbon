@@ -26,6 +26,7 @@
     "server:lint": "pnpm --filter ./server lint",
     "server:typecheck": "pnpm --filter ./server typecheck",
     "server:test": "pnpm --filter ./server test",
+    "test:contracts": "pnpm --filter ./server test:contracts && pnpm --filter ./client test:contracts",
     "blockchain:test": "pnpm --filter ./blockchain test",
     "blockchain:compile": "pnpm --filter ./blockchain compile",
     "blockchain:typecheck": "pnpm --filter ./blockchain typecheck",

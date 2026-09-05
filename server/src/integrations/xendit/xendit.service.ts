@@ -15,8 +15,10 @@ export class XenditService {
     const secretKey = process.env.XENDIT_SECRET_KEY;
     if (!secretKey) {
       this.logger.warn('XENDIT_SECRET_KEY is not defined. Payments will fail.');
-      // Initialize with dummy key to prevent crash, but operations will fail
-      this.xenditClient = new Xendit({ secretKey: 'dummy' });
+      // Initialize with dummy key starting with xnd_ to satisfy SDK format validation in test mode
+      this.xenditClient = new Xendit({
+        secretKey: 'xnd_development_dummy_key',
+      });
     } else {
       this.xenditClient = new Xendit({ secretKey });
       this.logger.log('✅ Xendit API Client initialized in Test Mode');

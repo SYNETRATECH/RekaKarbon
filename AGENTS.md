@@ -32,4 +32,5 @@ Every Pull Request to `main` is verified by [.github/workflows/pr-check.yml](.gi
 - **Typecheck**: `pnpm client:typecheck`, `pnpm server:typecheck`, `pnpm blockchain:typecheck`, `pnpm ml:typecheck` (or monorepo `pnpm typecheck`).
 - **Lint**: `pnpm client:lint` (oxlint), `pnpm server:lint` (eslint), `pnpm ml:lint` (ruff).
 - **Test**: `pnpm client:test` (vitest unit + dependency-cruiser `test:arch`), `pnpm server:test` (jest), `pnpm blockchain:test` (hardhat), & `pnpm ml:test` (pytest + ONNX parity).
+- **API Contracts**: `pnpm test:contracts` (validates client Zod schemas against NestJS controllers and client-side envelope parsing).
 - **Build**: `pnpm client:build`, `pnpm server:build`, `pnpm blockchain:compile`.

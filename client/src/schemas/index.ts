@@ -16,3 +16,5 @@ export * from './telemetry.schema';
 export * from './tax.schema';
 export * from './notification.schema';
 export * from './health.schema';
+export * from './wallet.schema';
+export * from './ptbae.schema';

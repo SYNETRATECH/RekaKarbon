@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:contracts": "vitest run src/tests/api-contracts.test.ts",
     "test:watch": "vitest",
     "test:arch": "vitest run src/tests/architecture.test.ts",
     "preview": "vite preview"
@@ -42,6 +43,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@react-router/dev": "^7.18.2",
     "@react-router/node": "^7.18.2",
     "@types/leaflet": "^1.9.22",
