@@ -30,9 +30,6 @@ export default function DMRVSection() {
     <section id="dmrv" className="py-24 bg-surface-alt">
       <div className="max-w-5xl mx-auto px-6">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-[11px] text-slate-500 mb-5 shadow-sm">
-            🛰️ Arsitektur Teknologi
-          </div>
           <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight">
             Triple-Check dMRV Framework:
             <br />

@@ -49,9 +49,6 @@ export default function CTASectionBottom({ onOpenPortal }: { onOpenPortal?: () =
       </div>
 
       <div className="relative" style={{ zIndex: 2 }}>
-        <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur text-[11px] text-white mb-6 shadow-sm border border-white/40">
-          🚀 Bergabunglah Sekarang
-        </div>
         <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
           Siap Mewujudkan Kepatuhan Emisi
           <br />
