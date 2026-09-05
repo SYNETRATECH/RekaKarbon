@@ -5,7 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ProjectStatus } from '@prisma/client';
+import {
+  ForestInspectionDecisionType,
+  ForestInspectionStatus,
+  ForestInspectionSubmissionStatus,
+  ProjectStatus,
+} from '@prisma/client';
 import type {
   AnomalySummary,
   AiAnomalyLog,
@@ -20,8 +25,20 @@ import type {
   ForestProjectAuditDetail,
   ForestProjectAuditListItem,
 } from './types';
-import { ForestProjectAuditDecision } from './dto';
-import type { AuthorizeMintingDto, ForestProjectAuditDecisionDto } from './dto';
+import {
+  ForestInspectionAuditDecision,
+  ForestProjectAuditDecision,
+} from './dto';
+import type {
+  AuthorizeMintingDto,
+  ForestInspectionDecisionDto,
+  ForestProjectAuditDecisionDto,
+} from './dto';
+import {
+  forestInspectionCheckpointIncludeConfig,
+  toForestInspectionCheckpointItem,
+  type ForestInspectionCheckpointRecord,
+} from '../projects/inspection.mapper';
 
 function parseProjectCoordinates(
   value: unknown,
@@ -53,11 +70,19 @@ export class AuditService {
   private toForestProjectAuditStatus(
     status: ProjectStatus,
     auditorNotes: string | null,
+    inspectionCheckpoints: Array<{ status: ForestInspectionStatus }>,
   ): 'pending' | 'revision_required' | 'approved' {
     if (status === ProjectStatus.AUDITED || status === ProjectStatus.MINTED) {
       return 'approved';
     }
-    return auditorNotes ? 'revision_required' : 'pending';
+    const revisionRequired = inspectionCheckpoints.some(
+      (checkpoint) =>
+        checkpoint.status === ForestInspectionStatus.REVISION_REQUIRED,
+    );
+    return revisionRequired ||
+      (status === ProjectStatus.DRAFT && Boolean(auditorNotes?.trim()))
+      ? 'revision_required'
+      : 'pending';
   }
 
   private toForestProjectAuditListItem(project: {
@@ -73,6 +98,7 @@ export class AuditService {
     auditedAt: Date | null;
     auditorNotes: string | null;
     kthGroup: { groupName: string } | null;
+    inspectionCheckpoints: ForestInspectionCheckpointRecord[];
   }): ForestProjectAuditListItem {
     return {
       id: project.id,
@@ -86,9 +112,13 @@ export class AuditService {
       auditStatus: this.toForestProjectAuditStatus(
         project.status,
         project.auditorNotes,
+        project.inspectionCheckpoints,
       ),
       assignedAt: project.auditorAssignedAt?.toISOString() ?? null,
       auditedAt: project.auditedAt?.toISOString() ?? null,
+      inspectionTimeline: project.inspectionCheckpoints.map(
+        toForestInspectionCheckpointItem,
+      ),
     };
   }
 
@@ -101,7 +131,13 @@ export class AuditService {
         auditorUserId: isSuperadmin ? undefined : auditorUserId,
         status: { in: [ProjectStatus.DRAFT, ProjectStatus.ACTIVE_DMRV] },
       },
-      include: { kthGroup: true },
+      include: {
+        kthGroup: true,
+        inspectionCheckpoints: {
+          orderBy: { sequenceNo: 'asc' },
+          include: forestInspectionCheckpointIncludeConfig,
+        },
+      },
       orderBy: { auditorAssignedAt: 'asc' },
     });
 
@@ -117,7 +153,13 @@ export class AuditService {
   ): Promise<ForestProjectAuditDetail> {
     const project = await this.prisma.forestProject.findUnique({
       where: { id: projectId },
-      include: { kthGroup: true },
+      include: {
+        kthGroup: true,
+        inspectionCheckpoints: {
+          orderBy: { sequenceNo: 'asc' },
+          include: forestInspectionCheckpointIncludeConfig,
+        },
+      },
     });
     if (!project) {
       throw new NotFoundException(
@@ -142,6 +184,134 @@ export class AuditService {
     };
   }
 
+  async decideForestInspectionCheckpoint(
+    projectId: string,
+    checkpointId: string,
+    auditorUserId: string,
+    isSuperadmin: boolean,
+    dto: ForestInspectionDecisionDto,
+  ): Promise<ForestProjectAuditDetail> {
+    const project = await this.prisma.forestProject.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        auditorUserId: true,
+        targetSequestrationTco2e: true,
+        inspectionCheckpoints: {
+          where: { id: checkpointId },
+          include: {
+            submissions: { orderBy: { submittedAt: 'desc' }, take: 1 },
+          },
+        },
+      },
+    });
+    if (!project) {
+      throw new NotFoundException(
+        `Forest project with ID '${projectId}' was not found.`,
+      );
+    }
+    if (!isSuperadmin && project.auditorUserId !== auditorUserId) {
+      throw new ForbiddenException(
+        'Proyek ini tidak ditugaskan kepada Auditor Anda.',
+      );
+    }
+
+    const checkpoint = project.inspectionCheckpoints[0];
+    const submission = checkpoint?.submissions[0];
+    if (!checkpoint || !submission) {
+      throw new BadRequestException(
+        'Checkpoint ini belum memiliki hasil dMRV dari KTH.',
+      );
+    }
+    if (submission.status === ForestInspectionSubmissionStatus.VERIFIED) {
+      throw new BadRequestException('Hasil checkpoint ini sudah diverifikasi.');
+    }
+
+    const notes = dto.notes?.trim() || null;
+    if (
+      dto.decision === ForestInspectionAuditDecision.REQUEST_REVISION &&
+      !notes
+    ) {
+      throw new BadRequestException(
+        'Catatan wajib diisi saat meminta revisi checkpoint.',
+      );
+    }
+
+    const verifiedVolume =
+      dto.verifiedSequestrationTCO2e ??
+      Number(submission.actualSequestrationTco2e);
+    const targetVolume = Number(project.targetSequestrationTco2e);
+    if (
+      dto.decision === ForestInspectionAuditDecision.APPROVE &&
+      (!Number.isFinite(verifiedVolume) ||
+        verifiedVolume < 0 ||
+        verifiedVolume > targetVolume)
+    ) {
+      throw new BadRequestException(
+        'Nilai serapan terverifikasi harus berada di antara 0 dan target proyek.',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const isApproved = dto.decision === ForestInspectionAuditDecision.APPROVE;
+      await tx.forestInspectionDecision.create({
+        data: {
+          submissionId: submission.id,
+          auditorUserId,
+          decision: isApproved
+            ? ForestInspectionDecisionType.APPROVED
+            : ForestInspectionDecisionType.REQUEST_REVISION,
+          verifiedSequestrationTco2e: isApproved ? verifiedVolume : null,
+          notes,
+        },
+      });
+      await tx.forestInspectionSubmission.update({
+        where: { id: submission.id },
+        data: {
+          status: isApproved
+            ? ForestInspectionSubmissionStatus.VERIFIED
+            : ForestInspectionSubmissionStatus.REVISION_REQUIRED,
+        },
+      });
+      await tx.forestInspectionCheckpoint.update({
+        where: { id: checkpoint.id },
+        data: {
+          status: isApproved
+            ? ForestInspectionStatus.VERIFIED
+            : ForestInspectionStatus.REVISION_REQUIRED,
+        },
+      });
+
+      const checkpoints = await tx.forestInspectionCheckpoint.findMany({
+        where: { projectId },
+        select: { status: true },
+      });
+      const allCheckpointsVerified = checkpoints.every(
+        (item) => item.status === ForestInspectionStatus.VERIFIED,
+      );
+      await tx.forestProject.update({
+        where: { id: projectId },
+        data: {
+          status: allCheckpointsVerified
+            ? ProjectStatus.AUDITED
+            : isApproved
+              ? ProjectStatus.ACTIVE_DMRV
+              : ProjectStatus.DRAFT,
+          actualSequestrationTco2e: isApproved ? verifiedVolume : undefined,
+          carbonStockTco2e: isApproved ? verifiedVolume : undefined,
+          auditorNotes: notes,
+          auditedAt: allCheckpointsVerified ? new Date() : null,
+        },
+      });
+    });
+
+    return this.getForestProjectAuditDetail(
+      projectId,
+      auditorUserId,
+      isSuperadmin,
+    );
+  }
+
   async decideForestProjectAudit(
     projectId: string,
     auditorUserId: string,
@@ -150,7 +320,12 @@ export class AuditService {
   ): Promise<ForestProjectAuditDetail> {
     const project = await this.prisma.forestProject.findUnique({
       where: { id: projectId },
-      select: { id: true, auditorUserId: true, status: true },
+      select: {
+        id: true,
+        auditorUserId: true,
+        status: true,
+        inspectionCheckpoints: { select: { status: true } },
+      },
     });
     if (!project) {
       throw new NotFoundException(
@@ -178,6 +353,16 @@ export class AuditService {
     ) {
       throw new BadRequestException(
         'Catatan wajib diisi saat meminta revisi proyek.',
+      );
+    }
+    if (
+      dto.decision === ForestProjectAuditDecision.APPROVE &&
+      project.inspectionCheckpoints.some(
+        (checkpoint) => checkpoint.status !== ForestInspectionStatus.VERIFIED,
+      )
+    ) {
+      throw new BadRequestException(
+        'Semua checkpoint inspeksi harus diverifikasi sebelum proyek disetujui.',
       );
     }
 

@@ -15,6 +15,7 @@ import type {
   ForestProjectAuditListItem,
   ForestProjectAuditDetail,
   ForestProjectAuditDecisionInput,
+  ForestInspectionDecisionInput,
 } from '../types';
 import {
   AiAnomalyLogSchema,
@@ -53,6 +54,11 @@ export interface AuditRepository {
   decideForestProjectAudit(
     projectId: string,
     input: ForestProjectAuditDecisionInput
+  ): Promise<ForestProjectAuditDetail>;
+  decideForestInspectionCheckpoint(
+    projectId: string,
+    checkpointId: string,
+    input: ForestInspectionDecisionInput
   ): Promise<ForestProjectAuditDetail>;
 }
 
@@ -133,6 +139,17 @@ export class ApiAuditRepository implements AuditRepository {
   ): Promise<ForestProjectAuditDetail> {
     return api.post<ForestProjectAuditDetail>(
       `/audit/forest-projects/${encodeURIComponent(projectId)}/decision`,
+      input,
+      ForestProjectAuditDetailSchema
+    );
+  }
+  async decideForestInspectionCheckpoint(
+    projectId: string,
+    checkpointId: string,
+    input: ForestInspectionDecisionInput
+  ): Promise<ForestProjectAuditDetail> {
+    return api.post<ForestProjectAuditDetail>(
+      `/audit/forest-projects/${encodeURIComponent(projectId)}/checkpoints/${encodeURIComponent(checkpointId)}/decision`,
       input,
       ForestProjectAuditDetailSchema
     );

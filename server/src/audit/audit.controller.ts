@@ -25,6 +25,7 @@ import {
   AuditEmissionReportDecisionDto,
   AuditEmissionReportQueryDto,
   ForestProjectAuditDecisionDto,
+  ForestInspectionDecisionDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -98,6 +99,34 @@ export class AuditController {
   ) {
     const data = await this.auditService.decideForestProjectAudit(
       id,
+      request.user.userId,
+      request.user.role === Role.superadmin,
+      dto,
+    );
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary:
+      'Approve or request revision for one forestry inspection checkpoint',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Forestry inspection checkpoint decision recorded.',
+  })
+  @ApiParam({ name: 'id', description: 'Forest project UUID' })
+  @ApiParam({ name: 'checkpointId', description: 'Inspection checkpoint UUID' })
+  @Post('forest-projects/:id/checkpoints/:checkpointId/decision')
+  async decideForestInspectionCheckpoint(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Param('checkpointId', new ParseUUIDPipe({ version: '4' }))
+    checkpointId: string,
+    @Body() dto: ForestInspectionDecisionDto,
+  ) {
+    const data = await this.auditService.decideForestInspectionCheckpoint(
+      id,
+      checkpointId,
       request.user.userId,
       request.user.role === Role.superadmin,
       dto,

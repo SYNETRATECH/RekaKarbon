@@ -95,6 +95,7 @@ function mapApiProjectToItem(project: ForestProjectApiItemType): ForestProjectIt
     assignedAuditor: project.assignedAuditor,
     auditorAssignedAt: project.auditorAssignedAt,
     auditedAt: project.auditedAt,
+    inspectionTimeline: project.inspectionTimeline,
     speCertificateId: project.speCertificateId,
     speMinted: project.speMinted,
     speTokenId: project.speTokenId,

@@ -10,6 +10,7 @@ import {
   DateStringSchema,
   DateTimeStringSchema,
 } from './common.schema';
+import { ForestInspectionCheckpointSchema } from './regulator.schema';
 
 export const AnomalySummarySchema = z.object({
   emitenTerdeteksiAnomali: z.number().int().nonnegative(),
@@ -187,6 +188,7 @@ export const ForestProjectAuditListItemSchema = z.object({
   auditStatus: z.enum(['pending', 'revision_required', 'approved']),
   assignedAt: DateTimeStringSchema.nullable(),
   auditedAt: DateTimeStringSchema.nullable(),
+  inspectionTimeline: z.array(ForestInspectionCheckpointSchema).default([]),
 });
 
 export const ForestProjectAuditDetailSchema = ForestProjectAuditListItemSchema.extend({

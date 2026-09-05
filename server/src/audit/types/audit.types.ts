@@ -211,6 +211,7 @@ export interface ForestProjectAuditListItem {
   auditStatus: ForestProjectAuditStatus;
   assignedAt: string | null;
   auditedAt: string | null;
+  inspectionTimeline: ForestInspectionCheckpointItem[];
 }
 
 export interface ForestProjectAuditDetail extends ForestProjectAuditListItem {
@@ -221,3 +222,4 @@ export interface ForestProjectAuditDetail extends ForestProjectAuditListItem {
   kthMembersCount: number;
   auditorNotes: string | null;
 }
+import type { ForestInspectionCheckpointItem } from '../../projects/types';

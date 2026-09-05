@@ -6,6 +6,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { KybStatus, ProjectStatus, Role, UserStatus } from '@prisma/client';
 import { AssignForestProjectAuditorDto, CreateKthGroupDto } from './dto';
+import {
+  forestInspectionCheckpointIncludeConfig,
+  toForestInspectionCheckpointItem,
+} from '../projects/inspection.mapper';
 import type {
   NationalForestRegion,
   ForestProjectItem,
@@ -35,7 +39,15 @@ export class RegulatorService {
 
   async getForestProjects(): Promise<ForestProjectItem[]> {
     const records = await this.prisma.forestProject.findMany({
-      include: { kthGroup: true, stages: true, auditor: true },
+      include: {
+        kthGroup: true,
+        stages: true,
+        auditor: true,
+        inspectionCheckpoints: {
+          orderBy: { sequenceNo: 'asc' },
+          include: forestInspectionCheckpointIncludeConfig,
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
     return records.map((r) => {
@@ -113,6 +125,9 @@ export class RegulatorService {
           : null,
         auditorAssignedAt: r.auditorAssignedAt?.toISOString() ?? null,
         auditedAt: r.auditedAt?.toISOString() ?? null,
+        inspectionTimeline: r.inspectionCheckpoints.map(
+          toForestInspectionCheckpointItem,
+        ),
       };
     });
   }

@@ -19,6 +19,8 @@ import { formatCarbon, formatCurrency } from '@/lib/formatters';
 import { formatDateTime } from '@/lib/dates';
 import { auditRepository } from '@/repositories';
 import type {
+  ForestInspectionCheckpoint,
+  ForestInspectionStatus,
   ForestProjectAuditDecision,
   ForestProjectAuditDetail,
   ForestProjectAuditListItem,
@@ -42,6 +44,42 @@ const STATUS_LABELS: Record<ForestProjectAuditListItem['auditStatus'], string> =
   approved: 'Disetujui',
 };
 
+const INSPECTION_STATUS_LABELS: Record<ForestInspectionStatus, string> = {
+  scheduled: 'Terjadwal',
+  due: 'Menunggu kiriman KTH',
+  submitted: 'Menunggu audit',
+  in_review: 'Sedang diaudit',
+  revision_required: 'Perlu revisi',
+  verified: 'Terverifikasi',
+  overdue: 'Terlambat',
+};
+
+const INSPECTION_METHOD_LABELS: Record<ForestInspectionCheckpoint['method'], string> = {
+  drone: 'Drone',
+  satellite: 'Satelit',
+  field: 'Inspeksi lapangan',
+  hybrid: 'Gabungan',
+};
+
+function getInspectionStatusVariant(
+  status: ForestInspectionStatus
+): 'mint' | 'warning' | 'destructive' | 'secondary' {
+  if (status === 'verified') return 'mint';
+  if (status === 'revision_required' || status === 'overdue') return 'destructive';
+  if (status === 'submitted' || status === 'in_review') return 'warning';
+  return 'secondary';
+}
+
+function getActionableCheckpoint(
+  timeline: ForestInspectionCheckpoint[]
+): ForestInspectionCheckpoint | null {
+  return (
+    timeline.find(
+      (checkpoint) => checkpoint.latestSubmission !== null && checkpoint.status !== 'verified'
+    ) ?? null
+  );
+}
+
 export default function AuditorForestProjectsRoute() {
   const { projects: initialProjects } = useLoaderData<typeof clientLoader>();
   const [projects, setProjects] = useState<ForestProjectAuditListItem[]>(initialProjects);
@@ -50,6 +88,7 @@ export default function AuditorForestProjectsRoute() {
   const [isSaving, setIsSaving] = useState(false);
   const [notes, setNotes] = useState('');
   const [decision, setDecision] = useState<ForestProjectAuditDecision | null>(null);
+  const [selectedCheckpointId, setSelectedCheckpointId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const loadQueue = async () => {
@@ -78,7 +117,11 @@ export default function AuditorForestProjectsRoute() {
     try {
       const detail = await auditRepository.getForestProjectAuditDetail(project.id);
       setSelected(detail);
-      setNotes(detail.auditorNotes ?? '');
+      const actionableCheckpoint = getActionableCheckpoint(detail.inspectionTimeline);
+      setSelectedCheckpointId(actionableCheckpoint?.id ?? null);
+      setNotes(
+        actionableCheckpoint?.latestSubmission?.latestDecision?.notes ?? detail.auditorNotes ?? ''
+      );
     } catch (error) {
       toast({
         title: 'Detail proyek gagal dimuat',
@@ -115,16 +158,46 @@ export default function AuditorForestProjectsRoute() {
         decision,
         ...(trimmedNotes ? { notes: trimmedNotes } : {}),
       };
-      await auditRepository.decideForestProjectAudit(selected.id, input);
+      const selectedCheckpoint = selectedCheckpointId
+        ? selected.inspectionTimeline.find((checkpoint) => checkpoint.id === selectedCheckpointId)
+        : null;
+
+      if (selected.inspectionTimeline.length > 0 && !selectedCheckpoint?.latestSubmission) {
+        toast({
+          title: 'dMRV checkpoint belum tersedia',
+          description: 'Tunggu KTH mengirim hasil sesuai jadwal timeline sebelum memutuskan audit.',
+          variant: 'destructive',
+        });
+        setDecision(null);
+        return;
+      }
+
+      if (selectedCheckpoint?.latestSubmission) {
+        await auditRepository.decideForestInspectionCheckpoint(selected.id, selectedCheckpoint.id, {
+          ...input,
+        });
+      } else {
+        await auditRepository.decideForestProjectAudit(selected.id, input);
+      }
       toast({
-        title: decision === 'approve' ? 'Proyek disetujui' : 'Permintaan revisi dikirim',
+        title:
+          decision === 'approve'
+            ? selectedCheckpoint
+              ? 'Checkpoint dMRV diverifikasi'
+              : 'Proyek disetujui'
+            : 'Permintaan revisi dikirim',
         description:
           decision === 'approve'
-            ? 'Proyek berstatus terverifikasi dan siap diproses ke tahap berikutnya.'
-            : 'Proyek dikembalikan ke Regulator untuk diperbaiki.',
+            ? selectedCheckpoint
+              ? 'Hasil dMRV tersimpan sebagai bukti audit dan checkpoint berikutnya akan terbuka sesuai timeline.'
+              : 'Proyek berstatus terverifikasi dan siap diproses ke tahap berikutnya.'
+            : selectedCheckpoint
+              ? 'Hasil dMRV dikembalikan kepada KTH untuk diperbaiki.'
+              : 'Proyek dikembalikan ke Regulator untuk diperbaiki.',
       });
       setDecision(null);
       setSelected(null);
+      setSelectedCheckpointId(null);
       await loadQueue();
     } catch (error) {
       toast({
@@ -185,7 +258,8 @@ export default function AuditorForestProjectsRoute() {
           <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
           <h2 className="mt-3 text-sm font-black text-slate-700">Antrean audit kosong</h2>
           <p className="mt-1 text-xs font-semibold text-slate-400">
-            Proyek akan muncul setelah Regulator menugaskan Auditor melalui menu Penugasan Auditor.
+            Proyek akan muncul setelah Regulator membuat proyek dan memilih Auditor pada formulir
+            metadata.
           </p>
         </Card>
       ) : (
@@ -300,6 +374,96 @@ export default function AuditorForestProjectsRoute() {
                 </div>
               </div>
 
+              <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/30 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                      Timeline pemeriksaan dMRV
+                    </p>
+                    <p className="mt-1 text-[10px] font-semibold leading-relaxed text-slate-500">
+                      Pilih checkpoint yang sudah dikirim KTH. Keputusan dicatat untuk checkpoint
+                      tersebut; checkpoint lain tetap menunggu jadwalnya.
+                    </p>
+                  </div>
+                  <Badge variant="outline">{selected.inspectionTimeline.length} checkpoint</Badge>
+                </div>
+
+                {selected.inspectionTimeline.length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    {selected.inspectionTimeline.map((checkpoint) => {
+                      const isSelected = checkpoint.id === selectedCheckpointId;
+                      const hasSubmission = checkpoint.latestSubmission !== null;
+                      return (
+                        <button
+                          type="button"
+                          key={checkpoint.id}
+                          onClick={() => {
+                            if (!hasSubmission || checkpoint.status === 'verified') return;
+                            setSelectedCheckpointId(checkpoint.id);
+                            setNotes(checkpoint.latestSubmission?.latestDecision?.notes ?? '');
+                          }}
+                          disabled={!hasSubmission || checkpoint.status === 'verified'}
+                          className={`w-full rounded-xl border p-3 text-left transition-colors ${
+                            isSelected
+                              ? 'border-emerald-400 bg-white shadow-sm'
+                              : 'border-slate-200 bg-white/70'
+                          } ${!hasSubmission || checkpoint.status === 'verified' ? 'cursor-default' : 'cursor-pointer hover:border-emerald-300'}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-[11px] font-black text-slate-800">
+                                {checkpoint.sequenceNo}. {checkpoint.title}
+                              </p>
+                              <p className="mt-1 text-[10px] font-semibold text-slate-500">
+                                {INSPECTION_METHOD_LABELS[checkpoint.method]} ·{' '}
+                                {formatDateTime(checkpoint.scheduledAt)}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={getInspectionStatusVariant(checkpoint.status)}
+                              className="shrink-0"
+                            >
+                              {INSPECTION_STATUS_LABELS[checkpoint.status]}
+                            </Badge>
+                          </div>
+                          {checkpoint.instructions && (
+                            <p className="mt-2 border-t border-slate-100 pt-2 text-[10px] font-semibold leading-relaxed text-slate-500">
+                              {checkpoint.instructions}
+                            </p>
+                          )}
+                          {checkpoint.latestSubmission && (
+                            <div className="mt-2 grid gap-2 border-t border-slate-100 pt-2 text-[10px] font-semibold text-slate-600 sm:grid-cols-3">
+                              <span>
+                                Petak: <strong>{checkpoint.latestSubmission.landName}</strong>
+                              </span>
+                              <span>
+                                Serapan:{' '}
+                                <strong>
+                                  {formatCarbon(
+                                    checkpoint.latestSubmission.actualSequestrationTCO2e
+                                  )}
+                                </strong>
+                              </span>
+                              <span>
+                                Dikirim:{' '}
+                                <strong>
+                                  {formatDateTime(checkpoint.latestSubmission.submittedAt)}
+                                </strong>
+                              </span>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[10px] font-semibold text-amber-800">
+                    Proyek lama belum memiliki timeline checkpoint. Audit proyek tetap tersedia
+                    sebagai kompatibilitas data lama.
+                  </p>
+                )}
+              </div>
+
               <div className="mt-5">
                 <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                   Catatan pemeriksaan
@@ -331,7 +495,7 @@ export default function AuditorForestProjectsRoute() {
                   className="rounded-xl text-xs font-black"
                 >
                   <Send className="mr-2 h-4 w-4" />
-                  Minta revisi
+                  {selectedCheckpointId ? 'Minta revisi checkpoint' : 'Minta revisi proyek'}
                 </Button>
                 <Button
                   type="button"
@@ -340,7 +504,7 @@ export default function AuditorForestProjectsRoute() {
                   className="rounded-xl bg-primary-gradient text-xs font-black text-white"
                 >
                   <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Setujui proyek
+                  {selectedCheckpointId ? 'Setujui checkpoint' : 'Setujui proyek'}
                 </Button>
               </div>
             </Card>
@@ -352,12 +516,22 @@ export default function AuditorForestProjectsRoute() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {decision === 'approve' ? 'Setujui proyek kehutanan?' : 'Kirim permintaan revisi?'}
+              {decision === 'approve'
+                ? selectedCheckpointId
+                  ? 'Verifikasi checkpoint dMRV?'
+                  : 'Setujui proyek kehutanan?'
+                : selectedCheckpointId
+                  ? 'Kirim revisi checkpoint?'
+                  : 'Kirim permintaan revisi proyek?'}
             </DialogTitle>
             <DialogDescription>
               {decision === 'approve'
-                ? 'Keputusan ini mengubah status proyek menjadi Terverifikasi dan meneruskannya ke tahap penerbitan.'
-                : 'Proyek akan dikembalikan ke Regulator dan tidak dapat diproses ke penerbitan sebelum diperbaiki.'}
+                ? selectedCheckpointId
+                  ? 'Hasil dMRV checkpoint ini akan diverifikasi dan menjadi dasar pembukaan checkpoint berikutnya.'
+                  : 'Keputusan ini mengubah status proyek menjadi Terverifikasi dan meneruskannya ke tahap penerbitan.'
+                : selectedCheckpointId
+                  ? 'Hasil dMRV checkpoint ini dikembalikan kepada KTH untuk diperbaiki.'
+                  : 'Proyek akan dikembalikan ke Regulator dan tidak dapat diproses ke penerbitan sebelum diperbaiki.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -33,6 +33,9 @@ export class MockKthRepository implements KthRepository {
       carbonStockTCO2e: estimatedCarbon,
       status: project.status,
       submittedAt: new Date().toISOString(),
+      checkpointId: crypto.randomUUID(),
+      checkpointTitle: 'Checkpoint dMRV lapangan',
+      snapshotHash: `0x${'0'.repeat(64)}`,
     };
   }
 }
