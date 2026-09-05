@@ -5,6 +5,17 @@ import {
 } from './dto/audit-emission-report.dto';
 import type { FeatureContribution, XaiDiagnostics } from './types/audit.types';
 
+/**
+ * The ONNX anomaly pipeline (`ml/models/anomaly_pipeline.onnx`) is trained on the
+ * 20-dimensional feature contract produced by the Python `EmissionFeatureEngineer`
+ * (`ml/src/rekakarbon_ml/training/transformers.py`). This TypeScript implementation
+ * MUST mirror that transform numerically (same constants, ordering and formulas) so the
+ * in-process tensor fed to onnxruntime-node matches the training feature space.
+ * Parity is enforced by `server/test/contracts/ml-feature-parity.contract.spec.ts`.
+ *
+ * Stoichiometric factors and market price indices are synced with
+ * `ml/src/rekakarbon_ml/data/benchmark_loader.py`.
+ */
 export const SUPPORTED_SECTORS: IndustrialSector[] = [
   IndustrialSector.SEMEN,
   IndustrialSector.MANUFAKTUR,
@@ -23,11 +34,27 @@ export const SECTOR_TO_IDX: Record<IndustrialSector, number> = {
   [IndustrialSector.PLTU]: 5,
 };
 
+/**
+ * Maps the server `IndustrialSector` enum onto the canonical ML sector taxonomy
+ * (manufaktur, pertambangan, perbankan, konstruksi, pertanian, perhotelan).
+ * Mirrors `normalize_sector_key` in `ml/src/rekakarbon_ml/data/benchmark_loader.py`
+ * (legacy mappings: semen/logam/pltu/listrik -> pertambangan, cpo/sawit -> pertanian,
+ * pulp/kertas -> manufaktur).
+ */
+export const SECTOR_TO_PYTHON_IDX: Record<IndustrialSector, number> = {
+  [IndustrialSector.SEMEN]: 1, // pertambangan
+  [IndustrialSector.MANUFAKTUR]: 0, // manufaktur
+  [IndustrialSector.CPO]: 4, // pertanian
+  [IndustrialSector.LOGAM]: 1, // pertambangan
+  [IndustrialSector.PULP]: 0, // manufaktur
+  [IndustrialSector.PLTU]: 1, // pertambangan
+};
+
 export const STOICHIOMETRIC_FACTORS = {
-  solarDieselTco2ePerLiter: 0.00268,
-  coalTco2ePerKg: 0.00242,
-  naturalGasTco2ePerM3: 0.0019,
-  gridElectricityTco2ePerKwh: 0.00085,
+  solarDieselTco2ePerLiter: 0.002512,
+  coalTco2ePerKg: 0.002531,
+  naturalGasTco2ePerM3: 0.002023,
+  gridElectricityTco2ePerKwh: 0.000207,
   cementClinkerCalcinationTco2ePerTon: 0.525,
   biomassNetTco2ePerTon: 0.02,
 };
@@ -36,8 +63,21 @@ export const MARKET_PRICE_RANGES = {
   solarDiesel: { min: 16000.0, max: 25000.0, nominal: 20500.0 },
   coal: { min: 850.0, max: 1600.0, nominal: 1200.0 },
   naturalGas: { min: 7500.0, max: 13500.0, nominal: 10000.0 },
-  gridElectricity: { min: 1350.0, max: 1900.0, nominal: 1600.0 },
+  gridElectricity: { min: 1200.0, max: 1900.0, nominal: 1500.0 },
 };
+
+/** Sector intensity benchmark priors keyed by CANONICAL ML sector index (0..5). */
+export const PYTHON_SECTOR_BENCHMARKS: Array<{
+  avgIntensityTco2ePerTon: number;
+  stdIntensity: number;
+}> = [
+  { avgIntensityTco2ePerTon: 0.28, stdIntensity: 0.08 }, // manufaktur
+  { avgIntensityTco2ePerTon: 1.25, stdIntensity: 0.25 }, // pertambangan
+  { avgIntensityTco2ePerTon: 0.04, stdIntensity: 0.02 }, // perbankan
+  { avgIntensityTco2ePerTon: 0.42, stdIntensity: 0.12 }, // konstruksi
+  { avgIntensityTco2ePerTon: 0.18, stdIntensity: 0.06 }, // pertanian
+  { avgIntensityTco2ePerTon: 0.08, stdIntensity: 0.03 }, // perhotelan
+];
 
 export const SECTOR_BENCHMARKS: Record<
   IndustrialSector,
@@ -119,103 +159,139 @@ export interface ExtractedFeatures {
 
 export class EmissionFeatureEngineer {
   /**
-   * Transforms raw emission report data into the exact 15-dimensional Float32 tensor for ONNX inference.
+   * Transforms raw emission report data into the exact 20-dimensional Float32 tensor
+   * consumed by the ONNX anomaly pipeline, numerically mirroring the Python
+   * `EmissionFeatureEngineer` transform.
    */
   public static extractFeatures(
     report: AuditEmissionReportDto,
   ): ExtractedFeatures {
-    const sector = report.sector;
-    const sectorIdx = SECTOR_TO_IDX[sector] ?? 1;
-    const bench =
-      SECTOR_BENCHMARKS[sector] ||
-      SECTOR_BENCHMARKS[IndustrialSector.MANUFAKTUR];
+    const sectorIdx =
+      SECTOR_TO_PYTHON_IDX[report.sector] ??
+      SECTOR_TO_PYTHON_IDX[IndustrialSector.MANUFAKTUR];
 
-    const prod = Math.max(report.productionTonnes, 0.0001);
-    const reported = Math.max(report.reportedEmissionsTco2e, 0.0);
-    const hist = Math.max(report.historicalEmissionsTco2e ?? reported, 0.0001);
+    const eps = 1e-6;
+
+    // Raw physical fields (all non-negative)
+    const prod = Math.max(report.productionTonnes, 1e-4);
+    const s1Rep = Math.max(report.reportedEmissionsTco2e * 0.6, 0.0);
+    const s2Rep = Math.max(report.reportedEmissionsTco2e * 0.4, 0.0);
+    const s3Rep = 0.0;
+    const totRep = Math.max(report.reportedEmissionsTco2e, 0.0);
+    const hist = Math.max(report.historicalEmissionsTco2e ?? totRep, 1e-4);
 
     const statFuel = Math.max(report.statFuelLiters ?? 0.0, 0.0);
     const mobFuel = Math.max(report.mobFuelLiters ?? 0.0, 0.0);
-    const biomass = Math.max(report.biomassTonnes ?? 0.0, 0.0);
-    const clinker = Math.max(report.clinkerTonnes ?? 0.0, 0.0);
+    // Physical volumes are derived from e-Faktur expenditures at nominal market price
+    // when the DTO does not carry them directly (matches Python backward compatibility).
+    const coalKg = Math.max(
+      (report.costCoalIdr ?? 0.0) / MARKET_PRICE_RANGES.coal.nominal,
+      0.0,
+    );
+    const gasM3 = Math.max(
+      (report.costGasIdr ?? 0.0) / MARKET_PRICE_RANGES.naturalGas.nominal,
+      0.0,
+    );
+    const elecKwh = Math.max(
+      (report.costPlnIdr ?? 0.0) / MARKET_PRICE_RANGES.gridElectricity.nominal,
+      0.0,
+    );
     const cSolar = Math.max(report.costSolarIdr ?? 0.0, 0.0);
     const cCoal = Math.max(report.costCoalIdr ?? 0.0, 0.0);
     const cGas = Math.max(report.costGasIdr ?? 0.0, 0.0);
     const cPln = Math.max(report.costPlnIdr ?? 0.0, 0.0);
+    const clinker = Math.max(report.clinkerTonnes ?? 0.0, 0.0);
 
-    const eps = 1e-6;
-
-    // 1. Stoichiometric Physics: Direct Combustion + IPPU Process Emissions
+    // 1. Scope 1 stoichiometric physics (fuel combustion + process IPPU)
     const eDiesel =
       (statFuel + mobFuel) * STOICHIOMETRIC_FACTORS.solarDieselTco2ePerLiter;
     const eCoal =
-      (cCoal / MARKET_PRICE_RANGES.coal.nominal) *
-      STOICHIOMETRIC_FACTORS.coalTco2ePerKg;
+      coalKg > 0
+        ? coalKg * STOICHIOMETRIC_FACTORS.coalTco2ePerKg
+        : (cCoal / MARKET_PRICE_RANGES.coal.nominal) *
+          STOICHIOMETRIC_FACTORS.coalTco2ePerKg;
     const eGas =
-      (cGas / MARKET_PRICE_RANGES.naturalGas.nominal) *
-      STOICHIOMETRIC_FACTORS.naturalGasTco2ePerM3;
-    const ePln =
-      (cPln / MARKET_PRICE_RANGES.gridElectricity.nominal) *
-      STOICHIOMETRIC_FACTORS.gridElectricityTco2ePerKwh;
-    const eBiomass = biomass * STOICHIOMETRIC_FACTORS.biomassNetTco2ePerTon;
+      gasM3 > 0
+        ? gasM3 * STOICHIOMETRIC_FACTORS.naturalGasTco2ePerM3
+        : (cGas / MARKET_PRICE_RANGES.naturalGas.nominal) *
+          STOICHIOMETRIC_FACTORS.naturalGasTco2ePerM3;
     const eProcess =
       clinker * STOICHIOMETRIC_FACTORS.cementClinkerCalcinationTco2ePerTon;
+    const eS1Expected = Math.max(eDiesel + eCoal + eGas + eProcess, 0.001);
+    const scope1Divergence =
+      Math.abs(eS1Expected - s1Rep) / (eS1Expected + eps);
 
-    const eExpected = Math.max(
-      eDiesel + eCoal + eGas + ePln + eBiomass + eProcess,
-      prod * 0.05,
+    // 2. Scope 2 grid electricity stoichiometry
+    const eS2Expected = Math.max(
+      elecKwh > 0
+        ? elecKwh * STOICHIOMETRIC_FACTORS.gridElectricityTco2ePerKwh
+        : (cPln / MARKET_PRICE_RANGES.gridElectricity.nominal) *
+            STOICHIOMETRIC_FACTORS.gridElectricityTco2ePerKwh,
+      0.001,
+    );
+    const scope2Divergence =
+      Math.abs(eS2Expected - s2Rep) / (eS2Expected + eps);
+
+    // 3. Unit costs (log-transformed)
+    const solarUnitCost = statFuel > 0 ? cSolar / (statFuel + eps) : 20500.0;
+    const solarUnitCostLog = Math.log1p(
+      Math.min(Math.max(solarUnitCost, 0.0), 1e7),
+    );
+    const elecUnitCost = elecKwh > 0 ? cPln / (elecKwh + eps) : 1500.0;
+    const elecUnitCostLog = Math.log1p(
+      Math.min(Math.max(elecUnitCost, 0.0), 1e7),
     );
 
-    // Derived Feature 1: Stoichiometric Divergence Ratio
-    const divergence = Math.abs(eExpected - reported) / (eExpected + eps);
-    const divergencePct = Math.round(divergence * 100.0 * 10) / 10;
+    // 4. Emission intensity & canonical sector z-score
+    const effectiveTotal = totRep > 0 ? totRep : s1Rep + s2Rep + s3Rep;
+    const emissionIntensity = effectiveTotal / prod;
+    const pyBench = PYTHON_SECTOR_BENCHMARKS[sectorIdx];
+    const sectorIntensityZscore =
+      (emissionIntensity - pyBench.avgIntensityTco2ePerTon) /
+      (pyBench.stdIntensity + eps);
 
-    // Derived Feature 2: Solar Fuel Unit Cost Log (IDR / L)
-    const unitSolar = statFuel > 0 ? cSolar / (statFuel + eps) : 20500.0;
-    const clampedSolarCost = Math.max(0, Math.min(unitSolar, 1e7));
-    const solarUnitCostLog = Math.log1p(clampedSolarCost);
+    // 5. Scope proportions (Scope 3 fully optional => always 0 here)
+    const scope1Ratio = s1Rep / (effectiveTotal + eps);
+    const scope2Ratio = s2Rep / (effectiveTotal + eps);
+    const scope3Ratio = s3Rep / (effectiveTotal + eps);
 
-    // Derived Feature 3: Raw Emission Intensity (tCO2e / Ton Product)
-    const intensity = reported / prod;
+    // 6. Math summation discrepancy (sum of scopes vs declared total)
+    const scopeSum = s1Rep + s2Rep + s3Rep;
+    const summationDiscrepancy =
+      Math.abs(scopeSum - effectiveTotal) / (effectiveTotal + eps);
 
-    // Derived Feature 4: Sector-Normalized Intensity Z-Score
-    const intensityZ =
-      (intensity - bench.avgIntensityTco2ePerTon) / (bench.stdIntensity + eps);
-
-    // Derived Feature 5: YoY Growth Ratio
-    const yoyChange = (reported - hist) / hist;
-
-    // Derived Feature 6: Energy Spend per Ton Product
-    const totalCost = cSolar + cCoal + cGas + cPln;
-    const costPerTon = totalCost / prod;
-
-    // Derived Feature 7: Reported Emissions to Energy Spend Ratio
-    const spendRatio = reported / (totalCost * 1e-9 + eps);
-
-    // Derived Feature 8: Process Emission to Total Expected Ratio
-    const processRatio = eProcess / (eExpected + eps);
-
-    // Derived Feature 9: Solar Market Price Residual Ratio
-    const nominalSolar = MARKET_PRICE_RANGES.solarDiesel.nominal;
+    // 7. Price residuals vs nominal market indices
     const solarPriceResidual =
-      Math.abs(unitSolar - nominalSolar) / nominalSolar;
+      Math.abs(solarUnitCost - MARKET_PRICE_RANGES.solarDiesel.nominal) /
+      MARKET_PRICE_RANGES.solarDiesel.nominal;
+    const elecPriceResidual =
+      Math.abs(elecUnitCost - MARKET_PRICE_RANGES.gridElectricity.nominal) /
+      MARKET_PRICE_RANGES.gridElectricity.nominal;
 
-    // Derived Features 10-15: One-Hot Sector Encoding (6 dimensions)
+    // 8. YoY change & energy spend per ton
+    const yoyChange = (effectiveTotal - hist) / hist;
+    const totalEnergyCost = cSolar + cCoal + cGas + cPln;
+    const energySpendPerTon = totalEnergyCost / prod;
+
+    // 9. Sector one-hot encoding (6 canonical dims)
     const sectorOneHot = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-    if (sectorIdx >= 0 && sectorIdx < 6) {
-      sectorOneHot[sectorIdx] = 1.0;
-    }
+    sectorOneHot[sectorIdx] = 1.0;
 
     const featuresArray = new Float32Array([
-      divergence,
+      scope1Divergence,
+      scope2Divergence,
       solarUnitCostLog,
-      intensity,
-      intensityZ,
-      yoyChange,
-      costPerTon,
-      spendRatio,
-      processRatio,
+      elecUnitCostLog,
+      emissionIntensity,
+      sectorIntensityZscore,
+      scope1Ratio,
+      scope2Ratio,
+      scope3Ratio,
+      summationDiscrepancy,
       solarPriceResidual,
+      elecPriceResidual,
+      yoyChange,
+      energySpendPerTon,
       ...sectorOneHot,
     ]);
 
@@ -236,14 +312,14 @@ export class EmissionFeatureEngineer {
       nativeData[i] = featuresArray[i];
     }
 
-    const tensor = new ort.Tensor('float32', nativeData, [1, 15]);
+    const tensor = new ort.Tensor('float32', nativeData, [1, 20]);
 
     return {
-      eExpected,
-      divergencePct,
-      unitSolar,
-      intensity,
-      intensityZ: Math.abs(intensityZ),
+      eExpected: eS1Expected + eS2Expected,
+      divergencePct: Math.round(scope1Divergence * 100.0 * 10) / 10,
+      unitSolar: solarUnitCost,
+      intensity: emissionIntensity,
+      intensityZ: Math.abs(sectorIntensityZscore),
       featuresArray,
       tensor,
     };

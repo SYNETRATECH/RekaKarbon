@@ -10,22 +10,31 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
+from sklearn.ensemble import IsolationForest
 from sklearn.metrics import (
     accuracy_score,
+    average_precision_score,
     confusion_matrix,
     f1_score,
     precision_score,
     recall_score,
     roc_auc_score,
 )
+from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import RobustScaler
 
-from ..config import get_ml_config, get_quality_gate_config
+from ..config import (
+    DEFAULT_RANDOM_STATE,
+    get_ml_config,
+    get_quality_gate_config,
+)
 from ..data.benchmark_loader import (
     MARKET_PRICE_RANGES,
     STOICHIOMETRIC_FACTORS,
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
 )
+from ..experiments.metrics import expected_calibration_error
 from ..training.transformers import (
     DERIVED_FEATURE_NAMES,
     RAW_FEATURE_COLUMNS,
@@ -49,9 +58,17 @@ class ModelEvaluator:
         self,
         test_df: pd.DataFrame,
         generate_plots: bool = False,
+        train_df: Optional[pd.DataFrame] = None,
     ) -> Dict[str, Any]:
         """
         Runs comprehensive evaluation against test dataframe with ground-truth 'is_anomaly'.
+
+        Args:
+            test_df: Held-out labeled evaluation set ('is_anomaly' column required).
+            generate_plots: Whether to emit visual artifacts via the ModelVisualizer.
+            train_df: Optional labeled train set used to estimate the cross-fold F1
+                standard deviation gate (pipeline stability). When omitted, that
+                specific gate is reported as "not evaluated" and does not fail.
         """
         y_true = test_df["is_anomaly"].to_numpy().astype(int)
 
@@ -80,6 +97,24 @@ class ModelEvaluator:
         except Exception:
             auc = 0.5
 
+        ap = 0.0
+        if int(y_true.sum()) > 0:
+            try:
+                ap = float(average_precision_score(y_true, scores))
+            except Exception:
+                ap = 0.0
+
+        scores_arr = np.asarray(scores, dtype=float)
+        if len(np.unique(scores_arr)) > 1:
+            norm_scores = (scores_arr - scores_arr.min()) / (
+                scores_arr.max() - scores_arr.min() + 1e-10
+            )
+        else:
+            norm_scores = np.zeros_like(scores_arr)
+        ece = round(expected_calibration_error(y_true, norm_scores), 4)
+
+        cross_fold_f1_std = _cross_fold_f1_std(train_df) if train_df is not None else None
+
         cm = confusion_matrix(y_true, y_pred)
         # Handle 2x2 shape
         if cm.shape == (2, 2):
@@ -105,16 +140,22 @@ class ModelEvaluator:
                     }
 
         # Quality gate verification
+        thresholds = QUALITY_GATE_THRESHOLDS
         passed_gates = (
-            f1 >= QUALITY_GATE_THRESHOLDS["min_overall_f1"]
-            and rec >= QUALITY_GATE_THRESHOLDS["min_overall_recall"]
-            and fpr <= QUALITY_GATE_THRESHOLDS["max_false_positive_rate"]
+            f1 >= thresholds["min_overall_f1"]
+            and rec >= thresholds["min_overall_recall"]
+            and fpr <= thresholds["max_false_positive_rate"]
+            and auc >= thresholds["min_roc_auc"]
+            and ap >= thresholds["min_avg_precision"]
+            and ece <= thresholds["max_calibration_error"]
         )
+        if cross_fold_f1_std is not None:
+            passed_gates = passed_gates and cross_fold_f1_std <= thresholds["max_crossfold_f1_std"]
 
         under_rep_recall = per_type_metrics.get("SCOPE1_UNDERREPORTING_FRAUD", {}).get(
             "recall", per_type_metrics.get("UNDER_REPORTING_FRAUD", {}).get("recall", 1.0)
         )
-        if under_rep_recall < QUALITY_GATE_THRESHOLDS["min_under_reporting_recall"]:
+        if under_rep_recall < thresholds["min_under_reporting_recall"]:
             passed_gates = False
 
         cm_dict = {
@@ -132,6 +173,11 @@ class ModelEvaluator:
                 "f1_score": round(f1, 4),
                 "accuracy": round(acc, 4),
                 "roc_auc": round(auc, 4),
+                "average_precision": round(ap, 4),
+                "expected_calibration_error": ece,
+                "cross_fold_f1_std": round(cross_fold_f1_std, 4)
+                if cross_fold_f1_std is not None
+                else None,
                 "false_positive_rate": round(fpr, 4),
                 "false_negative_rate": round(fnr, 4),
             },
@@ -139,7 +185,15 @@ class ModelEvaluator:
             "per_anomaly_type": per_type_metrics,
             "quality_gate": {
                 "status": "PASSED" if passed_gates else "FAILED",
-                "thresholds": QUALITY_GATE_THRESHOLDS,
+                "thresholds": thresholds,
+                "evaluated_metrics": {
+                    "roc_auc": round(auc, 4),
+                    "average_precision": round(ap, 4),
+                    "expected_calibration_error": ece,
+                    "cross_fold_f1_std": (
+                        round(cross_fold_f1_std, 4) if cross_fold_f1_std is not None else None
+                    ),
+                },
                 "passed": bool(passed_gates),
             },
             "visual_artifacts": {},
@@ -174,6 +228,42 @@ class ModelEvaluator:
             print(f"  - Interactive HTML report saved to: {html_path}")
 
         return eval_results
+
+
+def _cross_fold_f1_std(
+    train_df: pd.DataFrame,
+    n_splits: int = 5,
+    random_state: int = DEFAULT_RANDOM_STATE,
+) -> Optional[float]:
+    """
+    Estimates pipeline F1 stability via 5-fold StratifiedKFold on the labeled train set.
+
+    Returns the standard deviation of fold-wise F1 scores for the production
+    RobustScaler + IsolationForest pipeline, or None when the train set does not
+    support cross-validation (missing anomaly labels / single-class).
+    """
+    if "is_anomaly" not in train_df.columns:
+        return None
+    y = train_df["is_anomaly"].to_numpy().astype(int)
+    if len(np.unique(y)) < 2:
+        return None
+
+    transformer = EmissionFeatureEngineer()
+    X = np.asarray(transformer.transform(train_df), dtype=float)
+    model_cfg = get_ml_config().model.to_dict()
+
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+    fold_f1s: list[float] = []
+    for train_idx, val_idx in skf.split(X, y):
+        scaler = RobustScaler().fit(X[train_idx])
+        clf = IsolationForest(**model_cfg).fit(scaler.transform(X[train_idx]))
+        pred = clf.predict(scaler.transform(X[val_idx]))
+        y_pred = (pred == -1).astype(int)
+        fold_f1s.append(float(f1_score(y[val_idx], y_pred, zero_division=0)))
+
+    if not fold_f1s:
+        return None
+    return float(np.std(fold_f1s))
 
 
 def generate_model_metadata(
@@ -295,18 +385,28 @@ def main() -> None:
 
     visualizer = ModelVisualizer(output_dir=args.report_dir) if args.save_plots else None
     evaluator = ModelEvaluator(predictor, visualizer=visualizer)
-    eval_results = evaluator.evaluate(test_df, generate_plots=args.save_plots)
+
+    train_split = os.path.join(get_ml_config().paths.data_splits_dir, "train.csv")
+    train_df = pd.read_csv(train_split) if os.path.exists(train_split) else None
+
+    eval_results = evaluator.evaluate(test_df, generate_plots=args.save_plots, train_df=train_df)
     generate_model_metadata(eval_results, output_path=args.output_meta)
 
     summary = eval_results["summary"]
     qgate = eval_results["quality_gate"]
 
     print("\n================ EVALUATION SUMMARY ================")
-    print(f"F1 Score            : {summary['f1_score']}")
-    print(f"Recall (Overall)    : {summary['recall']}")
-    print(f"Precision           : {summary['precision']}")
-    print(f"ROC-AUC             : {summary['roc_auc']}")
-    print(f"False Positive Rate : {summary['false_positive_rate']}")
+    print(f"F1 Score                 : {summary['f1_score']}")
+    print(f"Recall (Overall)         : {summary['recall']}")
+    print(f"Precision                : {summary['precision']}")
+    print(f"ROC-AUC                  : {summary['roc_auc']}")
+    print(f"Average Precision        : {summary['average_precision']}")
+    print(f"Expected Calib. Error    : {summary['expected_calibration_error']}")
+    crossing = summary["cross_fold_f1_std"]
+    print(
+        f"Cross-Fold F1 Std        : {crossing if crossing is not None else 'N/A (no train split)'}"
+    )
+    print(f"False Positive Rate      : {summary['false_positive_rate']}")
     print("====================================================")
 
     if qgate["passed"]:

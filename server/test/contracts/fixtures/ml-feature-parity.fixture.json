@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "feature_names": [
+    "scope1_stoichiometric_divergence",
+    "scope2_grid_divergence",
+    "solar_unit_cost_log",
+    "electricity_unit_cost_log",
+    "emission_intensity",
+    "sector_intensity_zscore",
+    "scope1_to_total_ratio",
+    "scope2_to_total_ratio",
+    "scope3_presence_ratio",
+    "scope_summation_discrepancy",
+    "solar_price_residual_ratio",
+    "electricity_price_residual_ratio",
+    "yoy_change_ratio",
+    "energy_spend_per_ton",
+    "sector_is_manufaktur",
+    "sector_is_pertambangan",
+    "sector_is_perbankan",
+    "sector_is_konstruksi",
+    "sector_is_pertanian",
+    "sector_is_perhotelan"
+  ],
+  "generator": "rekakarbon-ml EmissionFeatureEngineer (python)",
+  "reports": [
+    {
+      "name": "normal_manufaktur",
+      "sector_enum": "MANUFAKTUR",
+      "python_sector": "manufaktur",
+      "report": {
+        "productionTonnes": 450000.0,
+        "reportedEmissionsTco2e": 48200.0,
+        "historicalEmissionsTco2e": 47200.0,
+        "statFuelLiters": 4850000.0,
+        "mobFuelLiters": 1240000.0,
+        "biomassTonnes": 0.0,
+        "clinkerTonnes": 0.0,
+        "costSolarIdr": 99425000000.0,
+        "costCoalIdr": 12800000000.0,
+        "costGasIdr": 3100000000.0,
+        "costPlnIdr": 8950000000.0
+      },
+      "expected_features": [
+        0.326228171587, 14.6100730896, 9.92822933197, 7.313886642456,
+        0.107111111283, -2.16108417511, 0.600000023842, 0.40000000596, 0.0, 0.0,
+        0.0, 0.0, 0.021186441183, 276166.65625, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0
+      ]
+    },
+    {
+      "name": "fraud_underreport",
+      "sector_enum": "MANUFAKTUR",
+      "python_sector": "manufaktur",
+      "report": {
+        "productionTonnes": 450000.0,
+        "reportedEmissionsTco2e": 1000.0,
+        "historicalEmissionsTco2e": 47200.0,
+        "statFuelLiters": 4850000.0,
+        "mobFuelLiters": 1240000.0,
+        "biomassTonnes": 0.0,
+        "clinkerTonnes": 0.0,
+        "costSolarIdr": 99425000000.0,
+        "costCoalIdr": 12800000000.0,
+        "costGasIdr": 3100000000.0,
+        "costPlnIdr": 8950000000.0
+      },
+      "expected_features": [
+        0.986021339893, 0.676139593124, 9.92822933197, 7.313886642456,
+        0.002222222276, -3.472179174423, 0.600000023842, 0.40000000596, 0.0,
+        0.0, 0.0, 0.0, -0.978813588619, 276166.65625, 1.0, 0.0, 0.0, 0.0, 0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "fake_price_cpo",
+      "sector_enum": "CPO",
+      "python_sector": "pertanian",
+      "report": {
+        "productionTonnes": 300000.0,
+        "reportedEmissionsTco2e": 12000.0,
+        "historicalEmissionsTco2e": 12000.0,
+        "statFuelLiters": 2000000.0,
+        "mobFuelLiters": 500000.0,
+        "biomassTonnes": 5000.0,
+        "clinkerTonnes": 0.0,
+        "costSolarIdr": 1600000000.0,
+        "costCoalIdr": 0.0,
+        "costGasIdr": 0.0,
+        "costPlnIdr": 2000000000.0
+      },
+      "expected_features": [
+        0.14649681747, 16.391304016113, 6.685861110687, 7.313886642456,
+        0.039999999106, -2.333294868469, 0.600000023842, 0.40000000596, 0.0,
+        0.0, 0.960975587368, 0.0, 0.0, 12000.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0
+      ]
+    },
+    {
+      "name": "cement_omit_process",
+      "sector_enum": "SEMEN",
+      "python_sector": "pertambangan",
+      "report": {
+        "productionTonnes": 500000.0,
+        "reportedEmissionsTco2e": 20000.0,
+        "historicalEmissionsTco2e": 320000.0,
+        "statFuelLiters": 2000000.0,
+        "mobFuelLiters": 500000.0,
+        "biomassTonnes": 10000.0,
+        "clinkerTonnes": 0.0,
+        "costSolarIdr": 41000000000.0,
+        "costCoalIdr": 85000000000.0,
+        "costGasIdr": 0.0,
+        "costPlnIdr": 25000000000.0
+      },
+      "expected_features": [
+        0.935330629349, 1.318840503693, 9.92822933197, 7.313886642456,
+        0.039999999106, -4.839980602264, 0.600000023842, 0.40000000596, 0.0,
+        0.0, 0.0, 0.0, -0.9375, 302000.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0
+      ]
+    },
+    {
+      "name": "electricity_mismatch_pltu",
+      "sector_enum": "PLTU",
+      "python_sector": "pertambangan",
+      "report": {
+        "productionTonnes": 1200000.0,
+        "reportedEmissionsTco2e": 250000.0,
+        "historicalEmissionsTco2e": 480000.0,
+        "statFuelLiters": 3000000.0,
+        "mobFuelLiters": 1000000.0,
+        "biomassTonnes": 0.0,
+        "clinkerTonnes": 0.0,
+        "costSolarIdr": 61500000000.0,
+        "costCoalIdr": 30000000000.0,
+        "costGasIdr": 0.0,
+        "costPlnIdr": 6000000000.0
+      },
+      "expected_features": [
+        1.045742750168, 119.77294921875, 9.92822933197, 7.313886642456,
+        0.208333328366, -4.16664981842, 0.600000023842, 0.40000000596, 0.0, 0.0,
+        0.0, 0.0, -0.479166656733, 81250.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0
+      ]
+    }
+  ]
+}

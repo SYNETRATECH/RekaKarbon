@@ -78,10 +78,32 @@ def test_quality_gate_config_defaults() -> None:
     assert cfg.min_overall_recall == 0.88
     assert cfg.min_under_reporting_recall == 0.92
     assert cfg.max_false_positive_rate == 0.10
+    assert cfg.min_roc_auc == 0.90
+    assert cfg.min_avg_precision == 0.60
+    assert cfg.max_calibration_error == 0.15
+    assert cfg.max_crossfold_f1_std == 0.05
 
     d = cfg.to_dict()
     assert d["min_overall_f1"] == 0.85
     assert d["max_false_positive_rate"] == 0.10
+    assert d["min_roc_auc"] == 0.90
+    assert d["min_avg_precision"] == 0.60
+    assert d["max_calibration_error"] == 0.15
+    assert d["max_crossfold_f1_std"] == 0.05
+
+
+def test_quality_gate_config_env_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies environment variable overrides for the extended quality gates."""
+    monkeypatch.setenv("ML_MIN_ROC_AUC", "0.85")
+    monkeypatch.setenv("ML_MIN_AVG_PRECISION", "0.50")
+    monkeypatch.setenv("ML_MAX_CALIBRATION_ERROR", "0.20")
+    monkeypatch.setenv("ML_MAX_CROSSFOLD_F1_STD", "0.08")
+
+    cfg = QualityGateConfig()
+    assert cfg.min_roc_auc == 0.85
+    assert cfg.min_avg_precision == 0.50
+    assert cfg.max_calibration_error == 0.20
+    assert cfg.max_crossfold_f1_std == 0.08
 
 
 def test_paths_config_defaults() -> None:
