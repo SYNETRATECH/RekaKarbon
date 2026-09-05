@@ -30,14 +30,15 @@ export default function TokenomicsSection() {
     <section id="tokenomik" className="py-24 bg-white">
       <div className="max-w-5xl mx-auto px-6">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-[11px] text-slate-500 mb-5">
-            ⛓️ Tokenomik ERC-1155
-          </div>
           <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight">
             Token Cerdas dengan Mekanisme
             <br />
             Asuransi Permanen.
           </h2>
+          <p className="text-slate-500 mt-3 text-sm max-w-xl mx-auto leading-relaxed">
+            Arsitektur token ERC-1155 multi-aset untuk pencatatan kuota emisi resmi, sertifikat
+            pengurangan emisi terverifikasi, dan alokasi dana cadangan asuransi.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-5 mb-6">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatCarbon } from '@/lib/formatters';
 import { useMapStore } from '../store/useMapStore';
 import { Search } from 'lucide-react';
@@ -7,6 +7,37 @@ import { Input } from '@/components/ui/input';
 export default function CorporateModule() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Drag & Wheel scroll handler for iPad touch feel inside tablet iframe
+  const corpScrollRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startScrollTopRef = useRef(0);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = false;
+    startYRef.current = e.clientY;
+    startScrollTopRef.current = e.currentTarget.scrollTop;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.buttons !== 1) return;
+    const dy = e.clientY - startYRef.current;
+    if (Math.abs(dy) > 5) {
+      isDraggingRef.current = true;
+      e.currentTarget.scrollTop = startScrollTopRef.current - dy;
+    }
+  };
+
+  const handlePointerUp = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const container = e.currentTarget;
+    container.scrollTop += e.deltaY;
+  };
 
   // Debounce search (250ms)
   useEffect(() => {
@@ -102,7 +133,15 @@ export default function CorporateModule() {
       </div>
 
       {/* Company Cards Scrollable List */}
-      <div className="flex-1 md:overflow-y-auto p-4 space-y-3 max-h-[440px] min-h-[340px]">
+      <div
+        ref={corpScrollRef}
+        data-scrollable="true"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onWheel={handleWheel}
+        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 select-none cursor-grab active:cursor-grabbing"
+      >
         {filteredCompanies.length > 0 ? (
           filteredCompanies.map((comp) => {
             const realIndex = companies.findIndex((x) => x.id === comp.id);

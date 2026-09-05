@@ -326,11 +326,6 @@ export default function HeroSection({ onOpenPortal }: { onOpenPortal?: () => voi
         className="relative flex flex-col items-center text-center px-6 pt-24 pb-10"
         style={{ zIndex: 3 }}
       >
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur border border-white/50 text-xs font-medium text-slate-700 mb-7 shadow-sm">
-          🇮🇩 Infrastruktur Kepatuhan Karbon Nasional &amp; dMRV Terakreditasi
-        </div>
-
         <h1 className="text-4xl md:text-5xl lg:text-[3.75rem] font-extrabold text-slate-900 leading-[1.08] max-w-4xl mb-5">
           Integritas Pasar Karbon Indonesia: Presisi Digital dMRV, Kepatuhan Regulasi, dan Keadilan
           Komunitas Hutan.

@@ -113,7 +113,7 @@ export default function PortalTransparansiRoute() {
 
           {/* FLOATING MODULE PANEL (Right) */}
           <div className="absolute top-6 right-6 bottom-6 pointer-events-auto w-[420px] z-40 hidden md:flex">
-            <div className="w-full h-[calc(100vh-140px)] bg-white rounded-[32px] border border-slate-200/60 shadow-[0_16px_40px_rgba(0,0,0,0.1)] flex flex-col p-1.5 overflow-hidden">
+            <div className="w-full h-full flex flex-col min-h-0 bg-white rounded-[32px] border border-slate-200/60 shadow-[0_16px_40px_rgba(0,0,0,0.1)] p-1.5 overflow-hidden">
               {activeModule === 'conservation' ? <ConservationModule /> : <CorporateModule />}
             </div>
           </div>

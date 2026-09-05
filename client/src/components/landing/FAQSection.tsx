@@ -27,12 +27,13 @@ export default function FAQSection() {
     <section className="py-24 bg-surface-alt">
       <div className="max-w-3xl mx-auto px-6">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-[11px] text-slate-500 mb-5 shadow-sm">
-            ❓ FAQ
-          </div>
           <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight">
             Pertanyaan yang Sering Diajukan
           </h2>
+          <p className="text-slate-500 mt-3 text-sm max-w-xl mx-auto leading-relaxed">
+            Temukan jawaban lengkap atas pertanyaan seputar transparansi spasial, mekanisme bursa,
+            dan verifikasi emisi RekaKarbon.
+          </p>
         </div>
         <div className="space-y-3">
           {faqItems.map((item, i) => (

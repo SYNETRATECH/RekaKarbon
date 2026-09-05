@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { Building2, TreePine, FlaskConical, Factory, Check } from 'lucide-react';
+import regulatorImg from '../../assets/regulator.jpg';
+import kthImg from '../../assets/kth.jpeg';
+import verifikatorImg from '../../assets/verifikator.jpg';
+import emittenImg from '../../assets/emitten.jpg';
 
 const ekosistemTabs = [
   {
@@ -9,7 +13,7 @@ const ekosistemTabs = [
     color: '#3b82f6',
     bg: '#eff6ff',
     border: '#bfdbfe',
-    image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80',
+    image: regulatorImg,
     role: 'Kementerian LHK / DJP / Pemerintah',
     desc: 'Mengalokasikan kuota emisi nasional, mengawasi kepatuhan pajak, dan menjaga kedaulatan hutan Indonesia.',
     features: [
@@ -26,7 +30,7 @@ const ekosistemTabs = [
     color: 'var(--color-primary)',
     bg: 'var(--color-surface-container-low)',
     border: 'var(--color-outline-variant)',
-    image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80',
+    image: kthImg,
     role: 'Kelompok Tani Hutan & Masyarakat Adat',
     desc: 'Menjaga kawasan hutan konservasi, restorasi mangrove, dan agroforestry untuk mencetak kredit karbon terverifikasi.',
     features: [
@@ -43,7 +47,7 @@ const ekosistemTabs = [
     color: '#7c3aed',
     bg: '#faf5ff',
     border: '#e9d5ff',
-    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80',
+    image: verifikatorImg,
     role: 'Auditor Independen & AI dMRV Engine',
     desc: 'Memverifikasi pertumbuhan biomassa dan membuktikan keabsahan pengurangan emisi (Additionality).',
     features: [
@@ -60,7 +64,7 @@ const ekosistemTabs = [
     color: 'var(--color-warning)',
     bg: '#fff7ed',
     border: '#fed7aa',
-    image: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15f?w=800&q=80',
+    image: emittenImg,
     role: 'Industri Beremisi Tinggi: Semen, PLTU, Pulp & Kertas',
     desc: 'Memenuhi batas emisi tahunan dan menghindari sanksi denda pajak karbon sesuai UU No. 7/2021 HPP.',
     features: [
@@ -75,7 +79,6 @@ const ekosistemTabs = [
 export default function EcosystemSection() {
   const [activeTab, setActiveTab] = useState('regulator');
   const tab = ekosistemTabs.find((t) => t.id === activeTab)!;
-  const Icon = tab.icon;
 
   return (
     <section id="ekosistem" className="py-24 relative overflow-hidden bg-white">
@@ -90,13 +93,6 @@ export default function EcosystemSection() {
 
       <div className="max-w-6xl mx-auto px-6 relative z-10">
         <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-slate-200/60 shadow-sm text-xs font-semibold text-slate-500 mb-5 tracking-wide uppercase">
-            <span className="relative flex h-2 w-2 mr-1">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            4 Pilar Terintegrasi
-          </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight tracking-tight">
             Setiap Peran,{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-tech-mint">
@@ -152,12 +148,6 @@ export default function EcosystemSection() {
             {/* Left Content */}
             <div className="p-8 md:p-12 lg:col-span-7 flex flex-col justify-center">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-sm border bg-white"
-                style={{ borderColor: tab.border }}
-              >
-                <Icon size={28} style={{ color: tab.color }} />
-              </div>
-              <div
                 className="text-[11px] font-mono tracking-widest mb-2 font-bold uppercase"
                 style={{ color: tab.color }}
               >
@@ -191,39 +181,19 @@ export default function EcosystemSection() {
               </div>
             </div>
 
-            {/* Right Image Orb */}
-            <div
-              className="flex items-center justify-center p-10 lg:p-16 lg:col-span-5 border-t lg:border-t-0 lg:border-l relative overflow-hidden bg-slate-50/50"
-              style={{ borderColor: tab.border }}
-            >
-              {/* Animated Glow Blobs */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[64px] opacity-50 animate-pulse"
-                  style={{ backgroundColor: tab.color, animationDuration: '4s' }}
-                />
-                <div
-                  className="absolute top-1/4 right-1/4 w-40 h-40 rounded-full blur-[48px] opacity-40"
-                  style={{ backgroundColor: tab.color }}
-                />
-              </div>
-
-              {/* Image Circular Frame */}
+            {/* Right Full Image */}
+            <div className="relative lg:col-span-5 min-h-[300px] lg:min-h-full overflow-hidden group">
+              <img
+                src={tab.image}
+                alt={tab.label}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              {/* Subtle ambient tint & gradient overlay */}
               <div
-                className="relative w-56 h-56 md:w-72 md:h-72 rounded-full flex items-center justify-center shadow-2xl overflow-hidden group border-8"
-                style={{ borderColor: `color-mix(in srgb, ${tab.color} 20%, white)` }}
-              >
-                <img
-                  src={tab.image}
-                  alt={tab.label}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                />
-                {/* Subtle color tint overlay over the image to match theme */}
-                <div
-                  className="absolute inset-0 opacity-20 mix-blend-overlay transition-colors duration-500 pointer-events-none"
-                  style={{ backgroundColor: tab.color }}
-                />
-              </div>
+                className="absolute inset-0 opacity-20 mix-blend-overlay transition-colors duration-500 pointer-events-none"
+                style={{ backgroundColor: tab.color }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-900/10 via-transparent to-transparent pointer-events-none" />
             </div>
           </div>
         </div>

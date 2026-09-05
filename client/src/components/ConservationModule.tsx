@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatArea, formatCarbon } from '@/lib/formatters';
 import { useMapStore } from '../store/useMapStore';
 import { useUIStore } from '../store/useUIStore';
@@ -41,6 +41,39 @@ export default function ConservationModule() {
   );
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedReportStage, setSelectedReportStage] = useState<any | null>(null);
+
+  // Drag & Wheel scroll handler for iPad touch feel inside tablet iframe
+  const editorScrollRef = useRef<HTMLDivElement>(null);
+  const statsScrollRef = useRef<HTMLDivElement>(null);
+
+  const isDraggingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startScrollTopRef = useRef(0);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = false;
+    startYRef.current = e.clientY;
+    startScrollTopRef.current = e.currentTarget.scrollTop;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.buttons !== 1) return;
+    const dy = e.clientY - startYRef.current;
+    if (Math.abs(dy) > 5) {
+      isDraggingRef.current = true;
+      e.currentTarget.scrollTop = startScrollTopRef.current - dy;
+    }
+  };
+
+  const handlePointerUp = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const container = e.currentTarget;
+    container.scrollTop += e.deltaY;
+  };
 
   // Debounce search effect (250ms delay)
   useEffect(() => {
@@ -191,7 +224,13 @@ export default function ConservationModule() {
 
       {/* EDITOR TAB CONTENT */}
       <div
-        className={`flex-1 flex flex-col md:overflow-y-auto p-5 ${activeTab === 'editor' ? '' : 'hidden'}`}
+        ref={editorScrollRef}
+        data-scrollable="true"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onWheel={handleWheel}
+        className={`flex-1 min-h-0 flex flex-col overflow-y-auto p-5 select-none cursor-grab active:cursor-grabbing ${activeTab === 'editor' ? '' : 'hidden'}`}
       >
         <div className="space-y-4">
           {/* Selected Proyek Details Header */}
@@ -749,7 +788,13 @@ export default function ConservationModule() {
 
       {/* LIST TAB CONTENT */}
       <div
-        className={`flex-1 md:overflow-y-auto p-5 flex flex-col justify-between ${activeTab === 'stats' ? '' : 'hidden'}`}
+        ref={statsScrollRef}
+        data-scrollable="true"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onWheel={handleWheel}
+        className={`flex-1 min-h-0 overflow-y-auto p-5 flex flex-col justify-between select-none cursor-grab active:cursor-grabbing ${activeTab === 'stats' ? '' : 'hidden'}`}
       >
         <div className="space-y-4">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-left">
