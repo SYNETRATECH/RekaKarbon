@@ -4,20 +4,21 @@ description: Daily repository activity report as a GitHub issue
 intent: Publish a daily issue summarizing newly created issues, recently merged pull requests, and currently open blockers.
 on:
   schedule:
-    - cron: "5 0 * * *"
+    - cron: '5 0 * * *'
   workflow_dispatch:
 permissions:
   contents: read
   issues: read
   pull-requests: read
 strict: true
+engine: gemini
 tools:
   github:
     mode: gh-proxy
     toolsets: [default]
 safe-outputs:
   create-issue:
-    title-prefix: "Daily Repository Activity:"
+    title-prefix: 'Daily Repository Activity:'
     labels: [report]
     close-older-issues: true
   mentions: false
