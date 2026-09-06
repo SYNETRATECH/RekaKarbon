@@ -1,0 +1,8 @@
+{
+  "security": {
+    "auth": {
+      "selectedType": "gemini-api-key",
+      "apiKey": "dummy-key-for-awf-proxy"
+    }
+  }
+}
