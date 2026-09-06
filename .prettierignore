@@ -11,3 +11,6 @@ blockchain/deployment-info.json
 out/**
 node_modules/**
 package-lock.json
+
+# GitHub Agentic Workflows
+.github/workflows/
