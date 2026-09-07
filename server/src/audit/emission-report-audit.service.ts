@@ -42,12 +42,15 @@ export class EmissionReportAuditService {
   async getQueue(
     query: AuditEmissionReportQueryDto,
   ): Promise<EmissionReportAuditListItem[]> {
-    const status = query.status
-      ? REPORT_STATUS_BY_API_VALUE[query.status]
-      : EmissionReportStatus.SUBMITTED;
+    const status =
+      query.status && query.status !== ('all' as any)
+        ? REPORT_STATUS_BY_API_VALUE[
+            query.status as keyof typeof REPORT_STATUS_BY_API_VALUE
+          ]
+        : undefined;
 
     const reports = await this.prisma.emissionReport.findMany({
-      where: { status },
+      where: status ? { status } : undefined,
       include: {
         company: true,
         files: true,
@@ -57,7 +60,7 @@ export class EmissionReportAuditService {
           take: 1,
         },
       },
-      orderBy: { submittedAt: 'asc' },
+      orderBy: { submittedAt: 'desc' },
     });
 
     return reports.map((report) => this.mapListItem(report));

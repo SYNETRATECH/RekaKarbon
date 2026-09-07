@@ -148,19 +148,18 @@ export default function PortalSidebar({ role }: PortalSidebarProps) {
           id: 'verifikasi',
           label: 'VERIFIKASI & OTORISASI',
           items: [
-            { id: 'audit', label: 'Audit Verifikasi AI', icon: Activity, targetPath: '/dashboard' },
+            {
+              id: 'emission-report-audit',
+              label: 'Audit Laporan Emisi & AI',
+              icon: Activity,
+              targetPath: '/dashboard',
+            },
             { id: 'gate', label: 'Gerbang Otorisasi', icon: ShieldCheck, targetPath: '/gate' },
             {
               id: 'ptbae-audit',
               label: 'Audit Pengajuan PTBAE-PU',
               icon: FileUp,
               targetPath: '/audit/ptbae',
-            },
-            {
-              id: 'emission-report-audit',
-              label: 'Audit Laporan Emisi',
-              icon: FileUp,
-              targetPath: '/audit/emission-reports',
             },
             {
               id: 'forest-project-audit',

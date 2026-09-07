@@ -14,9 +14,11 @@ export class MockEmissionReportAuditRepository implements EmissionReportAuditRep
   private detail: EmissionReportAuditDetail = { ...MOCK_EMISSION_REPORT_AUDIT_DETAIL };
 
   async getQueue(
-    status?: 'submitted' | 'revision_required' | 'approved'
+    status?: 'all' | 'submitted' | 'revision_required' | 'approved'
   ): Promise<EmissionReportAuditListItem[]> {
-    return status ? this.queue.filter((item) => item.status === status) : this.queue;
+    return status && status !== 'all'
+      ? this.queue.filter((item) => item.status === status)
+      : this.queue;
   }
 
   async getDetail(id: string): Promise<EmissionReportAuditDetail> {

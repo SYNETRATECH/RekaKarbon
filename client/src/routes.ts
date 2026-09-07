@@ -27,7 +27,7 @@ export default [
 
     // Auditor Protected Routes
     layout('routes/guards/auditor.tsx', [
-      route('audit', 'routes/auditor/dashboard.tsx'),
+      route('audit', 'routes/auditor/emission-reports.tsx'),
       route('spatial', 'routes/auditor/spatial.tsx'),
       route('drone', 'routes/auditor/drone.tsx'),
       route('gate', 'routes/auditor/gate.tsx'),
