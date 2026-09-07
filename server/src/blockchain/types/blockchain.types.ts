@@ -46,6 +46,18 @@ export interface BlockchainBursaQuote {
   totalCostRkb: number;
 }
 
+export interface BlockchainBursaListingState {
+  listingId: number;
+  seller: string;
+  assetId: number;
+  totalAmount: number;
+  soldAmount: number;
+  floorPricePerTonIdr: number;
+  marketPricePerTonIdr: number;
+  kthConfirmedBy: string;
+  status: number;
+}
+
 export interface BlockchainBursaRevenueRecipients {
   platform: string;
   restoration: string;
@@ -90,6 +102,7 @@ export interface CarbonTokenContract {
   mintWalletCredit(
     toAddress: string,
     amountIdr: number,
+    overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
   executeBursaPurchase(
     buyer: string,
@@ -138,6 +151,7 @@ export interface CarbonTokenContract {
     newMarketPricePerTonIdr: bigint,
     overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
+  bursaListings(listingId: bigint): Promise<readonly unknown[]>;
   quoteBursaPurchase(
     listingId: bigint,
     amount: bigint,
@@ -174,6 +188,7 @@ export interface CarbonTokenContract {
 }
 
 export interface EmissionRegistryContract {
+  reports(reportId: number): Promise<readonly unknown[]>;
   submitReport(year: number, rootHash: string): Promise<BlockchainTransaction>;
   submitReportFor(
     reporter: string,

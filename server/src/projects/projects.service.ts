@@ -384,13 +384,15 @@ export class ProjectsService {
       });
     }
 
-    const areaHectares = calculatePolygonAreaHectares(dto.coordinates);
-    if (!Number.isFinite(areaHectares) || areaHectares <= 0) {
+    const rawAreaHectares = calculatePolygonAreaHectares(dto.coordinates);
+    const areaHectares = Math.round(rawAreaHectares * 100) / 100;
+    if (!Number.isFinite(areaHectares) || areaHectares < 0.01) {
       throw new BadRequestException({
         success: false,
         error: {
           code: 'INVALID_PROJECT_POLYGON',
-          message: 'Polygon proyek harus membentuk area yang valid.',
+          message:
+            'Polygon proyek harus membentuk area yang valid (minimal 0.01 hektar).',
         },
       });
     }
@@ -420,6 +422,11 @@ export class ProjectsService {
           fundingDisbursedIdr: 0,
           forestHealthPercent: 0,
         },
+      });
+    } else if (Number(region.areaHectares) === 0) {
+      region = await this.prisma.nationalForestRegion.update({
+        where: { id: region.id },
+        data: { areaHectares },
       });
     }
 

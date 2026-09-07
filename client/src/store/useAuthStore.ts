@@ -20,6 +20,8 @@ export function isClientUserRole(value: string): value is ClientUserRole {
 
 export interface UserProfile {
   name: string;
+  email?: string;
+  walletAddress?: string;
   roleTitle?: string;
   agency?: string;
   avatar?: string;
@@ -72,6 +74,8 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       userRole: res.role as ClientUserRole,
       userProfile: {
         name: res.user.name,
+        email: res.user.email,
+        walletAddress: res.user.walletAddress,
         roleTitle: res.user.roleTitle,
         agency: res.user.agency,
         avatar: res.user.avatar,

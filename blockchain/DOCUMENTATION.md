@@ -1,191 +1,117 @@
-# Dokumentasi Infrastruktur Blockchain - RekaKarbon
+# Dokumentasi Infrastruktur Blockchain RekaKarbon
 
-Dokumen ini menjelaskan arsitektur, proses pengembangan, pengujian, _deployment_ otomatis (CI/CD), hingga panduan integrasi ke sistem _backend_ (NestJS) untuk ekosistem _Smart Contract_ RekaKarbon.
+Dokumen ini menjelaskan batas runtime, pengembangan kontrak, jaringan QBFT, deployment
+terkontrol, dan integrasi backend. Genesis, ledger, dan private key produksi tidak pernah
+disimpan di repository.
 
----
+## 1. Arsitektur
 
-## 1. Arsitektur Sistem
+- Smart contract: Solidity `^0.8.24` dengan OpenZeppelin `5.0.0`.
+- Tooling: Hardhat + TypeScript untuk compile, test, preflight, dan deployment client.
+- Runtime: Hyperledger Besu QBFT, image dipin pada `hyperledger/besu:26.8.1`.
+- Backend: NestJS + `ethers` v6.
+- Chain ID target: `1338`.
 
-Ekosistem _Blockchain_ ini dibangun menggunakan komponen-komponen _Enterprise-Grade_ berikut:
+Hardhat bukan node konsensus produksi. Runtime QBFT terdiri dari bootnode, empat validator,
+dan satu RPC node. QBFT memakai minimal empat validator untuk toleransi satu validator
+Byzantine.
 
-- **Smart Contract**: Solidity (menggunakan standar `OpenZeppelin v5.0.0`).
-- **Development Environment**: Hardhat & Node.js.
-- **Blockchain Node**: Hyperledger Besu (`v23.4.4` - LTS).
-- **CI/CD Automation**: GitHub Actions.
-- **Backend Integration**: NestJS (via `ethers.js` v6).
+## 2. Pengembangan lokal
 
----
-
-## 2. Setup & Pengembangan Lokal (Hardhat)
-
-### Prasyarat
-
-- Node.js versi 20 atau lebih baru.
-- `npm` terinstal di mesin Anda.
-
-### Instalasi
-
-1. Buka terminal pada _root_ repositori blockchain.
-2. Instal semua dependensi:
-   ```bash
-   npm ci
-   ```
-
-### Kompilasi Smart Contract
-
-Kompilasi kontrak Solidity menjadi bytecode dan menghasilkan file ABI:
+Dari root repository:
 
 ```bash
-npx hardhat compile
+pnpm install --frozen-lockfile
+pnpm blockchain:typecheck
+pnpm blockchain:compile
+pnpm blockchain:test
 ```
 
-> [!NOTE]
-> Kontrak RekaKarbon diatur untuk menargetkan `evmVersion: "paris"` di `hardhat.config.js` untuk memastikan kompatibilitas penuh dengan Hyperledger Besu dev network. Oleh karena itu, kita memaku (_pinning_) OpenZeppelin di `v5.0.0` (versi sebelum instruksi `PUSH0`/`mcopy` yang hanya ada di `cancun`).
-
----
-
-## 3. Pengujian (Testing)
-
-Sebelum mendeploy ke server, kode wajib diuji secara lokal menggunakan Hardhat Network.
-Jalankan perintah pengujian:
+Preflight terhadap node QBFT aktif memeriksa chain ID, jumlah validator, pertumbuhan block,
+dan bytecode contract:
 
 ```bash
-npx hardhat test
+QBFT_BLOCK_SAMPLE_MS=5000 \
+  pnpm --filter @rekakarbon/blockchain qbft:preflight
 ```
 
-Ini akan mengeksekusi semua _test-case_ (Mocha/Chai) yang berada di dalam folder `test/`.
+`blockchain/besu-config/genesis.json` adalah konfigurasi Clique lama untuk referensi saja.
+Jangan gunakan file itu untuk runtime QBFT.
 
----
+## 3. Bootstrap server QBFT
 
-## 4. Konfigurasi Jaringan Hyperledger Besu
+Ikuti [runbook server](scripts/README.md). Bootstrap satu kali membuat genesis dan identitas
+node di direktori server yang kosong. Script menolak overwrite otomatis. Simpan backup terenkripsi
+atas `generated/`, dan jangan menghapus volume ledger ketika melakukan release update.
 
-Kita menggunakan mode `--network=dev` dari Hyperledger Besu sebagai jaringan privat untuk tahap pengujian dan _staging_.
+Compose runtime berada di `docker-compose.qbft.yml`. RPC host hanya bind ke loopback
+(`127.0.0.1:8545`/`8546`), sedangkan port P2P berada di jaringan Docker internal.
 
-### Konfigurasi Kritis Besu:
-
-- **Versi Docker**: Menggunakan `hyperledger/besu:23.4.4` (jangan gunakan `latest` untuk menghindari penghapusan fitur _miner_ secara sepihak).
-- **Chain ID**: `1337`. Hardhat Network dan Besu secara _default_ akan tersinkronisasi pada Chain ID ini.
-- **Miner Enabled**: `--miner-enabled=true`. Tanpa ini, transaksi akan menyangkut di dalam _mempool_ dan tidak pernah dicetak menjadi blok.
-- **Gas Price**: `--min-gas-price=0`. Menghindari transaksi gagal karena Hardhat mengirimkan transaksi dengan biaya gas lokal ($0).
-
----
-
-## 5. Deployment Server & CI/CD Pipeline (GitHub Actions)
-
-Proses _deployment_ ke server jarak jauh (VM Ubuntu) sepenuhnya otomatis menggunakan **GitHub Actions**.
-
-### Alur Kerja (Workflow)
-
-Alur kerja terbagi menjadi dua _file_ YAML utama:
-
-1. **`ci.yml`**: Berjalan otomatis saat ada perubahan di `main` atau saat _Pull Request_. Mengeksekusi instalasi dan `npx hardhat test`.
-2. **`deploy.yml`**: Hanya berjalan **jika `ci.yml` sukses**. Melakukan _deployment_ aktual ke server via SSH.
-
-### Teknik Bypass & Optimasi di `deploy.yml`
-
-Untuk menghindari kelumpuhan sistem akibat server GitHub (_codeload_) yang sedang _down_ (`Error 429 / 503`), skrip _deployment_ dimodifikasi dari penggunaan _plugin action_ pihak ketiga menjadi **Native Linux Commands**:
-
-- Menggunakan `sshpass` dan `scp` bawaan Ubuntu/Linux.
-- _Environment Variables_ dirender dengan baik tanpa terjebak _heredoc quotes_ (`<< EOF`).
-
-Proses pada Server saat _Pipeline_ Berjalan:
-
-1. Kontainer Besu lama dihapus (beserta volumenya untuk _clean state_).
-2. Kontainer Besu baru dijalankan.
-3. _Health-check loop_ selama maksimal 60 detik memastikan RPC aktif sebelum _deploy_ berjalan.
-4. Menjalankan _ephemeral_ Docker berbasis Node:20 untuk mengeksekusi `npx hardhat run scripts/deploy.js`.
-
----
-
-## 6. Panduan Integrasi Backend (NestJS)
-
-Setelah kontrak ter-deploy, ia menghasilkan **Contract Address**. Address ini, bersama dengan file **ABI**, akan menjadi "jembatan" bagi _backend_ NestJS Anda untuk berinteraksi dengan Blockchain.
-
-### A. Persiapan di NestJS
-
-Instal pustaka Ethers.js di repositori NestJS:
+Validasi minimum:
 
 ```bash
-npm install ethers
+curl -fsS -X POST http://127.0.0.1:8545 \
+  -H 'Content-Type: application/json' \
+  --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
+
+curl -fsS -X POST http://127.0.0.1:8545 \
+  -H 'Content-Type: application/json' \
+  --data '{"jsonrpc":"2.0","method":"qbft_getValidatorsByBlockNumber","params":["latest"],"id":1}'
 ```
 
-Tambahkan di `.env` NestJS Anda:
+## 4. Contract deployment
+
+`blockchain/scripts/deploy.ts` aman secara default:
+
+- `DEPLOYMENT_MODE=verify-existing` hanya memverifikasi chain, bytecode, dan role jika signer
+  tersedia.
+- `DEPLOYMENT_MODE=configure-existing` hanya mengirim role/revenue configuration yang belum ada.
+- `DEPLOYMENT_MODE=deploy-new` adalah operasi eksplisit untuk deployment contract baru.
+
+Manifest ditulis atomik ke `DEPLOYMENT_MANIFEST_PATH`. Gas price mengikuti provider Besu,
+kecuali `BESU_GAS_PRICE_WEI` diisi eksplisit. Tidak ada hardcode `gasPrice: 0`.
+
+## 5. GitHub Actions deployment
+
+Workflow `.github/workflows/deploy-blockchain.yml` hanya berjalan melalui `workflow_dispatch`
+dan protected GitHub Environment (`staging` atau `production`). Urutannya:
+
+1. Install, typecheck, compile, test, compose validation, dan private-key source scan.
+2. Buat archive release tanpa genesis/key/ledger.
+3. Upload archive ke server melalui SSH.
+4. Verifikasi shared QBFT genesis dan environment yang sudah diprovision.
+5. Jalankan Compose tanpa menghapus volume, cek chain ID `1338`, validator, dan block progression.
+6. Jika health check gagal, coba aktifkan release sebelumnya.
+7. Jalankan contract operation hanya bila `deploy_contracts=true` dipilih eksplisit.
+
+Secret environment yang diperlukan: `BLOCKCHAIN_SSH_HOST`, `BLOCKCHAIN_SSH_USERNAME`,
+`BLOCKCHAIN_SSH_PASSWORD` (atau migrasikan action ke SSH key), `BLOCKCHAIN_PROJECT_DIR`,
+`BLOCKCHAIN_PRIVATE_KEY`, dan address contract existing untuk mode verifikasi/konfigurasi.
+
+## 6. Backend
+
+Isi `server/.env` dengan RPC dan address contract yang sama dengan manifest deployment:
 
 ```env
-RPC_URL=http://<IP_SERVER_BESU>:8545
-CONTRACT_ADDRESS=0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0
-PRIVATE_KEY=c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3
+BESU_RPC_URL=http://127.0.0.1:8545
+BESU_CHAIN_ID=1338
+CARBON_TOKEN_CONTRACT_ADDRESS=<address dari manifest>
+EMISSION_REGISTRY_CONTRACT_ADDRESS=<address dari manifest>
+PRIVATE_KEY=<secret signer backend dari secret manager>
 ```
 
-> [!WARNING]
-> _Private key_ di atas adalah akun dev bawaan Besu (hanya untuk _development_). Di produksi, selalu gunakan _Private Key_ dompet perusahaan/admin Anda yang dilindungi kerahasiaannya.
+Backend memverifikasi chain ID dan bytecode sebelum write transaction. Endpoint health tidak lagi
+menampilkan block/chain statis; nilainya dibaca dari Besu aktif.
 
-### B. Menyalin ABI
+## 7. Troubleshooting dan rollback
 
-Kopi file JSON yang berada pada `artifacts/contracts/RekaKarbon.sol/RekaKarbon.json` (dari repositori Blockchain) ke dalam proyek NestJS Anda (misal ke direktori `src/blockchain/abi/`).
+- `chain ID mismatch`: hentikan aktivasi backend dan periksa `BESU_CHAIN_ID`, genesis, serta RPC.
+- validator kurang dari empat atau block tidak bertambah: periksa log bootnode/validator dan
+  konektivitas jaringan internal.
+- contract address tidak memiliki bytecode: gunakan manifest dari chain yang sama; jangan deploy
+  ulang tanpa approval.
+- release gagal health check: workflow mencoba rollback ke symlink `current` sebelumnya. Jangan
+  menghapus volume ledger sebagai langkah pemulihan.
 
-### C. Implementasi Service Blockchain (TypeScript)
-
-Contoh `blockchain.service.ts` di NestJS:
-
-```typescript
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { ethers } from 'ethers';
-import * as RekaKarbonABI from './abi/RekaKarbon.json'; // Sesuaikan path
-
-@Injectable()
-export class BlockchainService implements OnModuleInit {
-  private provider: ethers.JsonRpcProvider;
-  private wallet: ethers.Wallet;
-  private contract: ethers.Contract;
-
-  onModuleInit() {
-    this.provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-    this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
-    this.contract = new ethers.Contract(
-      process.env.CONTRACT_ADDRESS,
-      RekaKarbonABI.abi, // Harus menunjuk ke array .abi
-      this.wallet
-    );
-    console.log('✅ Node terhubung ke Hyperledger Besu');
-  }
-
-  // --- Fungsi Membaca Data (View/Pure) ---
-  async getTotalSertifikat(): Promise<number> {
-    try {
-      // Ganti dengan nama fungsi spesifik di RekaKarbon.sol
-      const total = await this.contract.totalSertifikat();
-      return Number(total);
-    } catch (error) {
-      console.error('Gagal membaca total sertifikat:', error);
-      throw error;
-    }
-  }
-
-  // --- Fungsi Menulis Data (Transaksi yang Mengubah State) ---
-  async terbitkanSertifikat(penerima: string, jumlah: number) {
-    try {
-      // gasPrice 0 agar tidak ditolak di dev network
-      const tx = await this.contract.mint(penerima, jumlah, {
-        gasPrice: 0,
-      });
-
-      // Tunggu transaksi dimasukkan ke blok (konfirmasi)
-      const receipt = await tx.wait();
-      return receipt.hash;
-    } catch (error) {
-      console.error('Gagal menerbitkan sertifikat:', error);
-      throw error;
-    }
-  }
-}
-```
-
-### Tips Integrasi Lanjutan:
-
-- **Event Listeners**: Anda dapat menggunakan `this.contract.on("NamaEvent", (arg1, arg2) => {...})` untuk membuat NestJS bereaksi secara _real-time_ setiap kali sebuah transaksi selesai diproses oleh Blockchain (berguna untuk memberikan notifikasi WebSockets ke Frontend).
-- **Error Handling**: Tangkap _revert message_ dari _smart contract_ agar dapat dikirim ke _frontend_ sebagai HTTP Error 400 (Bad Request).
-
----
-
-_Dokumentasi ini otomatis dibuat pada: 17 Agustus 2026._
+Rencana implementasi dan timeline rinci tersedia di
+`qbft_server_deployment_implementation_plan.md`.

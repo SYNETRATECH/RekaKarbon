@@ -71,7 +71,7 @@ describe('BlockchainService', () => {
       CarbonTokenContract,
       'balanceOf' | 'mintOffsetCredit'
     > &
-      Pick<EmissionRegistryContract, 'submitReportFor'>;
+      Pick<EmissionRegistryContract, 'submitReportFor' | 'reports'>;
 
     beforeEach(() => {
       process.env.BESU_RPC_URL = 'http://127.0.0.1:8545';
@@ -81,6 +81,7 @@ describe('BlockchainService', () => {
         '0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0';
       process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS =
         '0x9DdaF0CD259887258Bc13a92C0a6dA92698644C1';
+      process.env.BESU_CHAIN_ID = '1338';
 
       const transaction: BlockchainTransaction = {
         wait: jest.fn().mockResolvedValue({
@@ -91,6 +92,14 @@ describe('BlockchainService', () => {
       mockContract = {
         balanceOf: jest.fn().mockResolvedValue(BigInt(150)),
         mintOffsetCredit: jest.fn().mockResolvedValue(transaction),
+        reports: jest
+          .fn()
+          .mockResolvedValue([
+            '0x0000000000000000000000000000000000000002',
+            2026n,
+            '0x0000000000000000000000000000000000000000000000000000000000000003',
+            1n,
+          ]),
         submitReportFor: jest.fn().mockResolvedValue({
           wait: jest.fn().mockResolvedValue({
             hash: '0xreporttxhash',
@@ -104,9 +113,14 @@ describe('BlockchainService', () => {
         }),
       };
 
-      jest
-        .mocked(ethers.JsonRpcProvider)
-        .mockImplementation(() => ({}) as unknown as ethers.JsonRpcProvider);
+      jest.mocked(ethers.JsonRpcProvider).mockImplementation(
+        () =>
+          ({
+            getNetwork: jest.fn().mockResolvedValue({ chainId: 1338n }),
+            getCode: jest.fn().mockResolvedValue('0x6000'),
+            getFeeData: jest.fn().mockResolvedValue({ gasPrice: 7n }),
+          }) as unknown as ethers.JsonRpcProvider,
+      );
       jest
         .mocked(ethers.Wallet)
         .mockImplementation(() => ({}) as unknown as ethers.Wallet);
@@ -175,8 +189,28 @@ describe('BlockchainService', () => {
         '0x0000000000000000000000000000000000000002',
         2026,
         '0x0000000000000000000000000000000000000000000000000000000000000003',
-        { gasPrice: 0 },
+        { gasPrice: 7n },
       );
+    });
+
+    it('should reject an audit when the report identity differs on QBFT', async () => {
+      jest
+        .mocked(mockContract.reports)
+        .mockResolvedValueOnce([
+          '0x0000000000000000000000000000000000000004',
+          2026n,
+          '0x0000000000000000000000000000000000000000000000000000000000000003',
+          1n,
+        ]);
+
+      await expect(
+        service.assertEmissionReportAuditable(
+          7,
+          '0x0000000000000000000000000000000000000002',
+          2026,
+          '0x0000000000000000000000000000000000000000000000000000000000000003',
+        ),
+      ).rejects.toMatchObject({ status: 409 });
     });
   });
 });

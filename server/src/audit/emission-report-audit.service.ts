@@ -23,7 +23,7 @@ import type {
 
 type ReportWithAuditData = Prisma.EmissionReportGetPayload<{
   include: {
-    company: true;
+    company: { include: { user: true } };
     files: true;
     auditEvents: {
       include: { actor: true };
@@ -55,7 +55,7 @@ export class EmissionReportAuditService {
     const reports = await this.prisma.emissionReport.findMany({
       where: { status },
       include: {
-        company: true,
+        company: { include: { user: true } },
         files: true,
         auditEvents: {
           include: { actor: true },
@@ -73,7 +73,7 @@ export class EmissionReportAuditService {
     const report = await this.prisma.emissionReport.findUnique({
       where: { id },
       include: {
-        company: true,
+        company: { include: { user: true } },
         files: true,
         auditEvents: {
           include: { actor: true },
@@ -97,7 +97,7 @@ export class EmissionReportAuditService {
     const report = await this.prisma.emissionReport.findUnique({
       where: { id },
       include: {
-        company: true,
+        company: { include: { user: true } },
         files: true,
         auditEvents: {
           include: { actor: true },
@@ -127,6 +127,22 @@ export class EmissionReportAuditService {
         'The emission report has not been anchored on the blockchain',
       );
     }
+    if (!report.company.user?.walletAddress) {
+      throw new ConflictException({
+        success: false,
+        error: {
+          code: 'CHAIN_IDENTITY_MISSING',
+          message: 'The report company does not have a blockchain wallet.',
+        },
+      });
+    }
+
+    await this.blockchainService.assertEmissionReportAuditable(
+      Number(report.blockchainReportId),
+      report.company.user.walletAddress,
+      report.year,
+      report.merkleRoot,
+    );
 
     const notes = dto.notes?.trim() || '';
     const targetStatus =
@@ -181,7 +197,7 @@ export class EmissionReportAuditService {
       return tx.emissionReport.findUniqueOrThrow({
         where: { id },
         include: {
-          company: true,
+          company: { include: { user: true } },
           files: true,
           auditEvents: {
             include: { actor: true },

@@ -24,9 +24,25 @@ export class HealthService {
       }
     }
 
+    const blockchainHealth = this.blockchainService
+      ? await this.blockchainService.getHealth()
+      : null;
+    const blockchainStatus =
+      blockchainHealth?.status === 'ready' ? 'synced' : 'unreachable';
+    const blockchainLatestBlock = this.blockchainService
+      ? await this.blockchainService.getLatestBlockNumber()
+      : null;
+    const blockchainChainId =
+      blockchainHealth?.connectedChainId ??
+      blockchainHealth?.configuredChainId ??
+      Number(process.env.BESU_CHAIN_ID || '1338');
+    const overallStatus =
+      dbStatus === 'connected' && blockchainStatus === 'synced'
+        ? 'ok'
+        : 'degraded';
+
     return {
-      status: (dbStatus === 'connected' ? 'ok' : 'degraded') as
-        'ok' | 'degraded' | 'error',
+      status: overallStatus as 'ok' | 'degraded' | 'error',
       service: 'RekaKarbon Core Backend API',
       version: '1.0.0',
       uptimeSeconds: Math.floor(process.uptime()),
@@ -38,10 +54,12 @@ export class HealthService {
           latencyMs: dbLatencyMs,
         },
         blockchain: {
-          status: 'synced' as const,
-          network: 'Hyperledger Besu (IBFT 2.0)',
-          latestBlock: 12480,
-          chainId: 1337,
+          status: blockchainStatus,
+          network: blockchainHealth?.network || 'Besu Network Standby',
+          latestBlock: blockchainLatestBlock ?? 0,
+          chainId: Number.isInteger(blockchainChainId)
+            ? blockchainChainId
+            : 1338,
         },
         storage: {
           status: 'operational' as const,

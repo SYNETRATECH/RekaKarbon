@@ -6,8 +6,21 @@ async function main(): Promise<void> {
   console.log('Memulai deployment EmissionReportRegistry...');
 
   const [deployer] = await ethers.getSigners();
-  const backendAddress = process.env.BACKEND_ADDRESS || deployer.address;
-  const transactionOverrides = { gasPrice: 0 };
+  if (!deployer) {
+    throw new Error('PRIVATE_KEY wajib diisi untuk deployment registry.');
+  }
+
+  const network = await ethers.provider.getNetwork();
+  const expectedChainId = BigInt(process.env.BESU_CHAIN_ID || '1338');
+  if (network.chainId !== expectedChainId) {
+    throw new Error(
+      `Chain ID tidak sesuai: ${network.chainId.toString()} != ${expectedChainId.toString()}.`
+    );
+  }
+
+  const backendAddress = process.env.BACKEND_ADDRESS || (await deployer.getAddress());
+  const configuredGasPrice = process.env.BESU_GAS_PRICE_WEI?.trim();
+  const transactionOverrides = configuredGasPrice ? { gasPrice: BigInt(configuredGasPrice) } : {};
 
   const EmissionReportRegistry = await ethers.getContractFactory('EmissionReportRegistry');
   const registry = await EmissionReportRegistry.deploy(transactionOverrides);
@@ -18,8 +31,18 @@ async function main(): Promise<void> {
   const auditorRole: string = await registry.AUDITOR_ROLE();
   const reporterRole: string = await registry.REPORTER_ROLE();
 
-  await registry.grantRole(auditorRole, backendAddress, transactionOverrides);
-  await registry.grantRole(reporterRole, backendAddress, transactionOverrides);
+  const auditorTransaction = await registry.grantRole(
+    auditorRole,
+    backendAddress,
+    transactionOverrides
+  );
+  await auditorTransaction.wait();
+  const reporterTransaction = await registry.grantRole(
+    reporterRole,
+    backendAddress,
+    transactionOverrides
+  );
+  await reporterTransaction.wait();
 
   console.log('\n=======================================================');
   console.log('✅ EmissionReportRegistry berhasil di-deploy');

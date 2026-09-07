@@ -10,7 +10,7 @@ async function main() {
     throw new Error('Alamat kontrak EMISSION_REGISTRY_CONTRACT_ADDRESS tidak ditemukan di .env');
   }
 
-  console.log('🔍 Mengecek Blockchain (Hardhat Local Node)...');
+  console.log('🔍 Mengecek EmissionReportRegistry pada Besu QBFT aktif...');
   console.log('Alamat Kontrak:', contractAddress);
 
   // Ambil instance contract dari blockchain

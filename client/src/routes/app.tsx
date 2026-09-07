@@ -22,6 +22,8 @@ export async function clientLoader() {
     userRole: role,
     userProfile: {
       name: user.name,
+      email: user.email,
+      walletAddress: user.walletAddress,
       roleTitle: user.roleTitle,
       agency: user.agency,
       avatar: user.avatar,

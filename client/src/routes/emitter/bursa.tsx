@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLoaderData, useRevalidator } from 'react-router';
 import { formatCarbon, formatCurrency, formatNumber } from '@/lib/formatters';
-import { bursaRepository, complianceRepository } from '../../repositories';
+import { bursaRepository, complianceRepository, walletRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import BursaPurchaseModal from '../../components/modals/BursaPurchaseModal';
@@ -32,7 +32,8 @@ export async function clientLoader() {
     complianceRepository.getComplianceData().catch(() => null),
     bursaRepository.getPurchaseEligibility().catch(() => null),
   ]);
-  return { bursaItems, complianceData, purchaseEligibility };
+  const walletBalanceRkb = await walletRepository.getBalance().catch(() => null);
+  return { bursaItems, complianceData, purchaseEligibility, walletBalanceRkb };
 }
 
 clientLoader.hydrate = true as const;
@@ -49,7 +50,8 @@ export function meta() {
 }
 
 export default function CarbonDexMarket() {
-  const { bursaItems, complianceData, purchaseEligibility } = useLoaderData<typeof clientLoader>();
+  const { bursaItems, complianceData, purchaseEligibility, walletBalanceRkb } =
+    useLoaderData<typeof clientLoader>();
   const { revalidate } = useRevalidator();
 
   const [bursaFilter, setBursaFilter] = useState<'all' | 'hutan' | 'mangrove' | 'gambut'>('all');
@@ -418,6 +420,7 @@ export default function CarbonDexMarket() {
       <BursaPurchaseModal
         token={selectedBursaToken}
         purchaseEligibility={purchaseEligibility}
+        walletBalanceRkb={walletBalanceRkb}
         onPurchaseComplete={() => revalidate()}
         onClose={() => setSelectedBursaToken(null)}
       />

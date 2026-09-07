@@ -1,11 +1,11 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
-import { ComplianceRating, EmissionReportStatus } from '@prisma/client';
+import { ComplianceRating, EmissionReportStatus, Prisma } from '@prisma/client';
 import { ethers } from 'ethers';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
@@ -137,7 +137,25 @@ export class BursaService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return listings.map((listing) => this.toBursaItem(listing));
+    const chainStates = await Promise.all(
+      listings.map((listing) =>
+        listing.blockchainListingId === null
+          ? Promise.resolve(null)
+          : this.blockchainService.getBursaListingState(
+              Number(listing.blockchainListingId),
+            ),
+      ),
+    );
+
+    return listings
+      .map((listing, index) => ({ listing, chainState: chainStates[index] }))
+      .filter(
+        ({ chainState }) =>
+          chainState !== null &&
+          (chainState.status === 1 || chainState.status === 2) &&
+          chainState.soldAmount < chainState.totalAmount,
+      )
+      .map(({ listing }) => this.toBursaItem(listing));
   }
 
   async getPurchaseEligibility(
@@ -798,6 +816,43 @@ export class BursaService {
     if (!listing.blockchainListingId) {
       throw new BadRequestException('Listing is not active on blockchain');
     }
+    const chainListing = await this.blockchainService.getBursaListingState(
+      Number(listing.blockchainListingId),
+    );
+    if (chainListing.status !== 1 && chainListing.status !== 2) {
+      throw new ConflictException({
+        success: false,
+        error: {
+          code: 'BURSA_CHAIN_STATE_MISMATCH',
+          message:
+            'Listing Bursa sudah tidak aktif di blockchain. Muat ulang daftar listing.',
+          details: {
+            listingId,
+            blockchainListingId: listing.blockchainListingId.toString(),
+            chainStatus: chainListing.status,
+            chainSoldAmount: chainListing.soldAmount,
+            chainTotalAmount: chainListing.totalAmount,
+          },
+        },
+      });
+    }
+    const chainAvailable = chainListing.totalAmount - chainListing.soldAmount;
+    if (chainAvailable < settlementVolume) {
+      throw new ConflictException({
+        success: false,
+        error: {
+          code: 'BURSA_CHAIN_VOLUME_MISMATCH',
+          message:
+            'Volume listing di blockchain lebih kecil dari data yang ditampilkan. Muat ulang daftar listing.',
+          details: {
+            listingId,
+            requestedVolume: settlementVolume,
+            chainAvailableVolume: chainAvailable,
+            databaseAvailableVolume: Number(listing.volumeAvailableTco2e),
+          },
+        },
+      });
+    }
     if (!listing.kthGroup?.walletAddress) {
       throw new BadRequestException(
         'Listing KTH recipient wallet is not configured',
@@ -811,6 +866,29 @@ export class BursaService {
       Number(listing.blockchainListingId),
       settlementVolume,
     );
+    const buyerBalanceRkb = await this.blockchainService.getWalletBalance(
+      buyer.walletAddress,
+    );
+    if (buyerBalanceRkb < quote.totalCostRkb) {
+      const maxAffordableVolume = Math.floor(
+        buyerBalanceRkb / quote.unitPricePerTonIdr,
+      );
+      throw new ConflictException({
+        success: false,
+        error: {
+          code: 'BURSA_INSUFFICIENT_RKB_BALANCE',
+          message:
+            'Saldo RKB tidak mencukupi untuk volume pembelian ini. Kurangi volume atau lakukan top-up terlebih dahulu.',
+          details: {
+            requestedVolume: settlementVolume,
+            requiredBalanceRkb: quote.totalCostRkb,
+            availableBalanceRkb: buyerBalanceRkb,
+            unitPricePerTonRkb: quote.unitPricePerTonIdr,
+            maxAffordableVolume,
+          },
+        },
+      });
+    }
     this.logger.log(
       `Executing Bursa settlement: ${buyer.walletAddress} buys ${settlementVolume} tCO2e from listing ${listing.id}`,
     );
@@ -833,6 +911,9 @@ export class BursaService {
       0,
       (eligibility.complianceDeficitTCO2e ?? 0) - settlementVolume,
     );
+    const remainingOffsetCostIdr = new Prisma.Decimal(
+      String(remainingDeficit),
+    ).mul(quote.unitPricePerTonIdr);
 
     const order = await this.prisma.$transaction(async (tx) => {
       const createdOrder = await tx.bursaOrder.create({
@@ -879,7 +960,7 @@ export class BursaService {
           where: { id: company.id },
           data: {
             carbonDeficitTco2e: remainingDeficit,
-            offsetCostIdr: remainingDeficit * quote.unitPricePerTonIdr,
+            offsetCostIdr: remainingOffsetCostIdr,
             complianceRating:
               remainingDeficit > 0
                 ? ComplianceRating.WARNING

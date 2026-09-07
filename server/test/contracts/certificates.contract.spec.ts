@@ -52,7 +52,7 @@ describe('Certificates API Contract Test', () => {
       '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
     blockNumber: 184510,
     retiredAt: '2026-02-14T12:00:00Z',
-    chainId: 1337,
+    chainId: 1338,
     contractAddress: '0x7a250d5630b4cf539739df2c5dacb4c659f2488d',
   });
 

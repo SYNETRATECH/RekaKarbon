@@ -11,6 +11,7 @@ import type { BursaItem, BursaPurchaseEligibility } from '@/types';
 interface BursaPurchaseModalProps {
   token: BursaItem | null;
   purchaseEligibility: BursaPurchaseEligibility | null;
+  walletBalanceRkb: number | null;
   onPurchaseComplete: () => void;
   onClose: () => void;
 }
@@ -18,6 +19,7 @@ interface BursaPurchaseModalProps {
 export default function BursaPurchaseModal({
   token,
   purchaseEligibility,
+  walletBalanceRkb,
   onPurchaseComplete,
   onClose,
 }: BursaPurchaseModalProps) {
@@ -27,9 +29,15 @@ export default function BursaPurchaseModal({
 
   const availableTCO2e = token?.volumeAvailableTCO2e ?? 0;
   const purchaseRequirementTCO2e = purchaseEligibility?.purchaseRequirementTCO2e ?? 0;
+  const pricePerTonRkb = token?.pricePerTonIDR ?? 0;
+  const affordableVolumeTCO2e =
+    walletBalanceRkb !== null && pricePerTonRkb > 0
+      ? Math.floor(walletBalanceRkb / pricePerTonRkb)
+      : Number.POSITIVE_INFINITY;
   const maxPurchaseTCO2e = Math.min(
     Math.ceil(Math.max(0, purchaseRequirementTCO2e)),
-    Math.floor(Math.max(0, availableTCO2e))
+    Math.floor(Math.max(0, availableTCO2e)),
+    affordableVolumeTCO2e
   );
 
   useEffect(() => {
@@ -69,10 +77,12 @@ export default function BursaPurchaseModal({
     } catch (error) {
       console.error('Bursa purchase error:', error);
 
+      const errorMessage =
+        error instanceof Error ? error.message : 'Gagal melakukan pembelian token karbon.';
+
       toast({
         title: 'Transaksi Gagal ❌',
-        description:
-          'Gagal melakukan pembelian token karbon. Pastikan saldo wallet dan koneksi blockchain stabil.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -127,6 +137,10 @@ export default function BursaPurchaseModal({
               {formatCarbon(purchaseRequirementTCO2e)} tCO₂e. Pembelian diproses dalam satuan ton
               penuh.
             </span>
+            <span className="text-[9px] text-slate-500 font-bold block">
+              Saldo RKB:{' '}
+              {walletBalanceRkb === null ? 'belum tersedia' : formatCurrency(walletBalanceRkb)}.
+            </span>
             {purchaseEligibility === null ? (
               <span className="text-[9px] text-amber-700 font-bold block">
                 Status kewajiban belum berhasil dimuat. Pembelian dinonaktifkan.
@@ -143,6 +157,12 @@ export default function BursaPurchaseModal({
             {purchaseRequirementTCO2e > availableTCO2e && (
               <span className="text-[9px] text-amber-700 font-bold block">
                 Pasokan listing ini belum mencukupi seluruh kebutuhan pembelian.
+              </span>
+            )}
+            {walletBalanceRkb !== null && affordableVolumeTCO2e < purchaseRequirementTCO2e && (
+              <span className="text-[9px] text-amber-700 font-bold block">
+                Saldo saat ini hanya mencukupi maksimal {formatCarbon(affordableVolumeTCO2e)};
+                kurangi volume atau lakukan top-up untuk membeli seluruh kebutuhan.
               </span>
             )}
             {purchaseEligibility !== null &&

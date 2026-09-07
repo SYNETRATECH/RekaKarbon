@@ -63,7 +63,7 @@ export function createMockRetirementRecord(
     blockNumber:
       overrides?.blockNumber ?? faker.number.int({ min: 100000, max: 999999 }),
     retiredAt: overrides?.retiredAt ?? new Date().toISOString(),
-    chainId: overrides?.chainId ?? 1337,
+    chainId: overrides?.chainId ?? 1338,
     contractAddress: overrides?.contractAddress ?? fakeWalletAddress(),
     ...overrides,
   };

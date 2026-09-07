@@ -1,5 +1,9 @@
 # Panduan Integrasi Backend (NestJS) dengan Blockchain RekaKarbon
 
+> Dokumen ini berisi contoh historis. Runtime aktif menggunakan Hyperledger Besu QBFT
+> chain ID `1338`; ikuti konfigurasi aktual di `server/.env.example` dan
+> `DOCUMENTATION.md`. Jangan menyalin private key atau memaksa `gasPrice: 0`.
+
 Dokumen ini ditujukan khusus untuk Tim Backend (NestJS) agar dapat menghubungkan aplikasi dengan _Smart Contract_ RekaKarbon yang berjalan di jaringan privat Hyperledger Besu.
 
 ---
@@ -99,11 +103,9 @@ export class BlockchainService implements OnModuleInit {
    */
   async mintOffsetCredit(toAddress: string, amount: number, coordinates: string): Promise<string> {
     try {
-      // Panggil fungsi mintOffsetCredit di Smart Contract
-      // Set gasPrice: 0 karena kita di dev network Besu
-      const tx = await this.contract.mintOffsetCredit(toAddress, amount, coordinates, {
-        gasPrice: 0,
-      });
+      // Biarkan provider mengikuti kebijakan gas node QBFT. Isi BESU_GAS_PRICE_WEI
+      // hanya jika environment memang memerlukannya.
+      const tx = await this.contract.mintOffsetCredit(toAddress, amount, coordinates);
 
       // WAJIB: Tunggu hingga transaksi ditambang ke dalam blok
       const receipt = await tx.wait();

@@ -6,7 +6,8 @@
   "scripts": {
     "test": "hardhat test",
     "typecheck": "tsc --noEmit",
-    "compile": "hardhat compile"
+    "compile": "hardhat compile",
+    "qbft:preflight": "hardhat run scripts/preflight-qbft.ts --network besu_qbft"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.5",

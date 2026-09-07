@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link, useLoaderData } from 'react-router';
 import type L from 'leaflet';
 import type { DragEndEvent, LeafletMouseEvent } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { sortPolygonCoordinates } from '../../utils/geodetics';
+import { sortPolygonCoordinates, calculatePolygonAreaHa } from '../../utils/geodetics';
 import { Save, Plus, Trash2, UploadCloud, FileText, FileSpreadsheet, X } from 'lucide-react';
 import type {
   CreateForestProjectInput,
@@ -299,9 +299,12 @@ export default function ProjectEditorPage() {
   // Add Point
   const handleAddPoint = () => {
     const last = coordinates[coordinates.length - 1] || [-7.5, 110.0];
+    const offsetIndex = coordinates.length;
+    const latOffset = offsetIndex % 2 === 0 ? 0.006 : -0.004;
+    const lngOffset = offsetIndex % 2 === 1 ? 0.007 : 0.003;
     setCoordinates((prev) => [
       ...prev,
-      [Number((last[0] + 0.005).toFixed(6)), Number((last[1] + 0.005).toFixed(6))],
+      [Number((last[0] + latOffset).toFixed(6)), Number((last[1] + lngOffset).toFixed(6))],
     ]);
   };
 
@@ -333,6 +336,14 @@ export default function ProjectEditorPage() {
 
     if (coordinates.length < 3) {
       setSaveError('Polygon proyek minimal memiliki 3 titik koordinat.');
+      return;
+    }
+
+    const polygonAreaHa = calculatePolygonAreaHa(coordinates);
+    if (polygonAreaHa < 0.01) {
+      setSaveError(
+        'Titik koordinat belum membentuk bidang poligon yang valid (minimal 0.01 hektar). Pastikan titik tidak berada pada satu garis lurus.'
+      );
       return;
     }
 

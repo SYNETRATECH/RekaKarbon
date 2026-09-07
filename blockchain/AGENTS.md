@@ -11,7 +11,8 @@ All work in the `blockchain/` module MUST adhere to the following standardized s
 - **Package Manager**: **`pnpm`** (use `pnpm` commands across the monorepo).
 - **Smart Contract**: Solidity (`^0.8.24`) using **OpenZeppelin Contracts `v5.0.0`**.
 - **Development & Testing Framework**: **Hardhat** with TypeScript.
-- **Target EVM & Node**: Target EVM **`paris`** (configured in `hardhat.config.ts`) to ensure full compatibility with **Hyperledger Besu v23.4.4** (Chain ID `1337`).
+- **Target EVM & Node**: Target EVM **`paris`** (configured in `hardhat.config.ts`) for compatibility with the **Hyperledger Besu QBFT runtime** (chain ID `1338`, Besu image pinned per deployment environment).
+- **Runtime boundary**: Hyperledger Besu QBFT is the blockchain runtime and consensus layer. Hardhat remains the compiler, test runner, and deployment client; it is not the production node or consensus mechanism.
 - **Backend Integration**: NestJS via `ethers` (v6).
 
 > [!IMPORTANT]
@@ -63,7 +64,7 @@ Before finalizing any task or opening a PR touching the `blockchain/` directory,
 ## 🔗 4. ABI Synchronization & Backend Integration Standards
 
 1. **ABI Artifact Distribution**: After updating `RekaKarbon.sol` and running compilation, copy the JSON artifact from `artifacts/contracts/RekaKarbon.sol/RekaKarbon.json` into the NestJS backend workspace (`server/` or `src/blockchain/abi/`).
-2. **Zero-Gas Transactions on Private Network**: State-changing function calls (e.g., `mint`, `issueQuota`) must include `{ gasPrice: 0 }` options when interacting with the Besu dev network.
+2. **Gas Policy**: State-changing calls must use a gas policy compatible with the target Besu node's configured minimum gas price. A zero gas price may only be used when the target network explicitly permits it; deployment code must not hardcode a value that conflicts with the node configuration.
 3. **Numeric Data Types**: High-precision token values or carbon units MUST use `bigint` or `ethers.BigNumberish` to avoid numeric overflow in JavaScript/TypeScript backend code.
 
 ---

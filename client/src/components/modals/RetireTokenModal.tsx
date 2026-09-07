@@ -18,7 +18,7 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
   const [retireQuantity, setRetireQuantity] = useState<number>(cert.purchasedVolumeTCO2e);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successData, setSuccessData] = useState<RetirementCertificateResult | null>(null);
-  const [qrUnavailable, setQrUnavailable] = useState(false);
+  const [qrStatus, setQrStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
 
@@ -26,8 +26,8 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
   const qrUrl = verificationUrl ? getRetirementQrUrl(verificationUrl) : '';
 
   useEffect(() => {
-    setQrUnavailable(false);
-  }, [successData]);
+    setQrStatus(qrUrl ? 'loading' : 'error');
+  }, [qrUrl]);
 
   const handleRetire = async () => {
     if (retireQuantity <= 0 || retireQuantity > cert.purchasedVolumeTCO2e) {
@@ -84,7 +84,7 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
   if (successData) {
     return (
       <Dialog open={true} onOpenChange={() => handleFinish()}>
-        <DialogContent className="sm:max-w-md bg-white border-none shadow-2xl rounded-3xl p-8 text-center animate-in zoom-in-95">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto border-none bg-white p-4 text-center shadow-2xl sm:p-8 animate-in zoom-in-95">
           <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10" />
           </div>
@@ -113,20 +113,32 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
             </div>
           </div>
 
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6">
+          <div className="mb-6 min-w-0 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
             <div className="flex flex-col items-center gap-3">
-              {!qrUnavailable ? (
-                <img
-                  src={qrUrl}
-                  alt="QR code verifikasi sertifikat retirement"
-                  className="h-40 w-40 rounded-xl bg-white p-2"
-                  onError={() => setQrUnavailable(true)}
-                />
-              ) : (
-                <div className="flex h-40 w-40 items-center justify-center rounded-xl bg-white p-3 text-center text-xs font-semibold text-slate-500">
-                  QR tidak dapat dimuat. Gunakan tautan verifikasi di bawah.
-                </div>
-              )}
+              <div className="relative h-40 w-40">
+                {qrStatus !== 'error' ? (
+                  <img
+                    src={qrUrl}
+                    alt="QR code verifikasi sertifikat retirement"
+                    loading="eager"
+                    decoding="async"
+                    className={`absolute inset-0 block h-40 w-40 rounded-xl bg-white p-2 object-contain ${
+                      qrStatus === 'loading' ? 'opacity-0' : 'opacity-100'
+                    }`}
+                    onLoad={() => setQrStatus('loaded')}
+                    onError={() => setQrStatus('error')}
+                  />
+                ) : (
+                  <div className="flex h-40 w-40 items-center justify-center rounded-xl bg-white p-3 text-center text-xs font-semibold text-slate-500">
+                    QR tidak dapat dimuat. Gunakan tautan verifikasi di bawah.
+                  </div>
+                )}
+                {qrStatus === 'loading' && (
+                  <div className="absolute inset-0 flex h-40 w-40 items-center justify-center rounded-xl bg-white p-3 text-center text-xs font-semibold text-slate-500">
+                    Memuat QR verifikasi...
+                  </div>
+                )}
+              </div>
               <p className="text-xs font-semibold text-emerald-800">
                 Scan untuk membuka verifikasi publik berbasis blockchain.
               </p>
@@ -134,7 +146,7 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
                 href={verificationUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="max-w-full truncate text-xs font-bold text-blue-600 underline"
+                className="w-full min-w-0 break-all text-center text-xs font-bold leading-relaxed text-blue-600 underline"
               >
                 {verificationUrl}
               </a>

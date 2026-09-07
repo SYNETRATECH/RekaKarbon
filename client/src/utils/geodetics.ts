@@ -120,3 +120,43 @@ export function calculateGeodetics(
 
   return { areaVal, perimeterVal, estimatedCarbon };
 }
+
+/**
+ * Calculates polygon area in hectares rounded to 2 decimal places.
+ * Returns 0 if coordinates are invalid, collinear, or fewer than 3 points.
+ */
+export function calculatePolygonAreaHa(
+  coords: CoordPoint[],
+  center?: [number, number] | number[]
+): number {
+  if (!coords || coords.length < 3) return 0;
+  const sortedCoords = sortPolygonCoordinates(coords);
+  const midLat = center
+    ? center[0]
+    : coords.reduce((sum, c) => sum + extractPoint(c)[0], 0) / coords.length;
+  const midLng = center
+    ? center[1]
+    : coords.reduce((sum, c) => sum + extractPoint(c)[1], 0) / coords.length;
+  const latRad = (midLat * Math.PI) / 180;
+  const latMetersPerDegree = 111132;
+  const lngMetersPerDegree = 111132 * Math.cos(latRad);
+
+  const projected = sortedCoords.map((c) => {
+    const [lat, lng] = extractPoint(c);
+    return {
+      x: (lng - midLng) * lngMetersPerDegree,
+      y: (lat - midLat) * latMetersPerDegree,
+    };
+  });
+
+  let areaSum = 0;
+  for (let i = 0; i < projected.length; i++) {
+    const p1 = projected[i];
+    const p2 = projected[(i + 1) % projected.length];
+    areaSum += p1.x * p2.y - p2.x * p1.y;
+  }
+
+  const areaSqMeters = Math.abs(areaSum) / 2;
+  const areaHectares = areaSqMeters / 10000;
+  return Math.round(areaHectares * 100) / 100;
+}

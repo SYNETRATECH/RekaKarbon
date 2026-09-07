@@ -204,7 +204,7 @@ export default function EmitterWallet() {
           ) : (
             history.map((tx: any) => (
               <div
-                key={tx.id}
+                key={`${tx.id}-${tx.type}`}
                 className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-100"
               >
                 <div className="flex items-center gap-4">

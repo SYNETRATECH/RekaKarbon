@@ -5,6 +5,7 @@ import {
   BadRequestException,
   ConflictException,
   Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ethers } from 'ethers';
 import * as RekaKarbonABI from './config/RekaKarbon.json';
@@ -12,6 +13,7 @@ import * as EmissionRegistryABI from './config/EmissionReportRegistry.json';
 import type {
   BlockchainEvent,
   BlockchainBursaListingResult,
+  BlockchainBursaListingState,
   BlockchainBursaQuote,
   BlockchainBursaRevenueRecipients,
   BlockchainHealth,
@@ -183,13 +185,108 @@ export class BlockchainService implements OnModuleInit {
     }
   }
 
+  async getLatestBlockNumber(): Promise<number | null> {
+    if (!this.provider) return null;
+
+    try {
+      return await this.provider.getBlockNumber();
+    } catch {
+      return null;
+    }
+  }
+
   private getConfiguredChainId(): number | undefined {
     const configuredValue =
-      process.env.BESU_CHAIN_ID || process.env.CHAIN_ID || '1337';
+      process.env.BESU_CHAIN_ID || process.env.CHAIN_ID || '1338';
     const configuredChainId = Number(configuredValue);
     return Number.isInteger(configuredChainId) && configuredChainId > 0
       ? configuredChainId
       : undefined;
+  }
+
+  private async assertWriteTarget(
+    contractAddress: string | undefined,
+    contractName: string,
+  ): Promise<void> {
+    if (!this.provider || !contractAddress) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BLOCKCHAIN_TARGET_UNAVAILABLE',
+          message: `${contractName} blockchain target is not configured.`,
+        },
+      });
+    }
+
+    const configuredChainId = this.getConfiguredChainId();
+    if (!configuredChainId) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BLOCKCHAIN_CHAIN_ID_INVALID',
+          message: 'Configured blockchain chain ID is invalid.',
+        },
+      });
+    }
+
+    try {
+      const [network, bytecode] = await Promise.all([
+        this.provider.getNetwork(),
+        this.provider.getCode(contractAddress),
+      ]);
+      const connectedChainId = Number(network.chainId);
+      if (connectedChainId !== configuredChainId || bytecode === '0x') {
+        throw new ServiceUnavailableException({
+          success: false,
+          error: {
+            code: 'BLOCKCHAIN_TARGET_MISMATCH',
+            message: `${contractName} write blocked because the active chain or contract does not match configuration.`,
+            details: {
+              configuredChainId,
+              connectedChainId,
+              contractAddress,
+              contractDeployed: bytecode !== '0x',
+            },
+          },
+        });
+      }
+    } catch (error: unknown) {
+      if (error instanceof ServiceUnavailableException) throw error;
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BLOCKCHAIN_TARGET_UNAVAILABLE',
+          message: `${contractName} write target could not be verified.`,
+          details: { reason },
+        },
+      });
+    }
+  }
+
+  private async getWriteOverrides(): Promise<{ gasPrice: bigint }> {
+    if (!this.provider) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BLOCKCHAIN_TARGET_UNAVAILABLE',
+          message: 'Blockchain provider is not initialized.',
+        },
+      });
+    }
+
+    const feeData = await this.provider.getFeeData();
+    const gasPrice = feeData.gasPrice ?? feeData.maxFeePerGas;
+    if (gasPrice === null) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BLOCKCHAIN_FEE_UNAVAILABLE',
+          message: 'The active QBFT node did not return a usable gas price.',
+        },
+      });
+    }
+    return { gasPrice };
   }
 
   async getCarbonBalance(address: string, tokenId: number): Promise<number> {
@@ -283,9 +380,11 @@ export class BlockchainService implements OnModuleInit {
       // PTBAE-PU keeps two decimal places in the database. The ERC-1155
       // quantity is stored in centi-tCO2e units to avoid losing precision.
       const amount = ethers.parseUnits(quotaTCO2e.toFixed(2), 2);
-      const tx = await contract.issueQuota(validAddress, amount, {
-        gasPrice: 0,
-      });
+      const tx = await contract.issueQuota(
+        validAddress,
+        amount,
+        await this.getWriteOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return receipt.hash;
@@ -304,8 +403,16 @@ export class BlockchainService implements OnModuleInit {
     amountIdr: number,
   ): Promise<string> {
     const contract = this.ensureRekaKarbon();
+    await this.assertWriteTarget(
+      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS,
+      'RekaKarbon',
+    );
     try {
-      const tx = await contract.mintWalletCredit(toAddress, amountIdr);
+      const tx = await contract.mintWalletCredit(
+        toAddress,
+        amountIdr,
+        await this.getWriteOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return receipt.hash;
@@ -374,12 +481,27 @@ export class BlockchainService implements OnModuleInit {
         }),
       );
 
-      // Remove nulls and sort by date descending
-      return history
-        .filter((item) => item !== null)
-        .sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
+      // A Bursa settlement emits one RKB_CREDIT TransferSingle per revenue
+      // recipient. Present those events as one wallet transaction instead of
+      // rendering six rows with the same transaction hash.
+      const groupedHistory = new Map<
+        string,
+        NonNullable<(typeof history)[number]>
+      >();
+      for (const item of history) {
+        if (!item) continue;
+        const key = `${item.id}:${item.type}`;
+        const existing = groupedHistory.get(key);
+        if (existing) {
+          existing.amount += item.amount;
+        } else {
+          groupedHistory.set(key, { ...item });
+        }
+      }
+
+      return [...groupedHistory.values()].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
     } catch (error) {
       this.logger.error('Error fetching wallet history:', error);
       throw new InternalServerErrorException('Failed to fetch wallet history');
@@ -479,7 +601,7 @@ export class BlockchainService implements OnModuleInit {
         this.applicationIdToBytes32(projectId),
         this.applicationIdToBytes32(kthGroupId),
         projectSnapshotMerkleRoot,
-        { gasPrice: 0 },
+        await this.getWriteOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -517,7 +639,7 @@ export class BlockchainService implements OnModuleInit {
       const tx = await contract.setBursaListingKthRecipient(
         validListingId,
         validKthRecipient,
-        { gasPrice: 0 },
+        await this.getWriteOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -545,7 +667,7 @@ export class BlockchainService implements OnModuleInit {
       const tx = await contract.confirmBursaListing(
         validListingId,
         validRepresentative,
-        { gasPrice: 0 },
+        await this.getWriteOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -563,9 +685,10 @@ export class BlockchainService implements OnModuleInit {
     const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
 
     try {
-      const tx = await contract.activateBursaListing(validListingId, {
-        gasPrice: 0,
-      });
+      const tx = await contract.activateBursaListing(
+        validListingId,
+        await this.getWriteOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return receipt.hash;
@@ -592,7 +715,7 @@ export class BlockchainService implements OnModuleInit {
       const tx = await contract.updateBursaMarketPrice(
         validListingId,
         validPrice,
-        { gasPrice: 0 },
+        await this.getWriteOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -628,6 +751,50 @@ export class BlockchainService implements OnModuleInit {
     }
   }
 
+  async getBursaListingState(
+    listingId: number,
+  ): Promise<BlockchainBursaListingState> {
+    const contract = this.ensureRekaKarbon();
+    const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
+    try {
+      const listing = await contract.bursaListings(validListingId);
+      const seller = String(listing[0]);
+      if (!ethers.isAddress(seller) || seller === ethers.ZeroAddress) {
+        throw new BadRequestException({
+          success: false,
+          error: {
+            code: 'BURSA_CHAIN_LISTING_NOT_FOUND',
+            message: 'Listing Bursa tidak ditemukan di blockchain aktif.',
+            details: { listingId },
+          },
+        });
+      }
+      return {
+        listingId,
+        seller: ethers.getAddress(seller),
+        assetId: Number(listing[1]),
+        totalAmount: Number(listing[2]),
+        soldAmount: Number(listing[3]),
+        floorPricePerTonIdr: Number(listing[4]),
+        marketPricePerTonIdr: Number(listing[5]),
+        kthConfirmedBy: ethers.getAddress(String(listing[9])),
+        status: Number(listing[12]),
+      };
+    } catch (error: unknown) {
+      if (error instanceof BadRequestException) throw error;
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error reading Bursa listing ${listingId}:`, reason);
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BURSA_CHAIN_UNAVAILABLE',
+          message: 'Status listing Bursa di blockchain tidak dapat dibaca.',
+          details: { listingId, reason },
+        },
+      });
+    }
+  }
+
   async purchaseBursaListing(
     listingId: number,
     buyer: string,
@@ -649,7 +816,7 @@ export class BlockchainService implements OnModuleInit {
         validBuyer,
         validAmount,
         validMaxCost,
-        { gasPrice: 0 },
+        await this.getWriteOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -665,9 +832,10 @@ export class BlockchainService implements OnModuleInit {
     const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
 
     try {
-      const tx = await contract.cancelBursaListing(validListingId, {
-        gasPrice: 0,
-      });
+      const tx = await contract.cancelBursaListing(
+        validListingId,
+        await this.getWriteOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return receipt.hash;
@@ -930,6 +1098,10 @@ export class BlockchainService implements OnModuleInit {
     rootHash: string,
   ): Promise<{ txHash: string; reportId: number }> {
     const contract = this.ensureRegistry();
+    await this.assertWriteTarget(
+      process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS,
+      'EmissionReportRegistry',
+    );
     let validReporter: string;
     try {
       validReporter = ethers.getAddress(reporter);
@@ -940,9 +1112,12 @@ export class BlockchainService implements OnModuleInit {
     }
 
     try {
-      const tx = await contract.submitReportFor(validReporter, year, rootHash, {
-        gasPrice: 0,
-      });
+      const tx = await contract.submitReportFor(
+        validReporter,
+        year,
+        rootHash,
+        await this.getWriteOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
 
@@ -982,6 +1157,10 @@ export class BlockchainService implements OnModuleInit {
     notes: string,
   ): Promise<{ txHash: string }> {
     const contract = this.ensureRegistry();
+    await this.assertWriteTarget(
+      process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS,
+      'EmissionReportRegistry',
+    );
     if (!Number.isInteger(reportId) || reportId <= 0) {
       throw new InternalServerErrorException('Invalid blockchain report ID');
     }
@@ -989,9 +1168,12 @@ export class BlockchainService implements OnModuleInit {
     const status = decision === 'approve' ? 2 : 3;
 
     try {
-      const tx = await contract.auditReport(reportId, status, notes, {
-        gasPrice: 0,
-      });
+      const tx = await contract.auditReport(
+        reportId,
+        status,
+        notes,
+        await this.getWriteOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return { txHash: receipt.hash };
@@ -1008,6 +1190,53 @@ export class BlockchainService implements OnModuleInit {
     }
   }
 
+  async assertEmissionReportAuditable(
+    reportId: number,
+    reporter: string,
+    year: number,
+    rootHash: string,
+  ): Promise<void> {
+    const contract = this.ensureRegistry();
+    await this.assertWriteTarget(
+      process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS,
+      'EmissionReportRegistry',
+    );
+
+    const validReporter = this.normalizeAddress(reporter, 'Reporter wallet');
+    const chainReport = await contract.reports(reportId);
+    const actualReporter = String(chainReport[0]);
+    const actualYear = Number(chainReport[1]);
+    const actualRoot = String(chainReport[2]);
+    const actualStatus = Number(chainReport[3]);
+    const matches =
+      ethers.isAddress(actualReporter) &&
+      ethers.getAddress(actualReporter) === validReporter &&
+      actualYear === year &&
+      actualRoot.toLowerCase() === rootHash.toLowerCase() &&
+      actualStatus === 1;
+
+    if (!matches) {
+      throw new ConflictException({
+        success: false,
+        error: {
+          code: 'CHAIN_STATE_MISMATCH',
+          message:
+            'Emission report blockchain state does not match the submitted database report.',
+          details: {
+            reportId,
+            expected: { reporter: validReporter, year, rootHash, status: 1 },
+            actual: {
+              reporter: actualReporter,
+              year: actualYear,
+              rootHash: actualRoot,
+              status: actualStatus,
+            },
+          },
+        },
+      });
+    }
+  }
+
   async anchorPtbaeApplication(
     applicationId: string,
     version: number,
@@ -1021,6 +1250,7 @@ export class BlockchainService implements OnModuleInit {
   }> {
     const contract = this.ensureRegistry();
     const contractAddress = process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
+    await this.assertWriteTarget(contractAddress, 'EmissionReportRegistry');
     if (!contractAddress) {
       throw new InternalServerErrorException(
         'Emission registry contract address is not configured',
@@ -1046,7 +1276,7 @@ export class BlockchainService implements OnModuleInit {
         version,
         rootHash,
         anchorType,
-        { gasPrice: 0 },
+        await this.getWriteOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');

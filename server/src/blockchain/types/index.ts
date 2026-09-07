@@ -1,5 +1,6 @@
 export type {
   BlockchainBursaListingResult,
+  BlockchainBursaListingState,
   BlockchainBursaQuote,
   BlockchainBursaRevenueRecipients,
   BlockchainEvent,

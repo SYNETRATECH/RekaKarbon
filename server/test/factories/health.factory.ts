@@ -15,9 +15,9 @@ export function createMockSystemHealth(
       database: { status: 'connected', latencyMs: 2.1 },
       blockchain: {
         status: 'synced',
-        network: 'Hyperledger Besu (IBFT 2.0)',
+        network: 'Hyperledger Besu / EVM Private Network',
         latestBlock: 12480,
-        chainId: 1337,
+        chainId: 1338,
       },
       storage: { status: 'operational' },
     },

@@ -1,132 +1,349 @@
-name: Deploy Blockchain Smart Contracts & Hyperledger Besu
+name: Deploy QBFT Blockchain
 
 on:
-  workflow_run:
-    workflows: ['Pull Request Verification']
-    types:
-      - completed
-    branches: ['main']
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target GitHub Environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+      deploy_infrastructure:
+        description: 'Update persistent QBFT Compose runtime'
+        required: true
+        type: boolean
+        default: true
+      deploy_contracts:
+        description: 'Run explicit smart-contract deployment/configuration'
+        required: true
+        type: boolean
+        default: false
+      contract_mode:
+        description: 'Contract operation when deploy_contracts is enabled'
+        required: true
+        type: choice
+        options:
+          - verify-existing
+          - configure-existing
+          - deploy-new
+        default: verify-existing
+      confirm_deploy_new:
+        description: 'Explicit confirmation before deploy-new when a manifest exists'
+        required: true
+        type: boolean
+        default: false
+      expected_chain_id:
+        description: 'Expected QBFT chain ID'
+        required: true
+        type: string
+        default: '1338'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rekakarbon-blockchain-${{ inputs.environment }}
+  cancel-in-progress: false
 
 jobs:
-  deploy-blockchain:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+  validate:
+    name: Validate QBFT release
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
-      - name: 📥 Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔐 Connect to Tailscale Network
-        uses: tailscale/github-action@v2
-        with:
-          authkey: ${{ secrets.BLOCKCHAIN_TS_AUTHKEY }}
-          tags: tag:ci
-
-      - name: 🛠️ Setup pnpm
+      - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
           version: 11.22.0
 
-      - name: ⚡ Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: 24.15.0
           cache: pnpm
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🧹 Clean up heavy local directories
-        run: rm -rf blockchain/node_modules blockchain/artifacts blockchain/cache blockchain/typechain-types
+      - name: Validate dispatch inputs
+        if: ${{ (inputs.deploy_contracts == true && inputs.deploy_infrastructure != true) || (inputs.confirm_deploy_new == true && (inputs.contract_mode != 'deploy-new' || inputs.deploy_contracts != true)) }}
+        run: |
+          echo 'Input workflow tidak konsisten: deploy_contracts membutuhkan deploy_infrastructure=true, dan confirm_deploy_new hanya boleh dipakai bersama contract_mode=deploy-new.'
+          exit 1
 
-      - name: 🧹 Clean up old blockchain folder on Server
-        uses: appleboy/ssh-action@master
+      - name: Typecheck blockchain package
+        run: pnpm blockchain:typecheck
+
+      - name: Compile smart contracts
+        run: pnpm blockchain:compile
+
+      - name: Run smart-contract tests
+        run: pnpm blockchain:test
+
+      - name: Validate QBFT Compose definition
         env:
-          SERVER_PASSWORD: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-        with:
-          host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
-          username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
-          password: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-          envs: SERVER_PASSWORD
-          script: |
-            echo "$SERVER_PASSWORD" | sudo -S rm -rf ~/VM_BLOCKHAIN/blockchain
+          QBFT_SHARED_DIR: /opt/rekakarbon/qbft/shared/network/generated
+          BOOTNODE_ENODE: enode://0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000@172.30.0.10:30303
+        run: docker compose -f blockchain/docker-compose.qbft.yml config --quiet
 
-      - name: 🚚 Transfer Files via SCP
+      - name: Reject private keys from release source
+        run: |
+          if rg -n --hidden --glob '!*.lock' --glob '!blockchain/AGENTS.md' \
+            'PRIVATE_KEY\s*=\s*0x[0-9a-fA-F]{64}|node-private-key-file=.*0x[0-9a-fA-F]{64}' \
+            blockchain; then
+            echo 'Private-key-shaped literal found in blockchain source.'
+            exit 1
+          fi
+
+  package:
+    name: Package QBFT release
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      release_id: ${{ steps.release.outputs.release_id }}
+      archive_name: ${{ steps.release.outputs.archive_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create release archive
+        id: release
+        run: |
+          RELEASE_ID="$(date -u +'%Y%m%d-%H%M%S')-${GITHUB_SHA::7}"
+          ARCHIVE_NAME="rekakarbon-qbft-${RELEASE_ID}.tar.gz"
+          mkdir -p "release/blockchain" "release/contracts"
+
+          cp package.json pnpm-lock.yaml pnpm-workspace.yaml release/
+          cp blockchain/package.json blockchain/hardhat.config.ts blockchain/tsconfig.json release/blockchain/
+          cp blockchain/docker-compose.qbft.yml release/blockchain/
+          cp -r blockchain/contracts blockchain/scripts release/blockchain/
+
+          tar -czf "$ARCHIVE_NAME" -C release .
+          echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
+          echo "archive_name=$ARCHIVE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: qbft-release-${{ steps.release.outputs.release_id }}
+          path: ${{ steps.release.outputs.archive_name }}
+          retention-days: 7
+
+  deploy:
+    name: Deploy persistent QBFT runtime
+    needs: package
+    if: ${{ inputs.deploy_infrastructure == true }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+    env:
+      RELEASE_ID: ${{ needs.package.outputs.release_id }}
+      ARCHIVE_NAME: ${{ needs.package.outputs.archive_name }}
+      EXPECTED_CHAIN_ID: ${{ inputs.expected_chain_id }}
+      DEPLOY_CONTRACTS: ${{ inputs.deploy_contracts }}
+      CONTRACT_MODE: ${{ inputs.contract_mode }}
+      CONFIRM_DEPLOY_NEW: ${{ inputs.confirm_deploy_new }}
+    steps:
+      - name: Download release archive
+        uses: actions/download-artifact@v4
+        with:
+          name: qbft-release-${{ needs.package.outputs.release_id }}
+
+      - name: Validate blockchain deployment secrets
+        env:
+          BLOCKCHAIN_TS_AUTHKEY: ${{ secrets.BLOCKCHAIN_TS_AUTHKEY }}
+          BLOCKCHAIN_SSH_HOST: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
+          BLOCKCHAIN_SSH_USERNAME: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
+          BLOCKCHAIN_SSH_PASSWORD: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
+          BLOCKCHAIN_PROJECT_DIR: ${{ secrets.BLOCKCHAIN_PROJECT_DIR }}
+        run: |
+          test -n "$BLOCKCHAIN_TS_AUTHKEY" || { echo 'BLOCKCHAIN_TS_AUTHKEY belum diatur.'; exit 1; }
+          test -n "$BLOCKCHAIN_SSH_HOST" || { echo 'BLOCKCHAIN_SSH_HOST belum diatur.'; exit 1; }
+          test -n "$BLOCKCHAIN_SSH_USERNAME" || { echo 'BLOCKCHAIN_SSH_USERNAME belum diatur.'; exit 1; }
+          test -n "$BLOCKCHAIN_SSH_PASSWORD" || { echo 'BLOCKCHAIN_SSH_PASSWORD belum diatur.'; exit 1; }
+          test -n "$BLOCKCHAIN_PROJECT_DIR" || { echo 'BLOCKCHAIN_PROJECT_DIR belum diatur.'; exit 1; }
+
+      - name: Connect to Tailscale network
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.BLOCKCHAIN_TS_AUTHKEY }}
+          tags: tag:ci
+          ping: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
+
+      - name: Upload release archive to server
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
           username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
           password: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-          source: 'blockchain'
-          target: '~/VM_BLOCKHAIN'
+          port: 22
+          source: ${{ needs.package.outputs.archive_name }}
+          target: /tmp
 
-      - name: 🚀 Execute Deployment on Server
-        uses: appleboy/ssh-action@master
+      - name: Activate QBFT release and run health checks
+        uses: appleboy/ssh-action@v1.2.5
         env:
-          SERVER_PASSWORD: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-          PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
+          BLOCKCHAIN_PROJECT_DIR: ${{ secrets.BLOCKCHAIN_PROJECT_DIR }}
+          RELEASE_ID: ${{ env.RELEASE_ID }}
+          ARCHIVE_NAME: ${{ env.ARCHIVE_NAME }}
+          EXPECTED_CHAIN_ID: ${{ env.EXPECTED_CHAIN_ID }}
+          DEPLOY_CONTRACTS: ${{ env.DEPLOY_CONTRACTS }}
+          CONTRACT_MODE: ${{ env.CONTRACT_MODE }}
+          CONFIRM_DEPLOY_NEW: ${{ env.CONFIRM_DEPLOY_NEW }}
+          DEPLOYER_PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
+          EXISTING_CARBON_TOKEN_ADDRESS: ${{ secrets.BLOCKCHAIN_CARBON_TOKEN_CONTRACT_ADDRESS }}
+          EXISTING_REGISTRY_ADDRESS: ${{ secrets.BLOCKCHAIN_EMISSION_REGISTRY_CONTRACT_ADDRESS }}
         with:
           host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
           username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
           password: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-          envs: SERVER_PASSWORD,PRIVATE_KEY
+          port: 22
+          envs: BLOCKCHAIN_PROJECT_DIR,RELEASE_ID,ARCHIVE_NAME,EXPECTED_CHAIN_ID,DEPLOY_CONTRACTS,CONTRACT_MODE,CONFIRM_DEPLOY_NEW,DEPLOYER_PRIVATE_KEY,EXISTING_CARBON_TOKEN_ADDRESS,EXISTING_REGISTRY_ADDRESS
           script: |
-            set -e
+            set -euo pipefail
 
-            echo "=== Membersihkan kontainer & data lama (jika ada) ==="
-            echo "$SERVER_PASSWORD" | sudo -S docker rm -f besu-dev-node 2>/dev/null || true
-            echo "$SERVER_PASSWORD" | sudo -S docker volume rm besu_data 2>/dev/null || true
+            : "${BLOCKCHAIN_PROJECT_DIR:?BLOCKCHAIN_PROJECT_DIR belum dikonfigurasi}"
+            : "${RELEASE_ID:?RELEASE_ID tidak tersedia}"
+            : "${EXPECTED_CHAIN_ID:?EXPECTED_CHAIN_ID tidak tersedia}"
 
-            echo "=== Menyiapkan Kunci Node (Node Key) ==="
-            echo "$SERVER_PASSWORD" | sudo -S mkdir -p ~/VM_BLOCKHAIN/besu_data
-            echo "$SERVER_PASSWORD" | sudo -S chmod 777 ~/VM_BLOCKHAIN/besu_data
-            echo "8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63" > ~/VM_BLOCKHAIN/besu_data/node_key
+            PROJECT_DIR="${BLOCKCHAIN_PROJECT_DIR/#\~/$HOME}"
+            RELEASE_DIR="$PROJECT_DIR/releases/$RELEASE_ID"
+            SHARED_DIR="$PROJECT_DIR/shared"
+            MANIFEST_DIR="$SHARED_DIR/manifests"
+            PREVIOUS_RELEASE="$(readlink -f "$PROJECT_DIR/current" 2>/dev/null || true)"
 
-            echo "=== Menjalankan Docker Hyperledger Besu ==="
-            echo "$SERVER_PASSWORD" | sudo -S docker run -d \
-              --name besu-dev-node \
-              --restart always \
-              -p 8545:8545 \
-              -p 8546:8546 \
-              -v ~/VM_BLOCKHAIN/besu_data:/opt/besu/data \
-              -v ~/VM_BLOCKHAIN/blockchain/besu-config:/config \
-              hyperledger/besu:23.4.4 \
-              --genesis-file=/config/genesis.json \
-              --node-private-key-file=/opt/besu/data/node_key \
-              --rpc-http-enabled=true \
-              --rpc-http-host=0.0.0.0 \
-              --rpc-http-cors-origins="*" \
-              --rpc-http-api=ETH,NET,WEB3,DEBUG,MINER,TXPOOL \
-              --rpc-ws-enabled=true \
-              --rpc-ws-host=0.0.0.0 \
-              --host-allowlist="*" \
-              --min-gas-price=0 \
-              --miner-enabled=true \
-              --miner-coinbase=0xfe3b557e8fb62b89f4916b721be55ceb828dbd73
+            mkdir -p "$RELEASE_DIR" "$SHARED_DIR" "$MANIFEST_DIR"
+            test -f "$SHARED_DIR/network/generated/genesis.json" || {
+              echo 'QBFT shared genesis belum diprovision. Jalankan bootstrap satu kali terlebih dahulu.'
+              exit 1
+            }
+            test -f "$SHARED_DIR/network/generated/.env" || {
+              echo 'QBFT shared .env belum diprovision. Jalankan bootstrap satu kali terlebih dahulu.'
+              exit 1
+            }
 
-            echo "=== Menunggu Node Besu siap (max 60 detik) ==="
-            for i in $(seq 1 12); do
-              if curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:8545 > /dev/null 2>&1; then
-                echo "✅ Node Besu sudah merespon pada percobaan ke-$i!"
-                break
+            tar -xzf "/tmp/$ARCHIVE_NAME" -C "$RELEASE_DIR"
+            rm -f "/tmp/$ARCHIVE_NAME"
+
+            COMPOSE_FILE="$RELEASE_DIR/blockchain/docker-compose.qbft.yml"
+            COMPOSE_ENV="$SHARED_DIR/network/generated/.env"
+            COMPOSE_PROJECT="rekakarbon-qbft"
+            ROLLBACK_ENABLED=false
+            DEPLOY_ENV_FILE=""
+
+            compose() {
+              docker compose --env-file "$COMPOSE_ENV" -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" "$@"
+            }
+
+            rollback_on_failure() {
+              local status="$?"
+              if [ -n "$DEPLOY_ENV_FILE" ]; then
+                rm -f "$DEPLOY_ENV_FILE"
               fi
-              echo "Percobaan ke-$i: Besu belum siap, menunggu 5 detik..."
-              sleep 5
-              if [ $i -eq 12 ]; then
-                echo "❌ Besu gagal menyala setelah 60 detik. Menampilkan log:"
-                echo "$SERVER_PASSWORD" | sudo -S docker logs --tail 30 besu-dev-node
-                exit 1
+              if [ "$status" -ne 0 ] && [ "$ROLLBACK_ENABLED" = true ] && [ -n "$PREVIOUS_RELEASE" ] && [ -f "$PREVIOUS_RELEASE/blockchain/docker-compose.qbft.yml" ]; then
+                echo "Health check gagal; mengembalikan release sebelumnya: $PREVIOUS_RELEASE"
+                docker compose \
+                  --env-file "$COMPOSE_ENV" \
+                  -p "$COMPOSE_PROJECT" \
+                  -f "$PREVIOUS_RELEASE/blockchain/docker-compose.qbft.yml" \
+                  up -d --remove-orphans || echo 'Rollback otomatis gagal; runtime dibiarkan untuk investigasi.' >&2
               fi
-            done
+              exit "$status"
+            }
+            trap rollback_on_failure EXIT
 
-            echo "=== Menginstall dependensi & Deploy Smart Contract ==="
-            echo "$SERVER_PASSWORD" | sudo -S docker run --rm \
-              -v ~/VM_BLOCKHAIN/blockchain:/app \
-              -w /app \
-              -e PRIVATE_KEY="$PRIVATE_KEY" \
-              --network host \
-              node:20 \
-              bash -c "npm install && npx hardhat run scripts/deploy.ts --network besu_local"
+            compose config --quiet
+            compose pull
+            ROLLBACK_ENABLED=true
+            compose up -d --remove-orphans
 
-            echo "✅ DEPLOYMENT SERVER SELESAI!"
+            rpc_call() {
+              local method="$1"
+              local params="${2:-[]}"
+              curl -fsS -X POST \
+                -H 'Content-Type: application/json' \
+                --data "{\"jsonrpc\":\"2.0\",\"method\":\"$method\",\"params\":$params,\"id\":1}" \
+                http://127.0.0.1:8545
+            }
+
+            chain_id="$(rpc_call eth_chainId | jq -r '.result')"
+            expected_chain_hex="$(printf '%x' "$EXPECTED_CHAIN_ID" | sed 's/^/0x/')"
+            test "$chain_id" = "$expected_chain_hex" || {
+              echo "Chain ID salah: $chain_id != $expected_chain_hex"
+              exit 1
+            }
+
+            block_before="$(rpc_call eth_blockNumber | jq -r '.result')"
+            validators="$(rpc_call qbft_getValidatorsByBlockNumber '["latest"]')"
+            validator_count="$(printf '%s' "$validators" | jq '.result | length')"
+            test "$validator_count" -ge 4 || {
+              echo "Validator QBFT kurang dari empat: $validator_count"
+              exit 1
+            }
+
+            sleep 5
+            block_after="$(rpc_call eth_blockNumber | jq -r '.result')"
+            test "$block_before" != "$block_after" || {
+              echo "Block tidak bertambah: $block_before -> $block_after"
+              exit 1
+            }
+
+            ln -sfn "$RELEASE_DIR" "$PROJECT_DIR/current"
+
+            if [ "$DEPLOY_CONTRACTS" = "true" ]; then
+              if [ "$CONTRACT_MODE" != "verify-existing" ]; then
+                : "${DEPLOYER_PRIVATE_KEY:?BLOCKCHAIN_PRIVATE_KEY wajib diisi untuk configure/deploy contract}"
+              fi
+              DEPLOY_ENV_FILE="$RELEASE_DIR/.deployment.env"
+              umask 077
+              {
+                printf 'BESU_RPC_URL=%s\n' 'http://127.0.0.1:8545'
+                printf 'BESU_CHAIN_ID=%s\n' "$EXPECTED_CHAIN_ID"
+                printf 'DEPLOYMENT_MODE=%s\n' "$CONTRACT_MODE"
+                printf 'DEPLOYMENT_MANIFEST_PATH=%s\n' '/manifests/deployment-info.json'
+                printf 'ALLOW_DEPLOY_NEW=%s\n' "$CONFIRM_DEPLOY_NEW"
+                if [ "$CONTRACT_MODE" != "verify-existing" ]; then
+                  printf 'PRIVATE_KEY=%s\n' "$DEPLOYER_PRIVATE_KEY"
+                fi
+                if [ "$CONTRACT_MODE" != "deploy-new" ]; then
+                  : "${EXISTING_CARBON_TOKEN_ADDRESS:?BLOCKCHAIN_CARBON_TOKEN_CONTRACT_ADDRESS wajib diisi}"
+                  : "${EXISTING_REGISTRY_ADDRESS:?BLOCKCHAIN_EMISSION_REGISTRY_CONTRACT_ADDRESS wajib diisi}"
+                  printf 'CARBON_TOKEN_CONTRACT_ADDRESS=%s\n' "$EXISTING_CARBON_TOKEN_ADDRESS"
+                  printf 'EMISSION_REGISTRY_CONTRACT_ADDRESS=%s\n' "$EXISTING_REGISTRY_ADDRESS"
+                fi
+              } > "$DEPLOY_ENV_FILE"
+
+              mkdir -p "$MANIFEST_DIR"
+              docker run --rm --network host \
+                -e HUSKY=0 \
+                --env-file "$DEPLOY_ENV_FILE" \
+                -v "$RELEASE_DIR:/app" \
+                -v "$MANIFEST_DIR:/manifests" \
+                -w /app \
+                node:24 \
+                bash -lc 'corepack enable && pnpm install --filter @rekakarbon/blockchain... --frozen-lockfile && pnpm --filter @rekakarbon/blockchain exec hardhat run scripts/deploy.ts --network besu_qbft'
+              rm -f "$DEPLOY_ENV_FILE"
+            fi
+
+            echo "QBFT deployment berhasil: chain=$chain_id blocks=$block_before->$block_after validators=$validator_count"
+            echo "Active release: $RELEASE_DIR"
+            echo "Previous release: ${PREVIOUS_RELEASE:-none}"
+
+            cd "$PROJECT_DIR/releases"
+            find . -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | tail -n +4 | cut -d' ' -f2- | xargs -r rm -rf
+
+      - name: Upload sanitized deployment diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qbft-deployment-diagnostics-${{ needs.package.outputs.release_id }}
+          path: '*.json'
+          if-no-files-found: ignore
+          retention-days: 7

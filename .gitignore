@@ -58,3 +58,8 @@ next-env.d.ts
 mosquitto/data/*
 mosquitto/log/*
 mosquitto/config/passwords
+
+# Local QBFT runtime artifacts (generated keys, node config, and database backups)
+backups/
+blockchain/networks/*/generated/
+blockchain/deployment-info-*-local.json

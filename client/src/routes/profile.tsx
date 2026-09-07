@@ -55,17 +55,6 @@ export default function ProfileRoute() {
     }
   };
 
-  const mockAddress = {
-    superadmin: '0x1a2B...F9A0',
-    admin: '0x1a2B...F9A0',
-    regulator: '0x8114...1945',
-    auditor: '0x9942...2026',
-    ministry: '0x4F5A...E2F3',
-    kth: '0x7120...0024',
-    buyer: '0x0D1E...7C8D',
-    emitter: '0x003e...Bud1',
-  }[userRole || 'emitter'];
-
   return (
     <div className="space-y-8 animate-fade-in text-left max-w-4xl">
       {/* Header */}
@@ -112,9 +101,7 @@ export default function ProfileRoute() {
                 </span>
                 <div className="flex items-center gap-2 text-slate-900 mt-0.5">
                   <Mail className="w-3.5 h-3.5 text-slate-400" />
-                  <span>
-                    {userProfile?.name.toLowerCase().replace(/\s+/g, '')}@rekakarbon.go.id
-                  </span>
+                  <span>{userProfile?.email || '-'}</span>
                 </div>
               </div>
             </div>
@@ -135,7 +122,7 @@ export default function ProfileRoute() {
                 </span>
                 <div className="flex items-center gap-2 text-slate-900 mt-0.5 font-mono">
                   <Wallet className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{mockAddress}</span>
+                  <span className="break-all">{userProfile?.walletAddress || '-'}</span>
                 </div>
               </div>
             </div>

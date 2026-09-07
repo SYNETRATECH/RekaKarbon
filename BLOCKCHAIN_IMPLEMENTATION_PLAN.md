@@ -1,5 +1,9 @@
 # 🔗 Riset Lengkap: Modul Blockchain RekaKarbon
 
+> **Superseded:** dokumen ini menggambarkan konfigurasi Clique/chain ID lama. Rencana aktif
+> untuk migrasi dan deployment server QBFT ada di
+> [`qbft_server_deployment_implementation_plan.md`](qbft_server_deployment_implementation_plan.md).
+
 > [!NOTE]
 > Dokumen ini merangkum **seluruh struktur, workflow, dan code** pada folder `blockchain/` agar menjadi referensi saat mulai pengerjaan.
 
