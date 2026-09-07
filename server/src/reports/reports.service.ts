@@ -412,28 +412,6 @@ export class ReportsService {
         auditResult =
           await this.mlAuditEngineService.evaluateEmissionReport(auditDto);
 
-        if (auditResult && auditResult.isAnomaly) {
-          await this.prisma.auditAnomaly.create({
-            data: {
-              companyId: company.id,
-              facilityName: `${company.name} - Fasilitas Utama`,
-              anomalyType: 'CEMS_ENERGY_CORRELATION',
-              severity: auditResult.anomalyScore > 0.8 ? 'CRITICAL' : 'HIGH',
-              anomalyScore: new Prisma.Decimal(auditResult.anomalyScore),
-              reportedEmissionTco2e: new Prisma.Decimal(totalEmissions),
-              expectedEmissionTco2e: new Prisma.Decimal(
-                auditResult.expectedEmissionTco2e,
-              ),
-              divergencePercent: new Prisma.Decimal(
-                auditResult.divergencePercent,
-              ),
-              detectedDate: new Date(),
-              auditStatus: 'PENDING_REVIEW',
-              verifierNotes: auditResult.explanation,
-            },
-          });
-        }
-
         if (auditResult) {
           await this.prisma.emissionReport.update({
             where: { id: report.id },
@@ -616,28 +594,6 @@ export class ReportsService {
 
         auditResult =
           await this.mlAuditEngineService.evaluateEmissionReport(auditDto);
-
-        if (auditResult && auditResult.isAnomaly) {
-          await this.prisma.auditAnomaly.create({
-            data: {
-              companyId: company.id,
-              facilityName: `${company.name} - Fasilitas Utama`,
-              anomalyType: 'CEMS_ENERGY_CORRELATION',
-              severity: auditResult.anomalyScore > 0.8 ? 'CRITICAL' : 'HIGH',
-              anomalyScore: new Prisma.Decimal(auditResult.anomalyScore),
-              reportedEmissionTco2e: new Prisma.Decimal(calculatedTotal),
-              expectedEmissionTco2e: new Prisma.Decimal(
-                auditResult.expectedEmissionTco2e,
-              ),
-              divergencePercent: new Prisma.Decimal(
-                auditResult.divergencePercent,
-              ),
-              detectedDate: new Date(),
-              auditStatus: 'PENDING_REVIEW',
-              verifierNotes: auditResult.explanation,
-            },
-          });
-        }
 
         if (auditResult) {
           await this.prisma.emissionReport.update({

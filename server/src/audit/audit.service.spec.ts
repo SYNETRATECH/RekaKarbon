@@ -14,9 +14,9 @@ describe('AuditService', () => {
     droneMission: {
       findMany: jest.Mock;
     };
-    auditAnomaly: {
+    emissionReport: {
       findMany: jest.Mock;
-      count: jest.Mock;
+      findUnique: jest.Mock;
       update: jest.Mock;
     };
     company: {
@@ -41,9 +41,9 @@ describe('AuditService', () => {
       droneMission: {
         findMany: jest.fn(),
       },
-      auditAnomaly: {
+      emissionReport: {
         findMany: jest.fn(),
-        count: jest.fn(),
+        findUnique: jest.fn(),
         update: jest.fn(),
       },
       company: {
@@ -194,6 +194,77 @@ describe('AuditService', () => {
       // No UI-formatted strings
       const scanObj = scans[0] as unknown as Record<string, unknown>;
       expect(scanObj.resolutionGSD).toBeUndefined();
+    });
+  });
+
+  describe('getAiAnomalyLogs', () => {
+    it('should map emission reports with auditResult into AiAnomalyLog', async () => {
+      prisma.emissionReport.findMany.mockResolvedValue([
+        {
+          id: 'rep-1',
+          companyId: 'comp-1',
+          year: 2026,
+          sector: 'manufaktur',
+          totalEmissionsTco2e: 1200,
+          status: 'SUBMITTED',
+          company: { name: 'PT Semen Maju', sector: 'Semen' },
+          auditResult: {
+            isAnomaly: true,
+            verdict: 'REJECT_ANOMALY',
+            anomalyScore: 0.92,
+            trustScore: 45,
+            divergencePercent: 48.5,
+            expectedEmissionTco2e: 2300,
+            scoreDjp: 55,
+            scoreBbm: 40,
+            scoreCems: 40,
+            explanation: 'Divergensi fisik tinggi',
+          },
+          calculationData: null,
+        },
+      ]);
+
+      const logs = await service.getAiAnomalyLogs();
+      expect(logs).toHaveLength(1);
+      expect(logs[0].id).toBe('rep-1');
+      expect(logs[0].company).toBe('PT Semen Maju');
+      expect(logs[0].anomalyScore).toBe(0.92);
+      expect(logs[0].priority).toBe('critical');
+      expect(logs[0].eFakturMatch).toBe(false);
+      expect(logs[0].auditStatus).toBe('pending');
+    });
+  });
+
+  describe('getAnomalySummary', () => {
+    it('should aggregate anomaly counts and divergence accurately', async () => {
+      prisma.emissionReport.findMany.mockResolvedValue([
+        {
+          companyId: 'comp-1',
+          auditResult: {
+            isAnomaly: true,
+            divergencePercent: 40,
+            scoreDjp: 60,
+          },
+        },
+        {
+          companyId: 'comp-2',
+          auditResult: {
+            isAnomaly: false,
+            divergencePercent: 10,
+            scoreDjp: 95,
+          },
+        },
+      ]);
+      prisma.company.findMany.mockResolvedValue([
+        { id: 'comp-1' },
+        { id: 'comp-2' },
+      ]);
+
+      const summary = await service.getAnomalySummary();
+      expect(summary.emitenTerdeteksiAnomali).toBe(1);
+      expect(summary.totalEmitenAktif).toBe(2);
+      expect(summary.rataDeviasiEmisi).toBe(25);
+      expect(summary.eFakturTidakCocok).toBe(1);
     });
   });
 });

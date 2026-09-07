@@ -4,5 +4,5 @@
     "module": "esnext",
     "moduleResolution": "bundler"
   },
-  "include": ["src/**/*", "test/**/*"]
+  "include": ["src/**/*", "test/**/*", "prisma/**/*", "prisma.config.ts"]
 }

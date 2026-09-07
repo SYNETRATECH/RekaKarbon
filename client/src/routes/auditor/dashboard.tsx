@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLoaderData, useRevalidator } from 'react-router';
+import { Link, useLoaderData, useRevalidator } from 'react-router';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertTriangle,
@@ -8,8 +8,8 @@ import {
   SlidersHorizontal,
   RotateCw,
   Activity,
-  CheckCircle2,
   ShieldCheck,
+  ExternalLink,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import {
@@ -60,7 +60,11 @@ export function meta() {
 
 export default function AuditorDashboard() {
   const { revalidate, state: revalidateState } = useRevalidator();
-  const { aiAnomalyLogs: initialLogs, anomalySummary } = useLoaderData<typeof clientLoader>();
+  const {
+    aiAnomalyLogs: initialLogs,
+    anomalySummary,
+    energyCorrelationData,
+  } = useLoaderData<typeof clientLoader>();
 
   const [aiAnomalyLogs, setAiAnomalyLogs] = useState<any[]>(initialLogs);
   const [selectedAnomalyId, setSelectedAnomalyId] = useState<string | null>(
@@ -69,7 +73,6 @@ export default function AuditorDashboard() {
 
   const [filterPriority, setFilterPriority] = useState<'ALL' | 'KRITIS' | 'TINGGI'>('ALL');
   const [isVerifying, setIsVerifying] = useState(false);
-  const [showNotification, setShowNotification] = useState(false);
 
   // Summary Metrics from loader
   const summary = anomalySummary;
@@ -221,10 +224,10 @@ export default function AuditorDashboard() {
                 <TableHead className="py-3 px-3">Nama Pabrik</TableHead>
                 <TableHead className="py-3 px-3">Sektor</TableHead>
                 <TableHead className="py-3 px-3 text-center">Skor Anomali</TableHead>
-                <TableHead className="py-3 px-3 text-right">Δ Listrik</TableHead>
-                <TableHead className="py-3 px-3 text-right">Δ Batubara</TableHead>
-                <TableHead className="py-3 px-3 text-right">Δ Gas</TableHead>
-                <TableHead className="py-3 px-3 text-center">e-Faktur</TableHead>
+                <TableHead className="py-3 px-3 text-right">Divergensi Stoikiometri</TableHead>
+                <TableHead className="py-3 px-3 text-center">e-Faktur DJP</TableHead>
+                <TableHead className="py-3 px-3 text-center">Kepercayaan AI</TableHead>
+                <TableHead className="py-3 px-3 text-center">Status Audit</TableHead>
                 <TableHead className="py-3 px-3 text-center">Prioritas</TableHead>
               </TableRow>
             </TableHeader>
@@ -238,6 +241,18 @@ export default function AuditorDashboard() {
                 } else if (log.anomalyScore < 0.9) {
                   scoreBadgeVariant = 'warning';
                 }
+
+                const divPct =
+                  typeof log.divergencePercent === 'number'
+                    ? log.divergencePercent
+                    : typeof log.deltaCoal === 'number'
+                      ? log.deltaCoal
+                      : 0;
+
+                const trust =
+                  log.trustScore ??
+                  log.auditResult?.trustScore ??
+                  100 - Math.round(log.anomalyScore * 100);
 
                 return (
                   <TableRow
@@ -254,7 +269,17 @@ export default function AuditorDashboard() {
 
                     {/* Nama Pabrik & ID */}
                     <TableCell className="py-3.5 px-3">
-                      <p className="font-black text-slate-900 leading-tight">{log.company}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-black text-slate-900 leading-tight">{log.company}</p>
+                        {log.year && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0 font-bold border-slate-300 text-slate-600"
+                          >
+                            FY {log.year}
+                          </Badge>
+                        )}
+                      </div>
                       <span className="font-mono text-[10px] text-slate-400 font-semibold block mt-0.5">
                         {log.id}
                       </span>
@@ -275,21 +300,9 @@ export default function AuditorDashboard() {
                       </Badge>
                     </TableCell>
 
-                    {/* Δ Listrik */}
+                    {/* Divergensi Stoikiometri */}
                     <TableCell className="py-3.5 px-3 text-right font-black text-status-danger-fg">
-                      {typeof log.deltaElectricity === 'number'
-                        ? `+${log.deltaElectricity}%`
-                        : log.deltaElectricity}
-                    </TableCell>
-
-                    {/* Δ Batubara */}
-                    <TableCell className="py-3.5 px-3 text-right font-black text-status-danger-fg">
-                      {typeof log.deltaCoal === 'number' ? `+${log.deltaCoal}%` : log.deltaCoal}
-                    </TableCell>
-
-                    {/* Δ Gas */}
-                    <TableCell className="py-3.5 px-3 text-right font-black text-status-danger-fg">
-                      {typeof log.deltaGas === 'number' ? `+${log.deltaGas}%` : log.deltaGas}
+                      {divPct > 0 ? `+${divPct.toFixed(1)}%` : `${divPct.toFixed(1)}%`}
                     </TableCell>
 
                     {/* e-Faktur */}
@@ -303,6 +316,31 @@ export default function AuditorDashboard() {
                           ✕ Tidak
                         </Badge>
                       )}
+                    </TableCell>
+
+                    {/* Kepercayaan AI */}
+                    <TableCell className="py-3.5 px-3 text-center font-mono font-bold text-slate-700 text-xs">
+                      {Math.round(trust)}%
+                    </TableCell>
+
+                    {/* Status Audit */}
+                    <TableCell className="py-3.5 px-3 text-center">
+                      <Badge
+                        variant={
+                          log.auditStatus === 'verified' || log.auditStatus === 'Verified'
+                            ? 'mint'
+                            : log.auditStatus === 'rejected'
+                              ? 'destructive'
+                              : 'outline'
+                        }
+                        className="text-[10px] font-black"
+                      >
+                        {log.auditStatus === 'verified' || log.auditStatus === 'Verified'
+                          ? '✓ Disetujui'
+                          : log.auditStatus === 'rejected'
+                            ? 'Revisi'
+                            : 'Perlu Audit'}
+                      </Badge>
                     </TableCell>
 
                     {/* Prioritas */}
@@ -327,7 +365,10 @@ export default function AuditorDashboard() {
           </Table>
 
           <div className="pt-2 flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100">
-            <span>Menampilkan {filteredLogs.length} dari 47 entitas emiten</span>
+            <span>
+              Menampilkan {filteredLogs.length} dari{' '}
+              {summary?.totalEmitenAktif ?? aiAnomalyLogs.length} entitas emiten
+            </span>
             <span className="font-semibold text-slate-500">Threshold Model: s(x,n) &ge; 0.80</span>
           </div>
         </Card>
@@ -349,12 +390,20 @@ export default function AuditorDashboard() {
             <div className="h-48 relative w-full pt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={[
-                    { name: 'Semen Nustr.', hemat: 80, deviasi: 420 },
-                    { name: 'PLTU Kalim.', hemat: 0, deviasi: 430 },
-                    { name: 'Petrokimia S.', hemat: 0, deviasi: 120 },
-                    { name: 'Baja Timur', hemat: 0, deviasi: 240 },
-                  ]}
+                  data={
+                    energyCorrelationData && energyCorrelationData.length > 0
+                      ? energyCorrelationData.map((item) => ({
+                          name: item.name.length > 12 ? item.name.slice(0, 10) + '..' : item.name,
+                          dilaporkan: item.reported,
+                          estimasi: item.estimated,
+                        }))
+                      : [
+                          { name: 'Semen Nustr.', dilaporkan: 80, estimasi: 420 },
+                          { name: 'PLTU Kalim.', dilaporkan: 150, estimasi: 430 },
+                          { name: 'Petrokimia', dilaporkan: 90, estimasi: 120 },
+                          { name: 'Baja Timur', dilaporkan: 110, estimasi: 240 },
+                        ]
+                  }
                   margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
@@ -362,10 +411,15 @@ export default function AuditorDashboard() {
                   <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="hemat" name="Penghematan" fill="#00C48C" radius={[3, 3, 0, 0]} />
                   <Bar
-                    dataKey="deviasi"
-                    name="Deviasi Excess"
+                    dataKey="dilaporkan"
+                    name="Emisi Dilaporkan (tCO2e)"
+                    fill="#00C48C"
+                    radius={[3, 3, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="estimasi"
+                    name="Estimasi AI (tCO2e)"
                     fill="#B91C1C"
                     radius={[3, 3, 0, 0]}
                   />
@@ -403,12 +457,24 @@ export default function AuditorDashboard() {
                     </span>
                   </div>
                   <Badge
-                    variant={selectedLog.auditStatus === 'Verified' ? 'mint' : 'destructive'}
+                    variant={
+                      selectedLog.auditStatus === 'Verified' ||
+                      selectedLog.auditStatus === 'verified' ||
+                      selectedLog.auditStatus === 'approved'
+                        ? 'mint'
+                        : selectedLog.auditStatus === 'rejected'
+                          ? 'destructive'
+                          : 'outline'
+                    }
                     className="text-[10px] font-black px-2.5 py-0.5"
                   >
-                    {selectedLog.auditStatus === 'Verified'
+                    {selectedLog.auditStatus === 'Verified' ||
+                    selectedLog.auditStatus === 'verified' ||
+                    selectedLog.auditStatus === 'approved'
                       ? '✓ Terverifikasi'
-                      : 'Status: Perlu Audit'}
+                      : selectedLog.auditStatus === 'rejected'
+                        ? 'Perlu Revisi'
+                        : 'Status: Perlu Audit'}
                   </Badge>
                 </div>
 
@@ -427,16 +493,49 @@ export default function AuditorDashboard() {
                       {selectedLog.eFakturMatch ? 'Sesuai Utilitas' : 'Divergensi Terdeteksi'}
                     </span>
                   </div>
+                  {selectedLog.auditResult?.trustScore !== undefined && (
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60">
+                      <span className="text-emerald-800 font-bold">Kepercayaan AI:</span>
+                      <span className="font-mono font-black text-emerald-700">
+                        {selectedLog.auditResult.trustScore}%
+                      </span>
+                    </div>
+                  )}
                   <p className="text-[10.5px] text-slate-600 font-medium leading-relaxed pt-1 border-t border-slate-200">
                     {selectedLog.desc}
                   </p>
                 </div>
 
+                {selectedLog.emissionReportId ? (
+                  <Link
+                    to={`/auditor/emission-reports?reportId=${selectedLog.emissionReportId}`}
+                    className="w-full py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 transition-colors shadow-2xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-700" />
+                    Buka Pemeriksaan Laporan Lengkap (XAI)
+                  </Link>
+                ) : (
+                  <Link
+                    to="/auditor/emission-reports"
+                    className="w-full py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors shadow-2xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                    Ke Antrean Laporan Emisi
+                  </Link>
+                )}
+
                 <Button
                   onClick={() => handleVerify(selectedLog.id)}
-                  disabled={isVerifying || selectedLog.auditStatus === 'Verified'}
+                  disabled={
+                    isVerifying ||
+                    selectedLog.auditStatus === 'Verified' ||
+                    selectedLog.auditStatus === 'verified' ||
+                    selectedLog.auditStatus === 'approved'
+                  }
                   className={`w-full py-2.5 px-4 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
-                    selectedLog.auditStatus === 'Verified'
+                    selectedLog.auditStatus === 'Verified' ||
+                    selectedLog.auditStatus === 'verified' ||
+                    selectedLog.auditStatus === 'approved'
                       ? 'bg-emerald-600 text-white opacity-80 cursor-default'
                       : 'bg-primary-gradient hover:opacity-95 text-white active:scale-98'
                   }`}
@@ -444,7 +543,9 @@ export default function AuditorDashboard() {
                   <ShieldCheck className="w-4 h-4 text-[#00C48C]" />
                   {isVerifying
                     ? 'Memproses On-Chain...'
-                    : selectedLog.auditStatus === 'Verified'
+                    : selectedLog.auditStatus === 'Verified' ||
+                        selectedLog.auditStatus === 'verified' ||
+                        selectedLog.auditStatus === 'approved'
                       ? 'Audit Telah Disetujui'
                       : 'Verifikasi & Terbitkan Berita Acara'}
                 </Button>

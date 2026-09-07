@@ -28,16 +28,36 @@ export const EnergyCorrelationItemSchema = z.object({
 });
 
 export const AiAnomalyPrioritySchema = z.enum(['critical', 'high', 'medium', 'low']);
-export const AiAnomalyAuditStatusSchema = z.enum(['pending', 'verified', 'rejected']);
+export const AiAnomalyAuditStatusSchema = z.enum([
+  'pending',
+  'verified',
+  'rejected',
+  'submitted',
+  'approved',
+  'revision_required',
+]);
 
 export const AiAnomalyLogSchema = z.object({
   id: UuidSchema,
   company: z.string().min(1),
+  companyId: UuidSchema.optional(),
   sector: z.string().min(1),
+  year: z.number().int().optional(),
+  emissionReportId: UuidSchema.optional(),
+  auditResult: z
+    .lazy(() => MlAuditResultSchema)
+    .nullable()
+    .optional(),
   anomalyScore: PercentageSchema,
-  deltaElectricity: z.number(),
-  deltaCoal: z.number(),
-  deltaGas: z.number(),
+  trustScore: z.number().optional(),
+  divergencePercent: z.number().optional(),
+  scoreDjp: z.number().optional(),
+  scoreBbm: z.number().optional(),
+  scoreCems: z.number().optional(),
+  isAnomaly: z.boolean().optional(),
+  deltaElectricity: z.number().optional(),
+  deltaCoal: z.number().optional(),
+  deltaGas: z.number().optional(),
   eFakturMatch: z.boolean(),
   priority: AiAnomalyPrioritySchema,
   reportedEmission: CarbonVolumeSchema,

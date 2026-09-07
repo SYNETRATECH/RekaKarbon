@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLoaderData } from 'react-router';
+import { useLoaderData, useSearchParams } from 'react-router';
 import {
   CheckCircle2,
   ExternalLink,
@@ -100,9 +100,29 @@ export default function AuditorEmissionReportsRoute() {
     }
   };
 
+  const [searchParams] = useSearchParams();
+  const reportIdParam = searchParams.get('reportId');
+
   useEffect(() => {
-    void loadQueue();
-  }, []);
+    const init = async () => {
+      setIsLoading(true);
+      try {
+        const data = await emissionReportAuditRepository.getQueue();
+        setReports(data);
+        if (reportIdParam) {
+          const target = data.find((r) => r.id === reportIdParam);
+          if (target) {
+            const detail = await emissionReportAuditRepository.getDetail(target.id);
+            setSelected(detail);
+            setNotes(detail.auditorNotes ?? '');
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void init();
+  }, [reportIdParam]);
 
   const submitDecision = async () => {
     if (!selected || !decision || isSaving) return;

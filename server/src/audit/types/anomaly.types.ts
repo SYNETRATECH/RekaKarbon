@@ -1,3 +1,5 @@
+import type { MlAuditResult } from './ml-audit.types';
+
 export interface AnomalySummary {
   emitenTerdeteksiAnomali: number;
   totalEmitenAktif: number;
@@ -16,15 +18,31 @@ export interface EnergyCorrelationItem {
 export interface AiAnomalyLog {
   id: string;
   company: string;
+  companyId?: string;
   sector: string;
+  year?: number;
+  emissionReportId?: string;
+  auditResult?: MlAuditResult | null;
   anomalyScore: number;
-  deltaElectricity: number;
-  deltaCoal: number;
-  deltaGas: number;
+  trustScore?: number;
+  divergencePercent?: number;
+  scoreDjp?: number;
+  scoreBbm?: number;
+  scoreCems?: number;
+  isAnomaly?: boolean;
+  deltaElectricity?: number;
+  deltaCoal?: number;
+  deltaGas?: number;
   eFakturMatch: boolean;
   priority: 'critical' | 'high' | 'medium' | 'low';
   reportedEmission: number;
   estimatedEmission: number;
   desc: string;
-  auditStatus: 'pending' | 'verified' | 'rejected';
+  auditStatus:
+    | 'pending'
+    | 'verified'
+    | 'rejected'
+    | 'submitted'
+    | 'approved'
+    | 'revision_required';
 }
