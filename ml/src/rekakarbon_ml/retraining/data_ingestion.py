@@ -24,7 +24,7 @@ import pandas as pd
 from pydantic import BaseModel, Field, field_validator
 from sklearn.model_selection import train_test_split
 
-from ..config import get_retraining_config
+from ..config import DEFAULT_RANDOM_STATE, get_retraining_config
 from ..data.validator import validate_raw_dataframe
 from .types import IngestionResult
 
@@ -46,7 +46,7 @@ class IngestionConfig:
         default_factory=lambda: get_retraining_config().min_real_records_to_trigger
     )
     output_merged_path: str = "data/production/merged_train.csv"
-    random_state: int = 20260830
+    random_state: int = field(default_factory=lambda: DEFAULT_RANDOM_STATE)
 
 
 class DataIngestionPipeline:

@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from rekakarbon_ml.config import DEFAULT_RANDOM_STATE
 from rekakarbon_ml.data.generator import EmissionDataGenerator
 from rekakarbon_ml.monitoring.drift_detector import (
     MIN_PRODUCTION_SAMPLES,
@@ -35,21 +36,21 @@ from rekakarbon_ml.retraining.orchestrator import RetrainingOrchestrator
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-RANDOM_STATE = 42
+RANDOM_STATE = DEFAULT_RANDOM_STATE
 
 
 @pytest.fixture(scope="module")
 def synthetic_train_df() -> pd.DataFrame:
-    """Returns a synthetic training DataFrame (300 samples)."""
+    """Returns a synthetic training DataFrame (500 samples)."""
     gen = EmissionDataGenerator(random_state=RANDOM_STATE)
-    return gen.generate_dataset(n_samples=300, anomaly_ratio=0.15)
+    return gen.generate_dataset(n_samples=500, anomaly_ratio=0.15)
 
 
 @pytest.fixture(scope="module")
 def synthetic_prod_df() -> pd.DataFrame:
-    """Returns a synthetic production DataFrame drawn from the same distribution (120 samples)."""
+    """Returns a synthetic production DataFrame drawn from the same distribution (250 samples)."""
     gen = EmissionDataGenerator(random_state=RANDOM_STATE + 1)
-    return gen.generate_dataset(n_samples=120, anomaly_ratio=0.15)
+    return gen.generate_dataset(n_samples=250, anomaly_ratio=0.15)
 
 
 @pytest.fixture(scope="module")
@@ -59,7 +60,7 @@ def shifted_prod_df() -> pd.DataFrame:
     anomaly ratio inflated to 0.75 (vs baseline 0.15), simulating severe drift.
     """
     gen = EmissionDataGenerator(random_state=RANDOM_STATE + 99)
-    return gen.generate_dataset(n_samples=150, anomaly_ratio=0.75)
+    return gen.generate_dataset(n_samples=250, anomaly_ratio=0.75)
 
 
 # ─── Test Layer 10: PSI Computation ──────────────────────────────────────────
