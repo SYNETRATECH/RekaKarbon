@@ -47,7 +47,7 @@ export const CalculationEntrySchema = z.object({
   sourceCode: z.string().min(1),
   sourceLabel: z.string().min(1),
   quantity: z.number().positive(),
-  unit: z.string().min(1),
+  unit: z.enum(['kg', 'liter', 'm3', 'kwh', 'km', 'passenger', 'room_night', 'tco2e', 'idr']),
   factorCode: z.string().min(1),
   factorSetId: z.string().min(1),
   emissionFactor: z.number().positive(),
@@ -68,11 +68,11 @@ export const CalculationEntrySchema = z.object({
     financedCategory: z.string().optional(),
     financedEntityName: z.string().optional(),
     securityInstrument: z.enum(['government_bond', 'stock', 'corporate_bond']).optional(),
-    investmentValueIDR: z.number().positive().optional(),
-    issuerDenominatorIDR: z.number().positive().optional(),
-    issuerEmissionsTCO2e: z.number().positive().optional(),
-    sovereignDebtIDR: z.number().positive().optional(),
-    sovereignEmissionsTCO2e: z.number().positive().optional(),
+    investmentValueIDR: z.number().optional(),
+    issuerDenominatorIDR: z.number().optional(),
+    issuerEmissionsTCO2e: z.number().optional(),
+    sovereignDebtIDR: z.number().optional(),
+    sovereignEmissionsTCO2e: z.number().optional(),
   }),
 });
 
@@ -121,9 +121,10 @@ export const EmissionReportSchema = z.object({
   quotaPTBAEStatus: z
     .enum(['VERIFIED', 'PENDING', 'REJECTED', 'EXPIRED', 'LEGACY', 'UNAVAILABLE'])
     .optional(),
-  quotaPTBAESourceDocument: z.string().nullable().optional(),
   method: z.enum(['UPLOAD', 'CALCULATOR']).optional(),
   sectorId: z.string().nullable().optional(),
+  calculationData: CalculationDataSchema.nullable().optional(),
+  auditResult: MlAuditResultSchema.nullable().optional(),
 });
 
 export type SectorBreakdownType = z.infer<typeof SectorBreakdownSchema>;

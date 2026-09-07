@@ -110,9 +110,14 @@ export class ReportsService {
           merkleRoot: r.merkleRoot,
           quotaPTBAETCO2e: quota.quotaTCO2e,
           quotaPTBAEStatus: quota.status,
-          quotaPTBAESourceDocument: quota.sourceDocument,
           method: r.reportMethod,
           sectorId: r.sector,
+          calculationData: r.calculationData,
+          auditResult:
+            (r.auditResult as unknown as MlAuditResult | null) ||
+            ((r.calculationData as Record<string, unknown> | null)
+              ?.auditResult as MlAuditResult | null) ||
+            null,
           sectors:
             r.reportMethod === 'CALCULATOR' && calculationData
               ? [
@@ -404,6 +409,15 @@ export class ReportsService {
             },
           });
         }
+
+        if (auditResult) {
+          await this.prisma.emissionReport.update({
+            where: { id: report.id },
+            data: {
+              auditResult: auditResult as unknown as Prisma.InputJsonObject,
+            },
+          });
+        }
       } catch (mlErr) {
         this.logger.warn(
           `ML Audit Engine evaluation non-blocking error: ${(mlErr as Error).message}`,
@@ -600,6 +614,19 @@ export class ReportsService {
               detectedDate: new Date(),
               auditStatus: 'PENDING_REVIEW',
               verifierNotes: auditResult.explanation,
+            },
+          });
+        }
+
+        if (auditResult) {
+          await this.prisma.emissionReport.update({
+            where: { id: report.id },
+            data: {
+              auditResult: auditResult as unknown as Prisma.InputJsonObject,
+              calculationData: {
+                ...normalizedCalculationData,
+                auditResult: auditResult as unknown as Prisma.InputJsonObject,
+              },
             },
           });
         }

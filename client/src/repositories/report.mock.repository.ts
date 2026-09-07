@@ -273,6 +273,59 @@ export class MockReportRepository implements ReportRepository {
       },
     };
 
+    const newReport: EmissionReport = {
+      id: `mock-calc-${year}-${Date.now()}`,
+      year,
+      title: `Laporan Emisi Kalkulator Hijau ${sector} FY ${year}`,
+      fileName: `Laporan_Emisi_Kalkulator_${year}.pdf`,
+      fileSizeBytes: 2048576,
+      uploadDate: new Date().toISOString().split('T')[0],
+      status: isAnomaly ? 'revision_required' : 'submitted',
+      totalEmissionsTCO2e,
+      sectors: [
+        {
+          id: `sec-${year}-1`,
+          name: 'Scope 1 (Pembakaran Langsung)',
+          scope: 'Scope 1',
+          emissionsTCO2e: calculationData.scope1,
+          percentage:
+            totalEmissionsTCO2e > 0 ? (calculationData.scope1 / totalEmissionsTCO2e) * 100 : 0,
+          description: 'Emisi langsung dari operasional',
+          color: '#ef4444',
+        },
+        {
+          id: `sec-${year}-2`,
+          name: 'Scope 2 (Listrik)',
+          scope: 'Scope 2',
+          emissionsTCO2e: calculationData.scope2,
+          percentage:
+            totalEmissionsTCO2e > 0 ? (calculationData.scope2 / totalEmissionsTCO2e) * 100 : 0,
+          description: 'Emisi dari penggunaan listrik',
+          color: '#f59e0b',
+        },
+        {
+          id: `sec-${year}-3`,
+          name: 'Scope 3 (Lainnya)',
+          scope: 'Scope 3',
+          emissionsTCO2e: calculationData.scope3,
+          percentage:
+            totalEmissionsTCO2e > 0 ? (calculationData.scope3 / totalEmissionsTCO2e) * 100 : 0,
+          description: 'Emisi dari rantai pasok dan operasional eksternal',
+          color: '#3b82f6',
+        },
+      ],
+      blockchainTxHash: txHash,
+      blockchainReportId: 999,
+      merkleRoot,
+      quotaPTBAETCO2e: 12500,
+      method: 'CALCULATOR',
+      sectorId: sector,
+      calculationData,
+      auditResult,
+    };
+
+    this.reports = [newReport, ...this.reports.filter((r) => r.year !== year)];
+
     return { merkleRoot, txHash, blockchainReportId: 999, auditResult };
   }
 }

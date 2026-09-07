@@ -1179,6 +1179,7 @@ model EmissionReport {
   reportMethod          ReportMethod                 @default(UPLOAD) @map("report_method")
   sector                String?                      @db.Text
   calculationData       Json?                        @map("calculation_data")
+  auditResult           Json?                        @map("audit_result")
   submittedAt           DateTime                     @default(now()) @map("submitted_at") @db.Timestamptz
   auditedByUserId       String?                      @map("audited_by_user_id") @db.Uuid
   auditorNotes          String?                      @map("auditor_notes") @db.Text

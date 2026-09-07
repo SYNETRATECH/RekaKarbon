@@ -20,8 +20,13 @@ export class MockEmissionReportAuditRepository implements EmissionReportAuditRep
   }
 
   async getDetail(id: string): Promise<EmissionReportAuditDetail> {
-    if (id !== this.detail.id) throw new Error('Emission report was not found');
-    return this.detail;
+    const item = this.queue.find((q) => q.id === id);
+    if (!item) throw new Error('Emission report was not found');
+    return {
+      ...this.detail,
+      ...item,
+      auditResult: item.auditResult ?? this.detail.auditResult,
+    };
   }
 
   async decide(

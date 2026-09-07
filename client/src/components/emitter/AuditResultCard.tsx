@@ -18,32 +18,53 @@ import type {
   MlAuditResult,
   ShapAttribution,
 } from '@/types';
+import { Copy, Check } from 'lucide-react';
+import { useState } from 'react';
 
-interface AuditResultCardProps {
-  submission: CalculatorReportSubmission;
-  calculationData: CalculationData;
-  onDownloadPDF: () => void;
-  onBackToReports: () => void;
+export interface AuditResultCardProps {
+  submission?: Partial<CalculatorReportSubmission>;
+  auditResult?: MlAuditResult | null;
+  calculationData?: CalculationData | null;
+  merkleRoot?: string | null;
+  txHash?: string | null;
+  reportId?: number | string | null;
+  isAuditorView?: boolean;
+  onDownloadPDF?: () => void;
+  onBackToReports?: () => void;
+  onApplyRecommendationToNotes?: (recommendationsText: string) => void;
 }
 
 export function AuditResultCard({
   submission,
+  auditResult: directAuditResult,
   calculationData,
+  merkleRoot: directMerkleRoot,
+  txHash: directTxHash,
+  reportId: directReportId,
+  isAuditorView = false,
   onDownloadPDF,
   onBackToReports,
+  onApplyRecommendationToNotes,
 }: AuditResultCardProps) {
-  const auditResult: MlAuditResult | undefined = submission.auditResult;
+  const [copied, setCopied] = useState(false);
+  const auditResult: MlAuditResult | undefined = directAuditResult ?? submission?.auditResult;
+
+  const merkleRoot = directMerkleRoot ?? submission?.merkleRoot;
+  const txHash = directTxHash ?? submission?.txHash;
+  const reportId = directReportId ?? submission?.blockchainReportId;
 
   const isAnomaly = auditResult?.isAnomaly ?? false;
   const trustScore = auditResult?.trustScore ?? (isAnomaly ? 45.0 : 92.5);
   const anomalyProb = (auditResult?.anomalyScore ?? (isAnomaly ? 0.85 : 0.12)) * 100;
   const divergencePct = auditResult?.divergencePercent ?? (isAnomaly ? 38.5 : 4.2);
-  const expectedTco2e =
-    auditResult?.expectedEmissionTco2e ??
-    Math.round((calculationData.scope1 + calculationData.scope2 + calculationData.scope3) * 1.05);
-  const reportedTco2e =
-    auditResult?.reportedEmissionTco2e ??
-    calculationData.scope1 + calculationData.scope2 + calculationData.scope3;
+
+  const scopeSum = calculationData
+    ? calculationData.scope1 + calculationData.scope2 + calculationData.scope3
+    : auditResult?.reportedEmissionTco2e || 0;
+
+  const expectedTco2e = auditResult?.expectedEmissionTco2e ?? Math.round(scopeSum * 1.05);
+
+  const reportedTco2e = auditResult?.reportedEmissionTco2e ?? scopeSum;
 
   // Prepare SHAP chart dataset
   const shapData = useMemo(() => {
@@ -51,7 +72,9 @@ export function AuditResultCard({
       {
         featureName: 'scope1_stoichiometric_divergence',
         label: 'Stoikiometri BBM Scope 1',
-        userValue: `${calculationData.scope1.toLocaleString('id-ID')} tCO2e`,
+        userValue: calculationData
+          ? `${calculationData.scope1.toLocaleString('id-ID')} tCO2e`
+          : `${Math.round(reportedTco2e * 0.6).toLocaleString('id-ID')} tCO2e`,
         benchmarkValue: `${Math.round(expectedTco2e * 0.6).toLocaleString('id-ID')} tCO2e`,
         shapValue: isAnomaly ? 0.34 : -0.15,
         baseValue: 0.5,
@@ -145,6 +168,11 @@ export function AuditResultCard({
                   {isAnomaly ? 'Peringatan Anomali Terdeteksi' : 'PASS VERIFIED (Laporan Selaras)'}
                 </span>
                 <span className="text-xs font-semibold text-slate-500">Audit AI dMRV</span>
+                {isAuditorView && (
+                  <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[9px] font-extrabold uppercase text-slate-700">
+                    Inspeksi Auditor
+                  </span>
+                )}
               </div>
               <h2 className="mt-1 text-2xl font-black text-slate-900">
                 {isAnomaly
@@ -438,50 +466,102 @@ export function AuditResultCard({
                 </div>
               </div>
             )}
+
+            {onApplyRecommendationToNotes && (
+              <div className="pt-3 border-t border-slate-100 flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const rec =
+                      auditResult?.xai?.recommendation ||
+                      (isAnomaly
+                        ? 'Verifikasi dokumen bukti pembelian bahan bakar (e-Faktur/DO). Emisi Scope 1 yang dilaporkan jauh lebih rendah dari batas fisik stoikiometri.'
+                        : 'Laporan Anda telah memenuhi acuan Buku Panduan Hijau Bank Indonesia 2026 dan metodologi ISO 14064-1.');
+                    const text = [
+                      `[TEMUAN & REKOMENDASI AUDIT AI]:`,
+                      ...(auditResult?.flags?.length
+                        ? [`Indikator: ${auditResult.flags.join(', ')}`]
+                        : []),
+                      `Deviasi Fisik: ${divergencePct.toFixed(1)}% | Skor Kepercayaan: ${trustScore.toFixed(1)}%`,
+                      `• ${rec}`,
+                    ].join('\n');
+                    onApplyRecommendationToNotes(text);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="rounded-xl border-emerald-300 bg-emerald-50/70 text-emerald-800 hover:bg-emerald-100 font-bold text-xs"
+                >
+                  {copied ? (
+                    <Check className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
+                  ) : (
+                    <Copy className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
+                  )}
+                  {copied
+                    ? 'Rekomendasi Disalin ke Catatan!'
+                    : 'Salin Rekomendasi AI ke Catatan Pemeriksaan'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* 6. Blockchain Receipt Card */}
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 space-y-3 text-xs">
-        <div className="flex items-center justify-between">
-          <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">
-            Bukti Keterlacakan On-Chain
-          </span>
-          <span className="font-mono text-slate-600 font-bold">
-            Report ID: #{submission.blockchainReportId}
-          </span>
+      {(merkleRoot || txHash || reportId) && (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 space-y-3 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+              Bukti Keterlacakan On-Chain
+            </span>
+            {reportId && (
+              <span className="font-mono text-slate-600 font-bold">Report ID: #{reportId}</span>
+            )}
+          </div>
+          {merkleRoot && (
+            <div>
+              <span className="text-[10px] font-bold uppercase text-slate-400">Merkle Root</span>
+              <p className="mt-0.5 break-all rounded-lg bg-white p-2.5 font-mono text-slate-800 border border-slate-200">
+                {merkleRoot}
+              </p>
+            </div>
+          )}
+          {txHash && (
+            <div>
+              <span className="text-[10px] font-bold uppercase text-slate-400">
+                Transaction Hash
+              </span>
+              <p className="mt-0.5 break-all rounded-lg bg-white p-2.5 font-mono text-slate-800 border border-slate-200">
+                {txHash}
+              </p>
+            </div>
+          )}
         </div>
-        <div>
-          <span className="text-[10px] font-bold uppercase text-slate-400">Merkle Root</span>
-          <p className="mt-0.5 break-all rounded-lg bg-white p-2.5 font-mono text-slate-800 border border-slate-200">
-            {submission.merkleRoot}
-          </p>
-        </div>
-        <div>
-          <span className="text-[10px] font-bold uppercase text-slate-400">Transaction Hash</span>
-          <p className="mt-0.5 break-all rounded-lg bg-white p-2.5 font-mono text-slate-800 border border-slate-200">
-            {submission.txHash}
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* 7. Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <Button
-          onClick={onBackToReports}
-          variant="outline"
-          className="h-12 flex-1 rounded-xl font-bold text-slate-700 hover:bg-slate-100"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" /> Kembali ke Laporan
-        </Button>
-        <Button
-          onClick={onDownloadPDF}
-          className="h-12 flex-1 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 shadow-md"
-        >
-          <Download className="mr-2 h-4 w-4" /> Download PDF Laporan Resmi
-        </Button>
-      </div>
+      {(onBackToReports || onDownloadPDF) && (
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          {onBackToReports && (
+            <Button
+              onClick={onBackToReports}
+              variant="outline"
+              className="h-12 flex-1 rounded-xl font-bold text-slate-700 hover:bg-slate-100"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" /> Kembali ke Laporan
+            </Button>
+          )}
+          {onDownloadPDF && (
+            <Button
+              onClick={onDownloadPDF}
+              className="h-12 flex-1 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 shadow-md"
+            >
+              <Download className="mr-2 h-4 w-4" /> Download PDF Laporan Resmi
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

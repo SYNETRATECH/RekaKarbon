@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import type { PtbaeQuotaStatus } from '../../compliance/types';
+import type { MlAuditResult } from '../../audit/types/ml-audit.types';
 
 export interface SectorBreakdown {
   id: string;
@@ -63,11 +64,23 @@ export interface EmissionReport {
   title: string;
   fileName: string;
   fileSizeBytes: number;
-  uploadDate: string;
-  status: 'verified' | 'audit_in_progress' | 'draft';
-  totalEmissionsTCO2e: number;
+  status:
+    | 'verified'
+    | 'approved'
+    | 'submitted'
+    | 'revision_required'
+    | 'rejected'
+    | 'audit_in_progress'
+    | 'draft';
   quotaPTBAETCO2e: number | null;
   quotaPTBAEStatus: PtbaeQuotaStatus;
   quotaPTBAESourceDocument: string | null;
   sectors: SectorBreakdown[];
+  method?: string;
+  sectorId?: string | null;
+  calculationData?: unknown;
+  auditResult?: MlAuditResult | null;
+  merkleRoot?: string | null;
+  blockchainTxHash?: string | null;
+  blockchainReportId?: number | null;
 }
