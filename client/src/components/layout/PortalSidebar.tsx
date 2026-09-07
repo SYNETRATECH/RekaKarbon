@@ -75,49 +75,28 @@ export default function PortalSidebar({ role }: PortalSidebarProps) {
           items: [
             {
               id: 'dashboard',
-              label: 'Dashboard Utama',
+              label: 'Dashboard Admin',
               icon: LayoutDashboard,
               targetPath: '/dashboard',
             },
           ],
         },
         {
-          id: 'entitas',
-          label: 'ENTITAS & SPASIAL',
+          id: 'tata-kelola',
+          label: 'TATA KELOLA IDENTITAS',
           items: [
             {
-              id: 'projects',
-              label: 'Proyek Kehutanan',
-              icon: FolderPlus,
-              targetPath: '/projects',
+              id: 'users',
+              label: 'Manajemen Pengguna',
+              icon: Users,
+              targetPath: '/admin/users',
             },
-            { id: 'kth', label: 'Kelompok Tani (KTH)', icon: Users, targetPath: '/kth' },
             {
-              id: 'auditor-assignments',
-              label: 'Penugasan Auditor',
+              id: 'kyb',
+              label: 'Verifikasi Institusi (KYB)',
               icon: ShieldCheck,
-              targetPath: '/auditor-assignments',
+              targetPath: '/admin/kyb',
             },
-            {
-              id: 'bursa-listings',
-              label: 'Listing Bursa Karbon',
-              icon: ArrowLeftRight,
-              targetPath: '/regulator/bursa',
-            },
-            { id: 'spatial', label: 'Spasial dMRV', icon: Globe, targetPath: '/spatial' },
-          ],
-        },
-        {
-          id: 'pasar',
-          label: 'PASAR & LAPORAN',
-          items: [
-            {
-              id: 'bursa',
-              label: 'Bursa Karbon (DEX)',
-              icon: ArrowLeftRight,
-              targetPath: '/bursa',
-            },
-            { id: 'laporan', label: 'Laporan Sektor', icon: FileUp, targetPath: '/laporan' },
           ],
         },
       ];

@@ -57,6 +57,13 @@ export default [
     layout('routes/guards/ministry.tsx', [
       route('ministry/applications', 'routes/ministry/applications.tsx'),
     ]),
+
+    // Admin Protected Routes (superadmin + admin roles)
+    layout('routes/guards/admin.tsx', [
+      route('admin/dashboard', 'routes/admin/dashboard.tsx'),
+      route('admin/users', 'routes/admin/users.tsx'),
+      route('admin/kyb', 'routes/admin/kyb.tsx'),
+    ]),
   ]),
 
   // Catch-all 404 page

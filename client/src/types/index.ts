@@ -20,3 +20,4 @@ export * from './telemetry';
 export * from './tax';
 export * from './notification';
 export * from './health';
+export * from './admin';
