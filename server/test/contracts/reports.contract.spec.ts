@@ -5,7 +5,10 @@ import {
   ContractTestHarness,
   expectContract,
 } from '../../src/common/testing/contract-test-harness';
-import { EmissionReportSchema } from '../../../client/src/schemas';
+import {
+  EmissionReportSchema,
+  CalculatorReportSubmissionSchema,
+} from '../../../client/src/schemas';
 import { z } from 'zod';
 import { createMockEmissionReport } from '../factories';
 
@@ -97,6 +100,10 @@ describe('Emission Reports API Contract Test', () => {
       .expect(201);
 
     expect(res.body.success).toBe(true);
-    expect(res.body.data.blockchainReportId).toBe(104);
+    const submission = expectContract(
+      res.body,
+      CalculatorReportSubmissionSchema,
+    );
+    expect(submission.blockchainReportId).toBe(104);
   });
 });

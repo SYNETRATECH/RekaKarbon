@@ -5,7 +5,7 @@ import { IndustrialSector } from './dto/audit-emission-report.dto';
 describe('MlAuditEngineService', () => {
   let service: MlAuditEngineService;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [MlAuditEngineService],
     }).compile();

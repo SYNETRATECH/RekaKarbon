@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import type { MlAuditResult } from './ml-audit.types';
 
 export interface EmissionReportAuditListItem {
   id: string;
@@ -14,6 +15,7 @@ export interface EmissionReportAuditListItem {
   fileCount: number;
   merkleRoot: string;
   blockchainTxHash: string | null;
+  auditResult?: MlAuditResult | null;
 }
 
 export interface EmissionReportAuditFile {

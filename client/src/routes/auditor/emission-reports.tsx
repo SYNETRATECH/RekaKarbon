@@ -33,6 +33,7 @@ import type {
   EmissionReportAuditListItem,
 } from '@/types';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
+import { AuditResultCard } from '@/components/emitter/AuditResultCard';
 
 const STATUS_LABELS: Record<EmissionReportAuditListItem['status'], string> = {
   submitted: 'Menunggu audit',
@@ -204,7 +205,24 @@ export default function AuditorEmissionReportsRoute() {
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-black text-slate-900">{report.companyName}</p>
+                  <div>
+                    <p className="text-sm font-black text-slate-900">{report.companyName}</p>
+                    {report.auditResult && (
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className={`text-[9px] font-black px-1.5 py-0.5 ${
+                            report.auditResult.isAnomaly
+                              ? 'border-rose-300 bg-rose-50 text-rose-700'
+                              : 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                          }`}
+                        >
+                          {report.auditResult.isAnomaly ? 'AI: Anomali' : 'AI: Wajar'} (
+                          {Math.round(report.auditResult.trustScore)}%)
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
                   <Badge variant={report.status === 'submitted' ? 'warning' : 'secondary'}>
                     {STATUS_LABELS[report.status]}
                   </Badge>
@@ -296,6 +314,41 @@ export default function AuditorEmissionReportsRoute() {
                   </a>
                 ))}
               </div>
+
+              {/* XAI ANOMALY FORENSIC AUDIT */}
+              {selected.auditResult && (
+                <div className="mt-5 space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                    Hasil Forensik Audit Integritas AI (Explainable AI)
+                  </p>
+                  <AuditResultCard
+                    auditResult={selected.auditResult}
+                    calculationData={
+                      typeof selected.calculationData === 'object' &&
+                      selected.calculationData !== null
+                        ? (selected.calculationData as any)
+                        : undefined
+                    }
+                    merkleRoot={selected.merkleRoot}
+                    txHash={selected.blockchainTxHash}
+                    reportId={selected.id}
+                    isAuditorView={true}
+                    onApplyRecommendationToNotes={(recommendationsText) => {
+                      setNotes((prev) => {
+                        const trimmed = prev.trim();
+                        return trimmed
+                          ? `${trimmed}\n\n${recommendationsText}`
+                          : recommendationsText;
+                      });
+                      toast({
+                        title: 'Rekomendasi Disalin',
+                        description:
+                          'Catatan temuan & rekomendasi AI berhasil ditambahkan ke Catatan Pemeriksaan.',
+                      });
+                    }}
+                  />
+                </div>
+              )}
 
               <div className="mt-5">
                 <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">

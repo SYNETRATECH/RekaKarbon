@@ -1,3 +1,5 @@
+import type { MlAuditResult } from './audit';
+
 export type EmissionReportAuditStatus = 'submitted' | 'revision_required' | 'approved' | 'rejected';
 
 export type EmissionReportAuditAction =
@@ -17,6 +19,7 @@ export interface EmissionReportAuditListItem {
   fileCount: number;
   merkleRoot: string;
   blockchainTxHash: string | null;
+  auditResult?: MlAuditResult | null;
 }
 
 export interface EmissionReportAuditFile {

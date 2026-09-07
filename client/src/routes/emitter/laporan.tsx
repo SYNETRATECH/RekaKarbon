@@ -50,6 +50,7 @@ import {
 import { reportRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { generateEmissionReportPDF } from '@/lib/generateEmissionReportPDF';
+import { AuditResultCard } from '@/components/emitter/AuditResultCard';
 import type { EmissionReport } from '@/types';
 
 export async function clientLoader() {
@@ -599,6 +600,25 @@ export default function EmissionReportsSector() {
               Unduh PDF Laporan
             </button>
           </div>
+        </div>
+      )}
+
+      {/* AI AUDIT & ANOMALY DETECTION REPORT */}
+      {activeReport.auditResult && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Cpu className="w-5 h-5 text-emerald-600" />
+            <h3 className="text-lg font-black text-slate-900">
+              Hasil Forensik Integritas Emisi AI (Explainable AI)
+            </h3>
+          </div>
+          <AuditResultCard
+            auditResult={activeReport.auditResult}
+            calculationData={activeReport.calculationData}
+            merkleRoot={activeReport.merkleRoot}
+            txHash={activeReport.blockchainTxHash}
+            reportId={activeReport.blockchainReportId ?? activeReport.id}
+          />
         </div>
       )}
 

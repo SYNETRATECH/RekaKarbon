@@ -20,6 +20,10 @@ import type {
   EmissionReportAuditListItem,
   ReportWithAuditData,
 } from './types';
+import type { MlAuditResult } from './types/ml-audit.types';
+import { MlAuditEngineService } from './ml-audit-engine.service';
+import { ReportsMlAdapter } from '../reports/reports-ml-adapter';
+import type { CalculatorCalculationData } from '../reports/types';
 
 const REPORT_STATUS_BY_API_VALUE = {
   submitted: EmissionReportStatus.SUBMITTED,
@@ -32,6 +36,7 @@ export class EmissionReportAuditService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly blockchainService: BlockchainService,
+    private readonly mlAuditEngineService?: MlAuditEngineService,
   ) {}
 
   async getQueue(
@@ -75,7 +80,31 @@ export class EmissionReportAuditService {
       throw new NotFoundException('Emission report was not found');
     }
 
-    return this.mapDetail(report);
+    const detail = this.mapDetail(report);
+
+    if (!detail.auditResult && this.mlAuditEngineService) {
+      try {
+        const companyData = report.company as unknown as {
+          productionCapacityTonnes?: number | string | null;
+        };
+        const auditDto = ReportsMlAdapter.toAuditEmissionReportDto({
+          sector: report.sector || 'manufaktur',
+          totalEmissions: Number(report.totalEmissionsTco2e),
+          calculationData:
+            (report.calculationData as unknown as CalculatorCalculationData | null) ??
+            null,
+          companyProductionCapacity: companyData?.productionCapacityTonnes
+            ? Number(companyData.productionCapacityTonnes)
+            : undefined,
+        });
+        detail.auditResult =
+          await this.mlAuditEngineService.evaluateEmissionReport(auditDto);
+      } catch {
+        // Non-blocking fallback
+      }
+    }
+
+    return detail;
   }
 
   async decide(
@@ -186,6 +215,12 @@ export class EmissionReportAuditService {
   private mapListItem(
     report: ReportWithAuditData,
   ): EmissionReportAuditListItem {
+    const auditResult =
+      (report.auditResult as unknown as MlAuditResult | null) ||
+      ((report.calculationData as Record<string, unknown> | null)
+        ?.auditResult as MlAuditResult | null) ||
+      null;
+
     return {
       id: report.id,
       companyName: report.company.name,
@@ -200,6 +235,7 @@ export class EmissionReportAuditService {
       fileCount: report.files.length,
       merkleRoot: report.merkleRoot,
       blockchainTxHash: report.blockchainTxHash,
+      auditResult,
     };
   }
 

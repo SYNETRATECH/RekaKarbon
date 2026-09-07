@@ -146,19 +146,56 @@ export const KthLogSchema = z.object({
   status: z.string().optional(),
 });
 
+export const FeatureContributionSchema = z.object({
+  featureName: z.string().min(1),
+  label: z.string().min(1),
+  userValue: z.union([z.number(), z.string()]),
+  benchmarkValue: z.union([z.number(), z.string()]),
+  impactScore: z.number(),
+  direction: z.enum(['ABOVE_NORMAL', 'BELOW_NORMAL', 'MISMATCH']),
+  unit: z.string(),
+});
+
+export const ShapAttributionSchema = z.object({
+  featureName: z.string().min(1),
+  label: z.string().min(1),
+  userValue: z.union([z.number(), z.string()]),
+  benchmarkValue: z.union([z.number(), z.string()]),
+  shapValue: z.number(),
+  baseValue: z.number(),
+  direction: z.enum(['ABOVE_NORMAL', 'BELOW_NORMAL', 'MISMATCH', 'NORMAL']),
+  impact: z.enum(['INCREASES_ANOMALY', 'DECREASES_ANOMALY', 'NEUTRAL']),
+  importancePercent: z.number(),
+  unit: z.string(),
+});
+
+export const XaiDiagnosticsSchema = z.object({
+  baseValue: z.number().optional(),
+  outputScore: z.number().optional(),
+  topAnomalyDrivers: z.array(FeatureContributionSchema),
+  shapAttributions: z.array(ShapAttributionSchema).optional(),
+  breakdown: z.object({
+    physicalFuelDeltaPct: z.number(),
+    fiscalPriceDeltaPct: z.number(),
+    sectorIntensityZScore: z.number(),
+  }),
+  recommendation: z.string(),
+});
+
 export const MlAuditResultSchema = z.object({
   isAnomaly: z.boolean(),
   verdict: z.enum(['PASS_VERIFIED', 'REJECT_ANOMALY']),
-  anomalyScore: z.number().min(0).max(1),
-  trustScore: z.number().min(0).max(1),
+  anomalyScore: z.number(),
+  trustScore: z.number(),
   divergencePercent: z.number(),
-  expectedEmissionTco2e: CarbonVolumeSchema,
-  reportedEmissionTco2e: CarbonVolumeSchema,
-  scoreDjp: z.number().min(0).max(1),
-  scoreBbm: z.number().min(0).max(1),
-  scoreCems: z.number().min(0).max(1),
+  expectedEmissionTco2e: z.number(),
+  reportedEmissionTco2e: z.number(),
+  scoreDjp: z.number(),
+  scoreBbm: z.number(),
+  scoreCems: z.number(),
   flags: z.array(z.string()),
   explanation: z.string(),
+  xai: XaiDiagnosticsSchema.optional(),
 });
 
 export const AuditEmissionReportParamsSchema = z.object({
@@ -210,5 +247,8 @@ export type DroneArchiveType = z.infer<typeof DroneArchiveSchema>;
 export type DroneSchedulesType = z.infer<typeof DroneSchedulesSchema>;
 export type KthPolygonType = z.infer<typeof KthPolygonSchema>;
 export type KthLogType = z.infer<typeof KthLogSchema>;
+export type FeatureContributionType = z.infer<typeof FeatureContributionSchema>;
+export type ShapAttributionType = z.infer<typeof ShapAttributionSchema>;
+export type XaiDiagnosticsType = z.infer<typeof XaiDiagnosticsSchema>;
 export type MlAuditResultType = z.infer<typeof MlAuditResultSchema>;
 export type AuditEmissionReportParamsType = z.infer<typeof AuditEmissionReportParamsSchema>;

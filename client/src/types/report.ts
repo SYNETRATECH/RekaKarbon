@@ -1,4 +1,6 @@
 import type { PtbaeQuotaStatus } from './compliance';
+import type { MlAuditResult } from './audit';
+import type { CalculationData } from './emission-calculator';
 
 export type {
   CalculationData,
@@ -41,4 +43,6 @@ export interface EmissionReport {
   quotaPTBAESourceDocument?: string | null;
   method?: 'UPLOAD' | 'CALCULATOR';
   sectorId?: string | null;
+  calculationData?: CalculationData | null;
+  auditResult?: MlAuditResult | null;
 }

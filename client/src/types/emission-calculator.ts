@@ -1,3 +1,5 @@
+import type { MlAuditResult } from './audit';
+
 export type EmissionScope = 1 | 2 | 3;
 
 export type Scope1ActivityType = 'stationary_combustion' | 'mobile_combustion';
@@ -116,6 +118,7 @@ export interface CalculatorReportSubmission {
   merkleRoot: string;
   txHash: string;
   blockchainReportId: number;
+  auditResult?: MlAuditResult;
 }
 
 export interface CreditCategoryOption {
