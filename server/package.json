@@ -13,7 +13,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint": "eslint \"{src,apps,libs,test,prisma}/**/*.ts\" \"prisma.config.ts\" --fix",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -29,6 +29,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:migrate:status": "prisma migrate status",
     "prisma:migrate:diff": "prisma migrate diff",
+    "prisma:migrate:reset": "prisma migrate reset",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed"
   },

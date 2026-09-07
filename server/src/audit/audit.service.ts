@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  EmissionReportStatus,
   ForestInspectionDecisionType,
   ForestInspectionStatus,
   ForestInspectionSubmissionStatus,
@@ -24,6 +25,7 @@ import type {
   KthLog,
   ForestProjectAuditDetail,
   ForestProjectAuditListItem,
+  MlAuditResult,
 } from './types';
 import {
   ForestInspectionAuditDecision,
@@ -365,49 +367,120 @@ export class AuditService {
   }
 
   async getAiAnomalyLogs(): Promise<AiAnomalyLog[]> {
-    const records = await this.prisma.auditAnomaly.findMany({
+    const reports = await this.prisma.emissionReport.findMany({
       include: { company: true },
-      orderBy: { detectedDate: 'desc' },
+      orderBy: { submittedAt: 'desc' },
     });
 
-    return records.map((r) => {
-      const status =
-        r.auditStatus.toLowerCase() === 'verified' ? 'verified' : 'pending';
-      const reported = Number(r.reportedEmissionTco2e);
-      const estimated = Number(r.expectedEmissionTco2e);
-      const divergence = Number(r.divergencePercent);
+    return reports.map((r) => {
+      const auditResult =
+        (r.auditResult as unknown as MlAuditResult | null) ||
+        ((r.calculationData as Record<string, unknown> | null)
+          ?.auditResult as MlAuditResult | null) ||
+        null;
+
+      const reported = Number(r.totalEmissionsTco2e);
+      const estimated = auditResult
+        ? Number(auditResult.expectedEmissionTco2e)
+        : reported;
+      const divergence = auditResult
+        ? Number(auditResult.divergencePercent)
+        : 0;
+      const anomalyScore = auditResult
+        ? Number(auditResult.anomalyScore)
+        : 0.15;
+      const trustScore = auditResult ? Number(auditResult.trustScore) : 85;
+      const scoreDjp = auditResult ? Number(auditResult.scoreDjp) : 98;
+      const scoreBbm = auditResult ? Number(auditResult.scoreBbm) : 95;
+      const scoreCems = auditResult ? Number(auditResult.scoreCems) : 95;
+      const isAnomaly = auditResult ? Boolean(auditResult.isAnomaly) : false;
+      const eFakturMatch = scoreDjp >= 70;
+
+      let priority: 'critical' | 'high' | 'medium' | 'low' = 'low';
+      if (isAnomaly && anomalyScore >= 0.8) {
+        priority = 'critical';
+      } else if (isAnomaly) {
+        priority = 'high';
+      } else if (trustScore < 80) {
+        priority = 'medium';
+      }
+
+      // Map statutory report status to auditStatus display
+      let auditStatus: 'pending' | 'verified' | 'rejected' = 'pending';
+      if (r.status === EmissionReportStatus.APPROVED) {
+        auditStatus = 'verified';
+      } else if (r.status === EmissionReportStatus.REVISION_REQUIRED) {
+        auditStatus = 'rejected';
+      }
+
       return {
         id: r.id,
         company: r.company?.name || 'Emiten Fasilitas',
-        sector: r.company?.sector || 'Manufaktur & Energi',
-        anomalyScore: Number(r.anomalyScore),
+        companyId: r.companyId,
+        sector: r.sector || r.company?.sector || 'Manufaktur & Energi',
+        year: r.year,
+        emissionReportId: r.id,
+        auditResult,
+        anomalyScore,
+        trustScore,
+        divergencePercent: divergence,
+        scoreDjp,
+        scoreBbm,
+        scoreCems,
+        isAnomaly,
         deltaElectricity: Math.round(divergence * 0.4),
         deltaCoal: Math.round(divergence * 0.6),
         deltaGas: 0,
-        eFakturMatch: false,
-        priority: r.severity.toLowerCase() as
-          'critical' | 'high' | 'medium' | 'low',
+        eFakturMatch,
+        priority,
         reportedEmission: reported,
         estimatedEmission: estimated,
         desc:
-          r.verifierNotes ||
-          `Deviasi emisi terdeteksi: ${divergence.toFixed(1)}% selisih antara laporan CEMS dan konsumsi energi.`,
-        auditStatus: status,
+          auditResult?.explanation ||
+          (divergence > 0
+            ? `Deviasi emisi terdeteksi: ${divergence.toFixed(1)}% selisih antara laporan dan estimasi energi.`
+            : 'Laporan emisi tahunan dalam batas wajar.'),
+        auditStatus,
       };
     });
   }
 
   async getAnomalySummary(): Promise<AnomalySummary> {
-    const anomalies = await this.prisma.auditAnomaly.findMany();
+    const reports = await this.prisma.emissionReport.findMany({
+      include: { company: true },
+    });
     const companies = await this.prisma.company.findMany();
 
-    const emitenTerdeteksi = new Set(anomalies.map((a) => a.companyId)).size;
+    const flaggedReports = reports.filter((r) => {
+      const res =
+        (r.auditResult as unknown as MlAuditResult | null) ||
+        ((r.calculationData as Record<string, unknown> | null)
+          ?.auditResult as MlAuditResult | null);
+      return res?.isAnomaly === true;
+    });
+
+    const emitenTerdeteksi = new Set(flaggedReports.map((r) => r.companyId))
+      .size;
+
+    const divergences: number[] = [];
+    let eFakturMismatches = 0;
+
+    for (const r of reports) {
+      const res =
+        (r.auditResult as unknown as MlAuditResult | null) ||
+        ((r.calculationData as Record<string, unknown> | null)
+          ?.auditResult as MlAuditResult | null);
+      if (res) {
+        divergences.push(Number(res.divergencePercent || 0));
+        if (typeof res.scoreDjp === 'number' && res.scoreDjp < 70) {
+          eFakturMismatches += 1;
+        }
+      }
+    }
+
     const avgDev =
-      anomalies.length > 0
-        ? anomalies.reduce(
-            (acc, curr) => acc + Number(curr.divergencePercent),
-            0,
-          ) / anomalies.length
+      divergences.length > 0
+        ? divergences.reduce((acc, curr) => acc + curr, 0) / divergences.length
         : 0;
 
     return {
@@ -415,43 +488,55 @@ export class AuditService {
       totalEmitenAktif: companies.length,
       rataDeviasiEmisi: Math.round(avgDev * 10) / 10,
       descDeviasi: 'Divergensi konsumsi energi vs CEMS',
-      eFakturTidakCocok: anomalies.length,
+      eFakturTidakCocok: eFakturMismatches,
       descEFaktur: 'Perlu verifikasi fisik lapangan',
     };
   }
 
   async getEnergyCorrelation(): Promise<EnergyCorrelationItem[]> {
-    const records = await this.prisma.auditAnomaly.findMany({
+    const reports = await this.prisma.emissionReport.findMany({
       include: { company: true },
-      take: 5,
+      orderBy: { submittedAt: 'desc' },
+      take: 6,
     });
 
-    return records.map((r) => ({
-      name: r.company?.name || r.facilityName,
-      reported: Number(r.reportedEmissionTco2e),
-      estimated: Number(r.expectedEmissionTco2e),
-    }));
+    return reports.map((r) => {
+      const res =
+        (r.auditResult as unknown as MlAuditResult | null) ||
+        ((r.calculationData as Record<string, unknown> | null)
+          ?.auditResult as MlAuditResult | null);
+      const reported = Number(r.totalEmissionsTco2e);
+      const estimated = res ? Number(res.expectedEmissionTco2e) : reported;
+
+      return {
+        name: r.company?.name || `Laporan ${r.year}`,
+        reported,
+        estimated,
+      };
+    });
   }
 
   async verifyAnomalyRecord(
     id: string,
   ): Promise<{ success: boolean; id: string }> {
-    const existing = await this.prisma.auditAnomaly.findUnique({
+    const report = await this.prisma.emissionReport.findUnique({
       where: { id },
     });
-    if (!existing) {
+    if (!report) {
       throw new NotFoundException(
-        `Audit anomaly with ID '${id}' was not found`,
+        `Emission report with ID '${id}' was not found`,
       );
     }
 
-    await this.prisma.auditAnomaly.update({
+    await this.prisma.emissionReport.update({
       where: { id },
       data: {
-        auditStatus: 'VERIFIED',
-        verifiedAt: new Date(),
+        status: EmissionReportStatus.APPROVED,
+        auditedAt: new Date(),
+        auditorNotes: 'Diverifikasi langsung melalui Panel Audit AI.',
       },
     });
+
     return { success: true, id };
   }
 

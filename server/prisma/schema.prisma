@@ -181,27 +181,6 @@ enum StageStatus {
   COMPLETED
 }
 
-enum AnomalyType {
-  CEMS_ENERGY_CORRELATION
-  SATELLITE_CHM_DEFICIT
-  QUOTA_CAP_BREACH
-  SPATIAL_ENCROACHMENT
-}
-
-enum SeverityLevel {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-enum AuditStatus {
-  PENDING_REVIEW
-  UNDER_INVESTIGATION
-  VERIFIED
-  FLAGGED_FRAUD
-}
-
 enum MissionStatus {
   SCHEDULED
   COMPLETED
@@ -381,7 +360,6 @@ model Company {
   user                 User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
   smokestacks          Smokestack[]
   cemsTelemetryLogs    CemsTelemetryLog[]
-  auditAnomalies       AuditAnomaly[]
   carbonTaxAssessments CarbonTaxAssessment[]
   stpInvoices          StpInvoice[]
   emissionReports      EmissionReport[]
@@ -840,31 +818,8 @@ model ForestSensorTelemetryLog {
 }
 
 // ---------------------------------------------------------
-// 4. dMRV AUDITING, AI ANOMALY & DRONE MISSIONS
+// 4. dMRV AUDITING & DRONE MISSIONS
 // ---------------------------------------------------------
-
-model AuditAnomaly {
-  id                    String        @id @default(uuid()) @db.Uuid
-  companyId             String        @map("company_id") @db.Uuid
-  facilityName          String        @map("facility_name") @db.Text
-  anomalyType           AnomalyType   @map("anomaly_type")
-  severity              SeverityLevel @default(HIGH)
-  anomalyScore          Decimal       @map("anomaly_score") @db.Decimal(4, 3)
-  reportedEmissionTco2e Decimal       @map("reported_emission_tco2e") @db.Decimal(14, 2)
-  expectedEmissionTco2e Decimal       @map("expected_emission_tco2e") @db.Decimal(14, 2)
-  divergencePercent     Decimal       @map("divergence_percent") @db.Decimal(5, 2)
-  detectedDate          DateTime      @map("detected_date") @db.Date
-  auditStatus           AuditStatus   @default(PENDING_REVIEW) @map("audit_status")
-  verifierNotes         String?       @map("verifier_notes") @db.Text
-  verifiedAt            DateTime?     @map("verified_at") @db.Timestamptz
-  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamptz
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId, auditStatus])
-  @@map("audit_anomalies")
-}
 
 model DroneMission {
   id               String        @id @default(uuid()) @db.Uuid

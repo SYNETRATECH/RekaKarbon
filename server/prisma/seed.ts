@@ -12,9 +12,6 @@ import {
   EcosystemType,
   ProjectStatus,
   StageStatus,
-  AnomalyType,
-  SeverityLevel,
-  AuditStatus,
   MissionStatus,
   ListingStatus,
   OrderStatus,
@@ -336,7 +333,8 @@ async function main() {
   await prisma.bursaOrder.deleteMany();
   await prisma.bursaListing.deleteMany();
   await prisma.carbonToken.deleteMany();
-  await prisma.auditAnomaly.deleteMany();
+  await prisma.emissionReportAuditEvent.deleteMany();
+  await prisma.emissionReport.deleteMany();
   await prisma.forestSensorTelemetryLog.deleteMany();
   await prisma.projectStage.deleteMany();
   await prisma.forestProject.deleteMany();
@@ -983,27 +981,7 @@ async function main() {
     },
   });
 
-  // 11. Seed Audit Anomalies
-  console.log('🚨 Seeding Audit Anomalies...');
-  await prisma.auditAnomaly.create({
-    data: {
-      id: randomUUID(),
-      companyId: companyTuban.id,
-      facilityName: 'Tanur Kalsinasi Utama Unit 3',
-      anomalyType: AnomalyType.CEMS_ENERGY_CORRELATION,
-      severity: SeverityLevel.HIGH,
-      anomalyScore: 0.89,
-      reportedEmissionTco2e: 2350.0,
-      expectedEmissionTco2e: 3120.0,
-      divergencePercent: 32.7,
-      detectedDate: new Date('2026-02-14'),
-      auditStatus: AuditStatus.PENDING_REVIEW,
-      verifierNotes:
-        'Divergensi konsumsi batubara vs sensor cerobong CEMS terdeteksi oleh AI dMRV.',
-    },
-  });
-
-  // 12. Seed Carbon Tokens & Bursa DEX Market
+  // 11. Seed Carbon Tokens & Bursa DEX Market
   console.log('🪙 Seeding Carbon Tokens & DEX Market Listings...');
   const tokenBaluran = await prisma.carbonToken.create({
     data: {

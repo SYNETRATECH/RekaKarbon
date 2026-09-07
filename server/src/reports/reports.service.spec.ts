@@ -63,9 +63,6 @@ describe('ReportsService - ML Anomaly Detection Integration', () => {
       emissionReportAuditEvent: {
         create: jest.fn().mockResolvedValue({ id: 'evt-001' }),
       },
-      auditAnomaly: {
-        create: jest.fn().mockResolvedValue({ id: 'anom-001' }),
-      },
       $transaction: jest
         .fn()
         .mockImplementation(
@@ -144,9 +141,6 @@ describe('ReportsService - ML Anomaly Detection Integration', () => {
       expect(audit?.flags).toEqual([]);
       expect(audit?.xai).toBeDefined();
       expect(audit?.xai?.shapAttributions?.length).toBeGreaterThan(0);
-
-      // No AuditAnomaly persisted in database
-      expect(prismaMock.auditAnomaly.create).not.toHaveBeenCalled();
     });
   });
 
@@ -170,12 +164,6 @@ describe('ReportsService - ML Anomaly Detection Integration', () => {
       expect(audit?.divergencePercent).toBeGreaterThan(45.0);
       expect(audit?.flags).toContain('UNDER_REPORTING_TERINDIKASI');
       expect(audit?.flags).toContain('DEVIASI_FISIK_DAN_LAPORAN_TINGGI');
-
-      // Anomaly auto-persisted in PostgreSQL via Prisma
-      expect(prismaMock.auditAnomaly.create).toHaveBeenCalledTimes(1);
-      const persistedCall = prismaMock.auditAnomaly.create.mock.calls[0][0];
-      expect(persistedCall.data.companyId).toBe('comp-001');
-      expect(persistedCall.data.anomalyType).toBe('CEMS_ENERGY_CORRELATION');
     });
   });
 
@@ -198,7 +186,6 @@ describe('ReportsService - ML Anomaly Detection Integration', () => {
       expect(audit?.isAnomaly).toBe(true);
       expect(audit?.verdict).toBe('REJECT_ANOMALY');
       expect(audit?.flags).toContain('EMISI_PROSES_TIDAK_DILAPORKAN');
-      expect(prismaMock.auditAnomaly.create).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -100,6 +100,55 @@ export class ReportsService {
         const scope1 = getScopeValue(calculationData?.scope1);
         const scope2 = getScopeValue(calculationData?.scope2);
         const scope3 = getScopeValue(calculationData?.scope3);
+        let auditResult =
+          (r.auditResult as unknown as MlAuditResult | null) ||
+          ((r.calculationData as Record<string, unknown> | null)
+            ?.auditResult as MlAuditResult | null) ||
+          null;
+
+        if (!auditResult && actual > 0) {
+          try {
+            const prevReport = await this.prisma.emissionReport.findUnique({
+              where: {
+                companyId_year: {
+                  companyId: r.companyId,
+                  year: r.year - 1,
+                },
+              },
+            });
+            const historicalEmissionsTco2e = prevReport
+              ? Number(prevReport.totalEmissionsTco2e)
+              : undefined;
+
+            const auditDto = ReportsMlAdapter.toAuditEmissionReportDto({
+              sector: r.sector || r.company.sector || 'Umum',
+              totalEmissions: actual,
+              calculationData:
+                r.calculationData as unknown as CalculatorCalculationData,
+              historicalEmissionsTco2e,
+            });
+
+            auditResult =
+              await this.mlAuditEngineService.evaluateEmissionReport(auditDto);
+
+            if (auditResult) {
+              await this.prisma.emissionReport
+                .update({
+                  where: { id: r.id },
+                  data: {
+                    auditResult:
+                      auditResult as unknown as Prisma.InputJsonObject,
+                  },
+                })
+                .catch(() => {});
+            }
+          } catch (evalErr) {
+            this.logger.warn(
+              `On-the-fly ML audit evaluation failed for report ${r.id}: ${(evalErr as Error).message}`,
+            );
+          }
+        }
+
         return {
           id: r.id,
           year: r.year,
@@ -122,11 +171,7 @@ export class ReportsService {
           method: r.reportMethod,
           sectorId: r.sector,
           calculationData: r.calculationData,
-          auditResult:
-            (r.auditResult as unknown as MlAuditResult | null) ||
-            ((r.calculationData as Record<string, unknown> | null)
-              ?.auditResult as MlAuditResult | null) ||
-            null,
+          auditResult,
           sectors:
             r.reportMethod === 'CALCULATOR' && calculationData
               ? [
@@ -367,28 +412,6 @@ export class ReportsService {
         auditResult =
           await this.mlAuditEngineService.evaluateEmissionReport(auditDto);
 
-        if (auditResult && auditResult.isAnomaly) {
-          await this.prisma.auditAnomaly.create({
-            data: {
-              companyId: company.id,
-              facilityName: `${company.name} - Fasilitas Utama`,
-              anomalyType: 'CEMS_ENERGY_CORRELATION',
-              severity: auditResult.anomalyScore > 0.8 ? 'CRITICAL' : 'HIGH',
-              anomalyScore: new Prisma.Decimal(auditResult.anomalyScore),
-              reportedEmissionTco2e: new Prisma.Decimal(totalEmissions),
-              expectedEmissionTco2e: new Prisma.Decimal(
-                auditResult.expectedEmissionTco2e,
-              ),
-              divergencePercent: new Prisma.Decimal(
-                auditResult.divergencePercent,
-              ),
-              detectedDate: new Date(),
-              auditStatus: 'PENDING_REVIEW',
-              verifierNotes: auditResult.explanation,
-            },
-          });
-        }
-
         if (auditResult) {
           await this.prisma.emissionReport.update({
             where: { id: report.id },
@@ -571,28 +594,6 @@ export class ReportsService {
 
         auditResult =
           await this.mlAuditEngineService.evaluateEmissionReport(auditDto);
-
-        if (auditResult && auditResult.isAnomaly) {
-          await this.prisma.auditAnomaly.create({
-            data: {
-              companyId: company.id,
-              facilityName: `${company.name} - Fasilitas Utama`,
-              anomalyType: 'CEMS_ENERGY_CORRELATION',
-              severity: auditResult.anomalyScore > 0.8 ? 'CRITICAL' : 'HIGH',
-              anomalyScore: new Prisma.Decimal(auditResult.anomalyScore),
-              reportedEmissionTco2e: new Prisma.Decimal(calculatedTotal),
-              expectedEmissionTco2e: new Prisma.Decimal(
-                auditResult.expectedEmissionTco2e,
-              ),
-              divergencePercent: new Prisma.Decimal(
-                auditResult.divergencePercent,
-              ),
-              detectedDate: new Date(),
-              auditStatus: 'PENDING_REVIEW',
-              verifierNotes: auditResult.explanation,
-            },
-          });
-        }
 
         if (auditResult) {
           await this.prisma.emissionReport.update({
