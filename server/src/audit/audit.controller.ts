@@ -26,6 +26,7 @@ import {
   AuditEmissionReportQueryDto,
   ForestProjectAuditDecisionDto,
   ForestInspectionDecisionDto,
+  TriggerMlRetrainDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -34,6 +35,7 @@ import { Role } from '@prisma/client';
 import { AuditService } from './audit.service';
 import { MlAuditEngineService } from './ml-audit-engine.service';
 import { EmissionReportAuditService } from './emission-report-audit.service';
+import { MlRetrainingService } from './ml-retraining.service';
 import type { AuthenticatedRequest } from '../auth/types';
 
 @ApiTags('Audit & dMRV Verification')
@@ -46,6 +48,7 @@ export class AuditController {
     private readonly auditService: AuditService,
     private readonly mlAuditEngineService: MlAuditEngineService,
     private readonly emissionReportAuditService: EmissionReportAuditService,
+    private readonly mlRetrainingService: MlRetrainingService,
   ) {}
 
   @ApiOperation({
@@ -321,5 +324,33 @@ export class AuditController {
         modelPath: this.mlAuditEngineService.getModelPath(),
       },
     };
+  }
+
+  @ApiOperation({
+    summary:
+      'Retrieve comprehensive ML model status, drift metrics, and continuous retraining history',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'ML retraining status and metadata retrieved successfully.',
+  })
+  @Get('ml/status')
+  async getMlStatus() {
+    const data = await this.mlRetrainingService.getStatus();
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary:
+      'Manually trigger the local Python continuous retraining pipeline with optional force or dry-run',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'ML model retraining triggered successfully.',
+  })
+  @Post('ml/retrain')
+  async triggerMlRetrain(@Body() dto: TriggerMlRetrainDto) {
+    const data = await this.mlRetrainingService.triggerRetraining(dto);
+    return { success: true, data };
   }
 }
