@@ -291,7 +291,7 @@ export default function AuditorEmissionReportsRoute() {
             <Activity className="h-4 w-4 text-emerald-600" />
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900">
-            {anomalySummary?.activeEmitters ?? reports.length}{' '}
+            {anomalySummary?.totalEmitenAktif ?? reports.length}{' '}
             <span className="text-xs font-semibold text-slate-400">Pabrik</span>
           </p>
           <p className="mt-1 text-[10px] font-semibold text-slate-400">
@@ -307,12 +307,21 @@ export default function AuditorEmissionReportsRoute() {
             <AlertTriangle className="h-4 w-4 text-rose-500" />
           </div>
           <p className="mt-2 text-2xl font-black text-rose-600">
-            {anomalySummary?.totalAnomalies ??
+            {anomalySummary?.emitenTerdeteksiAnomali ??
               reports.filter((r) => r.auditResult?.isAnomaly).length}{' '}
             <span className="text-xs font-semibold text-slate-400">Laporan</span>
           </p>
           <p className="mt-1 text-[10px] font-semibold text-rose-500">
-            {anomalySummary?.anomalyRatio ?? 0}% rasio terindikasi
+            {anomalySummary?.totalEmitenAktif
+              ? Math.round(
+                  (anomalySummary.emitenTerdeteksiAnomali / anomalySummary.totalEmitenAktif) * 100
+                )
+              : reports.length
+                ? Math.round(
+                    (reports.filter((r) => r.auditResult?.isAnomaly).length / reports.length) * 100
+                  )
+                : 0}
+            % rasio terindikasi
           </p>
         </Card>
 
@@ -324,10 +333,10 @@ export default function AuditorEmissionReportsRoute() {
             <TrendingDown className="h-4 w-4 text-amber-500" />
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900">
-            {anomalySummary?.divergenceStoichiometryPercent ?? 0}%
+            {anomalySummary?.rataDeviasiEmisi ?? 0}%
           </p>
           <p className="mt-1 text-[10px] font-semibold text-slate-400">
-            Ambang deviasi fisik: &plusmn;5.0%
+            {anomalySummary?.descDeviasi || 'Ambang deviasi fisik: ±5.0%'}
           </p>
         </Card>
 
@@ -339,11 +348,11 @@ export default function AuditorEmissionReportsRoute() {
             <FileSearch className="h-4 w-4 text-blue-500" />
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900">
-            {anomalySummary?.djpDiscrepanciesCount ?? 0}{' '}
+            {anomalySummary?.eFakturTidakCocok ?? 0}{' '}
             <span className="text-xs font-semibold text-slate-400">Kasus</span>
           </p>
           <p className="mt-1 text-[10px] font-semibold text-slate-400">
-            Pengecekan silang faktur DJP & kuantum
+            {anomalySummary?.descEFaktur || 'Pengecekan silang faktur DJP & kuantum'}
           </p>
         </Card>
       </div>

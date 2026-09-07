@@ -27,12 +27,14 @@ export default [
 
     // Auditor Protected Routes
     layout('routes/guards/auditor.tsx', [
-      route('audit', 'routes/auditor/emission-reports.tsx'),
+      route('audit', 'routes/auditor/emission-reports.tsx', { id: 'routes/auditor/audit' }),
       route('spatial', 'routes/auditor/spatial.tsx'),
       route('drone', 'routes/auditor/drone.tsx'),
       route('gate', 'routes/auditor/gate.tsx'),
       route('audit/ptbae', 'routes/auditor/ptbae.tsx'),
-      route('audit/emission-reports', 'routes/auditor/emission-reports.tsx'),
+      route('audit/emission-reports', 'routes/auditor/emission-reports.tsx', {
+        id: 'routes/auditor/emission-reports',
+      }),
       route('audit/forest-projects', 'routes/auditor/forest-projects.tsx'),
     ]),
 
