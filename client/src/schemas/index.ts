@@ -7,6 +7,7 @@ export * from './company.schema';
 export * from './compliance.schema';
 export * from './report.schema';
 export * from './emission-report-audit.schema';
+export * from './emission-report-ai.schema';
 export * from './certificate.schema';
 export * from './governance.schema';
 export * from './audit.schema';

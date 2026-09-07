@@ -10,6 +10,7 @@ export * from './ptbae-application';
 export * from './report';
 export * from './emission-calculator';
 export * from './emission-report-audit';
+export * from './emission-report-ai';
 export * from './certificate';
 export * from './bursa';
 export * from './kth';

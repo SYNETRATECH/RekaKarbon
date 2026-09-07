@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { EmissionReportAiSummarySchema } from './emission-report-ai.schema';
 import {
   CarbonVolumeSchema,
   DateTimeStringSchema,
@@ -60,6 +61,7 @@ export const EmissionReportAuditHistoryItemSchema = z.object({
 export const EmissionReportAuditDetailSchema = EmissionReportAuditListItemSchema.extend({
   facilityRegion: z.string(),
   calculationData: z.unknown(),
+  aiSummary: EmissionReportAiSummarySchema.nullable().optional(),
   auditedAt: DateTimeStringSchema.nullable(),
   auditorNotes: z.string().nullable(),
   auditBlockchainTxHash: z.string().nullable(),

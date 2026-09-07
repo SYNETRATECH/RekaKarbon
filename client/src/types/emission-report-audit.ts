@@ -1,3 +1,5 @@
+import type { EmissionReportAiSummary } from './emission-report-ai';
+
 export type EmissionReportAuditStatus = 'submitted' | 'revision_required' | 'approved' | 'rejected';
 
 export type EmissionReportAuditAction =
@@ -43,6 +45,7 @@ export interface EmissionReportAuditHistoryItem {
 export interface EmissionReportAuditDetail extends EmissionReportAuditListItem {
   facilityRegion: string;
   calculationData: unknown;
+  aiSummary?: EmissionReportAiSummary | null;
   auditedAt: string | null;
   auditorNotes: string | null;
   auditBlockchainTxHash: string | null;

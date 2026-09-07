@@ -10,6 +10,7 @@ import {
   Send,
   ShieldCheck,
 } from 'lucide-react';
+import { AiAuditSummaryPanel } from '@/components/audit/AiAuditSummaryPanel';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { getEmissionReportAiSummary, getScopeValue } from '@/lib/audit-ai-summary';
 import { formatCarbon } from '@/lib/formatters';
 import { formatDateTime } from '@/lib/dates';
 import { emissionReportAuditRepository } from '@/repositories';
@@ -40,12 +42,6 @@ const STATUS_LABELS: Record<EmissionReportAuditListItem['status'], string> = {
   approved: 'Disetujui',
   rejected: 'Status lama',
 };
-
-function getScopeValue(data: unknown, key: 'scope1' | 'scope2' | 'scope3'): number | null {
-  if (typeof data !== 'object' || data === null || Array.isArray(data)) return null;
-  const value = (data as Record<string, unknown>)[key];
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
 
 export async function clientLoader() {
   const reports = await emissionReportAuditRepository.getQueue().catch(() => []);
@@ -76,6 +72,7 @@ export default function AuditorEmissionReportsRoute() {
   );
   const [notes, setNotes] = useState('');
   const { toast } = useToast();
+  const aiSummary = selected ? getEmissionReportAiSummary(selected) : null;
 
   const loadQueue = async () => {
     setIsLoading(true);
@@ -278,6 +275,8 @@ export default function AuditorEmissionReportsRoute() {
                   </p>
                 </div>
               </div>
+
+              {aiSummary && <AiAuditSummaryPanel summary={aiSummary} />}
 
               <div className="mt-5 space-y-2">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
