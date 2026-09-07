@@ -1,0 +1,35 @@
+\input{contents/preamble}
+
+% ============================================================
+% CONFIGURATION / METADATA PANDUAN
+% ============================================================
+\newcommand{\manualtitle}{REKAKARBON: Platform dMRV Emisi Berbasis AI dan Konsorsium Blockchain Hyperledger Besu}
+\newcommand{\manualsubtitle}{Optimalisasi Tata Kelola Emisi Guna Meminimalisir Risiko Greenwashing dan Mewujudkan Indonesia Net Zero}
+\newcommand{\manualversion}{v1.0 (KMIPN VIII 2026)}
+\newcommand{\teamname}{What Time Is It?}
+\newcommand{\universityname}{POLITEKNIK NEGERI MALANG}
+
+\begin{document}
+
+% 1. Halaman Sampul (Cover)
+\input{contents/cover}
+
+% 2. Daftar Isi (Table of Contents)
+\newpage
+\pagenumbering{roman}
+\pagestyle{fancy}
+\tableofcontents
+\addcontentsline{toc}{section}{DAFTAR ISI}
+
+% 3. Daftar Gambar (Table of Images / Figures)
+\newpage
+\listoffigures
+\addcontentsline{toc}{section}{DAFTAR GAMBAR}
+
+% 4. Konten Utama Buku Panduan (Main Manual Book Guideline)
+\newpage
+\pagenumbering{arabic}
+\pagestyle{fancy}
+\input{contents/guideline}
+
+\end{document}
