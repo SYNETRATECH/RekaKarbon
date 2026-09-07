@@ -31,10 +31,9 @@ describe('ReportsService - ML Anomaly Detection Integration', () => {
     ],
   };
 
-  beforeAll(async () => {
-    // Initialise real ML engine with ONNX session
+  beforeAll(() => {
+    // Initialise ML engine in deterministic scoring mode without booting native C++ runtime
     mlEngine = new MlAuditEngineService();
-    await mlEngine.initOnnxSession();
   });
 
   beforeEach(async () => {

@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ort from 'onnxruntime-node';
@@ -16,13 +21,54 @@ import {
 import { findWorkspaceRoot } from '../common/utils';
 
 @Injectable()
-export class MlAuditEngineService implements OnModuleInit {
+export class MlAuditEngineService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MlAuditEngineService.name);
   private onnxSession: ort.InferenceSession | null = null;
   private onnxModelPath: string | null = null;
 
   async onModuleInit() {
     await this.initOnnxSession();
+  }
+
+  onModuleDestroy(): void {
+    this.onnxSession = null;
+  }
+
+  /**
+   * Ensures onnxruntime-node native C++ addon is not redundantly initialized
+   * with duplicate environment cleanup hooks across Jest worker VM contexts.
+   */
+  private ensureOrtBindingSafeguard(): void {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const bindingMod = require('onnxruntime-node/dist/binding') as {
+        binding?: { initOrtOnce?: (...args: unknown[]) => unknown };
+      };
+      const processKey = Symbol.for('__REKAKARBON_ORT_INITIALIZED__');
+      const proc = process as unknown as Record<symbol, boolean | undefined>;
+
+      if (proc[processKey]) {
+        if (
+          bindingMod.binding &&
+          typeof bindingMod.binding.initOrtOnce === 'function'
+        ) {
+          bindingMod.binding.initOrtOnce = () => undefined;
+        }
+      } else {
+        const originalInitOrtOnce = bindingMod.binding?.initOrtOnce;
+        if (typeof originalInitOrtOnce === 'function' && bindingMod.binding) {
+          bindingMod.binding.initOrtOnce = function (
+            this: unknown,
+            ...args: unknown[]
+          ): unknown {
+            proc[processKey] = true;
+            return originalInitOrtOnce.apply(this, args);
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 
   /**
@@ -47,6 +93,7 @@ export class MlAuditEngineService implements OnModuleInit {
     }
 
     try {
+      this.ensureOrtBindingSafeguard();
       this.onnxSession = await ort.InferenceSession.create(modelPath, {
         executionProviders: ['cpu'],
       });
@@ -308,6 +355,7 @@ export class MlAuditEngineService implements OnModuleInit {
     }
 
     try {
+      this.ensureOrtBindingSafeguard();
       const freshSession = await ort.InferenceSession.create(modelPath, {
         executionProviders: ['cpu'],
       });
