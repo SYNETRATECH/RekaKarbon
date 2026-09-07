@@ -6,7 +6,7 @@ import {
   AuditEmissionReportDto,
   IndustrialSector,
 } from './dto/audit-emission-report.dto';
-import { MlAuditResult } from './types/audit.types';
+import type { MlAuditResult } from './types/ml-audit.types';
 import {
   EmissionFeatureEngineer,
   MARKET_PRICE_RANGES,

@@ -2,6 +2,7 @@ import { AuditController } from '../../src/audit/audit.controller';
 import { AuditService } from '../../src/audit/audit.service';
 import { MlAuditEngineService } from '../../src/audit/ml-audit-engine.service';
 import { EmissionReportAuditService } from '../../src/audit/emission-report-audit.service';
+import { MlRetrainingService } from '../../src/audit/ml-retraining.service';
 import {
   createContractTestHarness,
   ContractTestHarness,
@@ -99,6 +100,11 @@ describe('Audit & dMRV API Contract Test', () => {
     decide: jest.fn().mockResolvedValue({ status: 'approved' }),
   };
 
+  const mockMlRetrainingService = {
+    getStatus: jest.fn().mockResolvedValue({}),
+    triggerRetraining: jest.fn().mockResolvedValue({}),
+  };
+
   beforeAll(async () => {
     harness = await createContractTestHarness({
       controllers: [AuditController],
@@ -108,6 +114,10 @@ describe('Audit & dMRV API Contract Test', () => {
         {
           provide: EmissionReportAuditService,
           useValue: mockEmissionReportAuditService,
+        },
+        {
+          provide: MlRetrainingService,
+          useValue: mockMlRetrainingService,
         },
       ],
     });

@@ -3,7 +3,10 @@ import {
   AuditEmissionReportDto,
   IndustrialSector,
 } from './dto/audit-emission-report.dto';
-import type { FeatureContribution, XaiDiagnostics } from './types/audit.types';
+import type {
+  FeatureContribution,
+  XaiDiagnostics,
+} from './types/ml-audit.types';
 
 /**
  * The ONNX anomaly pipeline (`ml/models/anomaly_pipeline.onnx`) is trained on the
