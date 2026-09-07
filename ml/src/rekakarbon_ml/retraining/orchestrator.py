@@ -25,7 +25,6 @@ import json
 import logging
 import os
 import shutil
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
@@ -38,28 +37,12 @@ from ..monitoring.drift_detector import DriftDetector, DriftReport
 from ..training.onnx_exporter import export_pipeline_to_onnx
 from ..training.trainer import train_and_save_pipeline
 from .data_ingestion import DataIngestionPipeline, IngestionConfig, IngestionResult
+from .types import RetrainingResult
 
 logger = logging.getLogger(__name__)
 
 # ─── Sentinel path for the staged (candidate) model artifacts ─────────────────
 _CANDIDATE_SUFFIX = "_candidate"
-
-
-@dataclass
-class RetrainingResult:
-    """Structured result of a single retraining pipeline run."""
-
-    triggered: bool
-    trigger_reason: str  # "DRIFT_DETECTED" | "SCHEDULE_DUE" | "MANUAL" | "NOT_TRIGGERED"
-    drift_report: dict[str, Any] | None
-    ingestion_result: dict[str, Any] | None
-    quality_gate_passed: bool | None
-    model_swapped: bool
-    new_model_version: str | None
-    previous_model_version: str | None
-    retraining_timestamp: str
-    days_since_last_retrain: float | None
-    error: str | None = None
 
 
 class RetrainingOrchestrator:
@@ -341,7 +324,11 @@ class RetrainingOrchestrator:
             reasons.append("DRIFT_DETECTED")
 
         schedule_days = self.retrain_cfg.scheduled_retrain_days
-        if days_since is None or days_since >= schedule_days:
+        has_feedback_pool = os.path.exists(self.retrain_cfg.feedback_pool_path)
+        # If no prior run exists, only trigger scheduled retraining if feedback pool data exists
+        if (days_since is None and has_feedback_pool) or (
+            days_since is not None and days_since >= schedule_days
+        ):
             reasons.append("SCHEDULE_DUE")
 
         if reasons:

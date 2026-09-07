@@ -26,6 +26,7 @@ from sklearn.model_selection import train_test_split
 
 from ..config import get_retraining_config
 from ..data.validator import validate_raw_dataframe
+from .types import IngestionResult
 
 logger = logging.getLogger(__name__)
 
@@ -46,22 +47,6 @@ class IngestionConfig:
     )
     output_merged_path: str = "data/production/merged_train.csv"
     random_state: int = 20260830
-
-
-@dataclass
-class IngestionResult:
-    """Summary of the data ingestion and blending operation."""
-
-    success: bool
-    n_real_records: int
-    n_synthetic_records: int
-    n_merged_records: int
-    real_anomaly_ratio: float
-    merged_anomaly_ratio: float
-    validation_summary: dict[str, Any]
-    output_path: str
-    timestamp: str
-    error: str | None = None
 
 
 class DataIngestionPipeline:

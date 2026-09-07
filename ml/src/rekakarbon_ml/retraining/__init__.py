@@ -8,12 +8,13 @@ from .data_ingestion import (
     DataIngestionPipeline,
     FeedbackRecord,
     IngestionConfig,
-    IngestionResult,
 )
-from .orchestrator import RetrainingOrchestrator, RetrainingResult, run_retraining_pipeline
+from .orchestrator import RetrainingOrchestrator, run_retraining_pipeline
+from .types import DriftReport, IngestionResult, RetrainingResult
 
 __all__ = [
     "DataIngestionPipeline",
+    "DriftReport",
     "FeedbackRecord",
     "IngestionConfig",
     "IngestionResult",

@@ -11,12 +11,12 @@ PSI Interpretation:
 """
 
 import logging
-from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
 
 from ..training.transformers import DERIVED_FEATURE_NAMES, EmissionFeatureEngineer
+from .types import DriftReport
 
 logger = logging.getLogger(__name__)
 
@@ -26,20 +26,13 @@ MIN_PRODUCTION_SAMPLES: int = 50  # Minimum real records before drift is assesse
 PSI_BINS: int = 10
 PSI_EPSILON: float = 1e-6
 
-
-@dataclass
-class DriftReport:
-    """Result of a single drift detection scan."""
-
-    feature_psi: dict[str, float]
-    mean_psi: float
-    max_psi: float
-    drift_detected: bool
-    warning_detected: bool
-    triggered_features: list[str]
-    n_baseline_samples: int
-    n_production_samples: int
-    recommendation: str
+__all__ = [
+    "DriftReport",
+    "DriftDetector",
+    "compute_psi",
+    "PSI_THRESHOLD_WARNING",
+    "PSI_THRESHOLD_CRITICAL",
+]
 
 
 def compute_psi(
