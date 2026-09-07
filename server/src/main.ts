@@ -2,17 +2,17 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import {
   TransformInterceptor,
   LoggingInterceptor,
   HttpExceptionFilter,
+  isAllowedOrigin,
 } from './common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Dynamic CORS origin configuration for multi-server / distributed deployment
   const corsOriginsEnv = process.env.CORS_ORIGINS;
   const defaultAllowedOrigins = [
     'http://localhost:5173',
@@ -21,21 +21,21 @@ async function bootstrap() {
   const allowedOrigins = corsOriginsEnv
     ? corsOriginsEnv.split(',').map((o) => o.trim())
     : defaultAllowedOrigins;
+  const isDev = process.env.NODE_ENV !== 'production';
 
   app.enableCors({
     origin: (
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server) or in whitelist
-      if (
-        !origin ||
-        allowedOrigins.includes('*') ||
-        allowedOrigins.includes(origin)
-      ) {
+      if (isAllowedOrigin(origin, allowedOrigins, isDev)) {
         callback(null, true);
       } else {
-        callback(new Error(`Origin ${origin} is not allowed by CORS policy`));
+        Logger.warn(
+          `[CORS] Rejected cross-origin request from: ${origin}`,
+          'CorsPolicy',
+        );
+        callback(null, false);
       }
     },
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
@@ -87,6 +87,8 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
+  const logger = new Logger('Bootstrap');
+  logger.log(`Server listening on http://localhost:${port} (0.0.0.0:${port})`);
 }
 void bootstrap();
