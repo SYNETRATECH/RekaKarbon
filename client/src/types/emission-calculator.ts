@@ -110,6 +110,7 @@ export interface CalculationData {
   scope2: number;
   scope3: number;
   entries: CalculationEntry[];
+  auditResult?: MlAuditResult | null;
 }
 
 export interface CalculatorReportSubmission {

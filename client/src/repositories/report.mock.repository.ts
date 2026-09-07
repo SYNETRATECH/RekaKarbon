@@ -1,6 +1,7 @@
 import type { ReportRepository } from './report.repository';
 import type { CalculationData, CalculatorReportSubmission, EmissionReport } from '../types';
 import { MOCK_EMISSION_REPORTS } from '../lib/mock/reports';
+import { synthesizeDefaultAuditResult } from '../lib/generateEmissionReportPDF';
 import { MockPtbaeRepository } from './ptbae.repository';
 
 const ptbaeMockRepo = new MockPtbaeRepository();
@@ -27,6 +28,14 @@ export class MockReportRepository implements ReportRepository {
     const totalEmissionsTCO2e = Math.max(0, totalEmissions);
     const reportId = `mock-upload-${year}-${Date.now()}`;
     const allocation = await ptbaeMockRepo.getAllocation(sector, year);
+    const auditResult = synthesizeDefaultAuditResult({
+      total: totalEmissionsTCO2e,
+      scope1: totalEmissionsTCO2e * 0.6,
+      scope2: totalEmissionsTCO2e * 0.3,
+      scope3: totalEmissionsTCO2e * 0.1,
+      sectorName: sector,
+      year,
+    });
 
     this.reports = [
       {
@@ -47,6 +56,7 @@ export class MockReportRepository implements ReportRepository {
         quotaPTBAESourceDocument: allocation?.sourceDocument ?? null,
         method: 'UPLOAD',
         sectorId: sector,
+        auditResult,
       },
       ...this.reports,
     ];

@@ -49,9 +49,12 @@ import {
 
 import { reportRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
-import { generateEmissionReportPDF } from '@/lib/generateEmissionReportPDF';
+import {
+  generateEmissionReportPDF,
+  synthesizeDefaultAuditResult,
+} from '@/lib/generateEmissionReportPDF';
 import { AuditResultCard } from '@/components/emitter/AuditResultCard';
-import type { EmissionReport } from '@/types';
+import type { EmissionReport, MlAuditResult } from '@/types';
 
 export async function clientLoader() {
   const emissionReports = await reportRepository.getEmissionReports().catch(() => []);
@@ -185,6 +188,44 @@ export default function EmissionReportsSector() {
   const reportIsRejected = activeReport.status === 'rejected';
   const reportNeedsRevision = activeReport.status === 'revision_required';
 
+  // ──────────────────────────────────────────────────────────
+  // FLOW CONTROL: When to show form vs "Telah Disubmit"
+  //
+  // Show "Telah Disubmit" ONLY when:
+  //   1. isSubmittedLocal = true  (user just completed submit in THIS session)
+  //   2. OR exactReport exists   (report already in DB from a PREVIOUS session)
+  //
+  // The wizard form (Tab 1→2→3) is shown in ALL other cases.
+  // ──────────────────────────────────────────────────────────
+  const hasExistingReport = isSubmittedLocal || (exactReport !== undefined && !reportNeedsRevision);
+
+  const activeScopeTotals = activeReport.sectors.reduce(
+    (totals, sector) => {
+      if (sector.scope.includes('Scope 1') || sector.scope.toLowerCase() === 'proses industri') {
+        totals.scope1 += sector.emissionsTCO2e;
+      }
+      if (sector.scope.includes('Scope 2')) totals.scope2 += sector.emissionsTCO2e;
+      if (sector.scope.includes('Scope 3')) totals.scope3 += sector.emissionsTCO2e;
+      return totals;
+    },
+    { scope1: 0, scope2: 0, scope3: 0 }
+  );
+
+  const effectiveAuditResult: MlAuditResult | null =
+    activeReport.auditResult ||
+    activeReport.calculationData?.auditResult ||
+    (hasExistingReport && activeReport.totalEmissionsTCO2e > 0
+      ? synthesizeDefaultAuditResult({
+          total: activeReport.totalEmissionsTCO2e,
+          scope1: activeScopeTotals.scope1,
+          scope2: activeScopeTotals.scope2,
+          scope3: activeScopeTotals.scope3,
+          sectorName: getSectorName(activeReport.sectorId),
+          year: activeReport.year,
+          calculationData: activeReport.calculationData ?? undefined,
+        })
+      : null);
+
   const handleDownloadReport = (report: EmissionReport) => {
     const scopeTotals = report.sectors.reduce(
       (totals, sector) => {
@@ -197,6 +238,12 @@ export default function EmissionReportsSector() {
       },
       { scope1: 0, scope2: 0, scope3: 0 }
     );
+
+    const reportAuditResult: MlAuditResult | undefined =
+      report.auditResult ??
+      report.calculationData?.auditResult ??
+      effectiveAuditResult ??
+      undefined;
 
     try {
       generateEmissionReportPDF({
@@ -215,6 +262,8 @@ export default function EmissionReportsSector() {
         txHash: report.blockchainTxHash || undefined,
         blockchainReportId: report.blockchainReportId,
         sectorBreakdown: report.sectors,
+        calculationData: report.calculationData ?? undefined,
+        auditResult: reportAuditResult,
       });
     } catch (error) {
       console.error('Failed to generate emission report PDF:', error);
@@ -225,17 +274,6 @@ export default function EmissionReportsSector() {
       });
     }
   };
-
-  // ──────────────────────────────────────────────────────────
-  // FLOW CONTROL: When to show form vs "Telah Disubmit"
-  //
-  // Show "Telah Disubmit" ONLY when:
-  //   1. isSubmittedLocal = true  (user just completed submit in THIS session)
-  //   2. OR exactReport exists   (report already in DB from a PREVIOUS session)
-  //
-  // The wizard form (Tab 1→2→3) is shown in ALL other cases.
-  // ──────────────────────────────────────────────────────────
-  const hasExistingReport = isSubmittedLocal || (exactReport !== undefined && !reportNeedsRevision);
 
   const handleStartAIAudit = async (e: FormEvent) => {
     e.preventDefault();
@@ -604,7 +642,7 @@ export default function EmissionReportsSector() {
       )}
 
       {/* AI AUDIT & ANOMALY DETECTION REPORT */}
-      {activeReport.auditResult && (
+      {effectiveAuditResult && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Cpu className="w-5 h-5 text-emerald-600" />
@@ -613,7 +651,7 @@ export default function EmissionReportsSector() {
             </h3>
           </div>
           <AuditResultCard
-            auditResult={activeReport.auditResult}
+            auditResult={effectiveAuditResult}
             calculationData={activeReport.calculationData}
             merkleRoot={activeReport.merkleRoot}
             txHash={activeReport.blockchainTxHash}

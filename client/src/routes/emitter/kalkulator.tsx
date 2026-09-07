@@ -1094,6 +1094,7 @@ export default function KalkulatorHijauPage() {
       thresholdTCO2e: selectedSector.referenceThresholdTCO2e,
       fieldValues,
       calculationData: generatedPdfData.calculationData,
+      auditResult: generatedPdfData.submission.auditResult,
     });
   };
 

@@ -76,14 +76,17 @@ export const CalculationEntrySchema = z.object({
   }),
 });
 
-export const CalculationDataSchema = z.object({
-  schemaVersion: z.literal(2),
-  factorSetId: z.string().min(1),
-  scope1: CarbonVolumeSchema,
-  scope2: CarbonVolumeSchema,
-  scope3: CarbonVolumeSchema,
-  entries: z.array(CalculationEntrySchema),
-});
+export const CalculationDataSchema = z
+  .object({
+    schemaVersion: z.literal(2),
+    factorSetId: z.string().min(1),
+    scope1: CarbonVolumeSchema,
+    scope2: CarbonVolumeSchema,
+    scope3: CarbonVolumeSchema,
+    entries: z.array(CalculationEntrySchema),
+    auditResult: MlAuditResultSchema.optional(),
+  })
+  .passthrough();
 
 export const CalculatorReportSubmissionSchema = z.object({
   id: z.string().optional(),
