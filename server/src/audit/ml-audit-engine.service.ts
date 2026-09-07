@@ -6,7 +6,7 @@ import {
   AuditEmissionReportDto,
   IndustrialSector,
 } from './dto/audit-emission-report.dto';
-import { MlAuditResult } from './types/audit.types';
+import type { MlAuditResult } from './types/ml-audit.types';
 import {
   EmissionFeatureEngineer,
   MARKET_PRICE_RANGES,
@@ -276,5 +276,45 @@ export class MlAuditEngineService implements OnModuleInit {
 
   public getModelPath(): string | null {
     return this.onnxModelPath;
+  }
+
+  /**
+   * Atomically reloads the ONNX runtime session in-memory without downtime.
+   * Instantiates the new session first, verifying integrity before swapping references.
+   *
+   * @returns true if reload succeeded, false if loading failed or model file not found
+   */
+  public async reloadModel(): Promise<boolean> {
+    const workspaceRoot = findWorkspaceRoot(__dirname);
+    const defaultModelPath = path.join(
+      workspaceRoot,
+      'ml/models/anomaly_pipeline.onnx',
+    );
+    const modelPath = process.env.ONNX_MODEL_PATH || defaultModelPath;
+
+    if (!fs.existsSync(modelPath)) {
+      this.logger.warn(
+        `Cannot reload ONNX model: file not found at '${modelPath}'.`,
+      );
+      return false;
+    }
+
+    try {
+      const freshSession = await ort.InferenceSession.create(modelPath, {
+        executionProviders: ['cpu'],
+      });
+      this.onnxSession = freshSession;
+      this.onnxModelPath = modelPath;
+      this.logger.log(
+        `[HOT-RELOAD] Successfully reloaded ONNX Anomaly Detection Model from: ${modelPath}`,
+      );
+      return true;
+    } catch (err) {
+      this.logger.error(
+        `Failed to hot-reload ONNX session from '${modelPath}': ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      return false;
+    }
   }
 }

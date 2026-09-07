@@ -26,12 +26,16 @@ poetry install               # Install environment and dependencies
 poetry run ruff format .     # Format all Python files (PEP 8, 100 cols)
 poetry run ruff check .      # Lint check with auto-fixes
 poetry run mypy src tests    # Static type analysis across package and tests
-poetry run pytest -v         # Run all 44 tests across 8 testing suites
+poetry run pytest -v         # Run all tests across all testing suites
 poetry run preprocess        # Run batch schema validation, stratified split & feature registry CLI
 poetry run train             # Train IsolationForest on train.csv & export ONNX artifact
 poetry run eval              # Run model evaluation on test.csv & quality gate assessment
 poetry run pipeline          # Execute end-to-end MLOps workflow orchestrator CLI
+poetry run retrain           # Run continuous retraining with hybrid drift/schedule trigger
+poetry run retrain --dry-run # Check retraining triggers without swapping model artifacts
+poetry run retrain --force   # Force immediate retraining regardless of trigger state
 poetry run studio            # Launch Streamlit development studio
+
 ```
 
 ---
@@ -89,6 +93,13 @@ ml/
 │       ├── pipeline/           # WORKFLOW ORCHESTRATION MODULE
 │       │   ├── __init__.py
 │       │   └── orchestrator.py    # End-to-end MLOps workflow coordinator CLI
+│       ├── monitoring/         # PRODUCTION DRIFT DETECTION MODULE
+│       │   ├── __init__.py
+│       │   └── drift_detector.py  # PSI-based drift detector (DriftDetector, DriftReport)
+│       ├── retraining/         # CONTINUOUS RETRAINING PIPELINE
+│       │   ├── __init__.py
+│       │   ├── data_ingestion.py  # Production feedback pool ingestion & real/synthetic blending
+│       │   └── orchestrator.py    # Hybrid-trigger retraining orchestrator CLI (poetry run retrain)
 │       └── studio/             # STREAMLIT PROTOTYPING STUDIO (MODULAR)
 │           ├── __init__.py
 │           ├── app.py             # Lean orchestrator dashboard entrypoint

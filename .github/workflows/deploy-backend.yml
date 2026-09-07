@@ -86,8 +86,12 @@ jobs:
           cp -r server/dist bundle/server/dist
           cp -r server/prisma bundle/server/prisma
 
-          mkdir -p bundle/ml/models
-          cp -r ml/models/* bundle/ml/models/
+          mkdir -p bundle/ml/models bundle/ml/src bundle/ml/data
+          cp -r ml/models/* bundle/ml/models/ 2>/dev/null || true
+          cp -r ml/src/* bundle/ml/src/ 2>/dev/null || true
+          cp -r ml/data/* bundle/ml/data/ 2>/dev/null || true
+          cp ml/pyproject.toml bundle/ml/ 2>/dev/null || true
+          cp ml/poetry.lock bundle/ml/ 2>/dev/null || true
 
           tar -czf "rekakarbon-backend-${RELEASE_ID}.tar.gz" -C bundle .
 
@@ -161,6 +165,21 @@ jobs:
               ln -sfn "$PROJECT_DIR/shared/.env" "$PROJECT_DIR/releases/$RELEASE_ID/server/.env"
             fi
 
+            # 5a. Ensure shared directory for persistent ML models and production feedback data
+            mkdir -p "$PROJECT_DIR/shared/ml_models" "$PROJECT_DIR/shared/ml_data"
+
+            # Seed initial model artifacts into shared if shared is empty
+            if [ ! -f "$PROJECT_DIR/shared/ml_models/anomaly_pipeline.onnx" ] && [ -d "$PROJECT_DIR/releases/$RELEASE_ID/ml/models" ]; then
+              echo "Seeding initial ML models into shared/ml_models..."
+              cp -r "$PROJECT_DIR/releases/$RELEASE_ID/ml/models/"* "$PROJECT_DIR/shared/ml_models/" 2>/dev/null || true
+            fi
+
+            # Link shared models and production data into release directory so retrained models persist across deployments
+            ln -sfn "$PROJECT_DIR/shared/ml_models" "$PROJECT_DIR/releases/$RELEASE_ID/ml/models"
+            mkdir -p "$PROJECT_DIR/releases/$RELEASE_ID/ml/data"
+            ln -sfn "$PROJECT_DIR/shared/ml_data" "$PROJECT_DIR/releases/$RELEASE_ID/ml/data/production"
+
+
             # 6. Sync Nginx configuration if provided
             if [ -f "$PROJECT_DIR/releases/$RELEASE_ID/server/nginx.conf" ]; then
               echo "Updating Nginx configuration..."
@@ -199,6 +218,13 @@ jobs:
 
             echo "Generating Prisma Client for host architecture..."
             pnpm --filter ./server prisma:generate
+
+            # 9a. Install/update Python ML dependencies on host if poetry is installed
+            if command -v poetry &> /dev/null && [ -f "$PROJECT_DIR/releases/$RELEASE_ID/ml/pyproject.toml" ]; then
+              echo "Installing Python ML dependencies via Poetry on host..."
+              (cd "$PROJECT_DIR/releases/$RELEASE_ID/ml" && poetry install --no-interaction --only main) || echo "Poetry install skipped or warning"
+            fi
+
 
             # 10. Run database migrations inside release dir
             pnpm --filter ./server prisma:migrate:deploy
