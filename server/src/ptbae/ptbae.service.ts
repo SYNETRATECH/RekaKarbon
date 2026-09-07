@@ -6,6 +6,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import {
+  BlockchainOperationStatus,
   FileCategory,
   Prisma,
   PtbaeApplicationEventType,
@@ -17,6 +18,11 @@ import {
 } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { BlockchainService } from '../blockchain/blockchain.service';
+import { BlockchainOperationService } from '../blockchain/blockchain-operation.service';
+import {
+  createPtbaeAnchorOperationInput,
+  createPtbaeQuotaIssuanceOperationInput,
+} from '../blockchain/blockchain-operation.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { PtbaeIntegrityService } from './ptbae-integrity.service';
@@ -86,6 +92,7 @@ export class PtbaeService {
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
     private readonly blockchainService: BlockchainService,
+    private readonly blockchainOperationService: BlockchainOperationService,
     private readonly integrityService: PtbaeIntegrityService,
   ) {}
 
@@ -506,6 +513,24 @@ export class PtbaeService {
       );
     }
 
+    let quotaOperation: ReturnType<
+      typeof createPtbaeQuotaIssuanceOperationInput
+    >;
+    try {
+      quotaOperation = createPtbaeQuotaIssuanceOperationInput(
+        applicationId,
+        existing.complianceYear,
+        walletAddress,
+        dto.quotaTCO2e,
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Alamat wallet tidak valid';
+      throw new BadRequestException(
+        `Alamat wallet perusahaan tidak valid untuk penerbitan kuota: ${message}`,
+      );
+    }
+
     await this.prisma.ptbaeApplication.update({
       where: { id: applicationId },
       data: {
@@ -515,18 +540,85 @@ export class PtbaeService {
         ministryNotes: dto.notes?.trim(),
       },
     });
-
-    let blockchainTxHash: string;
-    try {
-      blockchainTxHash = await this.blockchainService.issueQuota(
-        walletAddress,
-        dto.quotaTCO2e,
+    const existingQuotaOperation =
+      await this.blockchainOperationService.ensurePendingOperation(
+        quotaOperation,
       );
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Blockchain tidak tersedia';
+
+    if (existingQuotaOperation.payloadHash !== quotaOperation.payloadHash) {
+      throw new ConflictException(
+        'Parameter penerbitan kuota berubah untuk pengajuan yang sama. Buat pengajuan baru atau gunakan nilai kuota yang sama.',
+      );
+    }
+
+    let blockchainTxHash = existingQuotaOperation.transactionHash;
+    if (
+      existingQuotaOperation.status === BlockchainOperationStatus.SUBMITTED &&
+      blockchainTxHash
+    ) {
       throw new ServiceUnavailableException(
-        `Persetujuan disimpan sebagai approval_processing, tetapi kuota belum diterbitkan: ${message}`,
+        'Transaksi penerbitan kuota sudah dikirim dan masih menunggu rekonsiliasi blockchain.',
+      );
+    }
+
+    if (
+      existingQuotaOperation.status ===
+        BlockchainOperationStatus.FAILED_PERMANENT ||
+      existingQuotaOperation.status ===
+        BlockchainOperationStatus.RECONCILIATION_REQUIRED
+    ) {
+      throw new ServiceUnavailableException(
+        'Penerbitan kuota memerlukan rekonsiliasi blockchain sebelum dapat dilanjutkan.',
+      );
+    }
+
+    if (
+      existingQuotaOperation.status !== BlockchainOperationStatus.CONFIRMED ||
+      !blockchainTxHash
+    ) {
+      try {
+        blockchainTxHash = await this.blockchainService.issueQuota(
+          walletAddress,
+          dto.quotaTCO2e,
+        );
+      } catch (error: unknown) {
+        await this.blockchainOperationService.markFailed(
+          quotaOperation.idempotencyKey,
+          error,
+          'retryable',
+          new Date(Date.now() + 15_000),
+        );
+        const message =
+          error instanceof Error ? error.message : 'Blockchain tidak tersedia';
+        throw new ServiceUnavailableException(
+          `Persetujuan disimpan sebagai approval_processing, tetapi kuota belum diterbitkan: ${message}`,
+        );
+      }
+
+      try {
+        await this.blockchainOperationService.markConfirmed(
+          quotaOperation.idempotencyKey,
+          {
+            txHash: blockchainTxHash,
+            chainId: quotaOperation.chainId,
+            contractAddress: quotaOperation.contractAddress,
+          },
+        );
+      } catch (error: unknown) {
+        await this.blockchainOperationService.markFailed(
+          quotaOperation.idempotencyKey,
+          error,
+          'reconciliation',
+        );
+        throw new ServiceUnavailableException(
+          'Kuota sudah dikirim ke blockchain, tetapi status operasinya belum tersimpan. Rekonsiliasi diperlukan agar penerbitan tidak dilakukan ulang.',
+        );
+      }
+    }
+
+    if (!blockchainTxHash) {
+      throw new ServiceUnavailableException(
+        'Transaksi penerbitan kuota belum memiliki hash transaksi.',
       );
     }
 
@@ -678,6 +770,18 @@ export class PtbaeService {
         anchorType,
         merkleRoot: integrity.merkleRoot,
       },
+    });
+
+    const operation = createPtbaeAnchorOperationInput(
+      application.id,
+      version.id,
+      anchorType,
+      integrity.merkleRoot,
+    );
+    await transaction.blockchainOperation.upsert({
+      where: { idempotencyKey: operation.idempotencyKey },
+      create: operation,
+      update: {},
     });
 
     await transaction.ptbaeApplication.update({

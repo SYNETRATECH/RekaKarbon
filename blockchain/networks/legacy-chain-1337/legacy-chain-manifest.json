@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "archiveId": "legacy-chain-1337",
+  "chainId": 1337,
+  "archiveMode": "read-only-reference",
+  "capturedAt": "2026-09-05T17:53:55.982Z",
+  "sourceFiles": [
+    {
+      "path": "besu-config/genesis.json",
+      "sha256": "15cb0803c67759e8d453641b80fd90bb5c9fb296fcbc6af4a09d8a9dbaa82c49",
+      "bytes": 1083
+    },
+    {
+      "path": "docker-compose.yml",
+      "sha256": "54bfd6c285b5ac4fb1a4308383e933a7bd714f8b82c660c41034411be984099f",
+      "bytes": 662
+    },
+    {
+      "path": "deployment-info.json",
+      "sha256": "bb5218e6329dddc0ba156cd24aacc0bff7e616afbdf0acc93165919d6ed375a4",
+      "bytes": 346
+    }
+  ],
+  "deploymentInfo": {
+    "rekaKarbonAddress": "0x3f6c622D32dA3BC70730C9E677ec343cb5acFe68",
+    "emissionReportRegistryAddress": "0x51FC52Fd0B30fA0319D97893dEFE0201fEd39C4c",
+    "marketOperator": "0x627306090abaB3A6e1400e9345bC60c78a8BEf57",
+    "network": "besu_dev",
+    "deployer": "0x627306090abaB3A6e1400e9345bC60c78a8BEf57",
+    "timestamp": "2026-09-04T14:19:12.088Z"
+  },
+  "verification": {
+    "genesisConfigChainId": 1337,
+    "genesisFileSha256": "15cb0803c67759e8d453641b80fd90bb5c9fb296fcbc6af4a09d8a9dbaa82c49",
+    "finalBlockNumber": null,
+    "finalBlockHash": null,
+    "genesisHash": null
+  },
+  "notes": [
+    "Manifest ini tidak menyalin private key atau data directory Besu.",
+    "Final block, final block hash, dan genesis hash harus diisi dari node legacy saat masih tersedia.",
+    "Sumber legacy tidak boleh dipakai untuk menjalankan atau men-deploy jaringan QBFT aktif.",
+    "Chain aktif RekaKarbon menggunakan chain ID 1338 dan resource Docker yang berbeda."
+  ]
+}

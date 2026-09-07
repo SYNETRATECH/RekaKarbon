@@ -41,7 +41,7 @@ export class HealthService {
           status: 'synced' as const,
           network: 'Hyperledger Besu (IBFT 2.0)',
           latestBlock: 12480,
-          chainId: 1337,
+          chainId: 1338,
         },
         storage: {
           status: 'operational' as const,

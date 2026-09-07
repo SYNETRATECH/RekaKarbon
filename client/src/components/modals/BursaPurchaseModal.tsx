@@ -23,6 +23,7 @@ export default function BursaPurchaseModal({
 }: BursaPurchaseModalProps) {
   const [buyQuantity, setBuyQuantity] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [purchaseRequestId, setPurchaseRequestId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const availableTCO2e = token?.volumeAvailableTCO2e ?? 0;
@@ -35,9 +36,11 @@ export default function BursaPurchaseModal({
   useEffect(() => {
     if (!token) {
       setBuyQuantity(0);
+      setPurchaseRequestId(null);
       return;
     }
     setBuyQuantity(maxPurchaseTCO2e);
+    setPurchaseRequestId(globalThis.crypto.randomUUID());
   }, [maxPurchaseTCO2e, token]);
 
   if (!token) return null;
@@ -55,7 +58,11 @@ export default function BursaPurchaseModal({
     try {
       // Pass the UUID directly to the repository
       const listingId = token.id;
-      await bursaRepository.buyCarbonToken(listingId, buyQuantity);
+      await bursaRepository.buyCarbonToken(
+        listingId,
+        buyQuantity,
+        purchaseRequestId ?? globalThis.crypto.randomUUID()
+      );
 
       toast({
         title: 'Transaksi Berhasil 🎉',

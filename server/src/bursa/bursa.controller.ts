@@ -75,6 +75,7 @@ export class BursaController {
       userId,
       dto.listingId,
       dto.volumeTCO2e,
+      dto.requestId,
     );
     return {
       success: true,

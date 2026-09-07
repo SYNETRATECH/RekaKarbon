@@ -4,12 +4,22 @@ export interface BlockchainTransactionReceipt {
   blockNumber?: number | bigint;
 }
 
+export interface BlockchainTransactionStatus {
+  status: 'pending' | 'confirmed' | 'failed';
+  txHash: string;
+  blockNumber: number | null;
+  chainId: number;
+  contractAddress: string | null;
+}
+
 export interface BlockchainTransaction {
   wait(): Promise<BlockchainTransactionReceipt | null>;
 }
 
 export interface BlockchainTransactionOverrides {
   gasPrice?: number | bigint;
+  maxFeePerGas?: number | bigint;
+  maxPriorityFeePerGas?: number | bigint;
 }
 
 export interface BlockchainHealth {
@@ -39,6 +49,16 @@ export interface BlockchainRetirementCertificate {
 export interface BlockchainBursaListingResult {
   listingId: number;
   txHash: string;
+}
+
+export type BlockchainBursaListingReadinessReason =
+  'eligible' | 'asset_not_registered' | 'asset_frozen' | 'insufficient_balance';
+
+export interface BlockchainBursaListingReadiness {
+  eligible: boolean;
+  reason: BlockchainBursaListingReadinessReason;
+  message: string;
+  onChainBalanceTco2e: number;
 }
 
 export interface BlockchainBursaQuote {
@@ -74,6 +94,9 @@ export interface BlockchainLog {
 }
 
 export interface CarbonTokenContract {
+  carbonAssets(
+    tokenId: number,
+  ): Promise<readonly [string, string, string, boolean]>;
   balanceOf(address: string, tokenId: number): Promise<bigint>;
   issueQuota(
     toAddress: string,
@@ -86,10 +109,12 @@ export interface CarbonTokenContract {
     toAddress: string,
     amount: number,
     coordinates: string,
+    overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
   mintWalletCredit(
     toAddress: string,
     amountIdr: number,
+    overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
   executeBursaPurchase(
     buyer: string,
@@ -97,17 +122,20 @@ export interface CarbonTokenContract {
     assetId: number,
     amountTco2e: number,
     totalCost: number,
+    overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
   retireCarbonWithCertificate(
     assetId: number,
     amountTco2e: number,
     certNumber: string,
+    overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
   retireCarbonWithCertificateFor(
     retiree: string,
     assetId: number,
     amountTco2e: number,
     certNumber: string,
+    overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
   createBursaListing(
     seller: string,
@@ -174,7 +202,11 @@ export interface CarbonTokenContract {
 }
 
 export interface EmissionRegistryContract {
-  submitReport(year: number, rootHash: string): Promise<BlockchainTransaction>;
+  submitReport(
+    year: number,
+    rootHash: string,
+    overrides?: BlockchainTransactionOverrides,
+  ): Promise<BlockchainTransaction>;
   submitReportFor(
     reporter: string,
     year: number,

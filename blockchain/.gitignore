@@ -12,3 +12,7 @@ artifacts/
 # Mac
 .DS_Store
 deployment-info.json
+deployment-info-*.json
+
+# Generated QBFT keys, genesis, node manifests, and local environment files.
+networks/local-qbft/generated/

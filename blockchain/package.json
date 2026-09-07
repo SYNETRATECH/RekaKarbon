@@ -6,7 +6,20 @@
   "scripts": {
     "test": "hardhat test",
     "typecheck": "tsc --noEmit",
-    "compile": "hardhat compile"
+    "compile": "hardhat compile",
+    "network:generate": "ts-node --project tsconfig.json scripts/network/generate-qbft-network.ts",
+    "network:generate:force": "ts-node --project tsconfig.json scripts/network/generate-qbft-network.ts --force",
+    "network:archive:legacy": "ts-node --project tsconfig.json scripts/network/archive-legacy-chain.ts",
+    "network:up": "docker compose -p rekakarbon-qbft --env-file networks/local-qbft/generated/.env -f docker-compose.qbft.yml up -d",
+    "network:down": "docker compose -p rekakarbon-qbft --env-file networks/local-qbft/generated/.env -f docker-compose.qbft.yml down",
+    "network:logs": "docker compose -p rekakarbon-qbft --env-file networks/local-qbft/generated/.env -f docker-compose.qbft.yml logs -f --tail=100",
+    "network:check": "ts-node --project tsconfig.json scripts/network/check-qbft-network.ts",
+    "network:reset": "ts-node --project tsconfig.json scripts/network/reset-qbft-network.ts",
+    "start-local-qbft": "pnpm network:up",
+    "stop-local-qbft": "pnpm network:down",
+    "check-network": "pnpm network:check",
+    "show-network-status": "pnpm network:check",
+    "reset-local-qbft": "pnpm network:reset"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
