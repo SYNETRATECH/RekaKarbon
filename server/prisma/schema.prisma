@@ -94,6 +94,31 @@ enum PtbaeBlockchainAnchorStatus {
   FAILED
 }
 
+enum BlockchainOperationType {
+  PTBAE_ANCHOR
+  EMISSION_REPORT_SUBMISSION
+  EMISSION_REPORT_AUDIT
+  PTBAE_QUOTA_ISSUANCE
+  SPE_GRK_ISSUANCE
+  BURSA_LISTING_CREATE
+  BURSA_LISTING_CONFIGURE
+  BURSA_LISTING_ACTIVATE
+  BURSA_LISTING_PRICE_UPDATE
+  BURSA_LISTING_PURCHASE
+  BURSA_LISTING_CANCEL
+  CARBON_RETIREMENT
+  KTH_INCENTIVE_DISBURSEMENT
+}
+
+enum BlockchainOperationStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED_RETRYABLE
+  FAILED_PERMANENT
+  RECONCILIATION_REQUIRED
+}
+
 enum ComplianceRating {
   COMPLIANT
   WARNING
@@ -518,6 +543,37 @@ model PtbaeBlockchainAnchor {
   @@index([status, nextRetryAt])
   @@index([transactionHash])
   @@map("ptbae_blockchain_anchors")
+}
+
+model BlockchainOperation {
+  id               String                    @id @default(uuid()) @db.Uuid
+  operationType    BlockchainOperationType   @map("operation_type")
+  aggregateType    String                    @map("aggregate_type") @db.Text
+  aggregateId      String                    @map("aggregate_id") @db.Text
+  idempotencyKey   String                    @unique @map("idempotency_key") @db.Text
+  chainId          Int?                      @map("chain_id")
+  contractAddress  String?                   @map("contract_address") @db.Text
+  functionName     String                    @map("function_name") @db.Text
+  functionSelector String?                   @map("function_selector") @db.Text
+  payloadHash      String                    @map("payload_hash") @db.Text
+  status           BlockchainOperationStatus @default(PENDING)
+  transactionHash  String?                   @map("transaction_hash") @db.Text
+  nonce            BigInt?
+  blockNumber      BigInt?                   @map("block_number")
+  retryCount       Int                       @default(0) @map("retry_count")
+  lastErrorCode    String?                   @map("last_error_code") @db.Text
+  lastErrorMessage String?                   @map("last_error_message") @db.Text
+  nextRetryAt      DateTime?                 @map("next_retry_at") @db.Timestamptz
+  submittedAt      DateTime?                 @map("submitted_at") @db.Timestamptz
+  confirmedAt      DateTime?                 @map("confirmed_at") @db.Timestamptz
+  createdAt        DateTime                  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime                  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([status, nextRetryAt])
+  @@index([aggregateType, aggregateId])
+  @@index([transactionHash])
+  @@index([chainId, contractAddress])
+  @@map("blockchain_operations")
 }
 
 model PtbaeApplicationDocument {

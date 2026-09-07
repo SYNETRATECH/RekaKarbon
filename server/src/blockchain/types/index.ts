@@ -1,4 +1,6 @@
 export type {
+  BlockchainBursaListingReadiness,
+  BlockchainBursaListingReadinessReason,
   BlockchainBursaListingResult,
   BlockchainBursaQuote,
   BlockchainBursaRevenueRecipients,
@@ -10,6 +12,12 @@ export type {
   BlockchainTransaction,
   BlockchainTransactionOverrides,
   BlockchainTransactionReceipt,
+  BlockchainTransactionStatus,
   CarbonTokenContract,
   EmissionRegistryContract,
 } from './blockchain.types';
+export type {
+  BlockchainOperationConfirmation,
+  BlockchainOperationFailureKind,
+  CreateBlockchainOperationInput,
+} from './blockchain-operation.types';

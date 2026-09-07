@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   BadRequestException,
   ConflictException,
+  ServiceUnavailableException,
   Logger,
 } from '@nestjs/common';
 import { ethers } from 'ethers';
@@ -20,7 +21,11 @@ import type {
   CarbonTokenContract,
   EmissionRegistryContract,
   BlockchainTransactionReceipt,
+  BlockchainTransactionStatus,
+  BlockchainTransactionOverrides,
+  BlockchainBursaListingReadiness,
 } from './types';
+import { getNominalTransactionOverrides } from './fee-policy';
 
 const WALLET_HISTORY_BLOCK_CHUNK = 500;
 
@@ -47,7 +52,13 @@ export class BlockchainService implements OnModuleInit {
     }
 
     try {
-      this.provider = new ethers.JsonRpcProvider(rpcUrl);
+      const configuredChainId = this.getConfiguredChainId();
+      if (!configuredChainId) {
+        throw new Error('BESU_CHAIN_ID must be a positive integer');
+      }
+      this.provider = new ethers.JsonRpcProvider(rpcUrl, configuredChainId, {
+        staticNetwork: true,
+      });
       this.wallet = new ethers.Wallet(privateKey, this.provider);
 
       this.rekaKarbonContract = new ethers.Contract(
@@ -84,6 +95,53 @@ export class BlockchainService implements OnModuleInit {
         'Registry contract not initialized',
       );
     return this.registryContract;
+  }
+
+  private async getTransactionOverrides(): Promise<BlockchainTransactionOverrides> {
+    if (!this.provider) {
+      throw new InternalServerErrorException(
+        'Blockchain provider not initialized',
+      );
+    }
+    return getNominalTransactionOverrides(this.provider);
+  }
+
+  async getTransactionStatus(
+    transactionHash: string,
+  ): Promise<BlockchainTransactionStatus> {
+    if (!this.provider) {
+      throw new InternalServerErrorException(
+        'Blockchain provider not initialized',
+      );
+    }
+
+    if (!ethers.isHexString(transactionHash, 32)) {
+      throw new BadRequestException('Transaction hash is not valid.');
+    }
+
+    const [network, receipt] = await Promise.all([
+      this.provider.getNetwork(),
+      this.provider.getTransactionReceipt(transactionHash),
+    ]);
+    const chainId = Number(network.chainId);
+
+    if (!receipt) {
+      return {
+        status: 'pending',
+        txHash: transactionHash,
+        blockNumber: null,
+        chainId,
+        contractAddress: null,
+      };
+    }
+
+    return {
+      status: receipt.status === 1 ? 'confirmed' : 'failed',
+      txHash: receipt.hash,
+      blockNumber: receipt.blockNumber,
+      chainId,
+      contractAddress: receipt.to,
+    };
   }
 
   async getHealth(): Promise<BlockchainHealth> {
@@ -185,7 +243,7 @@ export class BlockchainService implements OnModuleInit {
 
   private getConfiguredChainId(): number | undefined {
     const configuredValue =
-      process.env.BESU_CHAIN_ID || process.env.CHAIN_ID || '1337';
+      process.env.BESU_CHAIN_ID || process.env.CHAIN_ID || '1338';
     const configuredChainId = Number(configuredValue);
     return Number.isInteger(configuredChainId) && configuredChainId > 0
       ? configuredChainId
@@ -218,6 +276,7 @@ export class BlockchainService implements OnModuleInit {
         toAddress,
         amount,
         coordinates,
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -246,6 +305,7 @@ export class BlockchainService implements OnModuleInit {
         validAddress,
         amount,
         coordinates,
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -283,9 +343,11 @@ export class BlockchainService implements OnModuleInit {
       // PTBAE-PU keeps two decimal places in the database. The ERC-1155
       // quantity is stored in centi-tCO2e units to avoid losing precision.
       const amount = ethers.parseUnits(quotaTCO2e.toFixed(2), 2);
-      const tx = await contract.issueQuota(validAddress, amount, {
-        gasPrice: 0,
-      });
+      const tx = await contract.issueQuota(
+        validAddress,
+        amount,
+        await this.getTransactionOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return receipt.hash;
@@ -305,7 +367,11 @@ export class BlockchainService implements OnModuleInit {
   ): Promise<string> {
     const contract = this.ensureRekaKarbon();
     try {
-      const tx = await contract.mintWalletCredit(toAddress, amountIdr);
+      const tx = await contract.mintWalletCredit(
+        toAddress,
+        amountIdr,
+        await this.getTransactionOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return receipt.hash;
@@ -437,6 +503,33 @@ export class BlockchainService implements OnModuleInit {
     return BigInt(value);
   }
 
+  private getBlockchainErrorMessage(error: unknown, fallback: string): string {
+    if (typeof error === 'object' && error !== null) {
+      const errorDetails = error as {
+        reason?: unknown;
+        shortMessage?: unknown;
+      };
+      if (
+        typeof errorDetails.reason === 'string' &&
+        errorDetails.reason.trim()
+      ) {
+        return errorDetails.reason;
+      }
+      if (
+        typeof errorDetails.shortMessage === 'string' &&
+        errorDetails.shortMessage.trim()
+      ) {
+        return errorDetails.shortMessage;
+      }
+    }
+
+    if (error instanceof Error && error.message.trim()) {
+      return error.message;
+    }
+
+    return fallback;
+  }
+
   private getReceiptEventArg(
     receipt: BlockchainTransactionReceipt,
     eventName: string,
@@ -445,6 +538,64 @@ export class BlockchainService implements OnModuleInit {
     const event = receipt.logs.find((log) => log.fragment?.name === eventName);
     const value = event?.args?.[argumentIndex];
     return typeof value === 'bigint' ? value : null;
+  }
+
+  async checkBursaListingReadiness(
+    seller: string,
+    assetId: number,
+    amountTco2e: number,
+  ): Promise<BlockchainBursaListingReadiness> {
+    const contract = this.ensureRekaKarbon();
+    const validSeller = this.normalizeAddress(seller, 'Seller wallet');
+    const validAssetId = this.toPositiveInteger(assetId, 'Asset ID');
+    const validAmount = this.toPositiveInteger(amountTco2e, 'Listing amount');
+
+    try {
+      const [asset, balance] = await Promise.all([
+        contract.carbonAssets(Number(validAssetId)),
+        contract.balanceOf(validSeller, Number(validAssetId)),
+      ]);
+      const onChainBalanceTco2e = Number(balance);
+
+      if (asset[1].toLowerCase() === ethers.ZeroAddress.toLowerCase()) {
+        return {
+          eligible: false,
+          reason: 'asset_not_registered',
+          message: `Aset SPE-GRK #${assetId} belum terdaftar pada kontrak blockchain aktif.`,
+          onChainBalanceTco2e,
+        };
+      }
+
+      if (asset[3]) {
+        return {
+          eligible: false,
+          reason: 'asset_frozen',
+          message: `Aset SPE-GRK #${assetId} sedang dibekukan pada blockchain.`,
+          onChainBalanceTco2e,
+        };
+      }
+
+      if (balance < validAmount) {
+        return {
+          eligible: false,
+          reason: 'insufficient_balance',
+          message: `Saldo wallet regulator di blockchain hanya ${onChainBalanceTco2e} tCO₂e, sedangkan volume listing ${amountTco2e} tCO₂e.`,
+          onChainBalanceTco2e,
+        };
+      }
+
+      return {
+        eligible: true,
+        reason: 'eligible',
+        message: 'Aset dan saldo blockchain siap dikunci sebagai listing.',
+        onChainBalanceTco2e,
+      };
+    } catch (error: unknown) {
+      this.logger.error('Error checking Bursa listing readiness:', error);
+      throw new ServiceUnavailableException(
+        'Blockchain tidak dapat memverifikasi aset dan saldo untuk listing.',
+      );
+    }
   }
 
   async createBursaListing(
@@ -479,7 +630,7 @@ export class BlockchainService implements OnModuleInit {
         this.applicationIdToBytes32(projectId),
         this.applicationIdToBytes32(kthGroupId),
         projectSnapshotMerkleRoot,
-        { gasPrice: 0 },
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -497,7 +648,10 @@ export class BlockchainService implements OnModuleInit {
     } catch (error: unknown) {
       this.logger.error('Error creating Bursa listing:', error);
       throw new InternalServerErrorException(
-        'Failed to create Bursa listing on-chain',
+        this.getBlockchainErrorMessage(
+          error,
+          'Failed to create Bursa listing on-chain',
+        ),
       );
     }
   }
@@ -517,7 +671,7 @@ export class BlockchainService implements OnModuleInit {
       const tx = await contract.setBursaListingKthRecipient(
         validListingId,
         validKthRecipient,
-        { gasPrice: 0 },
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -525,7 +679,10 @@ export class BlockchainService implements OnModuleInit {
     } catch (error: unknown) {
       this.logger.error('Error configuring Bursa KTH recipient:', error);
       throw new InternalServerErrorException(
-        'Failed to configure Bursa KTH recipient on-chain',
+        this.getBlockchainErrorMessage(
+          error,
+          'Failed to configure Bursa KTH recipient on-chain',
+        ),
       );
     }
   }
@@ -545,7 +702,7 @@ export class BlockchainService implements OnModuleInit {
       const tx = await contract.confirmBursaListing(
         validListingId,
         validRepresentative,
-        { gasPrice: 0 },
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -563,9 +720,10 @@ export class BlockchainService implements OnModuleInit {
     const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
 
     try {
-      const tx = await contract.activateBursaListing(validListingId, {
-        gasPrice: 0,
-      });
+      const tx = await contract.activateBursaListing(
+        validListingId,
+        await this.getTransactionOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return receipt.hash;
@@ -592,7 +750,7 @@ export class BlockchainService implements OnModuleInit {
       const tx = await contract.updateBursaMarketPrice(
         validListingId,
         validPrice,
-        { gasPrice: 0 },
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -649,7 +807,7 @@ export class BlockchainService implements OnModuleInit {
         validBuyer,
         validAmount,
         validMaxCost,
-        { gasPrice: 0 },
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -665,9 +823,10 @@ export class BlockchainService implements OnModuleInit {
     const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
 
     try {
-      const tx = await contract.cancelBursaListing(validListingId, {
-        gasPrice: 0,
-      });
+      const tx = await contract.cancelBursaListing(
+        validListingId,
+        await this.getTransactionOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return receipt.hash;
@@ -732,6 +891,7 @@ export class BlockchainService implements OnModuleInit {
         assetId,
         amountTco2e,
         totalCost,
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -758,6 +918,7 @@ export class BlockchainService implements OnModuleInit {
         assetId,
         amountTco2e,
         certNumber,
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -940,9 +1101,12 @@ export class BlockchainService implements OnModuleInit {
     }
 
     try {
-      const tx = await contract.submitReportFor(validReporter, year, rootHash, {
-        gasPrice: 0,
-      });
+      const tx = await contract.submitReportFor(
+        validReporter,
+        year,
+        rootHash,
+        await this.getTransactionOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
 
@@ -989,9 +1153,12 @@ export class BlockchainService implements OnModuleInit {
     const status = decision === 'approve' ? 2 : 3;
 
     try {
-      const tx = await contract.auditReport(reportId, status, notes, {
-        gasPrice: 0,
-      });
+      const tx = await contract.auditReport(
+        reportId,
+        status,
+        notes,
+        await this.getTransactionOverrides(),
+      );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return { txHash: receipt.hash };
@@ -1046,7 +1213,7 @@ export class BlockchainService implements OnModuleInit {
         version,
         rootHash,
         anchorType,
-        { gasPrice: 0 },
+        await this.getTransactionOverrides(),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');

@@ -1,0 +1,256 @@
+services:
+  qbft-bootnode-1:
+    image: ${QBFT_BESU_IMAGE:-hyperledger/besu:26.8.1}
+    container_name: rekakarbon-qbft-bootnode-1
+    restart: unless-stopped
+    command:
+      - --data-path=/var/lib/besu
+      - --genesis-file=/etc/besu/genesis.json
+      - --node-private-key-file=/etc/besu/keys/key
+      - --p2p-host=172.30.0.10
+      - --p2p-port=30303
+      - --nat-method=NONE
+      - --rpc-http-enabled=false
+      - --rpc-ws-enabled=false
+    volumes:
+      - qbft_bootnode_1_data:/var/lib/besu
+      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
+      - ./networks/local-qbft/generated/nodes/bootnode-1/key:/etc/besu/keys/key:ro
+    networks:
+      qbft_internal:
+        ipv4_address: 172.30.0.10
+
+  qbft-validator-1:
+    image: ${QBFT_BESU_IMAGE:-hyperledger/besu:26.8.1}
+    container_name: rekakarbon-qbft-validator-1
+    restart: unless-stopped
+    depends_on:
+      qbft-bootnode-1:
+        condition: service_started
+    command:
+      - --data-path=/var/lib/besu
+      - --genesis-file=/etc/besu/genesis.json
+      - --node-private-key-file=/etc/besu/keys/key
+      - --bootnodes=${BOOTNODE_ENODE}
+      - --p2p-host=172.30.0.11
+      - --p2p-port=30304
+      - --nat-method=NONE
+      - --rpc-http-enabled=true
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=NET,QBFT
+      - --rpc-http-cors-origins=none
+      - --host-allowlist=qbft-validator-1,besu-rpc-1,localhost,127.0.0.1
+      - --min-gas-price=1
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'exec 3<>/dev/tcp/127.0.0.1/8545'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    volumes:
+      - qbft_validator_1_data:/var/lib/besu
+      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
+      - ./networks/local-qbft/generated/nodes/validator-1/key:/etc/besu/keys/key:ro
+    networks:
+      qbft_internal:
+        ipv4_address: 172.30.0.11
+
+  qbft-validator-2:
+    image: ${QBFT_BESU_IMAGE:-hyperledger/besu:26.8.1}
+    container_name: rekakarbon-qbft-validator-2
+    restart: unless-stopped
+    depends_on:
+      qbft-bootnode-1:
+        condition: service_started
+    command:
+      - --data-path=/var/lib/besu
+      - --genesis-file=/etc/besu/genesis.json
+      - --node-private-key-file=/etc/besu/keys/key
+      - --bootnodes=${BOOTNODE_ENODE}
+      - --p2p-host=172.30.0.12
+      - --p2p-port=30305
+      - --nat-method=NONE
+      - --rpc-http-enabled=true
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=NET,QBFT
+      - --rpc-http-cors-origins=none
+      - --host-allowlist=qbft-validator-2,besu-rpc-1,localhost,127.0.0.1
+      - --min-gas-price=1
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'exec 3<>/dev/tcp/127.0.0.1/8545'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    volumes:
+      - qbft_validator_2_data:/var/lib/besu
+      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
+      - ./networks/local-qbft/generated/nodes/validator-2/key:/etc/besu/keys/key:ro
+    networks:
+      qbft_internal:
+        ipv4_address: 172.30.0.12
+
+  qbft-validator-3:
+    image: ${QBFT_BESU_IMAGE:-hyperledger/besu:26.8.1}
+    container_name: rekakarbon-qbft-validator-3
+    restart: unless-stopped
+    depends_on:
+      qbft-bootnode-1:
+        condition: service_started
+    command:
+      - --data-path=/var/lib/besu
+      - --genesis-file=/etc/besu/genesis.json
+      - --node-private-key-file=/etc/besu/keys/key
+      - --bootnodes=${BOOTNODE_ENODE}
+      - --p2p-host=172.30.0.13
+      - --p2p-port=30306
+      - --nat-method=NONE
+      - --rpc-http-enabled=true
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=NET,QBFT
+      - --rpc-http-cors-origins=none
+      - --host-allowlist=qbft-validator-3,besu-rpc-1,localhost,127.0.0.1
+      - --min-gas-price=1
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'exec 3<>/dev/tcp/127.0.0.1/8545'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    volumes:
+      - qbft_validator_3_data:/var/lib/besu
+      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
+      - ./networks/local-qbft/generated/nodes/validator-3/key:/etc/besu/keys/key:ro
+    networks:
+      qbft_internal:
+        ipv4_address: 172.30.0.13
+
+  qbft-validator-4:
+    image: ${QBFT_BESU_IMAGE:-hyperledger/besu:26.8.1}
+    container_name: rekakarbon-qbft-validator-4
+    restart: unless-stopped
+    depends_on:
+      qbft-bootnode-1:
+        condition: service_started
+    command:
+      - --data-path=/var/lib/besu
+      - --genesis-file=/etc/besu/genesis.json
+      - --node-private-key-file=/etc/besu/keys/key
+      - --bootnodes=${BOOTNODE_ENODE}
+      - --p2p-host=172.30.0.14
+      - --p2p-port=30307
+      - --nat-method=NONE
+      - --rpc-http-enabled=true
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=NET,QBFT
+      - --rpc-http-cors-origins=none
+      - --host-allowlist=qbft-validator-4,besu-rpc-1,localhost,127.0.0.1
+      - --min-gas-price=1
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'exec 3<>/dev/tcp/127.0.0.1/8545'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    volumes:
+      - qbft_validator_4_data:/var/lib/besu
+      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
+      - ./networks/local-qbft/generated/nodes/validator-4/key:/etc/besu/keys/key:ro
+    networks:
+      qbft_internal:
+        ipv4_address: 172.30.0.14
+
+  besu-rpc-1:
+    image: ${QBFT_BESU_IMAGE:-hyperledger/besu:26.8.1}
+    container_name: rekakarbon-qbft-rpc-1
+    restart: unless-stopped
+    depends_on:
+      qbft-validator-1:
+        condition: service_healthy
+      qbft-validator-2:
+        condition: service_healthy
+      qbft-validator-3:
+        condition: service_healthy
+      qbft-validator-4:
+        condition: service_healthy
+    command:
+      - --data-path=/var/lib/besu
+      - --genesis-file=/etc/besu/genesis.json
+      - --node-private-key-file=/etc/besu/keys/key
+      - --bootnodes=${BOOTNODE_ENODE}
+      - --p2p-host=172.30.0.20
+      - --p2p-port=30308
+      - --nat-method=NONE
+      - --rpc-http-enabled=true
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=ETH,NET,WEB3,QBFT
+      - --rpc-http-cors-origins=${QBFT_RPC_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      - --host-allowlist=localhost,127.0.0.1,besu-rpc-1
+      - --rpc-ws-enabled=true
+      - --rpc-ws-host=0.0.0.0
+      - --rpc-ws-port=8546
+      - --rpc-ws-api=ETH,NET,WEB3,QBFT
+      - --min-gas-price=1
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'exec 3<>/dev/tcp/127.0.0.1/8545'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    ports:
+      - 127.0.0.1:8545:8545
+      - 127.0.0.1:8546:8546
+    volumes:
+      - qbft_rpc_1_data:/var/lib/besu
+      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
+      - ./networks/local-qbft/generated/nodes/rpc-1/key:/etc/besu/keys/key:ro
+    networks:
+      qbft_internal:
+        ipv4_address: 172.30.0.20
+      qbft_rpc_public:
+        ipv4_address: 172.31.0.20
+
+networks:
+  qbft_internal:
+    name: rekakarbon-qbft-internal
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+  qbft_rpc_public:
+    name: rekakarbon-qbft-rpc-public
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+
+volumes:
+  qbft_bootnode_1_data:
+    name: rekakarbon_qbft_bootnode_1_data
+  qbft_validator_1_data:
+    name: rekakarbon_qbft_validator_1_data
+  qbft_validator_2_data:
+    name: rekakarbon_qbft_validator_2_data
+  qbft_validator_3_data:
+    name: rekakarbon_qbft_validator_3_data
+  qbft_validator_4_data:
+    name: rekakarbon_qbft_validator_4_data
+  qbft_rpc_1_data:
+    name: rekakarbon_qbft_rpc_1_data

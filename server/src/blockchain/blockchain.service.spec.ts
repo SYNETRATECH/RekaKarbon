@@ -81,6 +81,7 @@ describe('BlockchainService', () => {
         '0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0';
       process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS =
         '0x9DdaF0CD259887258Bc13a92C0a6dA92698644C1';
+      process.env.BESU_CHAIN_ID = '1338';
 
       const transaction: BlockchainTransaction = {
         wait: jest.fn().mockResolvedValue({
@@ -104,9 +105,16 @@ describe('BlockchainService', () => {
         }),
       };
 
-      jest
-        .mocked(ethers.JsonRpcProvider)
-        .mockImplementation(() => ({}) as unknown as ethers.JsonRpcProvider);
+      jest.mocked(ethers.JsonRpcProvider).mockImplementation(
+        () =>
+          ({
+            getFeeData: jest.fn().mockResolvedValue({
+              gasPrice: 1n,
+              maxFeePerGas: null,
+              maxPriorityFeePerGas: null,
+            }),
+          }) as unknown as ethers.JsonRpcProvider,
+      );
       jest
         .mocked(ethers.Wallet)
         .mockImplementation(() => ({}) as unknown as ethers.Wallet);
@@ -120,6 +128,8 @@ describe('BlockchainService', () => {
     it('should initialize providers and contracts when env is present', () => {
       expect(ethers.JsonRpcProvider).toHaveBeenCalledWith(
         'http://127.0.0.1:8545',
+        1338,
+        { staticNetwork: true },
       );
       expect(ethers.Wallet).toHaveBeenCalledWith(
         '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
@@ -157,6 +167,7 @@ describe('BlockchainService', () => {
         '0xtoaddress',
         500,
         '-6.2,106.8',
+        { gasPrice: 1n },
       );
     });
 
@@ -175,7 +186,7 @@ describe('BlockchainService', () => {
         '0x0000000000000000000000000000000000000002',
         2026,
         '0x0000000000000000000000000000000000000000000000000000000000000003',
-        { gasPrice: 0 },
+        { gasPrice: 1n },
       );
     });
   });

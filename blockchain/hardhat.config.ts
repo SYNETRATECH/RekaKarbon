@@ -6,6 +6,13 @@ dotenv.config();
 
 // Mengambil private key dari .env
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const QBFT_RPC_URL = process.env.QBFT_RPC_URL ?? 'http://127.0.0.1:8545';
+const QBFT_CHAIN_ID = Number(process.env.QBFT_CHAIN_ID ?? '1338');
+
+if (!Number.isInteger(QBFT_CHAIN_ID) || QBFT_CHAIN_ID <= 0) {
+  console.error('❌ ERROR FATAL: QBFT_CHAIN_ID harus berupa bilangan bulat positif.');
+  process.exit(1);
+}
 
 // Validasi ketat ala Production: Jika .env kosong, gagalkan prosesnya!
 if (!PRIVATE_KEY) {
@@ -14,11 +21,17 @@ if (!PRIVATE_KEY) {
   process.exit(1);
 }
 
+const qbftNetwork = {
+  url: QBFT_RPC_URL,
+  chainId: QBFT_CHAIN_ID,
+  accounts: [PRIVATE_KEY],
+};
+
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.24', // Versi solidity yang stabil dan disupport openzeppelin
+    version: '0.8.24', // Versi Solidity yang dipin bersama OpenZeppelin 5.0.0
     settings: {
-      evmVersion: 'paris', // Menggunakan Paris untuk menghindari error opcode 0x5f (PUSH0) di Besu dev network
+      evmVersion: 'paris', // Kompatibilitas kontrak dipertahankan selama migrasi ke QBFT
       optimizer: {
         enabled: true,
         runs: 200,
@@ -26,12 +39,8 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    besu_local: {
-      url: 'http://127.0.0.1:8545',
-      chainId: 1337, // Chain ID standar untuk jaringan lokal Hardhat / Besu Dev
-      // Membaca private key dari .env untuk keamanan standar Production!
-      accounts: [PRIVATE_KEY],
-    },
+    besu_local: qbftNetwork,
+    besu_qbft_local: qbftNetwork,
   },
 };
 
