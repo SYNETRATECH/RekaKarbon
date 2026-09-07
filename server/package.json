@@ -29,6 +29,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:migrate:status": "prisma migrate status",
     "prisma:migrate:diff": "prisma migrate diff",
+    "prisma:migrate:reset": "prisma migrate reset",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed"
   },
