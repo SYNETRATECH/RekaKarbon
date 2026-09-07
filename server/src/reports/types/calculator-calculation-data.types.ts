@@ -9,3 +9,5 @@ export interface CalculatorCalculationData extends Prisma.InputJsonObject {
   scope3: number;
   entries: CalculationEntry[];
 }
+
+export type CalculatorScopeData = Partial<CalculatorCalculationData>;

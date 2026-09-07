@@ -17,11 +17,13 @@ export interface EmissionReport {
   title: string;
   fileName: string;
   fileSizeBytes: number;
+  uploadDate: string;
   status: EmissionReportFilingStatus;
-  quotaPTBAETCO2e: number | null;
-  quotaPTBAEStatus: PtbaeQuotaStatus;
-  quotaPTBAESourceDocument: string | null;
+  totalEmissionsTCO2e: number;
   sectors: SectorBreakdown[];
+  quotaPTBAETCO2e?: number | null;
+  quotaPTBAEStatus?: PtbaeQuotaStatus;
+  quotaPTBAESourceDocument?: string | null;
   method?: string;
   sectorId?: string | null;
   calculationData?: unknown;
