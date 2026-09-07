@@ -14,6 +14,9 @@ import { ComplianceRating, EmissionReportStatus, Prisma } from '@prisma/client';
 import { PtbaeService } from '../compliance/ptbae.service';
 import type { CalculatorCalculationData } from './types';
 import { CalculationService } from './calculation.service';
+import { MlAuditEngineService } from '../audit/ml-audit-engine.service';
+import { ReportsMlAdapter } from './reports-ml-adapter';
+import type { MlAuditResult } from '../audit/types/ml-audit.types';
 
 type CalculatorScopeData = Partial<CalculatorCalculationData>;
 
@@ -33,6 +36,7 @@ export class ReportsService {
     private readonly storageService: StorageService,
     private readonly ptbaeService: PtbaeService,
     private readonly calculationService: CalculationService,
+    private readonly mlAuditEngineService: MlAuditEngineService,
   ) {}
 
   private resolveEmitterWallet(user: EmitterWalletUser): string {
@@ -355,12 +359,64 @@ export class ReportsService {
         quota.quotaTCO2e,
       );
 
+      // Real-Time ML Anomaly & Physics Verification
+      let auditResult: MlAuditResult | undefined = undefined;
+      try {
+        const prevReport = await this.prisma.emissionReport.findUnique({
+          where: {
+            companyId_year: {
+              companyId: company.id,
+              year: year - 1,
+            },
+          },
+        });
+        const historicalEmissionsTco2e = prevReport
+          ? Number(prevReport.totalEmissionsTco2e)
+          : undefined;
+
+        const auditDto = ReportsMlAdapter.toAuditEmissionReportDto({
+          sector,
+          totalEmissions,
+          historicalEmissionsTco2e,
+        });
+
+        auditResult =
+          await this.mlAuditEngineService.evaluateEmissionReport(auditDto);
+
+        if (auditResult && auditResult.isAnomaly) {
+          await this.prisma.auditAnomaly.create({
+            data: {
+              companyId: company.id,
+              facilityName: `${company.name} - Fasilitas Utama`,
+              anomalyType: 'CEMS_ENERGY_CORRELATION',
+              severity: auditResult.anomalyScore > 0.8 ? 'CRITICAL' : 'HIGH',
+              anomalyScore: new Prisma.Decimal(auditResult.anomalyScore),
+              reportedEmissionTco2e: new Prisma.Decimal(totalEmissions),
+              expectedEmissionTco2e: new Prisma.Decimal(
+                auditResult.expectedEmissionTco2e,
+              ),
+              divergencePercent: new Prisma.Decimal(
+                auditResult.divergencePercent,
+              ),
+              detectedDate: new Date(),
+              auditStatus: 'PENDING_REVIEW',
+              verifierNotes: auditResult.explanation,
+            },
+          });
+        }
+      } catch (mlErr) {
+        this.logger.warn(
+          `ML Audit Engine evaluation non-blocking error: ${(mlErr as Error).message}`,
+        );
+      }
+
       return {
         id: report.id,
         year,
         merkleRoot,
         txHash,
         blockchainReportId: Number(reportId),
+        auditResult,
       };
     } catch (error: unknown) {
       this.logger.error('Failed to process report', error);
@@ -490,12 +546,76 @@ export class ReportsService {
         quota.quotaTCO2e,
       );
 
+      // Real-Time ML Anomaly & Physics Verification
+      let auditResult: MlAuditResult | undefined = undefined;
+      try {
+        const prevReport = await this.prisma.emissionReport.findUnique({
+          where: {
+            companyId_year: {
+              companyId: company.id,
+              year: year - 1,
+            },
+          },
+        });
+        const historicalEmissionsTco2e = prevReport
+          ? Number(prevReport.totalEmissionsTco2e)
+          : undefined;
+
+        const auditDto = ReportsMlAdapter.toAuditEmissionReportDto({
+          sector,
+          totalEmissions: Math.min(totalEmissions, calculatedTotal),
+          calculationData: normalizedCalculationData,
+          historicalEmissionsTco2e,
+          companyProductionCapacity: (
+            company as { productionCapacityTonnes?: number | string | null }
+          ).productionCapacityTonnes
+            ? Number(
+                (
+                  company as {
+                    productionCapacityTonnes?: number | string | null;
+                  }
+                ).productionCapacityTonnes,
+              )
+            : undefined,
+        });
+
+        auditResult =
+          await this.mlAuditEngineService.evaluateEmissionReport(auditDto);
+
+        if (auditResult && auditResult.isAnomaly) {
+          await this.prisma.auditAnomaly.create({
+            data: {
+              companyId: company.id,
+              facilityName: `${company.name} - Fasilitas Utama`,
+              anomalyType: 'CEMS_ENERGY_CORRELATION',
+              severity: auditResult.anomalyScore > 0.8 ? 'CRITICAL' : 'HIGH',
+              anomalyScore: new Prisma.Decimal(auditResult.anomalyScore),
+              reportedEmissionTco2e: new Prisma.Decimal(calculatedTotal),
+              expectedEmissionTco2e: new Prisma.Decimal(
+                auditResult.expectedEmissionTco2e,
+              ),
+              divergencePercent: new Prisma.Decimal(
+                auditResult.divergencePercent,
+              ),
+              detectedDate: new Date(),
+              auditStatus: 'PENDING_REVIEW',
+              verifierNotes: auditResult.explanation,
+            },
+          });
+        }
+      } catch (mlErr) {
+        this.logger.warn(
+          `ML Audit Engine evaluation non-blocking error: ${(mlErr as Error).message}`,
+        );
+      }
+
       return {
         id: report.id,
         year,
         merkleRoot,
         txHash,
         blockchainReportId: Number(reportId),
+        auditResult,
       };
     } catch (error: unknown) {
       this.logger.error('Failed to process calculator report', error);

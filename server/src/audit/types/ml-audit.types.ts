@@ -8,8 +8,24 @@ export interface FeatureContribution {
   unit: string;
 }
 
+export interface ShapAttribution {
+  featureName: string;
+  label: string;
+  userValue: number | string;
+  benchmarkValue: number | string;
+  shapValue: number; // Positive = pushes toward anomaly; Negative = pushes toward normal/compliant
+  baseValue: number; // E[f(x)] baseline score
+  direction: 'ABOVE_NORMAL' | 'BELOW_NORMAL' | 'MISMATCH' | 'NORMAL';
+  impact: 'INCREASES_ANOMALY' | 'DECREASES_ANOMALY' | 'NEUTRAL';
+  importancePercent: number; // Normalized impact percentage
+  unit: string;
+}
+
 export interface XaiDiagnostics {
+  baseValue?: number;
+  outputScore?: number;
   topAnomalyDrivers: FeatureContribution[];
+  shapAttributions?: ShapAttribution[];
   breakdown: {
     physicalFuelDeltaPct: number;
     fiscalPriceDeltaPct: number;

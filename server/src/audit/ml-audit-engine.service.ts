@@ -11,6 +11,7 @@ import {
   EmissionFeatureEngineer,
   MARKET_PRICE_RANGES,
   SECTOR_BENCHMARKS,
+  STOICHIOMETRIC_FACTORS,
 } from './ml-feature-engineer';
 import { findWorkspaceRoot } from '../common/utils';
 
@@ -182,10 +183,16 @@ export class MlAuditEngineService implements OnModuleInit {
     } else if (intensity > bench.maxIntensity * 1.6) {
       flags.push('INTENSITAS_EMISI_ABERRAN_SEKTOR');
     }
+    const expectedProcessTco2e = bench.hasProcessEmissions
+      ? (report.productionTonnes ?? 0) *
+        bench.clinkerRatio *
+        STOICHIOMETRIC_FACTORS.cementClinkerCalcinationTco2ePerTon
+      : 0;
+    const expectedWithProcess = eExpected + expectedProcessTco2e;
     if (
       bench.hasProcessEmissions &&
       clinker === 0 &&
-      reported < eExpected * 0.65
+      (reported < expectedWithProcess * 0.65 || intensity < bench.minIntensity)
     ) {
       flags.push('EMISI_PROSES_TIDAK_DILAPORKAN');
     }
@@ -252,6 +259,7 @@ export class MlAuditEngineService implements OnModuleInit {
       { scoreDjp, scoreBbm, scoreCems },
       flags,
     );
+    xai.outputScore = Math.round(anomalyProb * 1000) / 1000;
 
     return {
       isAnomaly,

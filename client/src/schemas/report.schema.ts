@@ -9,6 +9,7 @@ import {
   PercentageSchema,
   TxHashSchema,
 } from './common.schema';
+import { MlAuditResultSchema } from './audit.schema';
 
 export const SectorBreakdownSchema = z.object({
   id: EntityIdSchema,
@@ -85,9 +86,12 @@ export const CalculationDataSchema = z.object({
 });
 
 export const CalculatorReportSubmissionSchema = z.object({
+  id: z.string().optional(),
+  year: z.number().optional(),
   merkleRoot: z.string().min(1),
   txHash: TxHashSchema,
   blockchainReportId: z.number().int().nonnegative(),
+  auditResult: MlAuditResultSchema.optional(),
 });
 
 export const EmissionReportStatusSchema = z.enum([
