@@ -40,28 +40,7 @@ import {
   type ForestInspectionCheckpointRecord,
 } from '../projects/inspection.mapper';
 
-function parseProjectCoordinates(
-  value: unknown,
-): Array<{ lat: number; lng: number }> {
-  if (!Array.isArray(value)) return [];
-
-  return value.flatMap((coordinate) => {
-    if (Array.isArray(coordinate) && coordinate.length >= 2) {
-      const lat = Number(coordinate[0]);
-      const lng = Number(coordinate[1]);
-      return Number.isFinite(lat) && Number.isFinite(lng) ? [{ lat, lng }] : [];
-    }
-
-    if (typeof coordinate === 'object' && coordinate !== null) {
-      const candidate = coordinate as { lat?: unknown; lng?: unknown };
-      const lat = Number(candidate.lat);
-      const lng = Number(candidate.lng);
-      return Number.isFinite(lat) && Number.isFinite(lng) ? [{ lat, lng }] : [];
-    }
-
-    return [];
-  });
-}
+import { parseProjectCoordinates } from '../common/utils';
 
 @Injectable()
 export class AuditService {
