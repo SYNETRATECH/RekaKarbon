@@ -1,3 +1,5 @@
+import type { Prisma } from '@prisma/client';
+
 export interface EmissionReportAuditListItem {
   id: string;
   companyId: string;
@@ -45,3 +47,14 @@ export interface EmissionReportAuditDetail extends EmissionReportAuditListItem {
   files: EmissionReportAuditFile[];
   auditHistory: EmissionReportAuditHistoryItem[];
 }
+
+export type ReportWithAuditData = Prisma.EmissionReportGetPayload<{
+  include: {
+    company: true;
+    files: true;
+    auditEvents: {
+      include: { actor: true };
+      orderBy: { createdAt: 'asc' };
+    };
+  };
+}>;

@@ -7,7 +7,6 @@ import {
 import {
   EmissionReportAuditAction,
   EmissionReportStatus,
-  Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
@@ -19,18 +18,8 @@ import { EmissionReportAuditDecision } from './dto';
 import type {
   EmissionReportAuditDetail,
   EmissionReportAuditListItem,
+  ReportWithAuditData,
 } from './types';
-
-type ReportWithAuditData = Prisma.EmissionReportGetPayload<{
-  include: {
-    company: true;
-    files: true;
-    auditEvents: {
-      include: { actor: true };
-      orderBy: { createdAt: 'asc' };
-    };
-  };
-}>;
 
 const REPORT_STATUS_BY_API_VALUE = {
   submitted: EmissionReportStatus.SUBMITTED,
