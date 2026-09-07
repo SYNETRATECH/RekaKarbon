@@ -1,4 +1,4 @@
-import type { CalculatorCalculationData } from '../../src/reports/types/report.types';
+import type { CalculatorCalculationData } from '../../src/reports/types';
 
 export interface ReportAuditTestScenario {
   id: string;
