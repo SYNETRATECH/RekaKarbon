@@ -45,6 +45,7 @@ import {
   type PtbaeTechnicalData,
 } from './types';
 import { PtbaeAuditDecision } from './dto';
+import { isRecord } from '../common/utils';
 
 type ApplicationWithRelations = Prisma.PtbaeApplicationGetPayload<{
   include: {
@@ -73,10 +74,6 @@ const MINISTRY_REVIEW_STATUSES: PtbaeApplicationStatus[] = [
   PtbaeApplicationStatus.MINISTRY_REVIEW,
   PtbaeApplicationStatus.APPROVAL_PROCESSING,
 ];
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function asJsonValue(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;

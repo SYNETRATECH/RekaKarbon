@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { api, ApiValidationError } from '../lib/api';
+import { api, ApiValidationError, resolveApiBaseUrl } from '../lib/api';
 import {
   AuthResponseSchema,
   ProjectSchema,
@@ -178,6 +178,31 @@ describe('Client-Side API Contract & Envelope Tests', () => {
       await expect(api.post('/auth/login', {})).rejects.toThrow(
         'Email atau kata sandi tidak valid.'
       );
+    });
+  });
+
+  describe('resolveApiBaseUrl Cross-Device Resolution', () => {
+    it('returns empty string when no URL configured', () => {
+      expect(resolveApiBaseUrl('')).toBe('');
+    });
+
+    it('returns configured URL unchanged when hostname is localhost or 127.0.0.1', () => {
+      expect(resolveApiBaseUrl('http://localhost:3000', 'localhost')).toBe('http://localhost:3000');
+      expect(resolveApiBaseUrl('http://localhost:3000', '127.0.0.1')).toBe('http://localhost:3000');
+    });
+
+    it('dynamically rewrites localhost to LAN IP when client is on another machine on Wi-Fi', () => {
+      expect(resolveApiBaseUrl('http://localhost:3000', '192.168.58.209')).toBe(
+        'http://192.168.58.209:3000'
+      );
+      expect(resolveApiBaseUrl('http://127.0.0.1:3000', '10.0.0.15')).toBe('http://10.0.0.15:3000');
+    });
+
+    it('preserves production domains and relative paths', () => {
+      expect(resolveApiBaseUrl('https://api.rekakarbon.id', 'app.rekakarbon.id')).toBe(
+        'https://api.rekakarbon.id'
+      );
+      expect(resolveApiBaseUrl('/api', '192.168.58.209')).toBe('/api');
     });
   });
 });

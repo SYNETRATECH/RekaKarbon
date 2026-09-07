@@ -12,19 +12,25 @@ import { StorageService } from '../storage/storage.service';
 import { ethers } from 'ethers';
 import { ComplianceRating, EmissionReportStatus, Prisma } from '@prisma/client';
 import { PtbaeService } from '../compliance/ptbae.service';
-import type { CalculatorCalculationData } from './types';
+import type {
+  CalculatorCalculationData,
+  CalculatorScopeData,
+  EmissionReport,
+  EmissionReportFilingStatus,
+  EmitterWalletUser,
+  ReportSubmissionResult,
+  ReportUploadedFileData,
+} from './types';
 import { CalculationService } from './calculation.service';
 import { MlAuditEngineService } from '../audit/ml-audit-engine.service';
 import { ReportsMlAdapter } from './reports-ml-adapter';
 import type { MlAuditResult } from '../audit/types/ml-audit.types';
-
-type CalculatorScopeData = Partial<CalculatorCalculationData>;
-
-type EmitterWalletUser = {
-  walletAddress: string | null;
-};
-
-const CARBON_OFFSET_RATE_IDR = 650000;
+import type { AuthenticatedUserPayload } from '../auth/types';
+import {
+  CARBON_OFFSET_RATE_IDR,
+  SCOPE_SECTOR_METADATA,
+  generateMerkleRoot,
+} from './utils';
 
 @Injectable()
 export class ReportsService {
@@ -53,7 +59,9 @@ export class ReportsService {
     }
   }
 
-  async getEmissionReports(user?: { userId: string; role: string }) {
+  async getEmissionReports(
+    user?: AuthenticatedUserPayload | { userId: string; role: string },
+  ): Promise<EmissionReport[]> {
     let whereClause = {};
     if (user && user.role === 'emitter') {
       const dbUser = await this.prisma.user.findUnique({
@@ -101,7 +109,7 @@ export class ReportsService {
             r.files.reduce((acc, f) => acc + f.fileSizeBytes, 0n),
           ),
           uploadDate: r.createdAt.toISOString().split('T')[0],
-          status: r.status.toLowerCase(),
+          status: r.status.toLowerCase() as EmissionReportFilingStatus,
           totalEmissionsTCO2e: actual,
           blockchainTxHash: r.blockchainTxHash,
           blockchainReportId: r.blockchainReportId
@@ -110,6 +118,7 @@ export class ReportsService {
           merkleRoot: r.merkleRoot,
           quotaPTBAETCO2e: quota.quotaTCO2e,
           quotaPTBAEStatus: quota.status,
+          quotaPTBAESourceDocument: quota.sourceDocument,
           method: r.reportMethod,
           sectorId: r.sector,
           calculationData: r.calculationData,
@@ -123,31 +132,30 @@ export class ReportsService {
               ? [
                   {
                     id: `sec-${r.id}-1`,
-                    name: 'Scope 1 (Pembakaran & Operasional)',
-                    scope: 'Scope 1',
+                    name: SCOPE_SECTOR_METADATA.scope1.name,
+                    scope: SCOPE_SECTOR_METADATA.scope1.scope,
                     emissionsTCO2e: scope1,
                     percentage: actual > 0 ? (scope1 / actual) * 100 : 0,
-                    description: 'Emisi langsung dari operasional',
-                    color: '#ef4444',
+                    description: SCOPE_SECTOR_METADATA.scope1.description,
+                    color: SCOPE_SECTOR_METADATA.scope1.color,
                   },
                   {
                     id: `sec-${r.id}-2`,
-                    name: 'Scope 2 (Listrik)',
-                    scope: 'Scope 2',
+                    name: SCOPE_SECTOR_METADATA.scope2.name,
+                    scope: SCOPE_SECTOR_METADATA.scope2.scope,
                     emissionsTCO2e: scope2,
                     percentage: actual > 0 ? (scope2 / actual) * 100 : 0,
-                    description: 'Emisi dari penggunaan listrik',
-                    color: '#f59e0b',
+                    description: SCOPE_SECTOR_METADATA.scope2.description,
+                    color: SCOPE_SECTOR_METADATA.scope2.color,
                   },
                   {
                     id: `sec-${r.id}-3`,
-                    name: 'Scope 3 (Rantai Pasok)',
-                    scope: 'Scope 3',
+                    name: SCOPE_SECTOR_METADATA.scope3.name,
+                    scope: SCOPE_SECTOR_METADATA.scope3.scope,
                     emissionsTCO2e: scope3,
                     percentage: actual > 0 ? (scope3 / actual) * 100 : 0,
-                    description:
-                      'Emisi dari rantai pasok dan operasional eksternal',
-                    color: '#3b82f6',
+                    description: SCOPE_SECTOR_METADATA.scope3.description,
+                    color: SCOPE_SECTOR_METADATA.scope3.color,
                   },
                 ]
               : [],
@@ -187,34 +195,13 @@ export class ReportsService {
     });
   }
 
-  private generateMerkleRoot(dataObj: Record<string, unknown>): string {
-    try {
-      const leaves = Object.keys(dataObj)
-        .sort()
-        .map((key) =>
-          ethers.keccak256(
-            ethers.toUtf8Bytes(`${key}:${JSON.stringify(dataObj[key])}`),
-          ),
-        );
-
-      let root = leaves.length > 0 ? leaves[0] : ethers.ZeroHash;
-      for (let i = 1; i < leaves.length; i++) {
-        const pair = [root, leaves[i]].sort();
-        root = ethers.keccak256(ethers.concat(pair));
-      }
-      return root;
-    } catch {
-      throw new BadRequestException('Invalid JSON report data');
-    }
-  }
-
   async submitReport(
     userId: string,
     year: number,
     sector: string,
     totalEmissions: number,
     files: Array<Express.Multer.File>,
-  ) {
+  ): Promise<ReportSubmissionResult> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { companies: true },
@@ -242,15 +229,7 @@ export class ReportsService {
       );
     }
 
-    const uploadedFilesData: {
-      originalFileName: string;
-      fileSizeBytes: bigint;
-      mimeType: string;
-      storageKey: string;
-      accessUrl: string;
-      fileHash: string;
-      category: 'EMISSION_REPORT';
-    }[] = [];
+    const uploadedFilesData: ReportUploadedFileData[] = [];
     for (const file of files) {
       const minioPath = await this.storageService.uploadFileToMinio(
         file,
@@ -280,7 +259,7 @@ export class ReportsService {
       })),
     };
 
-    const merkleRoot = this.generateMerkleRoot(reportMetadata);
+    const merkleRoot = generateMerkleRoot(reportMetadata);
     this.logger.log(`Generated Merkle Root for year ${year}: ${merkleRoot}`);
 
     try {
@@ -449,7 +428,7 @@ export class ReportsService {
     sector: string,
     totalEmissions: number,
     calculationData: CalculatorCalculationData,
-  ) {
+  ): Promise<ReportSubmissionResult> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { companies: true },
@@ -498,7 +477,7 @@ export class ReportsService {
       calculationData: normalizedCalculationData,
     };
 
-    const merkleRoot = this.generateMerkleRoot(reportMetadata);
+    const merkleRoot = generateMerkleRoot(reportMetadata);
     this.logger.log(
       `Generated Merkle Root for calculator year ${year}: ${merkleRoot}`,
     );
@@ -575,22 +554,19 @@ export class ReportsService {
           ? Number(prevReport.totalEmissionsTco2e)
           : undefined;
 
+        const companyRecord = company as {
+          productionCapacityTonnes?: number | string | null;
+        };
+        const companyProductionCapacity = companyRecord.productionCapacityTonnes
+          ? Number(companyRecord.productionCapacityTonnes)
+          : undefined;
+
         const auditDto = ReportsMlAdapter.toAuditEmissionReportDto({
           sector,
           totalEmissions: Math.min(totalEmissions, calculatedTotal),
           calculationData: normalizedCalculationData,
           historicalEmissionsTco2e,
-          companyProductionCapacity: (
-            company as { productionCapacityTonnes?: number | string | null }
-          ).productionCapacityTonnes
-            ? Number(
-                (
-                  company as {
-                    productionCapacityTonnes?: number | string | null;
-                  }
-                ).productionCapacityTonnes,
-              )
-            : undefined,
+          companyProductionCapacity,
         });
 
         auditResult =
