@@ -1,8 +1,8 @@
 """
 Scheduled Retraining Orchestrator for RekaKarbon ML Engine.
 
-Designed to be invoked by a cron job, GitHub Actions scheduled workflow,
-or manually via `poetry run retrain`.
+Designed to be invoked by the NestJS background cron job (MlRetrainingCron),
+administrative API (POST /api/v1/audit/ml/retrain), or manually via `poetry run retrain`.
 
 Retraining lifecycle (hybrid trigger: drift OR time-based):
   1. Load production feedback pool (data/production/feedback_pool.csv)
