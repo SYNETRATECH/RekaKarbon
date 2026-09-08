@@ -79,7 +79,9 @@ export default function BursaPurchaseModal({
       toast({
         title: 'Transaksi Gagal ❌',
         description:
-          'Gagal melakukan pembelian token karbon. Pastikan saldo wallet dan koneksi blockchain stabil.',
+          error instanceof Error
+            ? error.message
+            : 'Gagal melakukan pembelian token karbon. Pastikan saldo wallet dan koneksi blockchain stabil.',
         variant: 'destructive',
       });
     } finally {

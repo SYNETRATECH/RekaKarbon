@@ -6,25 +6,20 @@ dotenv.config();
 
 // Mengambil private key dari .env
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const QBFT_RPC_URL = process.env.QBFT_RPC_URL ?? 'http://127.0.0.1:8545';
-const QBFT_CHAIN_ID = Number(process.env.QBFT_CHAIN_ID ?? '1338');
+const BESU_RPC_URL =
+  process.env.BESU_RPC_URL ?? process.env.QBFT_RPC_URL ?? 'http://127.0.0.1:8545';
+const BESU_CHAIN_ID = Number(process.env.BESU_CHAIN_ID ?? process.env.QBFT_CHAIN_ID ?? '1338');
 
-if (!Number.isInteger(QBFT_CHAIN_ID) || QBFT_CHAIN_ID <= 0) {
-  console.error('❌ ERROR FATAL: QBFT_CHAIN_ID harus berupa bilangan bulat positif.');
-  process.exit(1);
-}
-
-// Validasi ketat ala Production: Jika .env kosong, gagalkan prosesnya!
-if (!PRIVATE_KEY) {
-  console.error('❌ ERROR FATAL: PRIVATE_KEY tidak ditemukan di file .env!');
-  console.error('Silakan copy .env.example menjadi .env dan masukkan kunci rahasia Anda.');
+if (!Number.isInteger(BESU_CHAIN_ID) || BESU_CHAIN_ID <= 0) {
+  console.error('❌ ERROR FATAL: BESU_CHAIN_ID/QBFT_CHAIN_ID harus berupa bilangan bulat positif.');
   process.exit(1);
 }
 
 const qbftNetwork = {
-  url: QBFT_RPC_URL,
-  chainId: QBFT_CHAIN_ID,
-  accounts: [PRIVATE_KEY],
+  url: BESU_RPC_URL,
+  chainId: BESU_CHAIN_ID,
+  // Compile and read-only preflight must work without a deployer key.
+  accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
 };
 
 const config: HardhatUserConfig = {
@@ -41,6 +36,7 @@ const config: HardhatUserConfig = {
   networks: {
     besu_local: qbftNetwork,
     besu_qbft_local: qbftNetwork,
+    besu_qbft: qbftNetwork,
   },
 };
 

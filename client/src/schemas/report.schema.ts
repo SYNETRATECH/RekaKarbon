@@ -76,17 +76,48 @@ export const CalculationEntrySchema = z.object({
   }),
 });
 
-export const CalculationDataSchema = z
-  .object({
-    schemaVersion: z.literal(2),
-    factorSetId: z.string().min(1),
-    scope1: CarbonVolumeSchema,
-    scope2: CarbonVolumeSchema,
-    scope3: CarbonVolumeSchema,
-    entries: z.array(CalculationEntrySchema),
-    auditResult: MlAuditResultSchema.optional(),
-  })
-  .passthrough();
+const LEGACY_FACTOR_SET_ID = 'legacy';
+
+/**
+ * Older seeded reports stored only `{ id, value }` entries and omitted the
+ * calculator metadata. Normalize those records before validating the public
+ * report response so one historical row cannot make the entire report list
+ * look empty in the emitter UI.
+ */
+function normalizeCalculationData(input: unknown): unknown {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return input;
+
+  const raw = input as Record<string, unknown>;
+  const rawEntries = Array.isArray(raw.entries) ? raw.entries : [];
+  const detailedEntries = rawEntries.filter(
+    (entry) => CalculationEntrySchema.safeParse(entry).success
+  );
+
+  return {
+    ...raw,
+    schemaVersion: 2,
+    factorSetId:
+      typeof raw.factorSetId === 'string' && raw.factorSetId.length > 0
+        ? raw.factorSetId
+        : LEGACY_FACTOR_SET_ID,
+    entries: detailedEntries,
+  };
+}
+
+export const CalculationDataSchema = z.preprocess(
+  normalizeCalculationData,
+  z
+    .object({
+      schemaVersion: z.literal(2),
+      factorSetId: z.string().min(1),
+      scope1: CarbonVolumeSchema,
+      scope2: CarbonVolumeSchema,
+      scope3: CarbonVolumeSchema,
+      entries: z.array(CalculationEntrySchema),
+      auditResult: MlAuditResultSchema.optional(),
+    })
+    .passthrough()
+);
 
 export const CalculatorReportSubmissionSchema = z.object({
   id: z.string().optional(),

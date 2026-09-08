@@ -29,6 +29,7 @@ server/dist/
 .DS_Store
 *.pem
 tmp/*
+backups/
 
 # debug
 npm-debug.log*

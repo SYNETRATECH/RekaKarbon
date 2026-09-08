@@ -14,8 +14,8 @@ services:
       - --rpc-ws-enabled=false
     volumes:
       - qbft_bootnode_1_data:/var/lib/besu
-      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
-      - ./networks/local-qbft/generated/nodes/bootnode-1/key:/etc/besu/keys/key:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/genesis.json:/etc/besu/genesis.json:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/nodes/bootnode-1/key:/etc/besu/keys/key:ro
     networks:
       qbft_internal:
         ipv4_address: 172.30.0.10
@@ -52,8 +52,8 @@ services:
       start_period: 20s
     volumes:
       - qbft_validator_1_data:/var/lib/besu
-      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
-      - ./networks/local-qbft/generated/nodes/validator-1/key:/etc/besu/keys/key:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/genesis.json:/etc/besu/genesis.json:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/nodes/validator-1/key:/etc/besu/keys/key:ro
     networks:
       qbft_internal:
         ipv4_address: 172.30.0.11
@@ -90,8 +90,8 @@ services:
       start_period: 20s
     volumes:
       - qbft_validator_2_data:/var/lib/besu
-      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
-      - ./networks/local-qbft/generated/nodes/validator-2/key:/etc/besu/keys/key:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/genesis.json:/etc/besu/genesis.json:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/nodes/validator-2/key:/etc/besu/keys/key:ro
     networks:
       qbft_internal:
         ipv4_address: 172.30.0.12
@@ -128,8 +128,8 @@ services:
       start_period: 20s
     volumes:
       - qbft_validator_3_data:/var/lib/besu
-      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
-      - ./networks/local-qbft/generated/nodes/validator-3/key:/etc/besu/keys/key:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/genesis.json:/etc/besu/genesis.json:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/nodes/validator-3/key:/etc/besu/keys/key:ro
     networks:
       qbft_internal:
         ipv4_address: 172.30.0.13
@@ -166,8 +166,8 @@ services:
       start_period: 20s
     volumes:
       - qbft_validator_4_data:/var/lib/besu
-      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
-      - ./networks/local-qbft/generated/nodes/validator-4/key:/etc/besu/keys/key:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/genesis.json:/etc/besu/genesis.json:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/nodes/validator-4/key:/etc/besu/keys/key:ro
     networks:
       qbft_internal:
         ipv4_address: 172.30.0.14
@@ -217,8 +217,8 @@ services:
       - 127.0.0.1:8546:8546
     volumes:
       - qbft_rpc_1_data:/var/lib/besu
-      - ./networks/local-qbft/generated/genesis.json:/etc/besu/genesis.json:ro
-      - ./networks/local-qbft/generated/nodes/rpc-1/key:/etc/besu/keys/key:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/genesis.json:/etc/besu/genesis.json:ro
+      - ${QBFT_SHARED_DIR:-./networks/local-qbft/generated}/nodes/rpc-1/key:/etc/besu/keys/key:ro
     networks:
       qbft_internal:
         ipv4_address: 172.30.0.20
