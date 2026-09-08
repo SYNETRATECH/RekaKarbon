@@ -36,8 +36,10 @@ sudah memiliki block.
 
 ## Menjalankan runtime
 
-Release workflow menempatkan compose file di `$PROJECT_DIR/current`. Untuk smoke test
-manual, gunakan shared environment yang dibuat bootstrap:
+Release workflow menempatkan setiap compose file di direktori release immutable. Path
+shared network dikonfigurasi melalui GitHub Variable `QBFT_NETWORK_ENV_FILE`; workflow
+tidak menghapus release atau volume ledger lama. Untuk smoke test manual, gunakan
+shared environment yang dibuat bootstrap:
 
 ```bash
 docker compose \
@@ -71,7 +73,26 @@ diaktifkan secara eksplisit melalui protected GitHub Environment.
 
 ## Rollback
 
-Workflow menyimpan maksimal tiga release dan mempertahankan symlink `current`. Jika
-health check release baru gagal, workflow mencoba mengaktifkan compose file release
-sebelumnya tanpa menyentuh volume ledger. Jika rollback otomatis gagal, hentikan
-perubahan lanjutan dan investigasi log container sebelum tindakan manual.
+Workflow tidak melakukan rollback otomatis dan tidak menjalankan `docker compose down -v`.
+Jika health check gagal, pertahankan container/volume untuk investigasi dan pilih commit
+terakhir yang tervalidasi pada workflow manual berikutnya. Jalankan compose file dari
+release sebelumnya dengan shared `.env` yang sama; jangan bootstrap ulang genesis atau
+menghapus volume ledger.
+
+## Top-up RKB_CREDIT terkontrol
+
+Script `fund-wallet-credit.ts` hanya menulis token ID 3 setelah memverifikasi chain ID,
+bytecode, `DEPOSIT_ROLE`, dan receipt `TransferSingle`. Untuk mencegah retry menggandakan
+saldo, operator wajib mengisi saldo sebelum transaksi secara persis dan konfirmasi eksplisit:
+
+```bash
+WALLET_CREDIT_RECIPIENT=0x... \
+WALLET_CREDIT_AMOUNT_IDR=700000000000 \
+WALLET_CREDIT_EXPECTED_BALANCE_BEFORE=... \
+WALLET_CREDIT_CONFIRM=MINT \
+pnpm qbft:fund-wallet-credit
+```
+
+Nominal IDR harus berupa angka mentah tanpa titik/koma. Jika saldo awal berbeda, script
+membatalkan transaksi. Simpan tx hash dan receipt sebagai bukti audit sebelum melakukan
+operasi berikutnya.

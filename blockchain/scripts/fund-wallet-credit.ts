@@ -16,7 +16,6 @@ function loadEnvironment(): void {
   const environmentFiles = [
     path.resolve(process.cwd(), 'networks/local-qbft/generated/.env'),
     path.resolve(process.cwd(), '.env'),
-    path.resolve(process.cwd(), '../server/.env'),
   ];
 
   for (const environmentFile of environmentFiles) {
@@ -44,6 +43,14 @@ function parsePositiveBigInt(value: string, name: string): bigint {
   }
 
   return parsedValue;
+}
+
+function parseNonNegativeBigInt(value: string, name: string): bigint {
+  if (!/^\d+$/u.test(value)) {
+    throw new Error(`${name} harus berupa bilangan bulat tanpa pemisah atau simbol.`);
+  }
+
+  return BigInt(value);
 }
 
 function normalizeAddress(value: string, name: string): string {
@@ -76,6 +83,13 @@ async function main(): Promise<void> {
     requireEnvironment('WALLET_CREDIT_AMOUNT_IDR'),
     'WALLET_CREDIT_AMOUNT_IDR'
   );
+  const expectedBalanceBefore = parseNonNegativeBigInt(
+    requireEnvironment('WALLET_CREDIT_EXPECTED_BALANCE_BEFORE'),
+    'WALLET_CREDIT_EXPECTED_BALANCE_BEFORE'
+  );
+  if (process.env.WALLET_CREDIT_CONFIRM?.trim() !== 'MINT') {
+    throw new Error('WALLET_CREDIT_CONFIRM harus bernilai MINT untuk mengotorisasi top-up.');
+  }
 
   const provider = new JsonRpcProvider(rpcUrl);
   const network = await provider.getNetwork();
@@ -111,6 +125,12 @@ async function main(): Promise<void> {
   }
 
   const balanceBefore = await balanceOf(recipientAddress, RKB_CREDIT_TOKEN_ID);
+  if (balanceBefore !== expectedBalanceBefore) {
+    throw new Error(
+      `Saldo awal tidak sesuai guard: ${balanceBefore.toString()} != ${expectedBalanceBefore.toString()}. ` +
+        'Top-up dibatalkan agar retry tidak menggandakan saldo.'
+    );
+  }
   const transaction = await mintWalletCredit(recipientAddress, amount);
   const receipt = await transaction.wait();
   if (!receipt) {
