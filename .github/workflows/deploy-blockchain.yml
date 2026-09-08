@@ -30,13 +30,6 @@ on:
         required: true
         default: false
         type: boolean
-      backend_process_manager:
-        description: Process manager backend pada VM
-        required: true
-        default: systemd
-        type: choice
-        options:
-          - systemd
 
 permissions:
   contents: read
