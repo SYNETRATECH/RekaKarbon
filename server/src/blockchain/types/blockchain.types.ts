@@ -29,7 +29,15 @@ export interface BlockchainHealth {
   connectedChainId?: number;
   contractAddress?: string;
   contractDeployed?: boolean;
+  registryAddress?: string;
+  registryDeployed?: boolean;
+  latestBlockNumber?: number;
   ministryRoleGrantedToSigner?: boolean;
+  depositRoleGrantedToSigner?: boolean;
+  oracleRoleGrantedToSigner?: boolean;
+  marketOperatorRoleGrantedToSigner?: boolean;
+  auditorRoleGrantedToSigner?: boolean;
+  reporterRoleGrantedToSigner?: boolean;
   reason?: string;
 }
 
@@ -49,6 +57,18 @@ export interface BlockchainRetirementCertificate {
 export interface BlockchainBursaListingResult {
   listingId: number;
   txHash: string;
+}
+
+export interface BlockchainBursaListingState {
+  listingId: number;
+  seller: string;
+  assetId: number;
+  totalAmount: number;
+  soldAmount: number;
+  floorPricePerTonIdr: number;
+  marketPricePerTonIdr: number;
+  kthConfirmedBy: string;
+  status: number;
 }
 
 export type BlockchainBursaListingReadinessReason =
@@ -104,6 +124,9 @@ export interface CarbonTokenContract {
     overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
   MINISTRY_ROLE(): Promise<string>;
+  ORACLE_ROLE(): Promise<string>;
+  DEPOSIT_ROLE(): Promise<string>;
+  MARKET_OPERATOR_ROLE(): Promise<string>;
   hasRole(role: string, account: string): Promise<boolean>;
   mintOffsetCredit(
     toAddress: string,
@@ -166,6 +189,7 @@ export interface CarbonTokenContract {
     newMarketPricePerTonIdr: bigint,
     overrides?: BlockchainTransactionOverrides,
   ): Promise<BlockchainTransaction>;
+  bursaListings(listingId: bigint): Promise<readonly unknown[]>;
   quoteBursaPurchase(
     listingId: bigint,
     amount: bigint,
@@ -202,6 +226,9 @@ export interface CarbonTokenContract {
 }
 
 export interface EmissionRegistryContract {
+  AUDITOR_ROLE(): Promise<string>;
+  REPORTER_ROLE(): Promise<string>;
+  hasRole(role: string, account: string): Promise<boolean>;
   submitReport(
     year: number,
     rootHash: string,

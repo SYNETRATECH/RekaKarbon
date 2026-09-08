@@ -13,6 +13,7 @@ import * as EmissionRegistryABI from './config/EmissionReportRegistry.json';
 import type {
   BlockchainEvent,
   BlockchainBursaListingResult,
+  BlockchainBursaListingState,
   BlockchainBursaQuote,
   BlockchainBursaRevenueRecipients,
   BlockchainHealth,
@@ -97,13 +98,83 @@ export class BlockchainService implements OnModuleInit {
     return this.registryContract;
   }
 
-  private async getTransactionOverrides(): Promise<BlockchainTransactionOverrides> {
+  private async getTransactionOverrides(
+    contractAddress: string | undefined = process.env
+      .CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS,
+    contractName = 'RekaKarbon',
+  ): Promise<BlockchainTransactionOverrides> {
     if (!this.provider) {
-      throw new InternalServerErrorException(
-        'Blockchain provider not initialized',
-      );
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BLOCKCHAIN_TARGET_UNAVAILABLE',
+          message: 'Blockchain provider is not initialized.',
+        },
+      });
     }
+
+    await this.assertWriteTarget(contractAddress, contractName);
     return getNominalTransactionOverrides(this.provider);
+  }
+
+  private async assertWriteTarget(
+    contractAddress: string | undefined,
+    contractName: string,
+  ): Promise<void> {
+    if (!this.provider || !contractAddress) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BLOCKCHAIN_TARGET_UNAVAILABLE',
+          message: `${contractName} blockchain target is not configured.`,
+        },
+      });
+    }
+
+    const configuredChainId = this.getConfiguredChainId();
+    if (!configuredChainId) {
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BLOCKCHAIN_CHAIN_ID_INVALID',
+          message: 'Configured blockchain chain ID is invalid.',
+        },
+      });
+    }
+
+    try {
+      const [network, bytecode] = await Promise.all([
+        this.provider.getNetwork(),
+        this.provider.getCode(contractAddress),
+      ]);
+      const connectedChainId = Number(network.chainId);
+      if (connectedChainId !== configuredChainId || bytecode === '0x') {
+        throw new ServiceUnavailableException({
+          success: false,
+          error: {
+            code: 'BLOCKCHAIN_TARGET_MISMATCH',
+            message: `${contractName} write blocked because the active chain or contract does not match configuration.`,
+            details: {
+              configuredChainId,
+              connectedChainId,
+              contractAddress,
+              contractDeployed: bytecode !== '0x',
+            },
+          },
+        });
+      }
+    } catch (error: unknown) {
+      if (error instanceof ServiceUnavailableException) throw error;
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BLOCKCHAIN_TARGET_UNAVAILABLE',
+          message: `${contractName} write target could not be verified.`,
+          details: { reason },
+        },
+      });
+    }
   }
 
   async getTransactionStatus(
@@ -148,28 +219,39 @@ export class BlockchainService implements OnModuleInit {
     const configuredChainId = this.getConfiguredChainId();
     const contractAddress =
       process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+    const registryAddress = process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
 
     if (
       !this.provider ||
       !this.wallet ||
       !this.rekaKarbonContract ||
+      !this.registryContract ||
       !configuredChainId ||
-      !contractAddress
+      !contractAddress ||
+      !registryAddress
     ) {
       return {
         status: 'unconfigured',
         network: 'Hyperledger Besu / EVM Private Network',
         configuredChainId,
         contractAddress,
-        reason: 'RPC, signer, chain ID, or contract address is not configured.',
+        registryAddress,
+        reason:
+          'RPC, signer, chain ID, or carbon/registry contract address is not configured.',
       };
     }
 
     try {
-      const network = await this.provider.getNetwork();
+      const [network, carbonBytecode, registryBytecode, latestBlockNumber] =
+        await Promise.all([
+          this.provider.getNetwork(),
+          this.provider.getCode(contractAddress),
+          this.provider.getCode(registryAddress),
+          this.provider.getBlockNumber(),
+        ]);
       const connectedChainId = Number(network.chainId);
-      const bytecode = await this.provider.getCode(contractAddress);
-      const contractDeployed = bytecode !== '0x';
+      const contractDeployed = carbonBytecode !== '0x';
+      const registryDeployed = registryBytecode !== '0x';
       const chainMatches = connectedChainId === configuredChainId;
 
       const reasons: string[] = [];
@@ -183,8 +265,13 @@ export class BlockchainService implements OnModuleInit {
           'The configured carbon contract has no bytecode at its address.',
         );
       }
+      if (!registryDeployed) {
+        reasons.push(
+          'The configured emission registry has no bytecode at its address.',
+        );
+      }
 
-      if (!chainMatches || !contractDeployed) {
+      if (!chainMatches || !contractDeployed || !registryDeployed) {
         return {
           status: 'degraded',
           network: 'Hyperledger Besu / EVM Private Network',
@@ -192,40 +279,77 @@ export class BlockchainService implements OnModuleInit {
           connectedChainId,
           contractAddress,
           contractDeployed,
+          registryAddress,
+          registryDeployed,
+          latestBlockNumber,
           reason: reasons.join(' '),
         };
       }
 
-      const ministryRole = await this.rekaKarbonContract.MINISTRY_ROLE();
-      const ministryRoleGrantedToSigner = await this.rekaKarbonContract.hasRole(
+      const [
         ministryRole,
-        this.wallet.address,
-      );
+        depositRole,
+        oracleRole,
+        marketOperatorRole,
+        auditorRole,
+        reporterRole,
+      ] = await Promise.all([
+        this.rekaKarbonContract.MINISTRY_ROLE(),
+        this.rekaKarbonContract.DEPOSIT_ROLE(),
+        this.rekaKarbonContract.ORACLE_ROLE(),
+        this.rekaKarbonContract.MARKET_OPERATOR_ROLE(),
+        this.registryContract.AUDITOR_ROLE(),
+        this.registryContract.REPORTER_ROLE(),
+      ]);
+      const [
+        ministryRoleGrantedToSigner,
+        depositRoleGrantedToSigner,
+        oracleRoleGrantedToSigner,
+        marketOperatorRoleGrantedToSigner,
+        auditorRoleGrantedToSigner,
+        reporterRoleGrantedToSigner,
+      ] = await Promise.all([
+        this.rekaKarbonContract.hasRole(ministryRole, this.wallet.address),
+        this.rekaKarbonContract.hasRole(depositRole, this.wallet.address),
+        this.rekaKarbonContract.hasRole(oracleRole, this.wallet.address),
+        this.rekaKarbonContract.hasRole(
+          marketOperatorRole,
+          this.wallet.address,
+        ),
+        this.registryContract.hasRole(auditorRole, this.wallet.address),
+        this.registryContract.hasRole(reporterRole, this.wallet.address),
+      ]);
 
-      if (ministryRoleGrantedToSigner) {
-        return {
-          status: 'ready',
-          network: 'Hyperledger Besu / EVM Private Network',
-          configuredChainId,
-          connectedChainId,
-          contractAddress,
-          contractDeployed,
-          ministryRoleGrantedToSigner,
-        };
-      }
-
-      if (!ministryRoleGrantedToSigner) {
-        reasons.push('The backend signer does not have MINISTRY_ROLE.');
+      const roleChecks = [
+        ['MINISTRY_ROLE', ministryRoleGrantedToSigner],
+        ['DEPOSIT_ROLE', depositRoleGrantedToSigner],
+        ['ORACLE_ROLE', oracleRoleGrantedToSigner],
+        ['MARKET_OPERATOR_ROLE', marketOperatorRoleGrantedToSigner],
+        ['AUDITOR_ROLE', auditorRoleGrantedToSigner],
+        ['REPORTER_ROLE', reporterRoleGrantedToSigner],
+      ] as const;
+      for (const [roleName, isGranted] of roleChecks) {
+        if (!isGranted) {
+          reasons.push(`The backend signer does not have ${roleName}.`);
+        }
       }
 
       return {
-        status: 'degraded',
+        status: reasons.length === 0 ? 'ready' : 'degraded',
         network: 'Hyperledger Besu / EVM Private Network',
         configuredChainId,
         connectedChainId,
         contractAddress,
         contractDeployed,
+        registryAddress,
+        registryDeployed,
+        latestBlockNumber,
         ministryRoleGrantedToSigner,
+        depositRoleGrantedToSigner,
+        oracleRoleGrantedToSigner,
+        marketOperatorRoleGrantedToSigner,
+        auditorRoleGrantedToSigner,
+        reporterRoleGrantedToSigner,
         reason: reasons.join(' '),
       };
     } catch (error: unknown) {
@@ -236,14 +360,28 @@ export class BlockchainService implements OnModuleInit {
         network: 'Hyperledger Besu / EVM Private Network',
         configuredChainId,
         contractAddress,
+        registryAddress,
         reason,
       };
     }
   }
 
+  async getLatestBlockNumber(): Promise<number | null> {
+    if (!this.provider) return null;
+
+    try {
+      return await this.provider.getBlockNumber();
+    } catch {
+      return null;
+    }
+  }
+
   private getConfiguredChainId(): number | undefined {
     const configuredValue =
-      process.env.BESU_CHAIN_ID || process.env.CHAIN_ID || '1338';
+      process.env.BESU_CHAIN_ID ||
+      process.env.QBFT_CHAIN_ID ||
+      process.env.CHAIN_ID ||
+      '1338';
     const configuredChainId = Number(configuredValue);
     return Number.isInteger(configuredChainId) && configuredChainId > 0
       ? configuredChainId
@@ -253,13 +391,11 @@ export class BlockchainService implements OnModuleInit {
   async getCarbonBalance(address: string, tokenId: number): Promise<number> {
     const contract = this.ensureRekaKarbon();
     try {
-      const validAddress = this.sanitizeAddress(
-        address,
-        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', // Fallback to a mock address if invalid
-      );
+      const validAddress = this.sanitizeAddress(address, 'Wallet address');
       const balance = await contract.balanceOf(validAddress, tokenId);
       return Number(balance);
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
       this.logger.error('Error reading carbon balance:', error);
       throw new InternalServerErrorException('Failed to read balance');
     }
@@ -393,10 +529,7 @@ export class BlockchainService implements OnModuleInit {
         throw new Error('Blockchain provider not initialized');
       }
 
-      const validAddress = this.sanitizeAddress(
-        address,
-        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-      );
+      const validAddress = this.sanitizeAddress(address, 'Wallet address');
       const filterIn = contract.filters.TransferSingle(
         null,
         null,
@@ -416,11 +549,27 @@ export class BlockchainService implements OnModuleInit {
 
       // Combine and parse events
       const allEvents = [...eventsIn, ...eventsOut];
+      const uniqueEvents = Array.from(
+        new Map(
+          allEvents.map((event) => {
+            const [from, to, tokenId, amount] = [
+              event.args[1],
+              event.args[2],
+              event.args[3],
+              event.args[4],
+            ];
+            return [
+              `${event.transactionHash}:${from}:${to}:${tokenId.toString()}:${amount.toString()}`,
+              event,
+            ] as const;
+          }),
+        ).values(),
+      );
 
       const history = await Promise.all(
-        allEvents.map(async (event: BlockchainEvent) => {
+        uniqueEvents.map(async (event: BlockchainEvent) => {
           const isIncoming =
-            event.args[2].toLowerCase() === address.toLowerCase();
+            event.args[2].toLowerCase() === validAddress.toLowerCase();
           const tokenId = Number(event.args[3]);
           const amount = Number(event.args[4]);
 
@@ -447,6 +596,7 @@ export class BlockchainService implements OnModuleInit {
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
       this.logger.error('Error fetching wallet history:', error);
       throw new InternalServerErrorException('Failed to fetch wallet history');
     }
@@ -475,12 +625,13 @@ export class BlockchainService implements OnModuleInit {
     return events;
   }
 
-  private sanitizeAddress(address: string, fallback: string): string {
+  private sanitizeAddress(address: string, fieldName: string): string {
     try {
       return ethers.getAddress(address.toLowerCase());
     } catch {
-      this.logger.warn(`Invalid address detected: ${address}. Using fallback.`);
-      return fallback;
+      throw new BadRequestException(
+        `${fieldName} must be a valid EVM address.`,
+      );
     }
   }
 
@@ -786,6 +937,52 @@ export class BlockchainService implements OnModuleInit {
     }
   }
 
+  async getBursaListingState(
+    listingId: number,
+  ): Promise<BlockchainBursaListingState> {
+    const contract = this.ensureRekaKarbon();
+    const validListingId = this.toPositiveInteger(listingId, 'Listing ID');
+
+    try {
+      const listing = await contract.bursaListings(validListingId);
+      const seller = String(listing[0]);
+      if (!ethers.isAddress(seller) || seller === ethers.ZeroAddress) {
+        throw new BadRequestException({
+          success: false,
+          error: {
+            code: 'BURSA_CHAIN_LISTING_NOT_FOUND',
+            message: 'Listing Bursa tidak ditemukan di blockchain aktif.',
+            details: { listingId },
+          },
+        });
+      }
+
+      return {
+        listingId,
+        seller: ethers.getAddress(seller),
+        assetId: Number(listing[1]),
+        totalAmount: Number(listing[2]),
+        soldAmount: Number(listing[3]),
+        floorPricePerTonIdr: Number(listing[4]),
+        marketPricePerTonIdr: Number(listing[5]),
+        kthConfirmedBy: ethers.getAddress(String(listing[9])),
+        status: Number(listing[12]),
+      };
+    } catch (error: unknown) {
+      if (error instanceof BadRequestException) throw error;
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error reading Bursa listing ${listingId}:`, reason);
+      throw new ServiceUnavailableException({
+        success: false,
+        error: {
+          code: 'BURSA_CHAIN_UNAVAILABLE',
+          message: 'Status listing Bursa di blockchain tidak dapat dibaca.',
+          details: { listingId, reason },
+        },
+      });
+    }
+  }
+
   async purchaseBursaListing(
     listingId: number,
     buyer: string,
@@ -876,14 +1073,8 @@ export class BlockchainService implements OnModuleInit {
   ): Promise<string> {
     const contract = this.ensureRekaKarbon();
     try {
-      const validBuyer = this.sanitizeAddress(
-        buyer,
-        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-      );
-      const validSeller = this.sanitizeAddress(
-        seller,
-        '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-      );
+      const validBuyer = this.sanitizeAddress(buyer, 'Buyer wallet');
+      const validSeller = this.sanitizeAddress(seller, 'Seller wallet');
 
       const tx = await contract.executeBursaPurchase(
         validBuyer,
@@ -897,6 +1088,7 @@ export class BlockchainService implements OnModuleInit {
       if (!receipt) throw new Error('Transaction receipt was not returned');
       return receipt.hash;
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
       this.logger.error('Error executing bursa purchase:', error);
       throw new InternalServerErrorException(
         'Failed to execute purchase on-chain',
@@ -1105,7 +1297,10 @@ export class BlockchainService implements OnModuleInit {
         validReporter,
         year,
         rootHash,
-        await this.getTransactionOverrides(),
+        await this.getTransactionOverrides(
+          process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS,
+          'EmissionReportRegistry',
+        ),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -1157,7 +1352,10 @@ export class BlockchainService implements OnModuleInit {
         reportId,
         status,
         notes,
-        await this.getTransactionOverrides(),
+        await this.getTransactionOverrides(
+          process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS,
+          'EmissionReportRegistry',
+        ),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
@@ -1213,7 +1411,10 @@ export class BlockchainService implements OnModuleInit {
         version,
         rootHash,
         anchorType,
-        await this.getTransactionOverrides(),
+        await this.getTransactionOverrides(
+          process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS,
+          'EmissionReportRegistry',
+        ),
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');

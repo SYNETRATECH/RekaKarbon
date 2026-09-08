@@ -1,6 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
+import type { BlockchainHealth } from '../blockchain/types';
 
 @Injectable()
 export class HealthService {
@@ -24,9 +25,20 @@ export class HealthService {
       }
     }
 
+    const blockchainHealth = await this.getBlockchainHealth();
+    const blockchainIsReachable =
+      blockchainHealth.status !== 'offline' &&
+      blockchainHealth.status !== 'unconfigured';
+    const blockchainIsReady = blockchainHealth.status === 'ready';
+    const blockchainChainId =
+      blockchainHealth.connectedChainId ??
+      blockchainHealth.configuredChainId ??
+      Number(process.env.BESU_CHAIN_ID || process.env.QBFT_CHAIN_ID || 1338);
+    const systemStatus =
+      dbStatus === 'connected' && blockchainIsReady ? 'ok' : 'degraded';
+
     return {
-      status: (dbStatus === 'connected' ? 'ok' : 'degraded') as
-        'ok' | 'degraded' | 'error',
+      status: systemStatus as 'ok' | 'degraded' | 'error',
       service: 'RekaKarbon Core Backend API',
       version: '1.0.0',
       uptimeSeconds: Math.floor(process.uptime()),
@@ -38,10 +50,12 @@ export class HealthService {
           latencyMs: dbLatencyMs,
         },
         blockchain: {
-          status: 'synced' as const,
-          network: 'Hyperledger Besu (IBFT 2.0)',
-          latestBlock: 12480,
-          chainId: 1338,
+          status: blockchainIsReachable
+            ? ('synced' as const)
+            : ('unreachable' as const),
+          network: blockchainHealth.network,
+          latestBlock: blockchainHealth.latestBlockNumber ?? 0,
+          chainId: blockchainChainId,
         },
         storage: {
           status: 'operational' as const,
@@ -70,7 +84,7 @@ export class HealthService {
     }
   }
 
-  getBlockchainHealth() {
+  getBlockchainHealth(): Promise<BlockchainHealth> {
     return this.blockchainService
       ? this.blockchainService.getHealth()
       : Promise.resolve({

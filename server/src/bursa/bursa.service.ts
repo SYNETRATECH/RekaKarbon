@@ -1320,6 +1320,42 @@ export class BursaService {
       );
     }
 
+    if (!existingOrder) {
+      const blockchainListing =
+        await this.blockchainService.getBursaListingState(
+          Number(listing.blockchainListingId),
+        );
+      if (!listing.carbonToken.blockchainTokenId) {
+        throw new ConflictException(
+          'Token lokal belum memiliki asset ID blockchain yang valid.',
+        );
+      }
+      const expectedAssetId = Number(listing.carbonToken.blockchainTokenId);
+      const sellerWallet = listing.seller.walletAddress;
+      const chainRemainingVolume =
+        blockchainListing.totalAmount - blockchainListing.soldAmount;
+
+      if (
+        blockchainListing.assetId !== expectedAssetId ||
+        (sellerWallet &&
+          blockchainListing.seller.toLowerCase() !== sellerWallet.toLowerCase())
+      ) {
+        throw new ConflictException(
+          'Referensi listing database tidak cocok dengan listing blockchain aktif.',
+        );
+      }
+      if (![1, 2].includes(blockchainListing.status)) {
+        throw new BadRequestException(
+          'Listing blockchain belum aktif atau sudah ditutup.',
+        );
+      }
+      if (chainRemainingVolume < settlementVolume) {
+        throw new ConflictException(
+          'Pasokan listing blockchain lebih kecil dari proyeksi database. Rekonsiliasi diperlukan.',
+        );
+      }
+    }
+
     let order: BursaOrderWithAllocations;
     if (existingOrder) {
       order = existingOrder;
