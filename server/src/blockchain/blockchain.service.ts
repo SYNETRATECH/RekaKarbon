@@ -39,7 +39,10 @@ export class BlockchainService implements OnModuleInit {
   private registryContract: EmissionRegistryContract | null = null;
 
   onModuleInit() {
-    const rpcUrl = process.env.BESU_RPC_URL || process.env.RPC_URL;
+    const rpcUrl =
+      process.env.BESU_RPC_URL ||
+      process.env.QBFT_RPC_URL ||
+      process.env.RPC_URL;
     const privateKey = process.env.PRIVATE_KEY;
     const rekaKarbonAddress =
       process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
@@ -47,7 +50,7 @@ export class BlockchainService implements OnModuleInit {
 
     if (!rpcUrl || !privateKey || !rekaKarbonAddress || !registryAddress) {
       this.logger.warn(
-        '⚠️ Blockchain integration missing config. Check BESU_RPC_URL, PRIVATE_KEY, CARBON_TOKEN_CONTRACT_ADDRESS, EMISSION_REGISTRY_CONTRACT_ADDRESS.',
+        '⚠️ Blockchain integration missing config. Check BESU_RPC_URL/QBFT_RPC_URL, PRIVATE_KEY, CARBON_TOKEN_CONTRACT_ADDRESS, EMISSION_REGISTRY_CONTRACT_ADDRESS.',
       );
       return;
     }

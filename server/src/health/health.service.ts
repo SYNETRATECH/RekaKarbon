@@ -30,10 +30,16 @@ export class HealthService {
       blockchainHealth.status !== 'offline' &&
       blockchainHealth.status !== 'unconfigured';
     const blockchainIsReady = blockchainHealth.status === 'ready';
+    const configuredFallbackChainId = Number(
+      process.env.BESU_CHAIN_ID || process.env.QBFT_CHAIN_ID || 1338,
+    );
     const blockchainChainId =
       blockchainHealth.connectedChainId ??
       blockchainHealth.configuredChainId ??
-      Number(process.env.BESU_CHAIN_ID || process.env.QBFT_CHAIN_ID || 1338);
+      (Number.isInteger(configuredFallbackChainId) &&
+      configuredFallbackChainId > 0
+        ? configuredFallbackChainId
+        : 1338);
     const systemStatus =
       dbStatus === 'connected' && blockchainIsReady ? 'ok' : 'degraded';
 
