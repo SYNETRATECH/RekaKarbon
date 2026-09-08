@@ -57,8 +57,13 @@ import { AuditResultCard } from '@/components/emitter/AuditResultCard';
 import type { EmissionReport, MlAuditResult } from '@/types';
 
 export async function clientLoader() {
-  const emissionReports = await reportRepository.getEmissionReports().catch(() => []);
-  return { emissionReports };
+  try {
+    const emissionReports = await reportRepository.getEmissionReports();
+    return { emissionReports, reportsLoadError: false };
+  } catch (error: unknown) {
+    console.error('Failed to load emission reports:', error);
+    return { emissionReports: [], reportsLoadError: true };
+  }
 }
 
 clientLoader.hydrate = true as const;
@@ -87,7 +92,7 @@ function isVerifiedReport(status: EmissionReport['status']) {
 }
 
 export default function EmissionReportsSector() {
-  const { emissionReports: reports } = useLoaderData<typeof clientLoader>();
+  const { emissionReports: reports, reportsLoadError } = useLoaderData<typeof clientLoader>();
   const { revalidate } = useRevalidator();
 
   // ── Sector & Method Selection (Step 0) ──
@@ -198,6 +203,7 @@ export default function EmissionReportsSector() {
   // The wizard form (Tab 1→2→3) is shown in ALL other cases.
   // ──────────────────────────────────────────────────────────
   const hasExistingReport = isSubmittedLocal || (exactReport !== undefined && !reportNeedsRevision);
+  const canStartNewReport = !reportsLoadError && !hasExistingReport;
 
   const activeScopeTotals = activeReport.sectors.reduce(
     (totals, sector) => {
@@ -277,6 +283,24 @@ export default function EmissionReportsSector() {
 
   const handleStartAIAudit = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (reportsLoadError) {
+      toast({
+        variant: 'warning',
+        title: 'Status laporan belum tersedia',
+        description: 'Muat ulang status laporan terlebih dahulu sebelum mengirim data.',
+      });
+      return;
+    }
+
+    if (hasExistingReport) {
+      toast({
+        variant: 'warning',
+        title: 'Laporan tahun ini sudah ada',
+        description: 'Gunakan alur revisi Auditor untuk mengirim ulang laporan.',
+      });
+      return;
+    }
 
     const totalEmissions = parseNumeric(uploadedTotalEmissions);
     if (!documentFile || !selectedSector || totalEmissions <= 0) {
@@ -409,7 +433,17 @@ export default function EmissionReportsSector() {
       </div>
 
       {/* ── ONLY SHOW SELECTION IF REPORT NOT EXISTS ── */}
-      {!hasExistingReport ? (
+      {reportsLoadError ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-semibold text-amber-800">
+          Status laporan FY {selectedYear} belum berhasil dimuat. Form pengiriman dikunci untuk
+          mencegah laporan ganda. Silakan coba muat ulang halaman.
+          <div className="mt-3">
+            <Button type="button" variant="outline" onClick={() => revalidate()}>
+              Muat ulang status laporan
+            </Button>
+          </div>
+        </div>
+      ) : canStartNewReport ? (
         <>
           {reportNeedsRevision && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-800">
