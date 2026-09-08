@@ -33,12 +33,10 @@ on:
       backend_process_manager:
         description: Process manager backend pada VM
         required: true
-        default: none
+        default: systemd
         type: choice
         options:
-          - none
           - systemd
-          - pm2
 
 permissions:
   contents: read
