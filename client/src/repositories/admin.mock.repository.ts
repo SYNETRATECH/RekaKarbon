@@ -3,6 +3,7 @@ import type {
   AdminStats,
   AdminUserItem,
   AdminKybItem,
+  RoleDefinition,
   QueryUsersParams,
   CreateUserPayload,
   ReviewKybPayload,
@@ -11,10 +12,108 @@ import type {
 } from '../types/admin';
 import { mockAdminUsers, mockAdminKyb, mockAdminStats } from '../lib/mock/admin';
 
+export const MOCK_ROLE_DEFINITIONS: RoleDefinition[] = [
+  {
+    code: 'emitter',
+    label: 'Pelaku Usaha (Emitter)',
+    category: 'Industri & Energi',
+    description:
+      'Entitas usaha wajib pajak karbon, pemegang alokasi kuota emisi PTBAE-PU, dan pelapor MRV.',
+    badgeStyle: {
+      bg: 'bg-purple-100',
+      text: 'text-purple-800',
+      border: 'border-purple-200',
+    },
+    isAssignable: true,
+  },
+  {
+    code: 'kth',
+    label: 'Kelompok Tani Hutan (KTH)',
+    category: 'Kehutanan & Komunitas',
+    description:
+      'Kelompok pengelola perhutanan sosial, pemilik proyek karbon berbasis alam, dan penerima insentif.',
+    badgeStyle: {
+      bg: 'bg-emerald-100',
+      text: 'text-emerald-800',
+      border: 'border-emerald-200',
+    },
+    isAssignable: true,
+  },
+  {
+    code: 'auditor',
+    label: 'Auditor Independen (Sucofindo / Verifier)',
+    category: 'Verifikasi & Audit',
+    description:
+      'Lembaga verifikasi independen terakreditasi untuk inspeksi lapangan, telemetri drone, dan audit emisi.',
+    badgeStyle: {
+      bg: 'bg-amber-100',
+      text: 'text-amber-800',
+      border: 'border-amber-200',
+    },
+    isAssignable: true,
+  },
+  {
+    code: 'regulator',
+    label: 'Regulator Lingkungan (KLHK)',
+    category: 'Pemerintah & Regulator',
+    description:
+      'Otoritas verifikasi nasional SRN-PPI, penerbit sertifikat SPE-GRK, dan pengawas kepatuhan lingkungan.',
+    badgeStyle: {
+      bg: 'bg-blue-100',
+      text: 'text-blue-800',
+      border: 'border-blue-200',
+    },
+    isAssignable: true,
+  },
+  {
+    code: 'ministry',
+    label: 'Kementerian Sektoral (ESDM PTBAE)',
+    category: 'Kementerian Energi',
+    description:
+      'Pemberi persetujuan teknis alokasi kuota batas atas emisi pembangkit dan industri sektoral.',
+    badgeStyle: {
+      bg: 'bg-indigo-100',
+      text: 'text-indigo-800',
+      border: 'border-indigo-200',
+    },
+    isAssignable: true,
+  },
+  {
+    code: 'buyer',
+    label: 'Pembeli Karbon Terdaftar (Buyer)',
+    category: 'Pasar & Perdagangan',
+    description:
+      'Entitas atau korporasi pembeli kredit karbon tersertifikasi untuk penyeimbangan emisi (offseting).',
+    badgeStyle: {
+      bg: 'bg-teal-100',
+      text: 'text-teal-800',
+      border: 'border-teal-200',
+    },
+    isAssignable: true,
+  },
+  {
+    code: 'superadmin',
+    label: 'Super Administrator',
+    category: 'Manajemen Sistem',
+    description:
+      'Administrator sistem penuh dengan hak pengelolaan akun pengguna, verifikasi KYB, dan konfigurasi platform.',
+    badgeStyle: {
+      bg: 'bg-rose-100',
+      text: 'text-rose-800',
+      border: 'border-rose-200',
+    },
+    isAssignable: true,
+  },
+];
+
 export class MockAdminRepository implements AdminRepository {
   private users: AdminUserItem[] = [...mockAdminUsers];
   private kybList: AdminKybItem[] = [...mockAdminKyb];
   private stats: AdminStats = { ...mockAdminStats };
+
+  async getRoles(): Promise<RoleDefinition[]> {
+    return [...MOCK_ROLE_DEFINITIONS];
+  }
 
   async getStats(): Promise<AdminStats> {
     const totalUsers = this.users.length;
@@ -117,6 +216,18 @@ export class MockAdminRepository implements AdminRepository {
     const userIndex = this.users.findIndex((u) => u.id === userId);
     if (userIndex === -1) {
       throw new Error('Pengguna tidak ditemukan.');
+    }
+
+    const user = this.users[userIndex];
+    if (user.role === 'superadmin' && role !== 'superadmin') {
+      const superadminCount = this.users.filter(
+        (u) => u.role === 'superadmin' && u.status === 'ACTIVE'
+      ).length;
+      if (superadminCount <= 1) {
+        throw new Error(
+          'Tidak dapat menurunkan peran Superadmin terakhir. Platform harus memiliki minimal satu Superadmin aktif.'
+        );
+      }
     }
 
     this.users[userIndex] = {

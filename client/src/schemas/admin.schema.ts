@@ -12,6 +12,21 @@ export const AdminUserRoleSchema = z.enum([
   'buyer',
 ]);
 
+export const RoleBadgeStyleSchema = z.object({
+  bg: z.string(),
+  text: z.string(),
+  border: z.string(),
+});
+
+export const RoleDefinitionSchema = z.object({
+  code: AdminUserRoleSchema,
+  label: z.string(),
+  category: z.string(),
+  description: z.string(),
+  badgeStyle: RoleBadgeStyleSchema,
+  isAssignable: z.boolean(),
+});
+
 export const AdminUserStatusSchema = z.enum(['ACTIVE', 'SUSPENDED', 'PENDING_VERIFICATION']);
 
 export const AdminUserItemSchema = z.object({

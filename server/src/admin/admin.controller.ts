@@ -51,6 +51,19 @@ export class AdminController {
   }
 
   @ApiOperation({
+    summary: 'Get all platform role definitions and rich metadata',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Role definitions retrieved successfully.',
+  })
+  @Get('roles')
+  getRoleDefinitions() {
+    const data = this.adminService.getRoleDefinitions();
+    return { success: true, data };
+  }
+
+  @ApiOperation({
     summary: 'List all users with search, role/status filtering and pagination',
   })
   @ApiResponse({
@@ -77,8 +90,13 @@ export class AdminController {
   async updateUserRole(
     @Param('id') userId: string,
     @Body() dto: UpdateUserRoleDto,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const data = await this.adminService.updateUserRole(userId, dto.role);
+    const data = await this.adminService.updateUserRole(
+      userId,
+      dto.role,
+      req.user?.userId,
+    );
     return { success: true, data };
   }
 
@@ -93,8 +111,13 @@ export class AdminController {
   async updateUserStatus(
     @Param('id') userId: string,
     @Body() dto: UpdateUserStatusDto,
+    @Request() req: AuthenticatedRequest,
   ) {
-    const data = await this.adminService.updateUserStatus(userId, dto.status);
+    const data = await this.adminService.updateUserStatus(
+      userId,
+      dto.status,
+      req.user?.userId,
+    );
     return { success: true, data };
   }
 

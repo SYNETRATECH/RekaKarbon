@@ -13,6 +13,7 @@ import type {
   AdminUserItem,
   AdminStats,
   AdminKybItem,
+  RoleDefinition,
 } from './types/admin.types';
 
 @Injectable()
@@ -20,6 +21,102 @@ export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  getRoleDefinitions(): RoleDefinition[] {
+    return [
+      {
+        code: Role.emitter,
+        label: 'Pelaku Usaha (Emitter)',
+        category: 'Industri & Energi',
+        description:
+          'Entitas usaha wajib pajak karbon, pemegang alokasi kuota emisi PTBAE-PU, dan pelapor MRV.',
+        badgeStyle: {
+          bg: 'bg-purple-100',
+          text: 'text-purple-800',
+          border: 'border-purple-200',
+        },
+        isAssignable: true,
+      },
+      {
+        code: Role.kth,
+        label: 'Kelompok Tani Hutan (KTH)',
+        category: 'Kehutanan & Komunitas',
+        description:
+          'Kelompok pengelola perhutanan sosial, pemilik proyek karbon berbasis alam, dan penerima insentif.',
+        badgeStyle: {
+          bg: 'bg-emerald-100',
+          text: 'text-emerald-800',
+          border: 'border-emerald-200',
+        },
+        isAssignable: true,
+      },
+      {
+        code: Role.auditor,
+        label: 'Auditor Independen (Verifier)',
+        category: 'Verifikasi & Audit',
+        description:
+          'Lembaga verifikasi independen terakreditasi untuk inspeksi lapangan, telemetri drone, dan audit emisi.',
+        badgeStyle: {
+          bg: 'bg-amber-100',
+          text: 'text-amber-800',
+          border: 'border-amber-200',
+        },
+        isAssignable: true,
+      },
+      {
+        code: Role.regulator,
+        label: 'Regulator Lingkungan (KLHK)',
+        category: 'Pemerintah & Regulator',
+        description:
+          'Otoritas verifikasi nasional SRN-PPI, penerbit sertifikat SPE-GRK, dan pengawas kepatuhan lingkungan.',
+        badgeStyle: {
+          bg: 'bg-blue-100',
+          text: 'text-blue-800',
+          border: 'border-blue-200',
+        },
+        isAssignable: true,
+      },
+      {
+        code: Role.ministry,
+        label: 'Kementerian Sektoral (ESDM PTBAE)',
+        category: 'Kementerian Energi',
+        description:
+          'Pemberi persetujuan teknis alokasi kuota batas atas emisi pembangkit dan industri sektoral.',
+        badgeStyle: {
+          bg: 'bg-indigo-100',
+          text: 'text-indigo-800',
+          border: 'border-indigo-200',
+        },
+        isAssignable: true,
+      },
+      {
+        code: Role.buyer,
+        label: 'Pembeli Karbon Terdaftar (Buyer)',
+        category: 'Pasar & Perdagangan',
+        description:
+          'Entitas atau korporasi pembeli kredit karbon tersertifikasi untuk penyeimbangan emisi (offseting).',
+        badgeStyle: {
+          bg: 'bg-teal-100',
+          text: 'text-teal-800',
+          border: 'border-teal-200',
+        },
+        isAssignable: true,
+      },
+      {
+        code: Role.superadmin,
+        label: 'Super Administrator',
+        category: 'Manajemen Sistem',
+        description:
+          'Administrator sistem penuh dengan hak pengelolaan akun pengguna, verifikasi KYB, dan konfigurasi platform.',
+        badgeStyle: {
+          bg: 'bg-rose-100',
+          text: 'text-rose-800',
+          border: 'border-rose-200',
+        },
+        isAssignable: true,
+      },
+    ];
+  }
 
   async getStats(): Promise<AdminStats> {
     const [
@@ -189,7 +286,17 @@ export class AdminService {
     };
   }
 
-  async updateUserRole(userId: string, role: Role): Promise<AdminUserItem> {
+  async updateUserRole(
+    userId: string,
+    role: Role,
+    callerId?: string,
+  ): Promise<AdminUserItem> {
+    if (callerId && callerId === userId) {
+      throw new BadRequestException(
+        'Administrators cannot modify their own role.',
+      );
+    }
+
     const existing = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { kybProfile: true, companies: true },
@@ -197,6 +304,17 @@ export class AdminService {
 
     if (!existing) {
       throw new NotFoundException('Pengguna tidak ditemukan.');
+    }
+
+    if (existing.role === Role.superadmin && role !== Role.superadmin) {
+      const superadminCount = await this.prisma.user.count({
+        where: { role: Role.superadmin, status: UserStatus.ACTIVE },
+      });
+      if (superadminCount <= 1) {
+        throw new BadRequestException(
+          'Cannot demote the sole active Superadmin. The platform must retain at least one Superadmin.',
+        );
+      }
     }
 
     const updated = await this.prisma.user.update({
@@ -225,7 +343,14 @@ export class AdminService {
   async updateUserStatus(
     userId: string,
     status: UserStatus,
+    callerId?: string,
   ): Promise<AdminUserItem> {
+    if (callerId && callerId === userId && status === UserStatus.SUSPENDED) {
+      throw new BadRequestException(
+        'Administrators cannot suspend their own account.',
+      );
+    }
+
     const existing = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { kybProfile: true, companies: true },
