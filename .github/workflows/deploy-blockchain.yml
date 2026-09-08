@@ -190,7 +190,7 @@ jobs:
             # Compose receives only the generated network environment. It never
             # receives the deployer key or the backend database secrets.
             compose --env-file "$NETWORK_ENV" -f "$QBFT_DIR/docker-compose.qbft.yml" config --quiet
-            compose --env-file "$NETWORK_ENV" -f "$QBFT_DIR/docker-compose.qbft.yml" up -d --remove-orphans
+            compose --env-file "$NETWORK_ENV" -f "$QBFT_DIR/docker-compose.qbft.yml" up -d
 
             echo 'Menunggu RPC QBFT dan block progression...'
             for attempt in $(seq 1 30); do

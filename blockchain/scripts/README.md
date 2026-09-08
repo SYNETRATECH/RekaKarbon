@@ -52,7 +52,7 @@ docker compose \
   --env-file /opt/rekakarbon/qbft/shared/network/generated/.env \
   -p rekakarbon-qbft \
   -f /opt/rekakarbon/qbft/current/blockchain/docker-compose.qbft.yml \
-  up -d --remove-orphans
+  up -d
 ```
 
 Validasi minimum sebelum menyambungkan backend:
