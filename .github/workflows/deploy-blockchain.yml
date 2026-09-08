@@ -1,132 +1,300 @@
-name: Deploy Blockchain Smart Contracts & Hyperledger Besu
+name: Deploy QBFT Blockchain (Manual)
 
 on:
-  workflow_run:
-    workflows: ['Pull Request Verification']
-    types:
-      - completed
-    branches: ['main']
   workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub Environment yang memiliki approval produksi
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      deployment_mode:
+        description: Mode verifikasi/configure/deploy kontrak
+        required: true
+        default: verify-existing
+        type: choice
+        options:
+          - verify-existing
+          - configure-existing
+          - deploy-new
+      allow_deploy_new:
+        description: Izinkan deploy kontrak baru setelah approval eksplisit
+        required: true
+        default: false
+        type: boolean
+      restart_backend:
+        description: Restart backend setelah manifest kontrak tersinkron
+        required: true
+        default: false
+        type: boolean
+      backend_process_manager:
+        description: Process manager backend pada VM
+        required: true
+        default: none
+        type: choice
+        options:
+          - none
+          - systemd
+          - pm2
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qbft-deploy-${{ inputs.environment }}
+  cancel-in-progress: false
 
 jobs:
-  deploy-blockchain:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+  deploy-qbft:
+    name: Deploy QBFT to ${{ inputs.environment }}
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}
+      PROJECT_DIR: ${{ vars.BLOCKCHAIN_PROJECT_DIR || '/home/indah/VM_BLOCKHAIN' }}
+      NETWORK_ENV_FILE: ${{ vars.QBFT_NETWORK_ENV_FILE || '/home/indah/VM_BLOCKHAIN/qbft/shared/generated/.env' }}
+      BLOCKCHAIN_ENV_FILE: ${{ vars.BLOCKCHAIN_ENV_FILE || '/home/indah/VM_BLOCKHAIN/shared/.env' }}
+      BACKEND_ENV_FILE: ${{ vars.BLOCKCHAIN_BACKEND_ENV_FILE || '/home/indah/VM_BLOCKHAIN/shared/.env' }}
+      BACKEND_HEALTH_URL: ${{ vars.BLOCKCHAIN_BACKEND_HEALTH_URL || 'http://127.0.0.1:3000/health' }}
 
     steps:
-      - name: 📥 Checkout Code
+      - name: Checkout deployment commit
         uses: actions/checkout@v4
 
-      - name: 🔐 Connect to Tailscale Network
+      - name: Connect to Tailscale
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.BLOCKCHAIN_TS_AUTHKEY }}
           tags: tag:ci
 
-      - name: 🛠️ Setup pnpm
+      - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
           version: 11.22.0
 
-      - name: ⚡ Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: 24.15.0
           cache: pnpm
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🧹 Clean up heavy local directories
-        run: rm -rf blockchain/node_modules blockchain/artifacts blockchain/cache blockchain/typechain-types
+      - name: Verify blockchain package before transfer
+        run: |
+          pnpm blockchain:typecheck
+          pnpm blockchain:compile
+          pnpm blockchain:test
 
-      - name: 🧹 Clean up old blockchain folder on Server
-        uses: appleboy/ssh-action@master
-        env:
-          SERVER_PASSWORD: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-        with:
-          host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
-          username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
-          password: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-          envs: SERVER_PASSWORD
-          script: |
-            echo "$SERVER_PASSWORD" | sudo -S rm -rf ~/VM_BLOCKHAIN/blockchain
+      - name: Package immutable QBFT release
+        run: |
+          tar \
+            --exclude='blockchain/node_modules' \
+            --exclude='blockchain/artifacts' \
+            --exclude='blockchain/cache' \
+            --exclude='blockchain/networks/local-qbft/generated' \
+            --exclude='blockchain/.env' \
+            -czf qbft-release.tar.gz \
+            package.json pnpm-lock.yaml pnpm-workspace.yaml blockchain
 
-      - name: 🚚 Transfer Files via SCP
+      - name: Upload release to VM
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
           username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
-          password: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-          source: 'blockchain'
-          target: '~/VM_BLOCKHAIN'
+          key: ${{ secrets.BLOCKCHAIN_SSH_PRIVATE_KEY }}
+          port: ${{ vars.BLOCKCHAIN_SSH_PORT || '22' }}
+          source: qbft-release.tar.gz
+          target: /tmp
 
-      - name: 🚀 Execute Deployment on Server
-        uses: appleboy/ssh-action@master
+      - name: Preflight, start QBFT, deploy contracts, and smoke test
+        uses: appleboy/ssh-action@v1.2.5
         env:
-          SERVER_PASSWORD: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-          PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
+          RELEASE_ID: ${{ env.RELEASE_ID }}
+          PROJECT_DIR: ${{ env.PROJECT_DIR }}
+          NETWORK_ENV_FILE: ${{ env.NETWORK_ENV_FILE }}
+          BLOCKCHAIN_ENV_FILE: ${{ env.BLOCKCHAIN_ENV_FILE }}
+          BACKEND_ENV_FILE: ${{ env.BACKEND_ENV_FILE }}
+          BACKEND_HEALTH_URL: ${{ env.BACKEND_HEALTH_URL }}
+          DEPLOYMENT_MODE: ${{ inputs.deployment_mode }}
+          ALLOW_DEPLOY_NEW: ${{ inputs.allow_deploy_new }}
+          RESTART_BACKEND: ${{ inputs.restart_backend }}
+          BACKEND_PROCESS_MANAGER: ${{ inputs.backend_process_manager }}
+          BLOCKCHAIN_PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
         with:
           host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
           username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
-          password: ${{ secrets.BLOCKCHAIN_SSH_PASSWORD }}
-          envs: SERVER_PASSWORD,PRIVATE_KEY
+          key: ${{ secrets.BLOCKCHAIN_SSH_PRIVATE_KEY }}
+          port: ${{ vars.BLOCKCHAIN_SSH_PORT || '22' }}
+          envs: RELEASE_ID,PROJECT_DIR,NETWORK_ENV_FILE,BLOCKCHAIN_ENV_FILE,BACKEND_ENV_FILE,BACKEND_HEALTH_URL,DEPLOYMENT_MODE,ALLOW_DEPLOY_NEW,RESTART_BACKEND,BACKEND_PROCESS_MANAGER,BLOCKCHAIN_PRIVATE_KEY
+          script_stop: true
           script: |
-            set -e
+            set -Eeuo pipefail
 
-            echo "=== Membersihkan kontainer & data lama (jika ada) ==="
-            echo "$SERVER_PASSWORD" | sudo -S docker rm -f besu-dev-node 2>/dev/null || true
-            echo "$SERVER_PASSWORD" | sudo -S docker volume rm besu_data 2>/dev/null || true
+            RELEASE_ROOT="$PROJECT_DIR/releases/$RELEASE_ID"
+            QBFT_DIR="$RELEASE_ROOT/blockchain"
+            QBFT_ARCHIVE="/tmp/qbft-release.tar.gz"
+            NETWORK_ENV="${NETWORK_ENV_FILE:-$PROJECT_DIR/qbft/shared/generated/.env}"
+            BLOCKCHAIN_ENV_SOURCE="${BLOCKCHAIN_ENV_FILE:-$PROJECT_DIR/shared/.env}"
+            NETWORK_DIR="$(dirname "$NETWORK_ENV")"
 
-            echo "=== Menyiapkan Kunci Node (Node Key) ==="
-            echo "$SERVER_PASSWORD" | sudo -S mkdir -p ~/VM_BLOCKHAIN/besu_data
-            echo "$SERVER_PASSWORD" | sudo -S chmod 777 ~/VM_BLOCKHAIN/besu_data
-            echo "8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63" > ~/VM_BLOCKHAIN/besu_data/node_key
+            mkdir -p "$PROJECT_DIR/releases"
+            if [ -e "$RELEASE_ROOT" ]; then
+              echo "Release target already exists: $RELEASE_ROOT" >&2
+              exit 1
+            fi
+            mkdir -p "$RELEASE_ROOT"
+            tar -xzf "$QBFT_ARCHIVE" -C "$RELEASE_ROOT"
+            rm -f "$QBFT_ARCHIVE"
 
-            echo "=== Menjalankan Docker Hyperledger Besu ==="
-            echo "$SERVER_PASSWORD" | sudo -S docker run -d \
-              --name besu-dev-node \
-              --restart always \
-              -p 8545:8545 \
-              -p 8546:8546 \
-              -v ~/VM_BLOCKHAIN/besu_data:/opt/besu/data \
-              -v ~/VM_BLOCKHAIN/blockchain/besu-config:/config \
-              hyperledger/besu:23.4.4 \
-              --genesis-file=/config/genesis.json \
-              --node-private-key-file=/opt/besu/data/node_key \
-              --rpc-http-enabled=true \
-              --rpc-http-host=0.0.0.0 \
-              --rpc-http-cors-origins="*" \
-              --rpc-http-api=ETH,NET,WEB3,DEBUG,MINER,TXPOOL \
-              --rpc-ws-enabled=true \
-              --rpc-ws-host=0.0.0.0 \
-              --host-allowlist="*" \
-              --min-gas-price=0 \
-              --miner-enabled=true \
-              --miner-coinbase=0xfe3b557e8fb62b89f4916b721be55ceb828dbd73
+            command -v docker >/dev/null 2>&1 || { echo 'Docker tidak tersedia.' >&2; exit 1; }
+            if docker compose version >/dev/null 2>&1; then
+              compose() { docker compose "$@"; }
+            elif command -v docker-compose >/dev/null 2>&1; then
+              compose() { docker-compose "$@"; }
+            else
+              echo 'Docker Compose v2 maupun legacy tidak tersedia.' >&2
+              exit 1
+            fi
+            docker version --format '{{.Server.Version}}'
+            compose version
 
-            echo "=== Menunggu Node Besu siap (max 60 detik) ==="
-            for i in $(seq 1 12); do
-              if curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:8545 > /dev/null 2>&1; then
-                echo "✅ Node Besu sudah merespon pada percobaan ke-$i!"
+            test -r "$NETWORK_ENV" || {
+              echo "QBFT generated .env tidak ditemukan: $NETWORK_ENV" >&2
+              echo 'Bootstrap QBFT harus dilakukan satu kali secara terpisah; workflow tidak membuat ulang ledger produksi.' >&2
+              exit 1
+            }
+            test -r "$BLOCKCHAIN_ENV_SOURCE" || {
+              echo "Environment blockchain tidak ditemukan: $BLOCKCHAIN_ENV_SOURCE" >&2
+              exit 1
+            }
+            test -n "${BLOCKCHAIN_PRIVATE_KEY:-}" || {
+              echo 'Secret BLOCKCHAIN_PRIVATE_KEY belum dikonfigurasi.' >&2
+              exit 1
+            }
+            test -f "$NETWORK_DIR/genesis.json" || {
+              echo 'genesis.json QBFT tidak ditemukan.' >&2
+              exit 1
+            }
+            test -f "$NETWORK_DIR/nodes/bootnode-1/key" || {
+              echo 'Kunci bootnode QBFT tidak ditemukan.' >&2
+              exit 1
+            }
+
+            # Compose receives only the generated network environment. It never
+            # receives the deployer key or the backend database secrets.
+            compose --env-file "$NETWORK_ENV" -f "$QBFT_DIR/docker-compose.qbft.yml" config --quiet
+            compose --env-file "$NETWORK_ENV" -f "$QBFT_DIR/docker-compose.qbft.yml" up -d --remove-orphans
+
+            echo 'Menunggu RPC QBFT dan block progression...'
+            for attempt in $(seq 1 30); do
+              chain_id="$(curl -fsS --max-time 5 -X POST -H 'content-type: application/json' \
+                --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}' \
+                http://127.0.0.1:8545 | tr -d '\n' || true)"
+              if [ -n "$chain_id" ]; then
                 break
               fi
-              echo "Percobaan ke-$i: Besu belum siap, menunggu 5 detik..."
               sleep 5
-              if [ $i -eq 12 ]; then
-                echo "❌ Besu gagal menyala setelah 60 detik. Menampilkan log:"
-                echo "$SERVER_PASSWORD" | sudo -S docker logs --tail 30 besu-dev-node
-                exit 1
-              fi
             done
+            test -n "${chain_id:-}" || { echo 'RPC QBFT tidak merespons.' >&2; exit 1; }
 
-            echo "=== Menginstall dependensi & Deploy Smart Contract ==="
-            echo "$SERVER_PASSWORD" | sudo -S docker run --rm \
-              -v ~/VM_BLOCKHAIN/blockchain:/app \
-              -w /app \
-              -e PRIVATE_KEY="$PRIVATE_KEY" \
-              --network host \
-              node:20 \
-              bash -c "npm install && npx hardhat run scripts/deploy.ts --network besu_local"
+            block_before="$(curl -fsS --max-time 5 -X POST -H 'content-type: application/json' \
+              --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":2}' \
+              http://127.0.0.1:8545 | tr -d '\n')"
+            sleep 8
+            block_after="$(curl -fsS --max-time 5 -X POST -H 'content-type: application/json' \
+              --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":3}' \
+              http://127.0.0.1:8545 | tr -d '\n')"
+            test "$block_before" != "$block_after" || {
+              echo "Block QBFT tidak bertambah: $block_before -> $block_after" >&2
+              exit 1
+            }
 
-            echo "✅ DEPLOYMENT SERVER SELESAI!"
+            # The deployer key is written only into this release's temporary .env
+            # and removed by the EXIT trap after Hardhat finishes.
+            cp "$BLOCKCHAIN_ENV_SOURCE" "$QBFT_DIR/.env"
+            chmod 600 "$QBFT_DIR/.env"
+            printf '\nPRIVATE_KEY=%s\n' "$BLOCKCHAIN_PRIVATE_KEY" >> "$QBFT_DIR/.env"
+            printf 'DEPLOYMENT_MODE=%s\n' "$DEPLOYMENT_MODE" >> "$QBFT_DIR/.env"
+            printf 'ALLOW_DEPLOY_NEW=%s\n' "$ALLOW_DEPLOY_NEW" >> "$QBFT_DIR/.env"
+            trap 'rm -f "$QBFT_DIR/.env"' EXIT
+
+            cd "$RELEASE_ROOT"
+            corepack enable
+            pnpm install --frozen-lockfile --filter ./blockchain... --ignore-scripts
+            pnpm --filter ./blockchain qbft:preflight
+            pnpm --filter ./blockchain exec hardhat run scripts/deploy.ts --network besu_qbft
+
+            MANIFEST="$QBFT_DIR/deployment-info.json"
+            test -s "$MANIFEST" || { echo 'Manifest deployment tidak dibuat.' >&2; exit 1; }
+            command -v jq >/dev/null 2>&1 || { echo 'jq diperlukan untuk sinkronisasi manifest.' >&2; exit 1; }
+            CARBON_ADDRESS="$(jq -r '.contracts.rekaKarbon.address' "$MANIFEST")"
+            REGISTRY_ADDRESS="$(jq -r '.contracts.emissionReportRegistry.address' "$MANIFEST")"
+            CHAIN_ID="$(jq -r '.chainId' "$MANIFEST")"
+            test "$CARBON_ADDRESS" != 'null' -a "$REGISTRY_ADDRESS" != 'null' || {
+              echo 'Alamat kontrak pada manifest tidak lengkap.' >&2
+              exit 1
+            }
+
+            if [ -f "$BACKEND_ENV_FILE" ]; then
+              tmp_backend_env="$(mktemp "$BACKEND_ENV_FILE.tmp.XXXXXX")"
+              awk -v carbon="$CARBON_ADDRESS" -v registry="$REGISTRY_ADDRESS" -v chain="$CHAIN_ID" '
+                function emit(key, value) {
+                  if (seen[key] == 0) {
+                    print key "=" value
+                    seen[key] = 1
+                  }
+                }
+                /^CARBON_TOKEN_CONTRACT_ADDRESS=/ { emit("CARBON_TOKEN_CONTRACT_ADDRESS", carbon); next }
+                /^EMISSION_REGISTRY_CONTRACT_ADDRESS=/ { emit("EMISSION_REGISTRY_CONTRACT_ADDRESS", registry); next }
+                /^BESU_CHAIN_ID=/ { emit("BESU_CHAIN_ID", chain); next }
+                { print }
+                END {
+                  emit("CARBON_TOKEN_CONTRACT_ADDRESS", carbon)
+                  emit("EMISSION_REGISTRY_CONTRACT_ADDRESS", registry)
+                  emit("BESU_CHAIN_ID", chain)
+                }
+              ' "$BACKEND_ENV_FILE" > "$tmp_backend_env"
+              mv "$tmp_backend_env" "$BACKEND_ENV_FILE"
+              chmod 600 "$BACKEND_ENV_FILE"
+            else
+              echo "Backend env tidak ditemukan; manifest hanya disimpan pada release: $MANIFEST"
+            fi
+
+            if [ "$RESTART_BACKEND" = 'true' ]; then
+              case "$BACKEND_PROCESS_MANAGER" in
+                systemd)
+                  sudo systemctl restart rekakarbon-backend
+                  ;;
+                pm2)
+                  pm2 reload rekakarbon-backend --update-env
+                  ;;
+                *)
+                  echo 'restart_backend=true tetapi backend_process_manager=none.' >&2
+                  exit 1
+                  ;;
+              esac
+
+              for attempt in $(seq 1 24); do
+                if curl -fsS --max-time 5 "$BACKEND_HEALTH_URL" | grep -q '"status":"ok"'; then
+                  echo 'Backend health check passed.'
+                  break
+                fi
+                if [ "$attempt" -eq 24 ]; then
+                  echo 'Backend health check gagal setelah restart.' >&2
+                  exit 1
+                fi
+                sleep 5
+              done
+            else
+              echo 'Backend restart dilewati; pilih restart_backend=true setelah deploy backend disiapkan.'
+            fi
+
+            echo "QBFT deployment berhasil. Release: $RELEASE_ID"
+            echo "Chain ID: $CHAIN_ID"
+            echo "RekaKarbon: $CARBON_ADDRESS"
+            echo "EmissionReportRegistry: $REGISTRY_ADDRESS"
