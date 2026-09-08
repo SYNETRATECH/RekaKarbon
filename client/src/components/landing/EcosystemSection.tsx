@@ -92,8 +92,8 @@ export default function EcosystemSection() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 relative z-10">
-        <div className="text-center mb-14">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight tracking-tight">
+        <div className="text-center mb-10 md:mb-14">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl 2xl:text-6xl font-extrabold text-slate-900 leading-tight tracking-tight">
             Setiap Peran,{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-tech-mint">
               Satu Platform.

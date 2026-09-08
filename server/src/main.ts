@@ -33,11 +33,14 @@ async function bootstrap() {
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server) or in whitelist
+      // Allow requests with no origin or in whitelist or LAN IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
       if (
         !origin ||
         allowedOrigins.includes('*') ||
-        allowedOrigins.includes(origin)
+        allowedOrigins.includes(origin) ||
+        /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(
+          origin,
+        )
       ) {
         callback(null, true);
       } else {
@@ -93,6 +96,6 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 void bootstrap();

@@ -15,9 +15,23 @@ export default function Navbar({ page, setPage }: NavbarProps = {}) {
   const location = useLocation();
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
+    const handleScroll = () => {
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+      setScrolled(scrollY > 15);
+    };
+
+    const lenis = (window as any).lenis;
+    if (lenis) {
+      lenis.on('scroll', handleScroll);
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      if (lenis) {
+        lenis.off('scroll', handleScroll);
+      }
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const isTransparansi = location.pathname === '/portal-transparansi' || page === 'maps';
@@ -25,7 +39,7 @@ export default function Navbar({ page, setPage }: NavbarProps = {}) {
   const isHome = !isTransparansi && (location.pathname === '/' || page === 'home');
 
   const solidBg = scrolled || isTransparansi;
-  const linkBase = `text-[14px] font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap cursor-pointer`;
+  const linkBase = `text-[14px] font-medium px-4 py-2 rounded-lg transition-colors duration-300 whitespace-nowrap cursor-pointer`;
 
   const linkCls = solidBg
     ? `${linkBase} text-slate-600 hover:text-slate-900 hover:bg-slate-100`
@@ -50,10 +64,15 @@ export default function Navbar({ page, setPage }: NavbarProps = {}) {
   };
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${solidBg ? 'bg-white/96 backdrop-blur-md shadow-sm border-b border-slate-200/50' : 'bg-transparent'}`}
-    >
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 h-[72px] flex justify-between items-center relative w-full">
+    <header className="fixed top-0 left-0 right-0 z-50 transition-transform duration-300">
+      {/* Hardware-Accelerated Fading Glass Background Layer (Prevents CSS Class Switch Blink) */}
+      <div
+        className={`absolute inset-0 bg-white/96 backdrop-blur-md shadow-sm border-b border-slate-200/50 transition-opacity duration-300 ease-out pointer-events-none ${
+          solidBg ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 h-[72px] flex justify-between items-center relative w-full z-10">
         {/* Desktop Left Nav */}
         <nav className="hidden md:flex items-center gap-1 flex-1">
           <button onClick={handleGoHome} className={isHome ? activeCls : linkCls}>
