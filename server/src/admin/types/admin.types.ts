@@ -35,3 +35,17 @@ export interface AdminKybItem {
   userEmail: string;
   userFullName?: string | null;
 }
+export interface RoleBadgeStyle {
+  bg: string;
+  text: string;
+  border: string;
+}
+
+export interface RoleDefinition {
+  code: Role;
+  label: string;
+  category: string;
+  description: string;
+  badgeStyle: RoleBadgeStyle;
+  isAssignable: boolean;
+}

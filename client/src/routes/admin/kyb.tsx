@@ -221,6 +221,7 @@ export default function AdminKybRoute() {
             <table className="w-full text-xs text-left">
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
                 <tr>
+                  <th className="py-3.5 px-4 w-12 text-center">No.</th>
                   <th className="py-3.5 px-4">Nama Entitas / Institusi</th>
                   <th className="py-3.5 px-4">Kategori</th>
                   <th className="py-3.5 px-4">Identitas Pajak & Legal</th>
@@ -232,13 +233,16 @@ export default function AdminKybRoute() {
               <tbody className="divide-y divide-slate-100">
                 {filteredKyb.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
+                    <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
                       Tidak ada pengajuan verifikasi yang cocok dengan filter.
                     </td>
                   </tr>
                 ) : (
-                  filteredKyb.map((item) => (
+                  filteredKyb.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3.5 px-4 text-center font-mono text-slate-500 font-bold">
+                        {index + 1}
+                      </td>
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-slate-900">{item.entityName}</div>
                         <div className="font-mono text-[11px] text-slate-500">{item.userEmail}</div>

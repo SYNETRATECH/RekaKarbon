@@ -1,7 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { useLoaderData } from 'react-router';
-import { adminRepository } from '../../repositories';
+import { adminRepository, authRepository } from '../../repositories';
 import type { AdminUserItem, UserRole, UserAccountStatus } from '../../types';
+import { useToast } from '../../hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,9 @@ import {
   Ban,
   KeyRound,
   RotateCcw,
+  Loader2,
+  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
 
 export function meta() {
@@ -40,13 +44,24 @@ export function meta() {
 }
 
 export async function clientLoader() {
-  const usersResponse = await adminRepository.getUsers({ limit: 50 }).catch(() => ({ data: [] }));
-  return { initialUsers: usersResponse.data };
+  const [usersResponse, rolesResponse, currentUser] = await Promise.all([
+    adminRepository.getUsers({ limit: 50 }).catch(() => ({ data: [] })),
+    adminRepository.getRoles().catch(() => []),
+    authRepository.getCurrentUser().catch(() => null),
+  ]);
+  return {
+    initialUsers: usersResponse.data,
+    roleDefinitions: rolesResponse,
+    currentUserId: currentUser?.id ?? null,
+    currentUserEmail: currentUser?.email ?? null,
+  };
 }
 clientLoader.hydrate = true as const;
 
 export default function AdminUsersRoute() {
-  const { initialUsers } = useLoaderData<typeof clientLoader>();
+  const { initialUsers, roleDefinitions, currentUserId, currentUserEmail } =
+    useLoaderData<typeof clientLoader>();
+  const { toast } = useToast();
 
   // Local state for interactive operations
   const [users, setUsers] = useState<AdminUserItem[]>(initialUsers);
@@ -58,6 +73,8 @@ export default function AdminUsersRoute() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedUserForRole, setSelectedUserForRole] = useState<AdminUserItem | null>(null);
   const [newRoleSelection, setNewRoleSelection] = useState<UserRole>('emitter');
+  const [isSavingRole, setIsSavingRole] = useState(false);
+  const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
   const [resetPasswordResult, setResetPasswordResult] = useState<{
     email: string;
     temporaryPassword: string;
@@ -89,35 +106,17 @@ export default function AdminUsersRoute() {
   });
 
   const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'superadmin':
-      case 'admin':
-        return <Badge className="bg-rose-100 text-rose-800 border-rose-200">Superadmin</Badge>;
-      case 'regulator':
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Regulator KLHK</Badge>;
-      case 'auditor':
-        return <Badge className="bg-amber-100 text-amber-800 border-amber-200">Auditor</Badge>;
-      case 'ministry':
-        return (
-          <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200">
-            Kementerian ESDM
-          </Badge>
-        );
-      case 'emitter':
-        return (
-          <Badge className="bg-purple-100 text-purple-800 border-purple-200">Pelaku Usaha</Badge>
-        );
-      case 'kth':
-        return (
-          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
-            KTH Kehutanan
-          </Badge>
-        );
-      case 'buyer':
-        return <Badge className="bg-teal-100 text-teal-800 border-teal-200">Pembeli Karbon</Badge>;
-      default:
-        return <Badge variant="outline">{role}</Badge>;
+    const found = roleDefinitions.find((r) => r.code.toLowerCase() === role.toLowerCase());
+    if (found) {
+      return (
+        <Badge
+          className={`${found.badgeStyle.bg} ${found.badgeStyle.text} ${found.badgeStyle.border}`}
+        >
+          {found.label}
+        </Badge>
+      );
     }
+    return <Badge variant="outline">{role}</Badge>;
   };
 
   const getStatusBadge = (status: string) => {
@@ -138,19 +137,47 @@ export default function AdminUsersRoute() {
   };
 
   const handleToggleStatus = async (user: AdminUserItem) => {
+    const isSelf =
+      (currentUserId && user.id === currentUserId) ||
+      (currentUserEmail && user.email.toLowerCase() === currentUserEmail.toLowerCase());
+    if (isSelf) {
+      toast({
+        variant: 'destructive',
+        title: 'Operasi Ditolak',
+        description: 'Anda tidak dapat menangguhkan akun Anda sendiri.',
+      });
+      return;
+    }
+
     const nextStatus: UserAccountStatus = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     try {
       const updated = await adminRepository.updateUserStatus(user.id, nextStatus);
       setUsers((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, status: updated.status } : u))
       );
+      toast({
+        title: 'Status Akun Diperbarui',
+        description: `Status akun ${user.email} berhasil diubah menjadi ${updated.status}.`,
+      });
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Gagal memperbarui status pengguna');
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Memperbarui Status',
+        description: err instanceof Error ? err.message : 'Gagal memperbarui status pengguna',
+      });
     }
   };
 
   const handleSaveRole = async () => {
-    if (!selectedUserForRole) return;
+    if (!selectedUserForRole || isSavingRole) return;
+
+    if (selectedUserForRole.role === newRoleSelection) {
+      setSelectedUserForRole(null);
+      return;
+    }
+
+    setIsSavingRole(true);
+    setRoleChangeError(null);
     try {
       const updated = await adminRepository.updateUserRole(
         selectedUserForRole.id,
@@ -159,9 +186,21 @@ export default function AdminUsersRoute() {
       setUsers((prev) =>
         prev.map((u) => (u.id === selectedUserForRole.id ? { ...u, role: updated.role } : u))
       );
+      toast({
+        title: 'Peran Berhasil Diperbarui',
+        description: `Peran untuk ${selectedUserForRole.email} berhasil diubah menjadi ${newRoleSelection.toUpperCase()}. Sesi aktif akan mewajibkan login kembali.`,
+      });
       setSelectedUserForRole(null);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Gagal memperbarui peran pengguna');
+      const message = err instanceof Error ? err.message : 'Gagal memperbarui peran pengguna';
+      setRoleChangeError(message);
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Memperbarui Peran',
+        description: message,
+      });
+    } finally {
+      setIsSavingRole(false);
     }
   };
 
@@ -173,8 +212,16 @@ export default function AdminUsersRoute() {
         email: user.email,
         temporaryPassword: res.temporaryPassword,
       });
+      toast({
+        title: 'Kata Sandi Direset',
+        description: `Kata sandi sementara untuk ${user.email} berhasil diterbitkan.`,
+      });
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Gagal mereset kata sandi');
+      toast({
+        variant: 'destructive',
+        title: 'Gagal Reset Kata Sandi',
+        description: err instanceof Error ? err.message : 'Gagal mereset kata sandi',
+      });
     }
   };
 
@@ -258,13 +305,11 @@ export default function AdminUsersRoute() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Semua Peran</SelectItem>
-                  <SelectItem value="superadmin">Superadmin</SelectItem>
-                  <SelectItem value="regulator">Regulator KLHK</SelectItem>
-                  <SelectItem value="auditor">Auditor</SelectItem>
-                  <SelectItem value="ministry">Kementerian ESDM</SelectItem>
-                  <SelectItem value="emitter">Pelaku Usaha (Emitter)</SelectItem>
-                  <SelectItem value="kth">Kelompok Tani (KTH)</SelectItem>
-                  <SelectItem value="buyer">Pembeli Karbon</SelectItem>
+                  {roleDefinitions.map((role) => (
+                    <SelectItem key={role.code} value={role.code}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -313,6 +358,7 @@ export default function AdminUsersRoute() {
             <table className="w-full text-xs text-left">
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
                 <tr>
+                  <th className="py-3.5 px-4 w-12 text-center">No.</th>
                   <th className="py-3.5 px-4">Pengguna</th>
                   <th className="py-3.5 px-4">Instansi / Afiliasi</th>
                   <th className="py-3.5 px-4">Peran Sistem</th>
@@ -324,83 +370,129 @@ export default function AdminUsersRoute() {
               <tbody className="divide-y divide-slate-100">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
+                    <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
                       Tidak ada pengguna yang cocok dengan kriteria pencarian.
                     </td>
                   </tr>
                 ) : (
-                  filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900">{user.fullName || '—'}</div>
-                        <div className="font-mono text-[11px] text-slate-500">{user.email}</div>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-700 font-medium">
-                        {user.agency || '—'}
-                      </td>
-                      <td className="py-3.5 px-4">{getRoleBadge(user.role)}</td>
-                      <td className="py-3.5 px-4">{getStatusBadge(user.status)}</td>
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-slate-500">
-                        {user.walletAddress
-                          ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`
-                          : '—'}
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Role edit button */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedUserForRole(user);
-                              setNewRoleSelection(user.role);
-                            }}
-                            className="h-7 text-[11px] font-bold text-slate-600 hover:text-slate-900 px-2 rounded-lg cursor-pointer"
-                            title="Ubah Hak Akses Peran"
-                          >
-                            <Shield className="w-3 h-3 mr-1 text-slate-500" />
-                            Peran
-                          </Button>
+                  filteredUsers.map((user, index) => {
+                    const isSelf = Boolean(
+                      (currentUserId && user.id === currentUserId) ||
+                      (currentUserEmail &&
+                        user.email.toLowerCase() === currentUserEmail.toLowerCase())
+                    );
 
-                          {/* Toggle Active/Suspend */}
-                          {user.status === 'ACTIVE' ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleToggleStatus(user)}
-                              className="h-7 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border-rose-200 px-2 rounded-lg cursor-pointer"
-                              title="Tangguhkan Akun"
-                            >
-                              <Ban className="w-3 h-3 mr-1" />
-                              Suspend
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleToggleStatus(user)}
-                              className="h-7 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50 border-emerald-200 px-2 rounded-lg cursor-pointer"
-                              title="Aktifkan Kembali Akun"
-                            >
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
-                              Aktifkan
-                            </Button>
-                          )}
+                    return (
+                      <tr key={user.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-3.5 px-4 text-center font-mono text-slate-500 font-bold">
+                          {index + 1}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900">{user.fullName || '—'}</span>
+                            {isSelf && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300 font-bold px-1.5 py-0"
+                              >
+                                Akun Anda
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="font-mono text-[11px] text-slate-500">{user.email}</div>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-700 font-medium">
+                          {user.agency || '—'}
+                        </td>
+                        <td className="py-3.5 px-4">{getRoleBadge(user.role)}</td>
+                        <td className="py-3.5 px-4">{getStatusBadge(user.status)}</td>
+                        <td className="py-3.5 px-4 font-mono text-[11px] text-slate-500">
+                          {user.walletAddress
+                            ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`
+                            : '—'}
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* Role edit button */}
+                            {isSelf ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled
+                                className="h-7 text-[11px] font-bold text-slate-400 border-slate-200 px-2 rounded-lg cursor-not-allowed opacity-60"
+                                title="Administrator tidak dapat mengubah peran akun sendiri"
+                              >
+                                <Shield className="w-3 h-3 mr-1 text-slate-400" />
+                                Peran
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUserForRole(user);
+                                  setNewRoleSelection(user.role);
+                                  setRoleChangeError(null);
+                                }}
+                                className="h-7 text-[11px] font-bold text-slate-600 hover:text-slate-900 px-2 rounded-lg cursor-pointer"
+                                title="Ubah Hak Akses Peran"
+                              >
+                                <Shield className="w-3 h-3 mr-1 text-slate-500" />
+                                Peran
+                              </Button>
+                            )}
 
-                          {/* Password Reset */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleResetPassword(user)}
-                            className="h-7 text-[11px] font-bold text-slate-500 hover:text-slate-900 px-2 rounded-lg cursor-pointer"
-                            title="Reset Kata Sandi"
-                          >
-                            <KeyRound className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                            {/* Toggle Active/Suspend */}
+                            {isSelf ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled
+                                className="h-7 text-[11px] font-bold text-slate-400 border-slate-200 px-2 rounded-lg cursor-not-allowed opacity-60"
+                                title="Administrator tidak dapat menangguhkan akun sendiri"
+                              >
+                                <Ban className="w-3 h-3 mr-1 text-slate-400" />
+                                Suspend
+                              </Button>
+                            ) : user.status === 'ACTIVE' ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleStatus(user)}
+                                className="h-7 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border-rose-200 px-2 rounded-lg cursor-pointer"
+                                title="Tangguhkan Akun"
+                              >
+                                <Ban className="w-3 h-3 mr-1" />
+                                Suspend
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleStatus(user)}
+                                className="h-7 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50 border-emerald-200 px-2 rounded-lg cursor-pointer"
+                                title="Aktifkan Kembali Akun"
+                              >
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Aktifkan
+                              </Button>
+                            )}
+
+                            {/* Password Reset */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleResetPassword(user)}
+                              className="h-7 text-[11px] font-bold text-slate-500 hover:text-slate-900 px-2 rounded-lg cursor-pointer"
+                              title="Reset Kata Sandi"
+                            >
+                              <KeyRound className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -410,7 +502,15 @@ export default function AdminUsersRoute() {
 
       {/* Modal: Change Role */}
       {selectedUserForRole && (
-        <Dialog open={!!selectedUserForRole} onOpenChange={() => setSelectedUserForRole(null)}>
+        <Dialog
+          open={!!selectedUserForRole}
+          onOpenChange={() => {
+            if (!isSavingRole) {
+              setSelectedUserForRole(null);
+              setRoleChangeError(null);
+            }
+          }}
+        >
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-base font-extrabold text-slate-900">
@@ -423,10 +523,37 @@ export default function AdminUsersRoute() {
             </DialogHeader>
 
             <div className="space-y-4 py-3 text-xs">
+              {roleChangeError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                  {roleChangeError}
+                </div>
+              )}
+
+              {/* Role comparison */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                    Peran Saat Ini
+                  </span>
+                  {getRoleBadge(selectedUserForRole.role)}
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-400" />
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">
+                    Peran Baru
+                  </span>
+                  {getRoleBadge(newRoleSelection)}
+                </div>
+              </div>
+
               <div>
+                <label className="block font-bold text-slate-700 mb-1.5">
+                  Pilih Peran Sistem Baru
+                </label>
                 <Select
                   value={newRoleSelection}
                   onValueChange={(val) => setNewRoleSelection(val as UserRole)}
+                  disabled={isSavingRole}
                 >
                   <SelectTrigger
                     aria-label="Pilih Peran Sistem Pengguna"
@@ -435,17 +562,31 @@ export default function AdminUsersRoute() {
                     <SelectValue placeholder="Pilih Peran Sistem" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="emitter">Pelaku Usaha (Emitter)</SelectItem>
-                    <SelectItem value="kth">Kelompok Tani Hutan (KTH)</SelectItem>
-                    <SelectItem value="auditor">
-                      Auditor Independen (Sucofindo / Verifier)
-                    </SelectItem>
-                    <SelectItem value="regulator">Regulator Lingkungan (KLHK)</SelectItem>
-                    <SelectItem value="ministry">Kementerian Sektoral (ESDM PTBAE)</SelectItem>
-                    <SelectItem value="buyer">Pembeli Karbon Terdaftar (Buyer)</SelectItem>
-                    <SelectItem value="superadmin">Super Administrator</SelectItem>
+                    {roleDefinitions.map((role) => (
+                      <SelectItem key={role.code} value={role.code}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {(() => {
+                  const selectedDef = roleDefinitions.find((r) => r.code === newRoleSelection);
+                  return selectedDef ? (
+                    <p className="text-[11px] text-slate-500 italic mt-1.5 px-1 leading-relaxed">
+                      {selectedDef.description}
+                    </p>
+                  ) : null;
+                })()}
+              </div>
+
+              {/* Forced re-login notice */}
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  <strong>Peringatan Keamanan:</strong> Perubahan peran akan segera membatalkan
+                  token sesi aktif pengguna ini di server. Pengguna diwajibkan untuk masuk kembali
+                  (re-login) agar izin akses baru diterapkan.
+                </p>
               </div>
             </div>
 
@@ -453,16 +594,22 @@ export default function AdminUsersRoute() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSelectedUserForRole(null)}
+                disabled={isSavingRole}
+                onClick={() => {
+                  setSelectedUserForRole(null);
+                  setRoleChangeError(null);
+                }}
                 className="text-xs font-bold"
               >
                 Batal
               </Button>
               <Button
                 size="sm"
+                disabled={isSavingRole || newRoleSelection === selectedUserForRole.role}
                 onClick={handleSaveRole}
-                className="bg-primary-gradient text-white text-xs font-bold"
+                className="bg-primary-gradient text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
               >
+                {isSavingRole && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Simpan Perubahan
               </Button>
             </DialogFooter>
@@ -533,13 +680,11 @@ export default function AdminUsersRoute() {
                   <SelectValue placeholder="Pilih Peran Akses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="emitter">Pelaku Usaha (Emitter)</SelectItem>
-                  <SelectItem value="kth">Kelompok Tani Hutan (KTH)</SelectItem>
-                  <SelectItem value="auditor">Auditor Independen</SelectItem>
-                  <SelectItem value="regulator">Regulator KLHK</SelectItem>
-                  <SelectItem value="ministry">Kementerian ESDM</SelectItem>
-                  <SelectItem value="buyer">Pembeli Karbon</SelectItem>
-                  <SelectItem value="superadmin">Super Administrator</SelectItem>
+                  {roleDefinitions.map((role) => (
+                    <SelectItem key={role.code} value={role.code}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 

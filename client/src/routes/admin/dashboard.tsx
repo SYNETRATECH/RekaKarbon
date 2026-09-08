@@ -316,6 +316,7 @@ export default function AdminDashboardRoute() {
             <table className="w-full text-xs text-left">
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-100">
                 <tr>
+                  <th className="py-3 px-4 w-12 text-center">No.</th>
                   <th className="py-3 px-4">Nama / Pengguna</th>
                   <th className="py-3 px-4">Email</th>
                   <th className="py-3 px-4">Institusi / Afiliasi</th>
@@ -324,8 +325,11 @@ export default function AdminDashboardRoute() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {recentUsers.map((user: AdminUserItem) => (
+                {recentUsers.map((user: AdminUserItem, index: number) => (
                   <tr key={user.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="py-3 px-4 text-center font-mono text-slate-500 font-bold">
+                      {index + 1}
+                    </td>
                     <td className="py-3 px-4 font-bold text-slate-900">{user.fullName || '—'}</td>
                     <td className="py-3 px-4 font-mono text-slate-600">{user.email}</td>
                     <td className="py-3 px-4 text-slate-600">{user.agency || '—'}</td>

@@ -3,6 +3,21 @@ export type UserRole =
 
 export type UserAccountStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION';
 
+export interface RoleBadgeStyle {
+  bg: string;
+  text: string;
+  border: string;
+}
+
+export interface RoleDefinition {
+  code: UserRole;
+  label: string;
+  category: string;
+  description: string;
+  badgeStyle: RoleBadgeStyle;
+  isAssignable: boolean;
+}
+
 export interface AdminUserItem {
   id: string;
   email: string;
