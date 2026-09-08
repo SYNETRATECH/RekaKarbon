@@ -347,7 +347,7 @@ model Company {
   emissionCapTco2e        Decimal          @map("emission_cap_tco2e") @db.Decimal(14, 2)
   actualEmissionTco2e     Decimal          @map("actual_emission_tco2e") @db.Decimal(14, 2)
   carbonDeficitTco2e      Decimal          @default(0) @map("carbon_deficit_tco2e") @db.Decimal(14, 2)
-  offsetCostIdr           Decimal          @default(0) @map("offset_cost_idr") @db.Decimal(16, 2)
+  offsetCostIdr           Decimal          @default(0) @map("offset_cost_idr") @db.Decimal(20, 2)
   complianceRating        ComplianceRating @default(COMPLIANT) @map("compliance_rating")
   auditDate               DateTime?        @map("audit_date") @db.Date
   paymentDeadline         DateTime?        @map("payment_deadline") @db.Date

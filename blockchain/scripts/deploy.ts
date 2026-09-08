@@ -1,278 +1,405 @@
+import hardhat from 'hardhat';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ContractTransactionResponse, keccak256, toUtf8Bytes } from 'ethers';
-import hardhat from 'hardhat';
+import type { ContractTransactionResponse, TransactionReceipt } from 'ethers';
 
 const { ethers } = hardhat;
-const EXPECTED_CHAIN_ID = Number(process.env.QBFT_CHAIN_ID ?? '1338');
-const DEFAULT_MIN_DEPLOYER_BALANCE_WEI = 1_000_000_000_000_000n;
 
-type FeeOverrides = { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint } | { gasPrice: bigint };
+type DeploymentMode = 'verify-existing' | 'configure-existing' | 'deploy-new';
 
 interface TransactionRecord {
+  label: string;
   hash: string;
   blockNumber: number;
 }
 
-interface JsonRecord {
-  [key: string]: unknown;
+interface DeploymentManifest {
+  schemaVersion: 2;
+  mode: DeploymentMode;
+  network: 'besu_qbft';
+  chainId: number;
+  deployer: string | null;
+  commitSha: string | null;
+  blockNumber: number;
+  contracts: {
+    rekaKarbon: { address: string; deployment?: TransactionRecord };
+    emissionReportRegistry: { address: string; deployment?: TransactionRecord };
+  };
+  roleChecks: Record<string, boolean> | null;
+  configurationTransactions: TransactionRecord[];
+  generatedAt: string;
 }
 
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+type TransactionOverrides = { gasPrice?: bigint };
+
+interface RoleContract {
+  hasRole(role: string, account: string): Promise<boolean>;
+  grantRole(
+    role: string,
+    account: string,
+    overrides?: TransactionOverrides
+  ): Promise<ContractTransactionResponse>;
 }
 
-function readPositiveInteger(value: string | undefined, fallback: number): number {
-  const parsed = Number(value ?? fallback);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`Nilai konfigurasi harus bilangan bulat positif: ${value ?? fallback}.`);
+interface RekaKarbonContract extends RoleContract {
+  MINISTRY_ROLE(): Promise<string>;
+  ORACLE_ROLE(): Promise<string>;
+  DEPOSIT_ROLE(): Promise<string>;
+  MARKET_OPERATOR_ROLE(): Promise<string>;
+  platformRecipient(): Promise<string>;
+  restorationRecipient(): Promise<string>;
+  maintenanceRecipient(): Promise<string>;
+  monitoringRecipient(): Promise<string>;
+  bufferRecipient(): Promise<string>;
+  environmentalIntelligenceRecipient(): Promise<string>;
+  setBursaRevenueRecipients(
+    platform: string,
+    restoration: string,
+    maintenance: string,
+    monitoring: string,
+    buffer: string,
+    environmentalIntelligence: string,
+    overrides?: TransactionOverrides
+  ): Promise<ContractTransactionResponse>;
+}
+
+interface EmissionReportRegistryContract extends RoleContract {
+  AUDITOR_ROLE(): Promise<string>;
+  REPORTER_ROLE(): Promise<string>;
+}
+
+const expectedChainId = parsePositiveBigInt(
+  process.env.BESU_CHAIN_ID?.trim() || process.env.QBFT_CHAIN_ID?.trim() || '1338',
+  'BESU_CHAIN_ID'
+);
+const deploymentMode = parseDeploymentMode(process.env.DEPLOYMENT_MODE || 'verify-existing');
+const allowDeployNew = process.env.ALLOW_DEPLOY_NEW === 'true';
+const manifestPath = path.resolve(
+  process.env.DEPLOYMENT_MANIFEST_PATH?.trim() || 'deployment-info.json'
+);
+const gasPrice = parseOptionalBigInt(process.env.BESU_GAS_PRICE_WEI, 'BESU_GAS_PRICE_WEI');
+const transactionOverrides = gasPrice === undefined ? {} : { gasPrice };
+
+function parsePositiveBigInt(value: string, name: string): bigint {
+  if (!/^\d+$/u.test(value)) {
+    throw new Error(`${name} harus berupa bilangan bulat positif.`);
   }
+
+  const parsed = BigInt(value);
+  if (parsed <= 0n) {
+    throw new Error(`${name} harus lebih besar dari nol.`);
+  }
+
   return parsed;
 }
 
-function readPositiveBigInt(value: string | undefined, fallback: bigint): bigint {
-  try {
-    const parsed = value === undefined ? fallback : BigInt(value);
-    if (parsed <= 0n) throw new Error('value must be positive');
-    return parsed;
-  } catch (error: unknown) {
-    throw new Error('Konfigurasi saldo minimum deployer harus bilangan bulat positif dalam wei.', {
-      cause: error,
-    });
-  }
+function parseOptionalBigInt(value: string | undefined, name: string): bigint | undefined {
+  if (!value?.trim()) return undefined;
+  return parsePositiveBigInt(value.trim(), name);
 }
 
-async function getFeeOverrides(): Promise<FeeOverrides> {
-  const feeData = await ethers.provider.getFeeData();
-  if (
-    feeData.maxFeePerGas !== null &&
-    feeData.maxPriorityFeePerGas !== null &&
-    feeData.maxFeePerGas > 0n &&
-    feeData.maxPriorityFeePerGas > 0n
-  ) {
-    return {
-      maxFeePerGas: feeData.maxFeePerGas,
-      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-    };
+function parseDeploymentMode(value: string): DeploymentMode {
+  if (value === 'verify-existing' || value === 'configure-existing' || value === 'deploy-new') {
+    return value;
   }
 
-  if (feeData.gasPrice !== null && feeData.gasPrice > 0n) {
-    return { gasPrice: feeData.gasPrice };
-  }
-
-  throw new Error('Node tidak mengembalikan fee non-zero yang valid. Deployment dibatalkan.');
+  throw new Error(
+    `DEPLOYMENT_MODE tidak valid: ${value}. Gunakan verify-existing, configure-existing, atau deploy-new.`
+  );
 }
 
-async function waitForReceipt(
-  transaction: ContractTransactionResponse,
-  label: string
+function requireAddress(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value || !ethers.isAddress(value)) {
+    throw new Error(`${name} wajib berisi alamat EVM yang valid.`);
+  }
+
+  return ethers.getAddress(value);
+}
+
+function optionalAddress(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  if (!value) return undefined;
+  if (!ethers.isAddress(value)) {
+    throw new Error(`${name} bukan alamat EVM yang valid.`);
+  }
+
+  return ethers.getAddress(value);
+}
+
+async function waitForTransaction(
+  label: string,
+  transaction: Promise<{ wait: () => Promise<TransactionReceipt | null> }>
 ): Promise<TransactionRecord> {
-  const receipt = await transaction.wait();
-  if (!receipt) throw new Error(`Receipt transaksi ${label} tidak tersedia.`);
-  return { hash: transaction.hash, blockNumber: receipt.blockNumber };
+  const sent = await transaction;
+  const receipt = await sent.wait();
+  if (!receipt || receipt.status !== 1) {
+    throw new Error(`Transaksi ${label} gagal atau receipt tidak tersedia.`);
+  }
+
+  return {
+    label,
+    hash: receipt.hash,
+    blockNumber: receipt.blockNumber,
+  };
 }
 
-function getManifestPath(): string {
-  const configuredPath = process.env.DEPLOYMENT_INFO_PATH ?? 'deployment-info-qbft-local.json';
-  return path.resolve(process.cwd(), configuredPath);
+async function verifyBytecode(address: string): Promise<void> {
+  const code = await ethers.provider.getCode(address);
+  if (code === '0x') {
+    throw new Error(`Bytecode contract tidak ditemukan pada ${address}.`);
+  }
 }
 
-function assertDeploymentAllowed(manifestPath: string): void {
-  if (fs.existsSync(manifestPath) && process.env.ALLOW_QBFT_REDEPLOY !== 'true') {
+async function getDeployerAddress(): Promise<string | null> {
+  if (!process.env.PRIVATE_KEY?.trim()) return null;
+  const [deployer] = await ethers.getSigners();
+  if (!deployer) {
+    throw new Error('PRIVATE_KEY tersedia tetapi signer tidak dapat dibuat.');
+  }
+
+  return ethers.getAddress(await deployer.getAddress());
+}
+
+async function requireDeployer(): Promise<{
+  signer: Awaited<ReturnType<typeof ethers.getSigners>>[number];
+  address: string;
+}> {
+  const [signer] = await ethers.getSigners();
+  if (!signer) {
     throw new Error(
-      `Manifest deployment sudah ada di ${manifestPath}. ` +
-        'Gunakan alamat manifest yang berbeda atau set ALLOW_QBFT_REDEPLOY=true secara eksplisit untuk jaringan disposable.'
+      'PRIVATE_KEY wajib diisi untuk mode configure-existing atau deploy-new. Preflight/compile tidak membutuhkannya.'
     );
   }
+
+  return { signer, address: ethers.getAddress(await signer.getAddress()) };
 }
 
-function getArtifactAbiHash(contractName: string): string {
-  const artifactPath = path.join(
-    process.cwd(),
-    'artifacts',
-    'contracts',
-    `${contractName}.sol`,
-    `${contractName}.json`
-  );
-  if (!fs.existsSync(artifactPath)) throw new Error(`Artifact ${contractName} tidak ditemukan.`);
+async function verifyRoles(
+  rekaKarbon: RekaKarbonContract,
+  registry: EmissionReportRegistryContract,
+  actorAddress: string | null
+): Promise<Record<string, boolean> | null> {
+  if (!actorAddress) return null;
 
-  const artifact: unknown = JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as unknown;
-  if (!isRecord(artifact) || !Array.isArray(artifact.abi)) {
-    throw new Error(`Artifact ${contractName} tidak memiliki ABI yang valid.`);
+  const [ministryRole, oracleRole, depositRole, marketOperatorRole, auditorRole, reporterRole] =
+    await Promise.all([
+      rekaKarbon.MINISTRY_ROLE(),
+      rekaKarbon.ORACLE_ROLE(),
+      rekaKarbon.DEPOSIT_ROLE(),
+      rekaKarbon.MARKET_OPERATOR_ROLE(),
+      registry.AUDITOR_ROLE(),
+      registry.REPORTER_ROLE(),
+    ]);
+
+  return {
+    ministry: await rekaKarbon.hasRole(ministryRole, actorAddress),
+    oracle: await rekaKarbon.hasRole(oracleRole, actorAddress),
+    deposit: await rekaKarbon.hasRole(depositRole, actorAddress),
+    marketOperator: await rekaKarbon.hasRole(marketOperatorRole, actorAddress),
+    auditor: await registry.hasRole(auditorRole, actorAddress),
+    reporter: await registry.hasRole(reporterRole, actorAddress),
+  };
+}
+
+async function grantRoleIfMissing(
+  contract: RoleContract,
+  roleName: string,
+  role: string,
+  actorAddress: string,
+  transactions: TransactionRecord[]
+): Promise<void> {
+  if (await contract.hasRole(role, actorAddress)) return;
+  transactions.push(
+    await waitForTransaction(
+      `grant ${roleName}`,
+      contract.grantRole(role, actorAddress, transactionOverrides)
+    )
+  );
+}
+
+async function configureExisting(
+  rekaKarbon: RekaKarbonContract,
+  registry: EmissionReportRegistryContract,
+  actorAddress: string
+): Promise<TransactionRecord[]> {
+  const transactions: TransactionRecord[] = [];
+  const [ministryRole, oracleRole, depositRole, marketOperatorRole, auditorRole, reporterRole] =
+    await Promise.all([
+      rekaKarbon.MINISTRY_ROLE(),
+      rekaKarbon.ORACLE_ROLE(),
+      rekaKarbon.DEPOSIT_ROLE(),
+      rekaKarbon.MARKET_OPERATOR_ROLE(),
+      registry.AUDITOR_ROLE(),
+      registry.REPORTER_ROLE(),
+    ]);
+
+  await grantRoleIfMissing(rekaKarbon, 'MINISTRY_ROLE', ministryRole, actorAddress, transactions);
+  await grantRoleIfMissing(rekaKarbon, 'ORACLE_ROLE', oracleRole, actorAddress, transactions);
+  await grantRoleIfMissing(rekaKarbon, 'DEPOSIT_ROLE', depositRole, actorAddress, transactions);
+  await grantRoleIfMissing(
+    rekaKarbon,
+    'MARKET_OPERATOR_ROLE',
+    marketOperatorRole,
+    actorAddress,
+    transactions
+  );
+  await grantRoleIfMissing(registry, 'AUDITOR_ROLE', auditorRole, actorAddress, transactions);
+  await grantRoleIfMissing(registry, 'REPORTER_ROLE', reporterRole, actorAddress, transactions);
+
+  const recipients: [string, string, string, string, string, string] = [
+    optionalAddress('BURSA_PLATFORM_RECIPIENT') || actorAddress,
+    optionalAddress('BURSA_RESTORATION_RECIPIENT') || actorAddress,
+    optionalAddress('BURSA_MAINTENANCE_RECIPIENT') || actorAddress,
+    optionalAddress('BURSA_MONITORING_RECIPIENT') || actorAddress,
+    optionalAddress('BURSA_BUFFER_RECIPIENT') || actorAddress,
+    optionalAddress('BURSA_ENVIRONMENTAL_INTELLIGENCE_RECIPIENT') || actorAddress,
+  ];
+
+  const currentRecipients = await Promise.all([
+    rekaKarbon.platformRecipient(),
+    rekaKarbon.restorationRecipient(),
+    rekaKarbon.maintenanceRecipient(),
+    rekaKarbon.monitoringRecipient(),
+    rekaKarbon.bufferRecipient(),
+    rekaKarbon.environmentalIntelligenceRecipient(),
+  ]);
+
+  if (
+    recipients.some((recipient, index) => recipient !== ethers.getAddress(currentRecipients[index]))
+  ) {
+    transactions.push(
+      await waitForTransaction(
+        'configure Bursa revenue recipients',
+        rekaKarbon.setBursaRevenueRecipients(...recipients, transactionOverrides)
+      )
+    );
   }
-  return keccak256(toUtf8Bytes(JSON.stringify(artifact.abi)));
+
+  return transactions;
+}
+
+async function writeManifest(manifest: DeploymentManifest): Promise<void> {
+  const directory = path.dirname(manifestPath);
+  fs.mkdirSync(directory, { recursive: true });
+  const temporaryPath = `${manifestPath}.tmp-${process.pid}`;
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(manifest, null, 2)}\n`, { mode: 0o600 });
+  fs.renameSync(temporaryPath, manifestPath);
 }
 
 async function main(): Promise<void> {
-  if (!Number.isInteger(EXPECTED_CHAIN_ID) || EXPECTED_CHAIN_ID !== 1338) {
-    throw new Error(
-      `QBFT_CHAIN_ID harus 1338 untuk deployment local QBFT, bukan ${EXPECTED_CHAIN_ID}.`
-    );
-  }
-
-  const manifestPath = getManifestPath();
-  assertDeploymentAllowed(manifestPath);
-
-  console.log('Memulai deployment RekaKarbon ke local QBFT...');
   const network = await ethers.provider.getNetwork();
-  if (network.chainId !== BigInt(EXPECTED_CHAIN_ID)) {
-    throw new Error(`Chain ID salah: ${network.chainId} (diharapkan ${EXPECTED_CHAIN_ID}).`);
-  }
-
-  const latestBlock = await ethers.provider.getBlock('latest');
-  if (!latestBlock) throw new Error('Node belum menyediakan blok terbaru.');
-
-  const [deployer] = await ethers.getSigners();
-  if (deployer.address === ethers.ZeroAddress) throw new Error('Alamat deployer tidak valid.');
-  const balance = await ethers.provider.getBalance(deployer.address);
-  const minimumBalance = readPositiveBigInt(
-    process.env.QBFT_MIN_DEPLOYER_BALANCE_WEI,
-    DEFAULT_MIN_DEPLOYER_BALANCE_WEI
-  );
-  if (balance < minimumBalance) {
+  if (network.chainId !== expectedChainId) {
     throw new Error(
-      `Saldo deployer terlalu kecil: ${balance.toString()} wei; minimum ${minimumBalance.toString()} wei.`
+      `Chain ID tidak sesuai: ${network.chainId.toString()} != ${expectedChainId.toString()}.`
     );
   }
 
-  const transactionOverrides = await getFeeOverrides();
-  console.log('Deploying contract menggunakan akun:', deployer.address);
-  console.log('Saldo deployer:', ethers.formatEther(balance));
-  console.log('Blok awal:', latestBlock.number);
-  console.log('Fee policy:', transactionOverrides);
+  const deployerAddress = await getDeployerAddress();
+  const transactionRecords: TransactionRecord[] = [];
+  let rekaKarbonAddress: string;
+  let emissionReportRegistryAddress: string;
+  let rekaKarbonDeployment: TransactionRecord | undefined;
+  let registryDeployment: TransactionRecord | undefined;
 
-  const RekaKarbon = await ethers.getContractFactory('RekaKarbon');
-  const rekaKarbon = await RekaKarbon.deploy(transactionOverrides);
-  const rekaDeploymentTransaction = rekaKarbon.deploymentTransaction();
-  if (!rekaDeploymentTransaction)
-    throw new Error('Transaksi deployment RekaKarbon tidak tersedia.');
-  const rekaDeployment = await waitForReceipt(rekaDeploymentTransaction, 'RekaKarbon deployment');
-  await rekaKarbon.waitForDeployment();
+  if (deploymentMode === 'deploy-new') {
+    if (fs.existsSync(manifestPath) && !allowDeployNew) {
+      throw new Error(
+        `Manifest deployment sudah ada di ${manifestPath}. Set ALLOW_DEPLOY_NEW=true setelah approval eksplisit untuk deploy-new.`
+      );
+    }
 
-  const EmissionReportRegistry = await ethers.getContractFactory('EmissionReportRegistry');
-  const registry = await EmissionReportRegistry.deploy(transactionOverrides);
-  const registryDeploymentTransaction = registry.deploymentTransaction();
-  if (!registryDeploymentTransaction)
-    throw new Error('Transaksi deployment registry tidak tersedia.');
-  const registryDeployment = await waitForReceipt(
-    registryDeploymentTransaction,
-    'EmissionReportRegistry deployment'
-  );
-  await registry.waitForDeployment();
+    const { address: signerAddress } = await requireDeployer();
+    if (deployerAddress !== signerAddress) {
+      throw new Error('Alamat deployer tidak konsisten dengan PRIVATE_KEY.');
+    }
 
-  const rekaKarbonAddress = await rekaKarbon.getAddress();
-  const registryAddress = await registry.getAddress();
-  const rekaCode = await ethers.provider.getCode(rekaKarbonAddress);
-  const registryCode = await ethers.provider.getCode(registryAddress);
-  if (rekaCode === '0x' || registryCode === '0x') {
-    throw new Error('Runtime bytecode contract tidak ditemukan setelah deployment.');
+    const RekaKarbon = await ethers.getContractFactory('RekaKarbon');
+    const rekaKarbon = await RekaKarbon.deploy(transactionOverrides);
+    await rekaKarbon.waitForDeployment();
+    const rekaKarbonTransaction = rekaKarbon.deploymentTransaction();
+    if (!rekaKarbonTransaction)
+      throw new Error('Deployment transaction RekaKarbon tidak tersedia.');
+    rekaKarbonDeployment = await waitForTransaction(
+      'deploy RekaKarbon',
+      Promise.resolve(rekaKarbonTransaction)
+    );
+    rekaKarbonAddress = await rekaKarbon.getAddress();
+
+    const EmissionReportRegistry = await ethers.getContractFactory('EmissionReportRegistry');
+    const registry = await EmissionReportRegistry.deploy(transactionOverrides);
+    await registry.waitForDeployment();
+    const registryTransaction = registry.deploymentTransaction();
+    if (!registryTransaction) throw new Error('Deployment transaction registry tidak tersedia.');
+    registryDeployment = await waitForTransaction(
+      'deploy EmissionReportRegistry',
+      Promise.resolve(registryTransaction)
+    );
+    emissionReportRegistryAddress = await registry.getAddress();
+  } else {
+    rekaKarbonAddress = requireAddress('CARBON_TOKEN_CONTRACT_ADDRESS');
+    emissionReportRegistryAddress = requireAddress('EMISSION_REGISTRY_CONTRACT_ADDRESS');
   }
 
-  console.log('\n=======================================================');
-  console.log('✅ DEPLOYMENT BERHASIL!');
-  console.log('✅ RekaKarbon Contract Address:', rekaKarbonAddress);
-  console.log('✅ EmissionReportRegistry Address:', registryAddress);
+  await verifyBytecode(rekaKarbonAddress);
+  await verifyBytecode(emissionReportRegistryAddress);
 
-  console.log('\nMemproses pengaturan otorisasi (Roles)...');
-  const oracleRole: string = await rekaKarbon.ORACLE_ROLE();
-  const depositRole: string = await rekaKarbon.DEPOSIT_ROLE();
-  const marketOperatorRole: string = await rekaKarbon.MARKET_OPERATOR_ROLE();
-  const auditorRole: string = await registry.AUDITOR_ROLE();
-  const reporterRole: string = await registry.REPORTER_ROLE();
+  const rekaKarbon = (await ethers.getContractAt(
+    'RekaKarbon',
+    rekaKarbonAddress
+  )) as unknown as RekaKarbonContract;
+  const registry = (await ethers.getContractAt(
+    'EmissionReportRegistry',
+    emissionReportRegistryAddress
+  )) as unknown as EmissionReportRegistryContract;
 
-  const roleTransactions: Record<string, TransactionRecord> = {};
-  roleTransactions.oracle = await waitForReceipt(
-    await rekaKarbon.grantRole(oracleRole, deployer.address, transactionOverrides),
-    'grant ORACLE_ROLE'
-  );
-  console.log('✅ ORACLE_ROLE diberikan kepada relayer lokal.');
-
-  roleTransactions.deposit = await waitForReceipt(
-    await rekaKarbon.grantRole(depositRole, deployer.address, transactionOverrides),
-    'grant DEPOSIT_ROLE'
-  );
-  console.log('✅ DEPOSIT_ROLE diberikan kepada relayer lokal.');
-
-  roleTransactions.marketOperator = await waitForReceipt(
-    await rekaKarbon.grantRole(marketOperatorRole, deployer.address, transactionOverrides),
-    'grant MARKET_OPERATOR_ROLE'
-  );
-  console.log('✅ MARKET_OPERATOR_ROLE diberikan kepada relayer lokal.');
-
-  roleTransactions.revenueRecipients = await waitForReceipt(
-    await rekaKarbon.setBursaRevenueRecipients(
-      deployer.address,
-      deployer.address,
-      deployer.address,
-      deployer.address,
-      deployer.address,
-      deployer.address,
-      transactionOverrides
-    ),
-    'configure bursa revenue recipients'
-  );
-  console.log('✅ Penerima settlement bursa dikonfigurasi untuk jaringan lokal.');
-
-  roleTransactions.auditor = await waitForReceipt(
-    await registry.grantRole(auditorRole, deployer.address, transactionOverrides),
-    'grant AUDITOR_ROLE'
-  );
-  console.log('✅ AUDITOR_ROLE diberikan kepada relayer lokal.');
-
-  roleTransactions.reporter = await waitForReceipt(
-    await registry.grantRole(reporterRole, deployer.address, transactionOverrides),
-    'grant REPORTER_ROLE'
-  );
-  console.log('✅ REPORTER_ROLE diberikan kepada relayer lokal.');
-
-  const roleChecks = {
-    oracle: await rekaKarbon.hasRole(oracleRole, deployer.address),
-    deposit: await rekaKarbon.hasRole(depositRole, deployer.address),
-    marketOperator: await rekaKarbon.hasRole(marketOperatorRole, deployer.address),
-    auditor: await registry.hasRole(auditorRole, deployer.address),
-    reporter: await registry.hasRole(reporterRole, deployer.address),
-  };
-  if (Object.values(roleChecks).some((isGranted) => !isGranted)) {
-    throw new Error('Role verification gagal setelah deployment.');
+  if (deploymentMode === 'configure-existing' || deploymentMode === 'deploy-new') {
+    const { address: signerAddress } = await requireDeployer();
+    transactionRecords.push(...(await configureExisting(rekaKarbon, registry, signerAddress)));
   }
 
-  const deploymentInfo = {
-    schemaVersion: 1,
-    network: 'besu_qbft_local',
-    chainId: EXPECTED_CHAIN_ID,
-    rpcUrl: process.env.QBFT_RPC_URL ?? 'http://127.0.0.1:8545',
-    deployer: deployer.address,
+  const roleChecks = await verifyRoles(rekaKarbon, registry, deployerAddress);
+  const roleValues = Object.values(roleChecks || {});
+  if (roleValues.some((value) => !value)) {
+    throw new Error(`Role verification gagal: ${JSON.stringify(roleChecks)}.`);
+  }
+
+  const blockNumber = await ethers.provider.getBlockNumber();
+  const manifest: DeploymentManifest = {
+    schemaVersion: 2,
+    mode: deploymentMode,
+    network: 'besu_qbft',
+    chainId: Number(network.chainId),
+    deployer: deployerAddress,
+    commitSha: process.env.GITHUB_SHA?.trim() || null,
+    blockNumber,
     contracts: {
-      rekaKarbon: rekaKarbonAddress,
-      emissionReportRegistry: registryAddress,
-    },
-    deploymentTransactions: {
-      rekaKarbon: rekaDeployment,
-      emissionReportRegistry: registryDeployment,
-    },
-    roleTransactions,
-    deploymentBlocks: {
-      rekaKarbon: rekaDeployment.blockNumber,
-      emissionReportRegistry: registryDeployment.blockNumber,
+      rekaKarbon: {
+        address: ethers.getAddress(rekaKarbonAddress),
+        deployment: rekaKarbonDeployment,
+      },
+      emissionReportRegistry: {
+        address: ethers.getAddress(emissionReportRegistryAddress),
+        deployment: registryDeployment,
+      },
     },
     roleChecks,
-    artifactHashes: {
-      rekaKarbonAbi: getArtifactAbiHash('RekaKarbon'),
-      emissionReportRegistryAbi: getArtifactAbiHash('EmissionReportRegistry'),
-      rekaKarbonRuntimeBytecode: keccak256(rekaCode),
-      emissionReportRegistryRuntimeBytecode: keccak256(registryCode),
-    },
+    configurationTransactions: transactionRecords,
     generatedAt: new Date().toISOString(),
   };
 
-  fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
-  fs.writeFileSync(manifestPath, `${JSON.stringify(deploymentInfo, null, 2)}\n`, 'utf8');
-  console.log(`✅ Deployment manifest disimpan ke: ${manifestPath}`);
-  console.log('=======================================================\n');
+  await writeManifest(manifest);
+  console.log('Deployment verification completed.');
+  console.log(`Mode: ${deploymentMode}`);
+  console.log(`Network: besu_qbft (${network.chainId.toString()})`);
+  console.log(`RekaKarbon: ${rekaKarbonAddress}`);
+  console.log(`EmissionReportRegistry: ${emissionReportRegistryAddress}`);
+  console.log(`Manifest: ${manifestPath}`);
+  console.log(`Configuration transactions: ${transactionRecords.length}`);
 }
 
 main().catch((error: unknown) => {
-  console.error('❌ Terjadi kesalahan saat deployment:');
-  console.error(error);
+  const message = error instanceof Error ? error.message : 'Kesalahan tidak diketahui.';
+  console.error(`Deployment gagal: ${message}`);
   process.exitCode = 1;
 });

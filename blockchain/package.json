@@ -19,7 +19,9 @@
     "stop-local-qbft": "pnpm network:down",
     "check-network": "pnpm network:check",
     "show-network-status": "pnpm network:check",
-    "reset-local-qbft": "pnpm network:reset"
+    "reset-local-qbft": "pnpm network:reset",
+    "qbft:preflight": "hardhat run scripts/preflight-qbft.ts --network besu_qbft",
+    "qbft:fund-wallet-credit": "ts-node --project tsconfig.json scripts/fund-wallet-credit.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
