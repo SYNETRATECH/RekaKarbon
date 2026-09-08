@@ -8,7 +8,7 @@ import { jsPDF } from 'jspdf';
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatters';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import type { CalculationData, SectorBreakdown, MlAuditResult } from '@/types';
-import pdfBrandIcon from '@/assets/icon-pdf.png?inline';
+import pdfBrandIcon from '@/assets/icon.png?inline';
 
 // Inline field definitions to avoid circular dependency with kalkulator.tsx
 interface PdfFormField {
