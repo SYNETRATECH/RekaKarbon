@@ -98,6 +98,8 @@ jobs:
             --exclude='blockchain/cache' \
             --exclude='blockchain/networks/local-qbft/generated' \
             --exclude='blockchain/.env' \
+            --exclude='blockchain/deployment-info.json' \
+            --exclude='blockchain/deployment-info-*.json' \
             -czf qbft-release.tar.gz \
             package.json pnpm-lock.yaml pnpm-workspace.yaml blockchain
 

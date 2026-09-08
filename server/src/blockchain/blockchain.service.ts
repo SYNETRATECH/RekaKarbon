@@ -58,7 +58,7 @@ export class BlockchainService implements OnModuleInit {
         throw new Error('BESU_CHAIN_ID must be a positive integer');
       }
       this.provider = new ethers.JsonRpcProvider(rpcUrl, configuredChainId, {
-        staticNetwork: true,
+        staticNetwork: false,
       });
       this.wallet = new ethers.Wallet(privateKey, this.provider);
 
