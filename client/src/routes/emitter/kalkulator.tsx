@@ -1105,6 +1105,7 @@ export default function KalkulatorHijauPage() {
     return (
       <div className="py-8">
         <AuditResultCard
+          className="max-w-4xl mx-auto"
           submission={generatedPdfData.submission}
           calculationData={generatedPdfData.calculationData}
           onDownloadPDF={handleDownloadPDF}

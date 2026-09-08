@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Download, Info, RotateCcw, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Download, Info, RotateCcw, ShieldAlert, ShieldCheck, Copy, Check } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -12,14 +12,13 @@ import {
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { formatCarbon } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
 import type {
   CalculationData,
   CalculatorReportSubmission,
   MlAuditResult,
   ShapAttribution,
 } from '@/types';
-import { Copy, Check } from 'lucide-react';
-import { useState } from 'react';
 
 export interface AuditResultCardProps {
   submission?: Partial<CalculatorReportSubmission>;
@@ -29,6 +28,8 @@ export interface AuditResultCardProps {
   txHash?: string | null;
   reportId?: number | string | null;
   isAuditorView?: boolean;
+  className?: string;
+  compact?: boolean;
   onDownloadPDF?: () => void;
   onBackToReports?: () => void;
   onApplyRecommendationToNotes?: (recommendationsText: string) => void;
@@ -42,6 +43,8 @@ export function AuditResultCard({
   txHash: directTxHash,
   reportId: directReportId,
   isAuditorView = false,
+  className,
+  compact = false,
   onDownloadPDF,
   onBackToReports,
   onApplyRecommendationToNotes,
@@ -136,34 +139,41 @@ export function AuditResultCard({
   }, [auditResult, calculationData, expectedTco2e, reportedTco2e, isAnomaly]);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 text-left animate-in fade-in-50 duration-300">
+    <div className={cn('w-full space-y-5 text-left animate-in fade-in-50 duration-300', className)}>
       {/* 1. Verdict & Status Card */}
       <div
-        className={`rounded-3xl border p-8 shadow-sm transition-all ${
-          isAnomaly ? 'border-rose-200 bg-rose-50/40' : 'border-emerald-200 bg-emerald-50/30'
-        }`}
+        className={cn(
+          'rounded-2xl border transition-all shadow-2xs',
+          compact ? 'p-3.5 sm:p-4' : 'p-4 sm:p-5',
+          isAnomaly
+            ? 'border-rose-200 bg-rose-50/50 text-rose-950'
+            : 'border-emerald-200 bg-emerald-50/40 text-emerald-950'
+        )}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-start sm:items-center gap-3 sm:gap-3.5">
             <div
-              className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${
+              className={cn(
+                'flex shrink-0 items-center justify-center rounded-xl',
+                compact ? 'h-9 w-9' : 'h-11 w-11',
                 isAnomaly ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
-              }`}
+              )}
             >
               {isAnomaly ? (
-                <ShieldAlert className="h-9 w-9" />
+                <ShieldAlert className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
               ) : (
-                <ShieldCheck className="h-9 w-9" />
+                <ShieldCheck className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
               )}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider ${
+                  className={cn(
+                    'inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
                     isAnomaly
                       ? 'bg-rose-200/70 text-rose-900'
                       : 'bg-emerald-200/70 text-emerald-900'
-                  }`}
+                  )}
                 >
                   {isAnomaly ? 'Peringatan Anomali Terdeteksi' : 'PASS VERIFIED (Laporan Selaras)'}
                 </span>
@@ -174,12 +184,12 @@ export function AuditResultCard({
                   </span>
                 )}
               </div>
-              <h2 className="mt-1 text-2xl font-black text-slate-900">
+              <h2 className="mt-1 text-base sm:text-lg font-bold text-slate-900 leading-snug">
                 {isAnomaly
                   ? 'Deviasi Terdeteksi pada Laporan Emisi'
                   : 'Laporan Emisi Berhasil Diverifikasi Konsisten'}
               </h2>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
                 {auditResult?.explanation ||
                   (isAnomaly
                     ? 'Pola input menunjukkan ketidaksesuaian dengan batas stoikiometri fisik pembakaran bahan bakar.'
@@ -191,97 +201,229 @@ export function AuditResultCard({
       </div>
 
       {/* 2. Key Metrics Grid */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {/* Trust Score */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-            Skor Kepercayaan
-          </span>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span
-              className={`text-3xl font-black ${
-                trustScore >= 80
-                  ? 'text-emerald-700'
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {/* 1. Trust Score (Composite Integrity Rating: 0 - 100) */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-4.5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 truncate">
+                Skor Kepercayaan
+              </span>
+              <span
+                className={cn(
+                  'rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider shrink-0',
+                  trustScore >= 80
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : trustScore >= 60
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-rose-100 text-rose-800'
+                )}
+              >
+                {trustScore >= 80
+                  ? 'Integritas Tinggi'
                   : trustScore >= 60
-                    ? 'text-amber-600'
-                    : 'text-rose-600'
-              }`}
-            >
-              {trustScore.toFixed(1)}
-            </span>
-            <span className="text-xs font-bold text-slate-400">/ 100</span>
+                    ? 'Perlu Tinjauan'
+                    : 'Risiko Tinggi'}
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span
+                className={cn(
+                  'text-2xl sm:text-3xl font-black truncate',
+                  trustScore >= 80
+                    ? 'text-emerald-700'
+                    : trustScore >= 60
+                      ? 'text-amber-600'
+                      : 'text-rose-600'
+                )}
+              >
+                {trustScore.toFixed(1)}
+              </span>
+              <span className="text-xs font-bold text-slate-400">/ 100</span>
+            </div>
           </div>
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-            <div
-              className={`h-full rounded-full ${
-                trustScore >= 80
-                  ? 'bg-emerald-500'
-                  : trustScore >= 60
-                    ? 'bg-amber-500'
-                    : 'bg-rose-500'
-              }`}
-              style={{ width: `${Math.min(100, Math.max(0, trustScore))}%` }}
-            />
+          <div className="mt-3 space-y-1.5">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  trustScore >= 80
+                    ? 'bg-emerald-500'
+                    : trustScore >= 60
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                )}
+                style={{ width: `${Math.min(100, Math.max(0, trustScore))}%` }}
+              />
+            </div>
+            <p className="text-[10px] font-medium text-slate-500 truncate">
+              Ambang Kepatuhan: &ge; 70 / 100
+            </p>
           </div>
         </div>
 
-        {/* Anomaly Probability */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-            Probabilitas Anomali
-          </span>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span
-              className={`text-3xl font-black ${
-                anomalyProb > 50 ? 'text-rose-600' : 'text-slate-900'
-              }`}
-            >
-              {anomalyProb.toFixed(1)}%
-            </span>
+        {/* 2. Anomaly Probability (ML Model Output: 0.0% - 100.0%) */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-4.5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 truncate">
+                Probabilitas Anomali
+              </span>
+              <span
+                className={cn(
+                  'rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider shrink-0',
+                  anomalyProb > 50
+                    ? 'bg-rose-100 text-rose-800'
+                    : anomalyProb > 20
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-emerald-100 text-emerald-800'
+                )}
+              >
+                {anomalyProb > 50
+                  ? 'Risiko Tinggi'
+                  : anomalyProb > 20
+                    ? 'Risiko Sedang'
+                    : 'Risiko Rendah'}
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span
+                className={cn(
+                  'text-2xl sm:text-3xl font-black truncate',
+                  anomalyProb > 50
+                    ? 'text-rose-600'
+                    : anomalyProb > 20
+                      ? 'text-amber-600'
+                      : 'text-slate-900'
+                )}
+              >
+                {anomalyProb.toFixed(1)}%
+              </span>
+            </div>
           </div>
-          <p className="mt-3 text-[11px] font-medium text-slate-500">
-            {anomalyProb > 50 ? 'Ambang risiko tinggi' : 'Tingkat risiko normal'}
-          </p>
+          <div className="mt-3 space-y-1.5">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  anomalyProb > 50
+                    ? 'bg-rose-500'
+                    : anomalyProb > 20
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500'
+                )}
+                style={{ width: `${Math.min(100, Math.max(0, anomalyProb))}%` }}
+              />
+            </div>
+            <p className="text-[10px] font-medium text-slate-500 truncate">
+              Ambang Batas Risiko: &le; 20%
+            </p>
+          </div>
         </div>
 
-        {/* Stoichiometric Divergence */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-            Deviasi Stoikiometri
-          </span>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span
-              className={`text-3xl font-black ${
-                divergencePct > 25 ? 'text-rose-600' : 'text-slate-900'
-              }`}
-            >
-              {divergencePct.toFixed(1)}%
-            </span>
+        {/* 3. Stoichiometric Divergence (Physical Variance Delta: 0% - 100%+) */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-4.5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 truncate">
+                Deviasi Stoikiometri
+              </span>
+              <span
+                className={cn(
+                  'rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider shrink-0',
+                  divergencePct > 25
+                    ? 'bg-rose-100 text-rose-800'
+                    : divergencePct > 10
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-emerald-100 text-emerald-800'
+                )}
+              >
+                {divergencePct > 25
+                  ? 'Melebihi Batas'
+                  : divergencePct > 10
+                    ? 'Dalam Toleransi'
+                    : 'Sangat Presisi'}
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span
+                className={cn(
+                  'text-2xl sm:text-3xl font-black truncate',
+                  divergencePct > 25 ? 'text-rose-600' : 'text-slate-900'
+                )}
+              >
+                {divergencePct.toFixed(1)}%
+              </span>
+            </div>
           </div>
-          <p className="mt-3 text-[11px] font-medium text-slate-500">
-            Toleransi fisik acuan: &le; 25%
-          </p>
+          <div className="mt-3 space-y-1.5">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  divergencePct > 25
+                    ? 'bg-rose-500'
+                    : divergencePct > 10
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500'
+                )}
+                style={{ width: `${Math.min(100, Math.max(0, (divergencePct / 25) * 100))}%` }}
+              />
+            </div>
+            <p className="text-[10px] font-medium text-slate-500 truncate">
+              Toleransi Acuan ESDM: &le; 25%
+            </p>
+          </div>
         </div>
 
-        {/* Total Emission vs Expected */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-            Total Dilaporkan
-          </span>
-          <div className="mt-2">
-            <span className="text-2xl font-black text-emerald-700">
-              {formatCarbon(reportedTco2e)}
-            </span>
+        {/* 4. Total Emission vs Expected (Carbon Mass: tCO2e) */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-4.5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 truncate">
+                Total Dilaporkan
+              </span>
+              <span
+                className={cn(
+                  'rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider shrink-0',
+                  Math.abs(reportedTco2e - expectedTco2e) / (expectedTco2e || 1) <= 0.25
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-rose-100 text-rose-800'
+                )}
+              >
+                {Math.abs(reportedTco2e - expectedTco2e) / (expectedTco2e || 1) <= 0.25
+                  ? 'Selaras Fisik'
+                  : 'Deviasi Fisik'}
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="text-xl sm:text-2xl font-black text-emerald-700 truncate block">
+                {formatCarbon(reportedTco2e)}
+              </span>
+            </div>
           </div>
-          <p className="mt-2 text-[11px] font-medium text-slate-500">
-            Fisik: {formatCarbon(expectedTco2e)}
-          </p>
+          <div className="mt-3 space-y-1.5">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.max(0, (reportedTco2e / (expectedTco2e || 1)) * 100)
+                  )}%`,
+                }}
+              />
+            </div>
+            <p className="text-[10px] font-medium text-slate-500 truncate">
+              Acuan Fisik: {formatCarbon(expectedTco2e)}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* 3. Explainable AI (XAI) - SHAP Visualization Card */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">
@@ -291,7 +433,7 @@ export function AuditResultCard({
                 Transparansi Keputusan AI
               </span>
             </div>
-            <h3 className="mt-1 text-lg font-black text-slate-900">
+            <h3 className="mt-1 text-base sm:text-lg font-black text-slate-900">
               SHapley Additive exPlanations (SHAP) — Kontribusi Fitur
             </h3>
             <p className="mt-1 text-xs text-slate-500">
@@ -305,13 +447,13 @@ export function AuditResultCard({
         </div>
 
         {/* SHAP Diverging Bar Chart */}
-        <div className="mt-6">
+        <div className="mt-5">
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 layout="vertical"
                 data={shapData}
-                margin={{ top: 10, right: 30, left: 140, bottom: 20 }}
+                margin={{ top: 10, right: 24, left: 110, bottom: 10 }}
               >
                 <XAxis
                   type="number"
@@ -322,8 +464,8 @@ export function AuditResultCard({
                 <YAxis
                   type="category"
                   dataKey="name"
-                  tick={{ fontSize: 11, fill: '#334155', fontWeight: 600 }}
-                  width={130}
+                  tick={{ fontSize: 10, fill: '#334155', fontWeight: 600 }}
+                  width={110}
                 />
                 <Tooltip
                   formatter={(value: any) => [
@@ -373,7 +515,7 @@ export function AuditResultCard({
             </ResponsiveContainer>
           </div>
 
-          <div className="mt-2 flex items-center justify-center gap-8 border-t border-slate-100 pt-3 text-[11px] font-semibold text-slate-500">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-4 sm:gap-8 border-t border-slate-100 pt-3 text-[11px] font-semibold text-slate-500">
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-xs bg-[#059669]" />
               <span>Memperkuat Kepatuhan / Normal (&minus; SHAP)</span>
@@ -386,24 +528,24 @@ export function AuditResultCard({
         </div>
 
         {/* 4. Top Feature Drivers Table */}
-        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-          <table className="w-full text-left text-xs">
+        <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full min-w-[540px] text-left text-xs">
             <thead className="bg-slate-50 font-bold uppercase tracking-wider text-slate-500">
               <tr>
-                <th className="py-3 px-4">Faktor / Indikator</th>
-                <th className="py-3 px-4">Nilai Laporan</th>
-                <th className="py-3 px-4">Acuan Standar</th>
-                <th className="py-3 px-4 text-center">SHAP Value (&phi;)</th>
-                <th className="py-3 px-4 text-right">Status Deviasi</th>
+                <th className="py-2.5 px-3.5">Faktor / Indikator</th>
+                <th className="py-2.5 px-3.5">Nilai Laporan</th>
+                <th className="py-2.5 px-3.5">Acuan Standar</th>
+                <th className="py-2.5 px-3.5 text-center">SHAP Value (&phi;)</th>
+                <th className="py-2.5 px-3.5 text-right">Status Deviasi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {shapData.map((driver, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/60">
-                  <td className="py-3 px-4 font-bold text-slate-900">{driver.name}</td>
-                  <td className="py-3 px-4 font-mono text-slate-600">{driver.userValue}</td>
-                  <td className="py-3 px-4 text-slate-500">{driver.benchmarkValue}</td>
-                  <td className="py-3 px-4 text-center font-mono">
+                  <td className="py-2.5 px-3.5 font-bold text-slate-900">{driver.name}</td>
+                  <td className="py-2.5 px-3.5 font-mono text-slate-600">{driver.userValue}</td>
+                  <td className="py-2.5 px-3.5 text-slate-500">{driver.benchmarkValue}</td>
+                  <td className="py-2.5 px-3.5 text-center font-mono">
                     <span
                       className={`inline-block font-black ${
                         driver.shapValue > 0 ? 'text-rose-600' : 'text-emerald-700'
@@ -414,7 +556,7 @@ export function AuditResultCard({
                         : driver.shapValue.toFixed(3)}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right">
+                  <td className="py-2.5 px-3.5 text-right">
                     <span
                       className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ${
                         driver.shapValue > 0
@@ -433,12 +575,12 @@ export function AuditResultCard({
       </div>
 
       {/* 5. Actionable Guidance & Compliance Recommendations */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xs">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-            <Info className="h-5 w-5" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+            <Info className="h-4.5 w-4.5" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0 flex-1">
             <h4 className="text-sm font-black text-slate-900">
               Rekomendasi Tindak Lanjut Kepatuhan (Compliance Guidance)
             </h4>
@@ -484,7 +626,7 @@ export function AuditResultCard({
                       ...(auditResult?.flags?.length
                         ? [`Indikator: ${auditResult.flags.join(', ')}`]
                         : []),
-                      `Deviasi Fisik: ${divergencePct.toFixed(1)}% | Skor Kepercayaan: ${trustScore.toFixed(1)}%`,
+                      `Deviasi Fisik: ${divergencePct.toFixed(1)}% | Skor Kepercayaan: ${trustScore.toFixed(1)}/100`,
                       `• ${rec}`,
                     ].join('\n');
                     onApplyRecommendationToNotes(text);
@@ -510,7 +652,7 @@ export function AuditResultCard({
 
       {/* 6. Blockchain Receipt Card */}
       {(merkleRoot || txHash || reportId) && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 space-y-3 text-xs">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-3 text-xs">
           <div className="flex items-center justify-between">
             <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">
               Bukti Keterlacakan On-Chain
@@ -522,7 +664,7 @@ export function AuditResultCard({
           {merkleRoot && (
             <div>
               <span className="text-[10px] font-bold uppercase text-slate-400">Merkle Root</span>
-              <p className="mt-0.5 break-all rounded-lg bg-white p-2.5 font-mono text-slate-800 border border-slate-200">
+              <p className="mt-0.5 break-all rounded-lg bg-white p-2.5 font-mono text-slate-800 border border-slate-200 select-all">
                 {merkleRoot}
               </p>
             </div>
@@ -532,7 +674,7 @@ export function AuditResultCard({
               <span className="text-[10px] font-bold uppercase text-slate-400">
                 Transaction Hash
               </span>
-              <p className="mt-0.5 break-all rounded-lg bg-white p-2.5 font-mono text-slate-800 border border-slate-200">
+              <p className="mt-0.5 break-all rounded-lg bg-white p-2.5 font-mono text-slate-800 border border-slate-200 select-all">
                 {txHash}
               </p>
             </div>
