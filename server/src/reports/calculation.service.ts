@@ -1,93 +1,25 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
 import type {
   CalculationEntry,
   CalculatorActivityType,
   CalculatorCalculationMethod,
   CalculatorCalculationData,
 } from './types';
-
-const FACTOR_SET_ID = 'rekakarbon-2026-v1';
-
-type RecordValue = Record<string, unknown>;
-
-function isRecord(value: unknown): value is RecordValue {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function requiredString(value: unknown, field: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new BadRequestException(
-      `Field ${field} harus berupa teks dan tidak boleh kosong`,
-    );
-  }
-  return value;
-}
-
-function positiveNumber(value: unknown, field: string): number {
-  const parsed = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new BadRequestException(
-      `Field ${field} harus berupa angka lebih besar dari nol`,
-    );
-  }
-  return parsed;
-}
-
-function scopeValue(value: unknown): 1 | 2 | 3 {
-  const parsed = Number(value);
-  if (parsed !== 1 && parsed !== 2 && parsed !== 3) {
-    throw new BadRequestException(
-      'Scope aktivitas harus bernilai 1, 2, atau 3',
-    );
-  }
-  return parsed;
-}
-
-const ACTIVITY_TYPES: readonly CalculatorActivityType[] = [
-  'stationary_combustion',
-  'mobile_combustion',
-  'purchased_electricity',
-  'flight',
-  'hotel',
-  'rail',
-  'financed_credit',
-  'financed_security',
-];
-
-const CALCULATION_METHODS: readonly CalculatorCalculationMethod[] = [
-  'fuel_consumption',
-  'standard_distance',
-  'user_distance',
-  'location_based',
-  'flight_passenger',
-  'hotel_room_night',
-  'rail_distance',
-  'financed_emissions',
-];
-
-function enumValue<T extends string>(
-  value: unknown,
-  values: readonly T[],
-  field: string,
-): T {
-  if (typeof value !== 'string' || !values.includes(value as T)) {
-    throw new BadRequestException(`Nilai ${field} tidak didukung`);
-  }
-  return value as T;
-}
-
-function metadataValue(value: unknown): Prisma.InputJsonObject {
-  if (!isRecord(value)) return {};
-  const result: Record<string, Prisma.InputJsonValue> = {};
-  for (const [key, item] of Object.entries(value)) {
-    if (typeof item === 'string') result[key] = item;
-    else if (typeof item === 'number' && Number.isFinite(item))
-      result[key] = item;
-    else if (typeof item === 'boolean') result[key] = item;
-  }
-  return result;
-}
+import {
+  isRecord,
+  requiredString,
+  positiveNumber,
+  enumValue,
+  type RecordValue,
+} from '../common/utils';
+import {
+  FACTOR_SET_ID,
+  ACTIVITY_TYPES,
+  CALCULATION_METHODS,
+  STANDARD_EMISSION_FACTORS,
+  scopeValue,
+  metadataValue,
+} from './utils';
 
 @Injectable()
 export class CalculationService {
@@ -216,28 +148,6 @@ export class CalculationService {
       };
     }
 
-    const factors: Record<string, { value: number; unit: string }> = {
-      coal: { value: 2.531, unit: 'kgCO2e/kg' },
-      coal_briquette: { value: 2.531, unit: 'kgCO2e/kg' },
-      charcoal: { value: 2.531, unit: 'kgCO2e/kg' },
-      natural_gas: { value: 2.023, unit: 'kgCO2e/m3' },
-      lpg: { value: 2.939, unit: 'kgCO2e/kg' },
-      lgV: { value: 2.105, unit: 'kgCO2e/liter' },
-      lgv: { value: 2.105, unit: 'kgCO2e/liter' },
-      lng: { value: 2.023, unit: 'kgCO2e/kg' },
-      avtur: { value: 2.512, unit: 'kgCO2e/liter' },
-      kerosene: { value: 2.512, unit: 'kgCO2e/liter' },
-      diesel: { value: 2.512, unit: 'kgCO2e/liter' },
-      diesel_cn53: { value: 2.512, unit: 'kgCO2e/liter' },
-      diesel_cn51: { value: 2.512, unit: 'kgCO2e/liter' },
-      diesel_cn48: { value: 2.512, unit: 'kgCO2e/liter' },
-      fuel_oil: { value: 3.168, unit: 'kgCO2e/liter' },
-      gasoline_ron98: { value: 2.105, unit: 'kgCO2e/liter' },
-      gasoline_ron92: { value: 2.105, unit: 'kgCO2e/liter' },
-      gasoline_ron90: { value: 2.105, unit: 'kgCO2e/liter' },
-      gasoline_ron88: { value: 2.105, unit: 'kgCO2e/liter' },
-    };
-
     if (activityType === 'purchased_electricity') {
       return {
         factorCode: 'scope_2_grid_electricity',
@@ -340,7 +250,7 @@ export class CalculationService {
       };
     }
 
-    const factor = factors[sourceCode];
+    const factor = STANDARD_EMISSION_FACTORS[sourceCode];
     if (!factor)
       throw new BadRequestException(
         `Faktor emisi untuk ${sourceCode} belum tersedia`,

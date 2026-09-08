@@ -9,6 +9,8 @@ import {
   PtbaeBlockchainAnchorStatus,
   PtbaeBlockchainAnchorType,
 } from '@prisma/client';
+import { BlockchainOperationService } from '../blockchain/blockchain-operation.service';
+import { createPtbaeAnchorOperationInput } from '../blockchain/blockchain-operation.util';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -34,6 +36,7 @@ export class PtbaeAnchorService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly blockchainService: BlockchainService,
+    private readonly operationService: BlockchainOperationService,
   ) {}
 
   onModuleInit(): void {
@@ -104,7 +107,16 @@ export class PtbaeAnchorService implements OnModuleInit, OnModuleDestroy {
     });
     if (!anchor) return null;
 
+    const operationInput = createPtbaeAnchorOperationInput(
+      anchor.applicationId,
+      anchor.applicationVersionId,
+      anchor.anchorType,
+      anchor.merkleRoot,
+    );
+
     try {
+      const operation =
+        await this.operationService.ensurePendingOperation(operationInput);
       const blockchainResult =
         await this.blockchainService.anchorPtbaeApplication(
           anchor.applicationId,
@@ -132,6 +144,17 @@ export class PtbaeAnchorService implements OnModuleInit, OnModuleDestroy {
           },
           include: { application: true, applicationVersion: true },
         });
+
+        await this.operationService.markConfirmedInTransaction(
+          transaction,
+          operation.idempotencyKey,
+          {
+            txHash: blockchainResult.txHash,
+            blockNumber: blockchainResult.blockNumber,
+            chainId: blockchainResult.chainId,
+            contractAddress: blockchainResult.contractAddress,
+          },
+        );
 
         await transaction.ptbaeApplication.updateMany({
           where: {
@@ -163,6 +186,23 @@ export class PtbaeAnchorService implements OnModuleInit, OnModuleDestroy {
           nextRetryAt: new Date(Date.now() + retryDelayMs),
         },
       });
+
+      try {
+        await this.operationService.markFailed(
+          operationInput.idempotencyKey,
+          error,
+          'retryable',
+          new Date(Date.now() + retryDelayMs),
+        );
+      } catch (operationError: unknown) {
+        const operationMessage =
+          operationError instanceof Error
+            ? operationError.message
+            : 'Unknown blockchain operation persistence error';
+        this.logger.error(
+          `Failed to persist blockchain operation failure for PTBAE anchor ${anchor.id}: ${operationMessage}`,
+        );
+      }
 
       this.logger.warn(
         `PTBAE anchor ${anchor.id} failed; retry scheduled in ${Math.round(retryDelayMs / 1000)} seconds. ${message}`,

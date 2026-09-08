@@ -94,6 +94,31 @@ enum PtbaeBlockchainAnchorStatus {
   FAILED
 }
 
+enum BlockchainOperationType {
+  PTBAE_ANCHOR
+  EMISSION_REPORT_SUBMISSION
+  EMISSION_REPORT_AUDIT
+  PTBAE_QUOTA_ISSUANCE
+  SPE_GRK_ISSUANCE
+  BURSA_LISTING_CREATE
+  BURSA_LISTING_CONFIGURE
+  BURSA_LISTING_ACTIVATE
+  BURSA_LISTING_PRICE_UPDATE
+  BURSA_LISTING_PURCHASE
+  BURSA_LISTING_CANCEL
+  CARBON_RETIREMENT
+  KTH_INCENTIVE_DISBURSEMENT
+}
+
+enum BlockchainOperationStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED_RETRYABLE
+  FAILED_PERMANENT
+  RECONCILIATION_REQUIRED
+}
+
 enum ComplianceRating {
   COMPLIANT
   WARNING
@@ -121,31 +146,39 @@ enum ProjectStatus {
   MINTED
 }
 
+enum ForestInspectionMethod {
+  DRONE
+  SATELLITE
+  FIELD
+  HYBRID
+}
+
+enum ForestInspectionStatus {
+  SCHEDULED
+  DUE
+  SUBMITTED
+  IN_REVIEW
+  REVISION_REQUIRED
+  VERIFIED
+  OVERDUE
+}
+
+enum ForestInspectionSubmissionStatus {
+  SUBMITTED
+  IN_REVIEW
+  REVISION_REQUIRED
+  VERIFIED
+}
+
+enum ForestInspectionDecisionType {
+  APPROVED
+  REQUEST_REVISION
+}
+
 enum StageStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
-}
-
-enum AnomalyType {
-  CEMS_ENERGY_CORRELATION
-  SATELLITE_CHM_DEFICIT
-  QUOTA_CAP_BREACH
-  SPATIAL_ENCROACHMENT
-}
-
-enum SeverityLevel {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-enum AuditStatus {
-  PENDING_REVIEW
-  UNDER_INVESTIGATION
-  VERIFIED
-  FLAGGED_FRAUD
 }
 
 enum MissionStatus {
@@ -255,23 +288,25 @@ model User {
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
 
   kybProfile                      KybProfile?
-  verifiedKybProfiles             KybProfile[]               @relation("KybVerifier")
+  verifiedKybProfiles             KybProfile[]                 @relation("KybVerifier")
   companies                       Company[]
-  bursaListings                   BursaListing[]             @relation("SellerListings")
-  bursaOrders                     BursaOrder[]               @relation("BuyerOrders")
-  multisigRequests                MultiSigRequest[]          @relation("ApplicantRequests")
+  bursaListings                   BursaListing[]               @relation("SellerListings")
+  bursaOrders                     BursaOrder[]                 @relation("BuyerOrders")
+  multisigRequests                MultiSigRequest[]            @relation("ApplicantRequests")
   multisigSignatures              MultiSigSignature[]
   uploadedFiles                   StoredFile[]
   systemNotifications             SystemNotification[]
   pushSubscriptions               WebPushSubscription[]
-  auditedReports                  EmissionReport[]           @relation("AuditorReports")
-  emissionReportAuditEvents       EmissionReportAuditEvent[] @relation("EmissionReportAuditActor")
-  submittedPtbaeApplications      PtbaeApplication[]         @relation("PtbaeApplicationSubmitter")
-  auditedPtbaeApplications        PtbaeApplication[]         @relation("PtbaeApplicationAuditor")
-  decidedPtbaeApplications        PtbaeApplication[]         @relation("PtbaeApplicationDecider")
-  createdPtbaeApplicationVersions PtbaeApplicationVersion[]  @relation("PtbaeApplicationVersionCreator")
-  issuedPtbaeAllocations          PtbaeAllocation[]          @relation("PtbaeAllocationIssuer")
-  assignedForestProjects           ForestProject[]           @relation("ForestProjectAuditor")
+  auditedReports                  EmissionReport[]             @relation("AuditorReports")
+  emissionReportAuditEvents       EmissionReportAuditEvent[]   @relation("EmissionReportAuditActor")
+  submittedPtbaeApplications      PtbaeApplication[]           @relation("PtbaeApplicationSubmitter")
+  auditedPtbaeApplications        PtbaeApplication[]           @relation("PtbaeApplicationAuditor")
+  decidedPtbaeApplications        PtbaeApplication[]           @relation("PtbaeApplicationDecider")
+  createdPtbaeApplicationVersions PtbaeApplicationVersion[]    @relation("PtbaeApplicationVersionCreator")
+  issuedPtbaeAllocations          PtbaeAllocation[]            @relation("PtbaeAllocationIssuer")
+  assignedForestProjects          ForestProject[]              @relation("ForestProjectAuditor")
+  submittedForestInspections      ForestInspectionSubmission[] @relation("ForestInspectionSubmissionSubmitter")
+  decidedForestInspections        ForestInspectionDecision[]   @relation("ForestInspectionDecisionAuditor")
 
   @@map("users")
 }
@@ -312,7 +347,7 @@ model Company {
   emissionCapTco2e        Decimal          @map("emission_cap_tco2e") @db.Decimal(14, 2)
   actualEmissionTco2e     Decimal          @map("actual_emission_tco2e") @db.Decimal(14, 2)
   carbonDeficitTco2e      Decimal          @default(0) @map("carbon_deficit_tco2e") @db.Decimal(14, 2)
-  offsetCostIdr           Decimal          @default(0) @map("offset_cost_idr") @db.Decimal(16, 2)
+  offsetCostIdr           Decimal          @default(0) @map("offset_cost_idr") @db.Decimal(20, 2)
   complianceRating        ComplianceRating @default(COMPLIANT) @map("compliance_rating")
   auditDate               DateTime?        @map("audit_date") @db.Date
   paymentDeadline         DateTime?        @map("payment_deadline") @db.Date
@@ -325,7 +360,6 @@ model Company {
   user                 User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
   smokestacks          Smokestack[]
   cemsTelemetryLogs    CemsTelemetryLog[]
-  auditAnomalies       AuditAnomaly[]
   carbonTaxAssessments CarbonTaxAssessment[]
   stpInvoices          StpInvoice[]
   emissionReports      EmissionReport[]
@@ -489,6 +523,37 @@ model PtbaeBlockchainAnchor {
   @@map("ptbae_blockchain_anchors")
 }
 
+model BlockchainOperation {
+  id               String                    @id @default(uuid()) @db.Uuid
+  operationType    BlockchainOperationType   @map("operation_type")
+  aggregateType    String                    @map("aggregate_type") @db.Text
+  aggregateId      String                    @map("aggregate_id") @db.Text
+  idempotencyKey   String                    @unique @map("idempotency_key") @db.Text
+  chainId          Int?                      @map("chain_id")
+  contractAddress  String?                   @map("contract_address") @db.Text
+  functionName     String                    @map("function_name") @db.Text
+  functionSelector String?                   @map("function_selector") @db.Text
+  payloadHash      String                    @map("payload_hash") @db.Text
+  status           BlockchainOperationStatus @default(PENDING)
+  transactionHash  String?                   @map("transaction_hash") @db.Text
+  nonce            BigInt?
+  blockNumber      BigInt?                   @map("block_number")
+  retryCount       Int                       @default(0) @map("retry_count")
+  lastErrorCode    String?                   @map("last_error_code") @db.Text
+  lastErrorMessage String?                   @map("last_error_message") @db.Text
+  nextRetryAt      DateTime?                 @map("next_retry_at") @db.Timestamptz
+  submittedAt      DateTime?                 @map("submitted_at") @db.Timestamptz
+  confirmedAt      DateTime?                 @map("confirmed_at") @db.Timestamptz
+  createdAt        DateTime                  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime                  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([status, nextRetryAt])
+  @@index([aggregateType, aggregateId])
+  @@index([transactionHash])
+  @@index([chainId, contractAddress])
+  @@map("blockchain_operations")
+}
+
 model PtbaeApplicationDocument {
   id            String            @id @default(uuid()) @db.Uuid
   applicationId String            @map("application_id") @db.Uuid
@@ -603,6 +668,8 @@ model ForestProject {
   status                   ProjectStatus @default(ACTIVE_DMRV)
   auditorUserId            String?       @map("auditor_user_id") @db.Uuid
   auditorAssignedAt        DateTime?     @map("auditor_assigned_at") @db.Timestamptz
+  projectStartDate         DateTime?     @map("project_start_date") @db.Date
+  timelineVersion          Int           @default(1) @map("timeline_version")
   auditorNotes             String?       @map("auditor_notes") @db.Text
   auditedAt                DateTime?     @map("audited_at") @db.Timestamptz
   speCertificateId         String?       @map("spe_certificate_id") @db.Text
@@ -613,21 +680,102 @@ model ForestProject {
   createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
-  region           NationalForestRegion       @relation(fields: [regionId], references: [id])
-  kthGroup         KthGroup?                  @relation(fields: [kthGroupId], references: [id], onDelete: SetNull)
-  auditor          User?                       @relation("ForestProjectAuditor", fields: [auditorUserId], references: [id], onDelete: SetNull)
-  stages           ProjectStage[]
-  droneMissions    DroneMission[]
-  forestSensorLogs ForestSensorTelemetryLog[]
-  carbonTokens     CarbonToken[]
-  disbursements    KthIncentiveDisbursement[]
-  bursaListings    BursaListing[]
+  region                NationalForestRegion         @relation(fields: [regionId], references: [id])
+  kthGroup              KthGroup?                    @relation(fields: [kthGroupId], references: [id], onDelete: SetNull)
+  auditor               User?                        @relation("ForestProjectAuditor", fields: [auditorUserId], references: [id], onDelete: SetNull)
+  stages                ProjectStage[]
+  droneMissions         DroneMission[]
+  forestSensorLogs      ForestSensorTelemetryLog[]
+  carbonTokens          CarbonToken[]
+  disbursements         KthIncentiveDisbursement[]
+  bursaListings         BursaListing[]
+  inspectionCheckpoints ForestInspectionCheckpoint[]
 
   @@index([regionId])
   @@index([kthGroupId])
   @@index([auditorUserId, status])
   @@index([status])
   @@map("forest_projects")
+}
+
+model ForestInspectionCheckpoint {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  projectId          String                 @map("project_id") @db.Uuid
+  sequenceNo         Int                    @map("sequence_no")
+  title              String                 @db.Text
+  scheduledAt        DateTime               @map("scheduled_at") @db.Timestamptz
+  submissionDeadline DateTime?              @map("submission_deadline") @db.Timestamptz
+  method             ForestInspectionMethod
+  instructions       String?                @db.Text
+  status             ForestInspectionStatus @default(SCHEDULED)
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz
+
+  project     ForestProject                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  indicators  ForestInspectionIndicator[]
+  submissions ForestInspectionSubmission[]
+
+  @@unique([projectId, sequenceNo])
+  @@index([projectId, status, scheduledAt])
+  @@map("forest_inspection_checkpoints")
+}
+
+model ForestInspectionIndicator {
+  id           String   @id @default(uuid()) @db.Uuid
+  checkpointId String   @map("checkpoint_id") @db.Uuid
+  code         String   @db.Text
+  label        String   @db.Text
+  targetValue  Decimal? @map("target_value") @db.Decimal(14, 4)
+  unit         String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  checkpoint ForestInspectionCheckpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+
+  @@index([checkpointId])
+  @@map("forest_inspection_indicators")
+}
+
+model ForestInspectionSubmission {
+  id                       String                           @id @default(uuid()) @db.Uuid
+  checkpointId             String                           @map("checkpoint_id") @db.Uuid
+  submittedByUserId        String                           @map("submitted_by_user_id") @db.Uuid
+  landName                 String                           @map("land_name") @db.Text
+  actualSequestrationTco2e Decimal                          @map("actual_sequestration_tco2e") @db.Decimal(14, 2)
+  areaHectares             Decimal?                         @map("area_hectares") @db.Decimal(12, 2)
+  survivalRatePercent      Decimal?                         @map("survival_rate_percent") @db.Decimal(5, 2)
+  canopyHeightMeters       Decimal?                         @map("canopy_height_meters") @db.Decimal(6, 2)
+  ndviScore                Decimal?                         @map("ndvi_score") @db.Decimal(4, 3)
+  notes                    String?                          @db.Text
+  snapshotHash             String?                          @map("snapshot_hash") @db.Text
+  status                   ForestInspectionSubmissionStatus @default(SUBMITTED)
+  submittedAt              DateTime                         @default(now()) @map("submitted_at") @db.Timestamptz
+
+  checkpoint  ForestInspectionCheckpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+  submittedBy User                       @relation("ForestInspectionSubmissionSubmitter", fields: [submittedByUserId], references: [id], onDelete: Restrict)
+  decisions   ForestInspectionDecision[]
+
+  @@index([checkpointId, status])
+  @@index([submittedByUserId])
+  @@map("forest_inspection_submissions")
+}
+
+model ForestInspectionDecision {
+  id                         String                       @id @default(uuid()) @db.Uuid
+  submissionId               String                       @map("submission_id") @db.Uuid
+  auditorUserId              String                       @map("auditor_user_id") @db.Uuid
+  decision                   ForestInspectionDecisionType
+  verifiedSequestrationTco2e Decimal?                     @map("verified_sequestration_tco2e") @db.Decimal(14, 2)
+  notes                      String?                      @db.Text
+  merkleRoot                 String?                      @map("merkle_root") @db.Text
+  blockchainTxHash           String?                      @map("blockchain_tx_hash") @db.Text
+  decidedAt                  DateTime                     @default(now()) @map("decided_at") @db.Timestamptz
+
+  submission ForestInspectionSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  auditor    User                       @relation("ForestInspectionDecisionAuditor", fields: [auditorUserId], references: [id], onDelete: Restrict)
+
+  @@index([submissionId, decidedAt])
+  @@index([auditorUserId])
+  @@map("forest_inspection_decisions")
 }
 
 model ProjectStage {
@@ -670,31 +818,8 @@ model ForestSensorTelemetryLog {
 }
 
 // ---------------------------------------------------------
-// 4. dMRV AUDITING, AI ANOMALY & DRONE MISSIONS
+// 4. dMRV AUDITING & DRONE MISSIONS
 // ---------------------------------------------------------
-
-model AuditAnomaly {
-  id                    String        @id @default(uuid()) @db.Uuid
-  companyId             String        @map("company_id") @db.Uuid
-  facilityName          String        @map("facility_name") @db.Text
-  anomalyType           AnomalyType   @map("anomaly_type")
-  severity              SeverityLevel @default(HIGH)
-  anomalyScore          Decimal       @map("anomaly_score") @db.Decimal(4, 3)
-  reportedEmissionTco2e Decimal       @map("reported_emission_tco2e") @db.Decimal(14, 2)
-  expectedEmissionTco2e Decimal       @map("expected_emission_tco2e") @db.Decimal(14, 2)
-  divergencePercent     Decimal       @map("divergence_percent") @db.Decimal(5, 2)
-  detectedDate          DateTime      @map("detected_date") @db.Date
-  auditStatus           AuditStatus   @default(PENDING_REVIEW) @map("audit_status")
-  verifierNotes         String?       @map("verifier_notes") @db.Text
-  verifiedAt            DateTime?     @map("verified_at") @db.Timestamptz
-  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamptz
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId, auditStatus])
-  @@map("audit_anomalies")
-}
 
 model DroneMission {
   id               String        @id @default(uuid()) @db.Uuid
@@ -1009,6 +1134,7 @@ model EmissionReport {
   reportMethod          ReportMethod                 @default(UPLOAD) @map("report_method")
   sector                String?                      @db.Text
   calculationData       Json?                        @map("calculation_data")
+  auditResult           Json?                        @map("audit_result")
   submittedAt           DateTime                     @default(now()) @map("submitted_at") @db.Timestamptz
   auditedByUserId       String?                      @map("audited_by_user_id") @db.Uuid
   auditorNotes          String?                      @map("auditor_notes") @db.Text

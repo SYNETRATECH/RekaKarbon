@@ -6,3 +6,5 @@ export * from './audit-emission-report.dto';
 export * from './audit-emission-report-decision.dto';
 export * from './audit-emission-report-query.dto';
 export * from './forest-project-audit-decision.dto';
+export * from './forest-inspection-decision.dto';
+export * from './trigger-ml-retrain.dto';

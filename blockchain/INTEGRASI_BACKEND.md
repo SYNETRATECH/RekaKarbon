@@ -1,5 +1,7 @@
 # Panduan Integrasi Backend (NestJS) dengan Blockchain RekaKarbon
 
+> **Peringatan arsitektur:** Contoh di dokumen ini adalah referensi legacy single-node. Untuk jaringan aktif gunakan QBFT chain `1338`, RPC non-validator, fee policy/relayer, dan deployment manifest per environment. Jangan menyalin `gasPrice: 0` dari contoh lama.
+
 Dokumen ini ditujukan khusus untuk Tim Backend (NestJS) agar dapat menghubungkan aplikasi dengan _Smart Contract_ RekaKarbon yang berjalan di jaringan privat Hyperledger Besu.
 
 ---

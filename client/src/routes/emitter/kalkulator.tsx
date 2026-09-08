@@ -1,16 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLoaderData, useNavigate, useSearchParams } from 'react-router';
-import {
-  ArrowLeft,
-  Calculator,
-  CheckCircle2,
-  Download,
-  Leaf,
-  Plus,
-  Save,
-  Trash2,
-} from 'lucide-react';
+import { ArrowLeft, Calculator, Leaf, Plus, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,6 +14,7 @@ import {
 import { formatCarbon } from '@/lib/formatters';
 import { complianceRepository, reportRepository } from '../../repositories';
 import { generateEmissionReportPDF } from '@/lib/generateEmissionReportPDF';
+import { AuditResultCard } from '@/components/emitter/AuditResultCard';
 import { useToast } from '@/hooks/use-toast';
 import type {
   CalculationData,
@@ -1102,6 +1094,7 @@ export default function KalkulatorHijauPage() {
       thresholdTCO2e: selectedSector.referenceThresholdTCO2e,
       fieldValues,
       calculationData: generatedPdfData.calculationData,
+      auditResult: generatedPdfData.submission.auditResult,
     });
   };
 
@@ -1110,43 +1103,14 @@ export default function KalkulatorHijauPage() {
 
   if (generatedPdfData) {
     return (
-      <div className="mx-auto max-w-2xl py-12 text-center">
-        <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-xl">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
-            <CheckCircle2 className="h-10 w-10 text-emerald-600" />
-          </div>
-          <h2 className="mb-2 text-2xl font-black text-slate-900">Laporan Emisi Berhasil Dibuat</h2>
-          <p className="mb-8 text-sm text-slate-500">
-            Laporan telah tersimpan dan menunggu proses audit.
-          </p>
-          <div className="mb-8 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-left">
-            <div className="flex justify-between border-b border-slate-200 pb-4 text-sm">
-              <span className="font-bold text-slate-500">Total Emisi</span>
-              <span className="font-black text-emerald-700">{formatCarbon(totals.total)}</span>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase text-slate-400">Merkle Root</span>
-              <p className="mt-1 break-all rounded-lg bg-slate-200/60 p-2 font-mono text-xs text-slate-700">
-                {generatedPdfData.submission.merkleRoot}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => navigate('/laporan')}
-              variant="outline"
-              className="h-12 flex-1 rounded-xl font-bold"
-            >
-              Kembali ke Laporan
-            </Button>
-            <Button
-              onClick={handleDownloadPDF}
-              className="h-12 flex-1 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700"
-            >
-              <Download className="mr-2 h-4 w-4" /> Download PDF
-            </Button>
-          </div>
-        </div>
+      <div className="py-8">
+        <AuditResultCard
+          className="max-w-4xl mx-auto"
+          submission={generatedPdfData.submission}
+          calculationData={generatedPdfData.calculationData}
+          onDownloadPDF={handleDownloadPDF}
+          onBackToReports={() => navigate('/laporan')}
+        />
       </div>
     );
   }

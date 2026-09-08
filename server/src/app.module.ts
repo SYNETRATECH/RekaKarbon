@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
@@ -21,9 +22,11 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { WalletModule } from './wallet/wallet.module';
 import { XenditModule } from './integrations/xendit/xendit.module';
 import { PtbaeModule } from './ptbae/ptbae.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     PrismaModule,
     BlockchainModule,
     AuthModule,
@@ -45,6 +48,7 @@ import { PtbaeModule } from './ptbae/ptbae.module';
     WalletModule,
     XenditModule,
     PtbaeModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [],

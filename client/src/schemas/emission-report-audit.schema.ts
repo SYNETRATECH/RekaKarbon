@@ -5,6 +5,7 @@ import {
   FileSizeBytesSchema,
   UuidSchema,
 } from './common.schema';
+import { MlAuditResultSchema } from './audit.schema';
 
 export const EmissionReportAuditStatusSchema = z.enum([
   'submitted',
@@ -34,6 +35,7 @@ export const EmissionReportAuditListItemSchema = z.object({
   fileCount: z.number().int().nonnegative(),
   merkleRoot: z.string().min(1),
   blockchainTxHash: z.string().nullable(),
+  auditResult: MlAuditResultSchema.nullable().optional(),
 });
 
 export const EmissionReportAuditFileSchema = z.object({

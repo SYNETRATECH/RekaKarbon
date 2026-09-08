@@ -10,14 +10,14 @@ import { MockEmissionReportAuditRepository } from './emission-report-audit.mock.
 
 export interface EmissionReportAuditRepository {
   getQueue(
-    status?: 'submitted' | 'revision_required' | 'approved'
+    status?: 'all' | 'submitted' | 'revision_required' | 'approved'
   ): Promise<EmissionReportAuditListItem[]>;
   getDetail(id: string): Promise<EmissionReportAuditDetail>;
   decide(id: string, input: EmissionReportAuditDecisionInput): Promise<EmissionReportAuditDetail>;
 }
 
 export class ApiEmissionReportAuditRepository implements EmissionReportAuditRepository {
-  getQueue(status?: 'submitted' | 'revision_required' | 'approved') {
+  getQueue(status?: 'all' | 'submitted' | 'revision_required' | 'approved') {
     const query = status ? `?status=${encodeURIComponent(status)}` : '';
     return api.get<EmissionReportAuditListItem[]>(
       `/audit/emission-reports${query}`,

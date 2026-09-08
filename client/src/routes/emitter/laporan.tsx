@@ -49,12 +49,21 @@ import {
 
 import { reportRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
-import { generateEmissionReportPDF } from '@/lib/generateEmissionReportPDF';
-import type { EmissionReport } from '@/types';
+import {
+  generateEmissionReportPDF,
+  synthesizeDefaultAuditResult,
+} from '@/lib/generateEmissionReportPDF';
+import { AuditResultCard } from '@/components/emitter/AuditResultCard';
+import type { EmissionReport, MlAuditResult } from '@/types';
 
 export async function clientLoader() {
-  const emissionReports = await reportRepository.getEmissionReports().catch(() => []);
-  return { emissionReports };
+  try {
+    const emissionReports = await reportRepository.getEmissionReports();
+    return { emissionReports, reportsLoadError: false };
+  } catch (error: unknown) {
+    console.error('Failed to load emission reports:', error);
+    return { emissionReports: [], reportsLoadError: true };
+  }
 }
 
 clientLoader.hydrate = true as const;
@@ -83,7 +92,7 @@ function isVerifiedReport(status: EmissionReport['status']) {
 }
 
 export default function EmissionReportsSector() {
-  const { emissionReports: reports } = useLoaderData<typeof clientLoader>();
+  const { emissionReports: reports, reportsLoadError } = useLoaderData<typeof clientLoader>();
   const { revalidate } = useRevalidator();
 
   // ── Sector & Method Selection (Step 0) ──
@@ -184,6 +193,45 @@ export default function EmissionReportsSector() {
   const reportIsRejected = activeReport.status === 'rejected';
   const reportNeedsRevision = activeReport.status === 'revision_required';
 
+  // ──────────────────────────────────────────────────────────
+  // FLOW CONTROL: When to show form vs "Telah Disubmit"
+  //
+  // Show "Telah Disubmit" ONLY when:
+  //   1. isSubmittedLocal = true  (user just completed submit in THIS session)
+  //   2. OR exactReport exists   (report already in DB from a PREVIOUS session)
+  //
+  // The wizard form (Tab 1→2→3) is shown in ALL other cases.
+  // ──────────────────────────────────────────────────────────
+  const hasExistingReport = isSubmittedLocal || (exactReport !== undefined && !reportNeedsRevision);
+  const canStartNewReport = !reportsLoadError && !hasExistingReport;
+
+  const activeScopeTotals = activeReport.sectors.reduce(
+    (totals, sector) => {
+      if (sector.scope.includes('Scope 1') || sector.scope.toLowerCase() === 'proses industri') {
+        totals.scope1 += sector.emissionsTCO2e;
+      }
+      if (sector.scope.includes('Scope 2')) totals.scope2 += sector.emissionsTCO2e;
+      if (sector.scope.includes('Scope 3')) totals.scope3 += sector.emissionsTCO2e;
+      return totals;
+    },
+    { scope1: 0, scope2: 0, scope3: 0 }
+  );
+
+  const effectiveAuditResult: MlAuditResult | null =
+    activeReport.auditResult ||
+    activeReport.calculationData?.auditResult ||
+    (hasExistingReport && activeReport.totalEmissionsTCO2e > 0
+      ? synthesizeDefaultAuditResult({
+          total: activeReport.totalEmissionsTCO2e,
+          scope1: activeScopeTotals.scope1,
+          scope2: activeScopeTotals.scope2,
+          scope3: activeScopeTotals.scope3,
+          sectorName: getSectorName(activeReport.sectorId),
+          year: activeReport.year,
+          calculationData: activeReport.calculationData ?? undefined,
+        })
+      : null);
+
   const handleDownloadReport = (report: EmissionReport) => {
     const scopeTotals = report.sectors.reduce(
       (totals, sector) => {
@@ -196,6 +244,12 @@ export default function EmissionReportsSector() {
       },
       { scope1: 0, scope2: 0, scope3: 0 }
     );
+
+    const reportAuditResult: MlAuditResult | undefined =
+      report.auditResult ??
+      report.calculationData?.auditResult ??
+      effectiveAuditResult ??
+      undefined;
 
     try {
       generateEmissionReportPDF({
@@ -214,6 +268,8 @@ export default function EmissionReportsSector() {
         txHash: report.blockchainTxHash || undefined,
         blockchainReportId: report.blockchainReportId,
         sectorBreakdown: report.sectors,
+        calculationData: report.calculationData ?? undefined,
+        auditResult: reportAuditResult,
       });
     } catch (error) {
       console.error('Failed to generate emission report PDF:', error);
@@ -225,19 +281,26 @@ export default function EmissionReportsSector() {
     }
   };
 
-  // ──────────────────────────────────────────────────────────
-  // FLOW CONTROL: When to show form vs "Telah Disubmit"
-  //
-  // Show "Telah Disubmit" ONLY when:
-  //   1. isSubmittedLocal = true  (user just completed submit in THIS session)
-  //   2. OR exactReport exists   (report already in DB from a PREVIOUS session)
-  //
-  // The wizard form (Tab 1→2→3) is shown in ALL other cases.
-  // ──────────────────────────────────────────────────────────
-  const hasExistingReport = isSubmittedLocal || (exactReport !== undefined && !reportNeedsRevision);
-
   const handleStartAIAudit = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (reportsLoadError) {
+      toast({
+        variant: 'warning',
+        title: 'Status laporan belum tersedia',
+        description: 'Muat ulang status laporan terlebih dahulu sebelum mengirim data.',
+      });
+      return;
+    }
+
+    if (hasExistingReport) {
+      toast({
+        variant: 'warning',
+        title: 'Laporan tahun ini sudah ada',
+        description: 'Gunakan alur revisi Auditor untuk mengirim ulang laporan.',
+      });
+      return;
+    }
 
     const totalEmissions = parseNumeric(uploadedTotalEmissions);
     if (!documentFile || !selectedSector || totalEmissions <= 0) {
@@ -370,7 +433,17 @@ export default function EmissionReportsSector() {
       </div>
 
       {/* ── ONLY SHOW SELECTION IF REPORT NOT EXISTS ── */}
-      {!hasExistingReport ? (
+      {reportsLoadError ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-semibold text-amber-800">
+          Status laporan FY {selectedYear} belum berhasil dimuat. Form pengiriman dikunci untuk
+          mencegah laporan ganda. Silakan coba muat ulang halaman.
+          <div className="mt-3">
+            <Button type="button" variant="outline" onClick={() => revalidate()}>
+              Muat ulang status laporan
+            </Button>
+          </div>
+        </div>
+      ) : canStartNewReport ? (
         <>
           {reportNeedsRevision && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-800">
@@ -599,6 +672,25 @@ export default function EmissionReportsSector() {
               Unduh PDF Laporan
             </button>
           </div>
+        </div>
+      )}
+
+      {/* AI AUDIT & ANOMALY DETECTION REPORT */}
+      {effectiveAuditResult && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Cpu className="w-5 h-5 text-emerald-600" />
+            <h3 className="text-lg font-black text-slate-900">
+              Hasil Forensik Integritas Emisi AI (Explainable AI)
+            </h3>
+          </div>
+          <AuditResultCard
+            auditResult={effectiveAuditResult}
+            calculationData={activeReport.calculationData}
+            merkleRoot={activeReport.merkleRoot}
+            txHash={activeReport.blockchainTxHash}
+            reportId={activeReport.blockchainReportId ?? activeReport.id}
+          />
         </div>
       )}
 

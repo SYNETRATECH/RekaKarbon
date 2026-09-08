@@ -124,6 +124,51 @@ class QualityGateConfig:
 
 
 @dataclass
+class RetrainingConfig:
+    """Configuration for the scheduled continuous retraining pipeline."""
+
+    feedback_pool_path: str = field(
+        default_factory=lambda: os.getenv(
+            "ML_FEEDBACK_POOL_PATH", "data/production/feedback_pool.csv"
+        )
+    )
+    min_real_records_to_trigger: int = field(
+        default_factory=lambda: int(os.getenv("ML_MIN_REAL_RECORDS", "100"))
+    )
+    real_blend_weight: float = field(
+        default_factory=lambda: float(os.getenv("ML_REAL_BLEND_WEIGHT", "0.20"))
+    )
+    psi_drift_threshold: float = field(
+        default_factory=lambda: float(os.getenv("ML_PSI_DRIFT_THRESHOLD", "0.20"))
+    )
+    psi_warning_threshold: float = field(
+        default_factory=lambda: float(os.getenv("ML_PSI_WARNING_THRESHOLD", "0.10"))
+    )
+    model_backup_dir: str = field(
+        default_factory=lambda: os.getenv("ML_MODEL_BACKUP_DIR", "models/backup")
+    )
+    retraining_log_path: str = field(
+        default_factory=lambda: os.getenv("ML_RETRAINING_LOG_PATH", "models/retraining_log.jsonl")
+    )
+    scheduled_retrain_days: int = field(
+        default_factory=lambda: int(os.getenv("ML_SCHEDULED_RETRAIN_DAYS", "7"))
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Returns retraining configuration as a serializable dictionary."""
+        return {
+            "feedback_pool_path": self.feedback_pool_path,
+            "min_real_records_to_trigger": self.min_real_records_to_trigger,
+            "real_blend_weight": self.real_blend_weight,
+            "psi_drift_threshold": self.psi_drift_threshold,
+            "psi_warning_threshold": self.psi_warning_threshold,
+            "model_backup_dir": self.model_backup_dir,
+            "retraining_log_path": self.retraining_log_path,
+            "scheduled_retrain_days": self.scheduled_retrain_days,
+        }
+
+
+@dataclass
 class PathsConfig:
     """Paths configuration for model artifacts, data directories, and report outputs."""
 
@@ -146,6 +191,7 @@ class MLConfig:
     dataset: DatasetConfig = field(default_factory=DatasetConfig)
     quality_gate: QualityGateConfig = field(default_factory=QualityGateConfig)
     paths: PathsConfig = field(default_factory=PathsConfig)
+    retraining: RetrainingConfig = field(default_factory=RetrainingConfig)
 
 
 def get_ml_config() -> MLConfig:
@@ -182,3 +228,8 @@ def get_quality_gate_config() -> QualityGateConfig:
 def get_paths_config() -> PathsConfig:
     """Returns active PathsConfig instance."""
     return PathsConfig()
+
+
+def get_retraining_config() -> RetrainingConfig:
+    """Returns active RetrainingConfig instance."""
+    return RetrainingConfig()

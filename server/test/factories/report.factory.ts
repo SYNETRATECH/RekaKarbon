@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { fakeUuid, fakeDateString, fakeTxHash } from './domain-generators';
-import type { EmissionReport } from '../../src/reports/types/report.types';
+import type { EmissionReport } from '../../src/reports/types';
 
 export function createMockEmissionReport(
   overrides?: Partial<EmissionReport>,

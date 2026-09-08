@@ -6,7 +6,11 @@ import { api } from '../lib/api';
 export interface BursaRepository {
   getBursaItems(): Promise<BursaItem[]>;
   getPurchaseEligibility(): Promise<BursaPurchaseEligibility>;
-  buyCarbonToken(listingId: string, volume: number): Promise<{ txHash: string }>;
+  buyCarbonToken(
+    listingId: string,
+    volume: number,
+    requestId?: string
+  ): Promise<{ txHash: string }>;
 }
 
 export class ApiBursaRepository implements BursaRepository {
@@ -21,10 +25,14 @@ export class ApiBursaRepository implements BursaRepository {
     );
   }
 
-  async buyCarbonToken(listingId: string, volume: number): Promise<{ txHash: string }> {
+  async buyCarbonToken(
+    listingId: string,
+    volume: number,
+    requestId?: string
+  ): Promise<{ txHash: string }> {
     return api.post<{ txHash: string }>(
       '/emitter/bursa/buy',
-      { listingId, volumeTCO2e: volume },
+      { listingId, volumeTCO2e: volume, requestId },
       z.object({ txHash: z.string() })
     );
   }

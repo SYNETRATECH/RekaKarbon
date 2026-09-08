@@ -27,12 +27,14 @@ export default [
 
     // Auditor Protected Routes
     layout('routes/guards/auditor.tsx', [
-      route('audit', 'routes/auditor/dashboard.tsx'),
+      route('audit', 'routes/auditor/emission-reports.tsx', { id: 'routes/auditor/audit' }),
       route('spatial', 'routes/auditor/spatial.tsx'),
       route('drone', 'routes/auditor/drone.tsx'),
       route('gate', 'routes/auditor/gate.tsx'),
       route('audit/ptbae', 'routes/auditor/ptbae.tsx'),
-      route('audit/emission-reports', 'routes/auditor/emission-reports.tsx'),
+      route('audit/emission-reports', 'routes/auditor/emission-reports.tsx', {
+        id: 'routes/auditor/emission-reports',
+      }),
       route('audit/forest-projects', 'routes/auditor/forest-projects.tsx'),
     ]),
 
@@ -56,6 +58,13 @@ export default [
     // Ministry PTBAE-PU Protected Routes
     layout('routes/guards/ministry.tsx', [
       route('ministry/applications', 'routes/ministry/applications.tsx'),
+    ]),
+
+    // Admin Protected Routes (superadmin + admin roles)
+    layout('routes/guards/admin.tsx', [
+      route('admin/dashboard', 'routes/admin/dashboard.tsx'),
+      route('admin/users', 'routes/admin/users.tsx'),
+      route('admin/kyb', 'routes/admin/kyb.tsx'),
     ]),
   ]),
 

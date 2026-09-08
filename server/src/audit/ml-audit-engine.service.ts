@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ort from 'onnxruntime-node';
@@ -6,22 +11,64 @@ import {
   AuditEmissionReportDto,
   IndustrialSector,
 } from './dto/audit-emission-report.dto';
-import { MlAuditResult } from './types/audit.types';
+import type { MlAuditResult } from './types/ml-audit.types';
 import {
   EmissionFeatureEngineer,
   MARKET_PRICE_RANGES,
   SECTOR_BENCHMARKS,
+  STOICHIOMETRIC_FACTORS,
 } from './ml-feature-engineer';
 import { findWorkspaceRoot } from '../common/utils';
 
 @Injectable()
-export class MlAuditEngineService implements OnModuleInit {
+export class MlAuditEngineService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MlAuditEngineService.name);
   private onnxSession: ort.InferenceSession | null = null;
   private onnxModelPath: string | null = null;
 
   async onModuleInit() {
     await this.initOnnxSession();
+  }
+
+  onModuleDestroy(): void {
+    this.onnxSession = null;
+  }
+
+  /**
+   * Ensures onnxruntime-node native C++ addon is not redundantly initialized
+   * with duplicate environment cleanup hooks across Jest worker VM contexts.
+   */
+  private ensureOrtBindingSafeguard(): void {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const bindingMod = require('onnxruntime-node/dist/binding') as {
+        binding?: { initOrtOnce?: (...args: unknown[]) => unknown };
+      };
+      const processKey = Symbol.for('__REKAKARBON_ORT_INITIALIZED__');
+      const proc = process as unknown as Record<symbol, boolean | undefined>;
+
+      if (proc[processKey]) {
+        if (
+          bindingMod.binding &&
+          typeof bindingMod.binding.initOrtOnce === 'function'
+        ) {
+          bindingMod.binding.initOrtOnce = () => undefined;
+        }
+      } else {
+        const originalInitOrtOnce = bindingMod.binding?.initOrtOnce;
+        if (typeof originalInitOrtOnce === 'function' && bindingMod.binding) {
+          bindingMod.binding.initOrtOnce = function (
+            this: unknown,
+            ...args: unknown[]
+          ): unknown {
+            proc[processKey] = true;
+            return originalInitOrtOnce.apply(this, args);
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 
   /**
@@ -46,6 +93,7 @@ export class MlAuditEngineService implements OnModuleInit {
     }
 
     try {
+      this.ensureOrtBindingSafeguard();
       this.onnxSession = await ort.InferenceSession.create(modelPath, {
         executionProviders: ['cpu'],
       });
@@ -182,10 +230,16 @@ export class MlAuditEngineService implements OnModuleInit {
     } else if (intensity > bench.maxIntensity * 1.6) {
       flags.push('INTENSITAS_EMISI_ABERRAN_SEKTOR');
     }
+    const expectedProcessTco2e = bench.hasProcessEmissions
+      ? (report.productionTonnes ?? 0) *
+        bench.clinkerRatio *
+        STOICHIOMETRIC_FACTORS.cementClinkerCalcinationTco2ePerTon
+      : 0;
+    const expectedWithProcess = eExpected + expectedProcessTco2e;
     if (
       bench.hasProcessEmissions &&
       clinker === 0 &&
-      reported < eExpected * 0.65
+      (reported < expectedWithProcess * 0.65 || intensity < bench.minIntensity)
     ) {
       flags.push('EMISI_PROSES_TIDAK_DILAPORKAN');
     }
@@ -252,6 +306,7 @@ export class MlAuditEngineService implements OnModuleInit {
       { scoreDjp, scoreBbm, scoreCems },
       flags,
     );
+    xai.outputScore = Math.round(anomalyProb * 1000) / 1000;
 
     return {
       isAnomaly,
@@ -276,5 +331,46 @@ export class MlAuditEngineService implements OnModuleInit {
 
   public getModelPath(): string | null {
     return this.onnxModelPath;
+  }
+
+  /**
+   * Atomically reloads the ONNX runtime session in-memory without downtime.
+   * Instantiates the new session first, verifying integrity before swapping references.
+   *
+   * @returns true if reload succeeded, false if loading failed or model file not found
+   */
+  public async reloadModel(): Promise<boolean> {
+    const workspaceRoot = findWorkspaceRoot(__dirname);
+    const defaultModelPath = path.join(
+      workspaceRoot,
+      'ml/models/anomaly_pipeline.onnx',
+    );
+    const modelPath = process.env.ONNX_MODEL_PATH || defaultModelPath;
+
+    if (!fs.existsSync(modelPath)) {
+      this.logger.warn(
+        `Cannot reload ONNX model: file not found at '${modelPath}'.`,
+      );
+      return false;
+    }
+
+    try {
+      this.ensureOrtBindingSafeguard();
+      const freshSession = await ort.InferenceSession.create(modelPath, {
+        executionProviders: ['cpu'],
+      });
+      this.onnxSession = freshSession;
+      this.onnxModelPath = modelPath;
+      this.logger.log(
+        `[HOT-RELOAD] Successfully reloaded ONNX Anomaly Detection Model from: ${modelPath}`,
+      );
+      return true;
+    } catch (err) {
+      this.logger.error(
+        `Failed to hot-reload ONNX session from '${modelPath}': ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      return false;
+    }
   }
 }

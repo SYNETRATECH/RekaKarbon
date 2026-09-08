@@ -9,13 +9,16 @@ import {
   projectRepository,
   companyRepository,
   kthRepository,
+  adminRepository,
+  emissionReportAuditRepository,
 } from '../repositories';
 import { isClientUserRole, type ClientUserRole } from '../store/useAuthStore';
 import { RouteSkeletonLoader } from '../components/ui/RouteSkeletonLoader';
 
+const AdminDashboard = lazy(() => import('./admin/dashboard'));
 const EmitterDashboard = lazy(() => import('./emitter/dashboard'));
 const RegulatorDashboard = lazy(() => import('./regulator/dashboard'));
-const AuditorDashboard = lazy(() => import('./auditor/dashboard'));
+const AuditorDashboard = lazy(() => import('./auditor/emission-reports'));
 const KTHDashboard = lazy(() => import('./kth/dashboard'));
 const MinistryDashboard = lazy(() => import('./ministry/dashboard'));
 
@@ -39,7 +42,13 @@ export async function clientLoader() {
   const normalizedRole = user.role.toLowerCase();
   const role: ClientUserRole | null = isClientUserRole(normalizedRole) ? normalizedRole : null;
 
-  if (role === 'emitter' || role === 'buyer') {
+  if (role === 'superadmin' || role === 'admin') {
+    const [stats, usersResponse] = await Promise.all([
+      adminRepository.getStats().catch(() => null),
+      adminRepository.getUsers({ limit: 5 }).catch(() => ({ data: [] })),
+    ]);
+    return { role, stats, recentUsers: usersResponse.data };
+  } else if (role === 'emitter' || role === 'buyer') {
     const [complianceData, emissionReports, projects, companies] = await Promise.all([
       complianceRepository.getComplianceData().catch(() => null),
       reportRepository.getEmissionReports().catch(() => []),
@@ -47,7 +56,7 @@ export async function clientLoader() {
       companyRepository.getCompanies().catch(() => []),
     ]);
     return { role, complianceData, emissionReports, projects, companies };
-  } else if (role === 'regulator' || role === 'admin' || role === 'superadmin') {
+  } else if (role === 'regulator') {
     const [forestProjects, nationalForestRegions, kthGroups] = await Promise.all([
       regulatorRepository.getForestProjects().catch(() => []),
       regulatorRepository.getNationalForestRegions().catch(() => []),
@@ -61,12 +70,12 @@ export async function clientLoader() {
       kthGroups,
     };
   } else if (role === 'auditor') {
-    const [aiAnomalyLogs, anomalySummary, energyCorrelationData] = await Promise.all([
-      auditRepository.getAiAnomalyLogs().catch(() => []),
+    const [reports, anomalySummary, energyCorrelationData] = await Promise.all([
+      emissionReportAuditRepository.getQueue('all').catch(() => []),
       auditRepository.getAnomalySummary().catch(() => null),
       auditRepository.getEnergyCorrelationData().catch(() => []),
     ]);
-    return { role, aiAnomalyLogs, anomalySummary, energyCorrelationData };
+    return { role, reports, anomalySummary, energyCorrelationData };
   } else if (role === 'kth') {
     const [kthProjects, projects] = await Promise.all([
       kthRepository.getForestProjects().catch(() => []),
@@ -105,6 +114,7 @@ export default function DashboardRoute() {
     switch (currentRole) {
       case 'superadmin':
       case 'admin':
+        return <AdminDashboard />;
       case 'regulator':
         return <RegulatorDashboard />;
       case 'auditor':

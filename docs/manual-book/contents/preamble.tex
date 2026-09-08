@@ -1,0 +1,181 @@
+% !TEX root = ../main.tex
+\documentclass[11pt,a4paper]{article}
+
+% ============================================================
+% PACKAGES
+% ============================================================
+\usepackage[indonesian]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{setspace}
+\setstretch{1.15}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{float}
+\usepackage[justification=centering]{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\setlist{nosep}
+\usepackage{amsmath,amssymb}
+\usepackage{mathptmx} % Times New Roman typography
+\usepackage{tikz}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage[hidelinks,hypertexnames=false]{hyperref}
+
+% ============================================================
+% PAGE GEOMETRY & MARGINS
+% ============================================================
+\geometry{
+    top=3cm,
+    bottom=3cm,
+    left=3.5cm,
+    right=2.5cm,
+    headheight=16pt,
+    headsep=14pt,
+    footskip=36pt
+}
+\emergencystretch=2em
+
+% ============================================================
+% BRANDING COLOR PALETTE (Ecological Precision)
+% ============================================================
+\definecolor{deepgreen}{HTML}{022C22}
+\definecolor{mediumgreen}{HTML}{15803D}
+\definecolor{lightgreen}{HTML}{DCFCE7}
+\definecolor{emeraldgreen}{HTML}{059669}
+\definecolor{bordergreen}{HTML}{86EFAC}
+\definecolor{darkslate}{HTML}{0F172A}
+\definecolor{mutedgray}{HTML}{64748B}
+\definecolor{warnamber}{HTML}{D97706}
+\definecolor{lightamber}{HTML}{FEF3C7}
+
+% ============================================================
+% SECTION & HEADING FORMATTING
+% ============================================================
+\titleformat{\section}[block]
+  {\normalfont\Large\bfseries\color{deepgreen}}
+  {\thesection.}
+  {0.6em}
+  {}
+\titlespacing*{\section}{0pt}{18pt plus 4pt minus 2pt}{8pt plus 2pt minus 2pt}
+
+\titleformat{\subsection}[block]
+  {\normalfont\large\bfseries\color{mediumgreen}}
+  {\thesubsection}
+  {0.6em}
+  {}
+\titlespacing*{\subsection}{0pt}{14pt plus 3pt minus 2pt}{6pt plus 2pt minus 2pt}
+
+\titleformat{\subsubsection}[block]
+  {\normalfont\normalsize\bfseries\color{darkslate}}
+  {\thesubsubsection}
+  {0.5em}
+  {}
+\titlespacing*{\subsubsection}{0pt}{10pt plus 2pt minus 1pt}{4pt plus 1pt minus 1pt}
+
+% Numbering depth
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% ============================================================
+% TOC & LOF FORMATTING
+% ============================================================
+\addto\captionsindonesian{
+  \renewcommand{\contentsname}{DAFTAR ISI}
+  \renewcommand{\listfigurename}{DAFTAR GAMBAR}
+  \renewcommand{\listtablename}{DAFTAR TABEL}
+}
+
+\renewcommand{\cfttoctitlefont}{\hfill\Large\bfseries\color{deepgreen}}
+\renewcommand{\cftaftertoctitle}{\hfill}
+\renewcommand{\cftloftitlefont}{\hfill\Large\bfseries\color{deepgreen}}
+\renewcommand{\cftafterloftitle}{\hfill}
+
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftdotsep}{2}
+
+% Figure numbering
+\counterwithin{figure}{section}
+\renewcommand{\thefigure}{\arabic{section}.\arabic{figure}}
+
+% ============================================================
+% HEADER & FOOTER
+% ============================================================
+\fancypagestyle{fancy}{
+    \fancyhf{}
+    \fancyhead[L]{\small\textcolor{mediumgreen}{\textbf{RekaKarbon} -- Buku Panduan Penggunaan Sistem}}
+    \fancyhead[R]{\small\textcolor{mutedgray}{\textsf{\manualversion}}}
+    \renewcommand{\headrulewidth}{1.2pt}
+    \renewcommand{\headrule}{{\color{mediumgreen}\hrule width\headwidth height\headrulewidth}}
+    \fancyfoot[L]{\small\textcolor{deepgreen}{\teamname\ | \universityname}}
+    \fancyfoot[R]{\colorbox{deepgreen}{\makebox[1.8em][c]{\strut\color{white}\bfseries\thepage}}}
+    \renewcommand{\footrulewidth}{0.8pt}
+    \renewcommand{\footrule}{{\color{bordergreen}\hrule width\headwidth height\footrulewidth}}
+}
+
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyhead[L]{\small\textcolor{mediumgreen}{\textbf{RekaKarbon} -- Buku Panduan Penggunaan Sistem}}
+    \fancyhead[R]{\small\textcolor{mutedgray}{\textsf{\manualversion}}}
+    \renewcommand{\headrulewidth}{1.2pt}
+    \renewcommand{\headrule}{{\color{mediumgreen}\hrule width\headwidth height\headrulewidth}}
+    \fancyfoot[L]{\small\textcolor{deepgreen}{\teamname\ | \universityname}}
+    \fancyfoot[R]{\colorbox{deepgreen}{\makebox[1.8em][c]{\strut\color{white}\bfseries\thepage}}}
+    \renewcommand{\footrulewidth}{0.8pt}
+    \renewcommand{\footrule}{{\color{bordergreen}\hrule width\headwidth height\footrulewidth}}
+}
+
+% ============================================================
+% CALLOUT / NOTIFICATION BOXES
+% ============================================================
+\newtcolorbox{infobox}[1][Catatan Penting]{
+    enhanced,
+    colback=lightgreen!35,
+    colframe=mediumgreen,
+    arc=4pt,
+    boxrule=1pt,
+    left=12pt,
+    right=12pt,
+    top=8pt,
+    bottom=8pt,
+    title={\textbf{\textcolor{deepgreen}{#1}}},
+    coltitle=deepgreen,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={colback=lightgreen, boxrule=0.5pt, colframe=mediumgreen, arc=2pt}
+}
+
+\newtcolorbox{warningbox}[1][Peringatan]{
+    enhanced,
+    colback=lightamber!40,
+    colframe=warnamber,
+    arc=4pt,
+    boxrule=1pt,
+    left=12pt,
+    right=12pt,
+    top=8pt,
+    bottom=8pt,
+    title={\textbf{\textcolor{warnamber}{#1}}},
+    coltitle=warnamber,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={colback=lightamber, boxrule=0.5pt, colframe=warnamber, arc=2pt}
+}
+
+\newtcolorbox{tipbox}[1][Petunjuk Penggunaan]{
+    enhanced,
+    colback=white,
+    colframe=emeraldgreen,
+    arc=4pt,
+    boxrule=1pt,
+    left=12pt,
+    right=12pt,
+    top=8pt,
+    bottom=8pt,
+    title={\textbf{\textcolor{emeraldgreen}{#1}}},
+    coltitle=emeraldgreen,
+    attach boxed title to top left={yshift=-2mm, xshift=4mm},
+    boxed title style={colback=white, boxrule=0.5pt, colframe=emeraldgreen, arc=2pt}
+}

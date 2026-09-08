@@ -7,7 +7,6 @@ import {
 import {
   EmissionReportAuditAction,
   EmissionReportStatus,
-  Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
@@ -19,18 +18,12 @@ import { EmissionReportAuditDecision } from './dto';
 import type {
   EmissionReportAuditDetail,
   EmissionReportAuditListItem,
+  ReportWithAuditData,
 } from './types';
-
-type ReportWithAuditData = Prisma.EmissionReportGetPayload<{
-  include: {
-    company: true;
-    files: true;
-    auditEvents: {
-      include: { actor: true };
-      orderBy: { createdAt: 'asc' };
-    };
-  };
-}>;
+import type { MlAuditResult } from './types/ml-audit.types';
+import { MlAuditEngineService } from './ml-audit-engine.service';
+import { ReportsMlAdapter } from '../reports/reports-ml-adapter';
+import type { CalculatorCalculationData } from '../reports/types';
 
 const REPORT_STATUS_BY_API_VALUE = {
   submitted: EmissionReportStatus.SUBMITTED,
@@ -43,17 +36,21 @@ export class EmissionReportAuditService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly blockchainService: BlockchainService,
+    private readonly mlAuditEngineService?: MlAuditEngineService,
   ) {}
 
   async getQueue(
     query: AuditEmissionReportQueryDto,
   ): Promise<EmissionReportAuditListItem[]> {
-    const status = query.status
-      ? REPORT_STATUS_BY_API_VALUE[query.status]
-      : EmissionReportStatus.SUBMITTED;
+    const status =
+      query.status && query.status !== ('all' as any)
+        ? REPORT_STATUS_BY_API_VALUE[
+            query.status as keyof typeof REPORT_STATUS_BY_API_VALUE
+          ]
+        : undefined;
 
     const reports = await this.prisma.emissionReport.findMany({
-      where: { status },
+      where: status ? { status } : undefined,
       include: {
         company: true,
         files: true,
@@ -63,7 +60,7 @@ export class EmissionReportAuditService {
           take: 1,
         },
       },
-      orderBy: { submittedAt: 'asc' },
+      orderBy: { submittedAt: 'desc' },
     });
 
     return reports.map((report) => this.mapListItem(report));
@@ -86,7 +83,31 @@ export class EmissionReportAuditService {
       throw new NotFoundException('Emission report was not found');
     }
 
-    return this.mapDetail(report);
+    const detail = this.mapDetail(report);
+
+    if (!detail.auditResult && this.mlAuditEngineService) {
+      try {
+        const companyData = report.company as unknown as {
+          productionCapacityTonnes?: number | string | null;
+        };
+        const auditDto = ReportsMlAdapter.toAuditEmissionReportDto({
+          sector: report.sector || 'manufaktur',
+          totalEmissions: Number(report.totalEmissionsTco2e),
+          calculationData:
+            (report.calculationData as unknown as CalculatorCalculationData | null) ??
+            null,
+          companyProductionCapacity: companyData?.productionCapacityTonnes
+            ? Number(companyData.productionCapacityTonnes)
+            : undefined,
+        });
+        detail.auditResult =
+          await this.mlAuditEngineService.evaluateEmissionReport(auditDto);
+      } catch {
+        // Non-blocking fallback
+      }
+    }
+
+    return detail;
   }
 
   async decide(
@@ -197,6 +218,12 @@ export class EmissionReportAuditService {
   private mapListItem(
     report: ReportWithAuditData,
   ): EmissionReportAuditListItem {
+    const auditResult =
+      (report.auditResult as unknown as MlAuditResult | null) ||
+      ((report.calculationData as Record<string, unknown> | null)
+        ?.auditResult as MlAuditResult | null) ||
+      null;
+
     return {
       id: report.id,
       companyName: report.company.name,
@@ -211,6 +238,7 @@ export class EmissionReportAuditService {
       fileCount: report.files.length,
       merkleRoot: report.merkleRoot,
       blockchainTxHash: report.blockchainTxHash,
+      auditResult,
     };
   }
 

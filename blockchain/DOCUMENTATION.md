@@ -1,5 +1,7 @@
 # Dokumentasi Infrastruktur Blockchain - RekaKarbon
 
+> **Status:** Dokumen ini berisi catatan historis untuk jaringan single-node Clique lama. Arsitektur aktif sekarang dijelaskan di [docs/qbft-production-implementation-plan.md](../docs/qbft-production-implementation-plan.md) dan file `docker-compose.qbft.yml`. Jangan gunakan perintah lama di bawah untuk jaringan baru.
+
 Dokumen ini menjelaskan arsitektur, proses pengembangan, pengujian, _deployment_ otomatis (CI/CD), hingga panduan integrasi ke sistem _backend_ (NestJS) untuk ekosistem _Smart Contract_ RekaKarbon.
 
 ---
@@ -10,7 +12,7 @@ Ekosistem _Blockchain_ ini dibangun menggunakan komponen-komponen _Enterprise-Gr
 
 - **Smart Contract**: Solidity (menggunakan standar `OpenZeppelin v5.0.0`).
 - **Development Environment**: Hardhat & Node.js.
-- **Blockchain Node**: Hyperledger Besu (`v23.4.4` - LTS).
+- **Blockchain Node legacy**: Hyperledger Besu (`v23.4.4`). Jaringan ini dipertahankan sebagai arsip dan bukan target deployment baru.
 - **CI/CD Automation**: GitHub Actions.
 - **Backend Integration**: NestJS (via `ethers.js` v6).
 

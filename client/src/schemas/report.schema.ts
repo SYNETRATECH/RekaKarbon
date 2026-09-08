@@ -9,6 +9,7 @@ import {
   PercentageSchema,
   TxHashSchema,
 } from './common.schema';
+import { MlAuditResultSchema } from './audit.schema';
 
 export const SectorBreakdownSchema = z.object({
   id: EntityIdSchema,
@@ -46,7 +47,7 @@ export const CalculationEntrySchema = z.object({
   sourceCode: z.string().min(1),
   sourceLabel: z.string().min(1),
   quantity: z.number().positive(),
-  unit: z.string().min(1),
+  unit: z.enum(['kg', 'liter', 'm3', 'kwh', 'km', 'passenger', 'room_night', 'tco2e', 'idr']),
   factorCode: z.string().min(1),
   factorSetId: z.string().min(1),
   emissionFactor: z.number().positive(),
@@ -67,27 +68,64 @@ export const CalculationEntrySchema = z.object({
     financedCategory: z.string().optional(),
     financedEntityName: z.string().optional(),
     securityInstrument: z.enum(['government_bond', 'stock', 'corporate_bond']).optional(),
-    investmentValueIDR: z.number().positive().optional(),
-    issuerDenominatorIDR: z.number().positive().optional(),
-    issuerEmissionsTCO2e: z.number().positive().optional(),
-    sovereignDebtIDR: z.number().positive().optional(),
-    sovereignEmissionsTCO2e: z.number().positive().optional(),
+    investmentValueIDR: z.number().optional(),
+    issuerDenominatorIDR: z.number().optional(),
+    issuerEmissionsTCO2e: z.number().optional(),
+    sovereignDebtIDR: z.number().optional(),
+    sovereignEmissionsTCO2e: z.number().optional(),
   }),
 });
 
-export const CalculationDataSchema = z.object({
-  schemaVersion: z.literal(2),
-  factorSetId: z.string().min(1),
-  scope1: CarbonVolumeSchema,
-  scope2: CarbonVolumeSchema,
-  scope3: CarbonVolumeSchema,
-  entries: z.array(CalculationEntrySchema),
-});
+const LEGACY_FACTOR_SET_ID = 'legacy';
+
+/**
+ * Older seeded reports stored only `{ id, value }` entries and omitted the
+ * calculator metadata. Normalize those records before validating the public
+ * report response so one historical row cannot make the entire report list
+ * look empty in the emitter UI.
+ */
+function normalizeCalculationData(input: unknown): unknown {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return input;
+
+  const raw = input as Record<string, unknown>;
+  const rawEntries = Array.isArray(raw.entries) ? raw.entries : [];
+  const detailedEntries = rawEntries.filter(
+    (entry) => CalculationEntrySchema.safeParse(entry).success
+  );
+
+  return {
+    ...raw,
+    schemaVersion: 2,
+    factorSetId:
+      typeof raw.factorSetId === 'string' && raw.factorSetId.length > 0
+        ? raw.factorSetId
+        : LEGACY_FACTOR_SET_ID,
+    entries: detailedEntries,
+  };
+}
+
+export const CalculationDataSchema = z.preprocess(
+  normalizeCalculationData,
+  z
+    .object({
+      schemaVersion: z.literal(2),
+      factorSetId: z.string().min(1),
+      scope1: CarbonVolumeSchema,
+      scope2: CarbonVolumeSchema,
+      scope3: CarbonVolumeSchema,
+      entries: z.array(CalculationEntrySchema),
+      auditResult: MlAuditResultSchema.optional(),
+    })
+    .passthrough()
+);
 
 export const CalculatorReportSubmissionSchema = z.object({
+  id: z.string().optional(),
+  year: z.number().optional(),
   merkleRoot: z.string().min(1),
   txHash: TxHashSchema,
   blockchainReportId: z.number().int().nonnegative(),
+  auditResult: MlAuditResultSchema.optional(),
 });
 
 export const EmissionReportStatusSchema = z.enum([
@@ -117,9 +155,10 @@ export const EmissionReportSchema = z.object({
   quotaPTBAEStatus: z
     .enum(['VERIFIED', 'PENDING', 'REJECTED', 'EXPIRED', 'LEGACY', 'UNAVAILABLE'])
     .optional(),
-  quotaPTBAESourceDocument: z.string().nullable().optional(),
   method: z.enum(['UPLOAD', 'CALCULATOR']).optional(),
   sectorId: z.string().nullable().optional(),
+  calculationData: CalculationDataSchema.nullable().optional(),
+  auditResult: MlAuditResultSchema.nullable().optional(),
 });
 
 export type SectorBreakdownType = z.infer<typeof SectorBreakdownSchema>;

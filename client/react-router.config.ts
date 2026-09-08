@@ -23,6 +23,9 @@ export default {
       '/polygon',
       '/wallet',
       '/settings',
+      '/admin/dashboard',
+      '/admin/users',
+      '/admin/kyb',
     ];
   },
 } satisfies Config;

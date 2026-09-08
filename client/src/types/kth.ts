@@ -1,3 +1,5 @@
+import type { ForestInspectionCheckpoint } from './regulator';
+
 export type KthForestProjectStatus = 'draft' | 'active_dmrv' | 'audited' | 'minted';
 
 export interface KthForestProject {
@@ -9,6 +11,7 @@ export interface KthForestProject {
   actualSequestrationTCO2e: number;
   carbonStockTCO2e: number;
   status: KthForestProjectStatus;
+  inspectionTimeline?: ForestInspectionCheckpoint[];
 }
 
 export interface SubmitKthDmrvInput {
@@ -26,4 +29,7 @@ export interface KthDmrvSubmissionResult {
   carbonStockTCO2e: number;
   status: KthForestProjectStatus;
   submittedAt: string;
+  checkpointId: string;
+  checkpointTitle: string;
+  snapshotHash: string;
 }

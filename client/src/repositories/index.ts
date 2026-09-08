@@ -67,4 +67,7 @@ export type { WalletRepository } from './wallet.repository';
 export { kthRepository } from './kth.repository';
 export type { KthRepository } from './kth.repository';
 
+export { adminRepository } from './admin.repository';
+export type { AdminRepository } from './admin.repository';
+
 export type { AuthCredentials, AuthResponse } from '../types';

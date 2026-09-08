@@ -1,3 +1,5 @@
+import type { ForestInspectionCheckpoint } from './regulator';
+
 export interface AnomalySummary {
   emitenTerdeteksiAnomali: number;
   totalEmitenAktif: number;
@@ -16,17 +18,27 @@ export interface EnergyCorrelationItem {
 export interface AiAnomalyLog {
   id: string;
   company: string;
+  companyId?: string;
   sector: string;
+  year?: number;
+  emissionReportId?: string;
+  auditResult?: MlAuditResult | null;
   anomalyScore: number;
-  deltaElectricity: number;
-  deltaCoal: number;
-  deltaGas: number;
+  trustScore?: number;
+  divergencePercent?: number;
+  scoreDjp?: number;
+  scoreBbm?: number;
+  scoreCems?: number;
+  isAnomaly?: boolean;
+  deltaElectricity?: number;
+  deltaCoal?: number;
+  deltaGas?: number;
   eFakturMatch: boolean;
   priority: 'critical' | 'high' | 'medium' | 'low';
   reportedEmission: number;
   estimatedEmission: number;
   desc: string;
-  auditStatus: 'pending' | 'verified' | 'rejected';
+  auditStatus: 'pending' | 'verified' | 'rejected' | 'submitted' | 'approved' | 'revision_required';
 }
 
 export interface SpatialSummary {
@@ -141,8 +153,24 @@ export interface FeatureContribution {
   unit: string;
 }
 
+export interface ShapAttribution {
+  featureName: string;
+  label: string;
+  userValue: number | string;
+  benchmarkValue: number | string;
+  shapValue: number;
+  baseValue: number;
+  direction: 'ABOVE_NORMAL' | 'BELOW_NORMAL' | 'MISMATCH' | 'NORMAL';
+  impact: 'INCREASES_ANOMALY' | 'DECREASES_ANOMALY' | 'NEUTRAL';
+  importancePercent: number;
+  unit: string;
+}
+
 export interface XaiDiagnostics {
+  baseValue?: number;
+  outputScore?: number;
   topAnomalyDrivers: FeatureContribution[];
+  shapAttributions?: ShapAttribution[];
   breakdown: {
     physicalFuelDeltaPct: number;
     fiscalPriceDeltaPct: number;
@@ -196,6 +224,7 @@ export interface ForestProjectAuditListItem {
   auditStatus: ForestProjectAuditStatus;
   assignedAt: string | null;
   auditedAt: string | null;
+  inspectionTimeline: ForestInspectionCheckpoint[];
 }
 
 export interface ForestProjectAuditDetail extends ForestProjectAuditListItem {
@@ -211,5 +240,11 @@ export type ForestProjectAuditDecision = 'approve' | 'request_revision';
 
 export interface ForestProjectAuditDecisionInput {
   decision: ForestProjectAuditDecision;
+  notes?: string;
+}
+
+export interface ForestInspectionDecisionInput {
+  decision: ForestProjectAuditDecision;
+  verifiedSequestrationTCO2e?: number;
   notes?: string;
 }

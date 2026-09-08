@@ -84,7 +84,7 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
   if (successData) {
     return (
       <Dialog open={true} onOpenChange={() => handleFinish()}>
-        <DialogContent className="sm:max-w-md bg-white border-none shadow-2xl rounded-3xl p-8 text-center animate-in zoom-in-95">
+        <DialogContent className="my-4 w-[calc(100vw-2rem)] max-w-[28rem] max-h-[calc(100vh-2rem)] overflow-x-hidden overflow-y-auto bg-white border-none shadow-2xl rounded-3xl p-5 sm:p-8 text-center animate-in zoom-in-95">
           <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10" />
           </div>
@@ -96,7 +96,7 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
             permanen.
           </p>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-3 mb-6">
+          <div className="min-w-0 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-3 mb-6">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">
                 Nomor Sertifikat
@@ -107,19 +107,19 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Tx Hash</span>
-              <span className="text-xs font-mono font-medium text-blue-600 break-all">
+              <span className="block text-xs font-mono font-medium text-blue-600 break-all">
                 {successData.txHash}
               </span>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6">
-            <div className="flex flex-col items-center gap-3">
+          <div className="min-w-0 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 mb-6">
+            <div className="flex w-full min-w-0 flex-col items-center gap-3">
               {!qrUnavailable ? (
                 <img
                   src={qrUrl}
                   alt="QR code verifikasi sertifikat retirement"
-                  className="h-40 w-40 rounded-xl bg-white p-2"
+                  className="h-40 w-40 shrink-0 rounded-xl bg-white p-2"
                   onError={() => setQrUnavailable(true)}
                 />
               ) : (
@@ -134,26 +134,26 @@ export default function RetireTokenModal({ cert, onClose }: RetireTokenModalProp
                 href={verificationUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="max-w-full truncate text-xs font-bold text-blue-600 underline"
+                className="block w-full min-w-0 break-all text-center text-xs font-bold text-blue-600 underline"
               >
                 {verificationUrl}
               </a>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row">
             <Button
               onClick={handleDownload}
               disabled={isDownloading}
               variant="outline"
-              className="flex-1 rounded-xl py-6 font-bold text-slate-700"
+              className="min-w-0 flex-1 rounded-xl py-6 font-bold text-slate-700"
             >
               <Download className="mr-2 h-4 w-4 text-emerald-600" />
               {isDownloading ? 'Menyiapkan...' : 'Unduh Bukti PDF'}
             </Button>
             <Button
               asChild
-              className="flex-1 rounded-xl bg-emerald-600 py-6 font-bold text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700"
+              className="min-w-0 flex-1 rounded-xl bg-emerald-600 py-6 font-bold text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700"
             >
               <a href={verificationUrl} target="_blank" rel="noreferrer">
                 <ExternalLink className="mr-2 h-4 w-4" />

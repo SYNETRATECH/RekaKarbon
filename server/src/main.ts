@@ -2,49 +2,40 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import {
   TransformInterceptor,
   LoggingInterceptor,
   HttpExceptionFilter,
+  isAllowedOrigin,
 } from './common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Dynamic CORS origin configuration for multi-server / distributed deployment
   const corsOriginsEnv = process.env.CORS_ORIGINS;
   const defaultAllowedOrigins = [
-    'http://localhost:8101',
-    'http://127.0.0.1:8101',
-    'http://localhost:8100',
     'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:5174',
-    'http://127.0.0.1:5174',
     'http://localhost:3000',
   ];
   const allowedOrigins = corsOriginsEnv
     ? corsOriginsEnv.split(',').map((o) => o.trim())
     : defaultAllowedOrigins;
+  const isDev = process.env.NODE_ENV !== 'production';
 
   app.enableCors({
     origin: (
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      // Allow requests with no origin or in whitelist or LAN IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-      if (
-        !origin ||
-        allowedOrigins.includes('*') ||
-        allowedOrigins.includes(origin) ||
-        /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(
-          origin,
-        )
-      ) {
+      if (isAllowedOrigin(origin, allowedOrigins, isDev)) {
         callback(null, true);
       } else {
-        callback(new Error(`Origin ${origin} is not allowed by CORS policy`));
+        Logger.warn(
+          `[CORS] Rejected cross-origin request from: ${origin}`,
+          'CorsPolicy',
+        );
+        callback(null, false);
       }
     },
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],

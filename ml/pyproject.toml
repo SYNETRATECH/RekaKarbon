@@ -38,6 +38,8 @@ eval = "rekakarbon_ml.evaluation.evaluator:main"
 studio = "rekakarbon_ml.studio.cli:main"
 pipeline = "rekakarbon_ml.pipeline.orchestrator:main"
 benchmark = "rekakarbon_ml.experiments.benchmark:main"
+retrain = "rekakarbon_ml.retraining.orchestrator:main"
+
 
 
 

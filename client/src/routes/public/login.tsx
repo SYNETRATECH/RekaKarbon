@@ -138,6 +138,16 @@ export default function LoginRoute() {
               <button
                 type="button"
                 onClick={() => {
+                  setEmailInput('admin@rekakarbon.id');
+                  setPasswordInput('password123');
+                }}
+                className="text-[9px] font-extrabold bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 px-2 py-1.5 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+              >
+                Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   setEmailInput('director@suralaya.co.id');
                   setPasswordInput('password123');
                 }}

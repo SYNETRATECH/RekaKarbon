@@ -3,12 +3,27 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  ConflictException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
-import { ComplianceRating, EmissionReportStatus } from '@prisma/client';
+import {
+  BlockchainOperationStatus,
+  ComplianceRating,
+  EmissionReportStatus,
+} from '@prisma/client';
 import { ethers } from 'ethers';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
+import { BlockchainOperationService } from '../blockchain/blockchain-operation.service';
+import {
+  createBursaListingActivateOperationInput,
+  createBursaListingCancelOperationInput,
+  createBursaListingConfigureOperationInput,
+  createBursaMarketPriceUpdateOperationInput,
+  createBursaPurchaseOperationInput,
+} from '../blockchain/blockchain-operation.util';
 import { PtbaeService } from '../compliance/ptbae.service';
 import type {
   BursaItem,
@@ -18,7 +33,10 @@ import type {
   BursaRevenueAllocationView,
   BursaWorkflowListing,
 } from './types';
-import type { BlockchainBursaListingResult } from '../blockchain/types';
+import type {
+  BlockchainBursaListingReadiness,
+  BlockchainBursaListingResult,
+} from '../blockchain/types';
 import type {
   ConfirmListingDto,
   CreateListingDto,
@@ -33,6 +51,10 @@ type BursaListingWithDetails = Prisma.BursaListingGetPayload<{
   };
 }>;
 
+type BursaOrderWithAllocations = Prisma.BursaOrderGetPayload<{
+  include: { allocations: true };
+}>;
+
 @Injectable()
 export class BursaService {
   private readonly logger = new Logger(BursaService.name);
@@ -40,8 +62,42 @@ export class BursaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly blockchainService: BlockchainService,
+    private readonly blockchainOperationService: BlockchainOperationService,
     private readonly ptbaeService: PtbaeService,
   ) {}
+
+  private assertBursaOperationCanProceed(
+    operation: Prisma.BlockchainOperationGetPayload<object>,
+    operationLabel: string,
+  ): void {
+    if (operation.status === BlockchainOperationStatus.FAILED_PERMANENT) {
+      throw new ServiceUnavailableException(
+        `${operationLabel} dihentikan karena operasi blockchain ditandai gagal permanen.`,
+      );
+    }
+
+    if (
+      operation.status === BlockchainOperationStatus.SUBMITTED ||
+      operation.status === BlockchainOperationStatus.RECONCILIATION_REQUIRED ||
+      operation.status === BlockchainOperationStatus.CONFIRMED
+    ) {
+      throw new ServiceUnavailableException(
+        `${operationLabel} masih memerlukan rekonsiliasi blockchain sebelum dapat diulang.`,
+      );
+    }
+  }
+
+  private assertBursaOperationPayload(
+    operation: Prisma.BlockchainOperationGetPayload<object>,
+    payloadHash: string,
+    operationLabel: string,
+  ): void {
+    if (operation.payloadHash !== payloadHash) {
+      throw new ConflictException(
+        `${operationLabel} memiliki payload berbeda dari operasi sebelumnya.`,
+      );
+    }
+  }
 
   private toWorkflowListing(
     listing: BursaListingWithDetails,
@@ -331,6 +387,7 @@ export class BursaService {
     if (!regulator?.walletAddress) {
       throw new BadRequestException('Regulator wallet not found');
     }
+    const regulatorWalletAddress = regulator.walletAddress;
 
     const tokens = await this.prisma.carbonToken.findMany({
       where: {
@@ -360,12 +417,31 @@ export class BursaService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return tokens.flatMap((token): BursaListingCandidate[] => {
-      const project = token.project;
-      const kthGroup = project.kthGroup;
-      if (!kthGroup || Number(token.availableBalanceTco2e) <= 0) return [];
-      return [
-        {
+    const candidates = await Promise.all(
+      tokens.map(async (token): Promise<BursaListingCandidate | null> => {
+        const project = token.project;
+        const kthGroup = project.kthGroup;
+        if (!kthGroup || !token.blockchainTokenId) return null;
+
+        const availableVolumeTco2e = Math.floor(
+          Number(token.availableBalanceTco2e),
+        );
+        if (availableVolumeTco2e <= 0) return null;
+
+        const readiness =
+          await this.blockchainService.checkBursaListingReadiness(
+            regulatorWalletAddress,
+            Number(token.blockchainTokenId),
+            availableVolumeTco2e,
+          );
+        if (!readiness.eligible) {
+          this.logger.warn(
+            `Skipping Bursa candidate ${token.id}: ${readiness.message}`,
+          );
+          return null;
+        }
+
+        return {
           carbonTokenId: token.id,
           speCertificateNumber: token.speCertificateNumber,
           projectId: project.id,
@@ -374,11 +450,15 @@ export class BursaService {
           kthGroupId: kthGroup.id,
           kthGroupName: kthGroup.groupName,
           vintageYear: token.vintageYear,
-          availableVolumeTco2e: Number(token.availableBalanceTco2e),
+          availableVolumeTco2e,
           eligibleProjectCostIdr: Number(project.budgetTotalIdr),
-        },
-      ];
-    });
+        };
+      }),
+    );
+
+    return candidates.filter(
+      (candidate): candidate is BursaListingCandidate => candidate !== null,
+    );
   }
 
   async getKthPendingListings(
@@ -446,6 +526,16 @@ export class BursaService {
       throw new BadRequestException(
         'Verified saleable volume and eligible project cost must be greater than zero',
       );
+    }
+
+    const blockchainReadiness: BlockchainBursaListingReadiness =
+      await this.blockchainService.checkBursaListingReadiness(
+        regulator.walletAddress,
+        Number(token.blockchainTokenId),
+        saleableVolume,
+      );
+    if (!blockchainReadiness.eligible) {
+      throw new BadRequestException(blockchainReadiness.message);
     }
 
     const existingListing = await this.prisma.bursaListing.findFirst({
@@ -611,11 +701,104 @@ export class BursaService {
     }
 
     if (listing.status === 'AWAITING_KTH_CONFIRMATION') {
-      const confirmationTxHash =
-        await this.blockchainService.confirmBursaListing(
-          Number(listing.blockchainListingId),
+      const confirmationOperationInput =
+        createBursaListingConfigureOperationInput(
+          listing.id,
           kthUser.walletAddress,
         );
+      const existingConfirmationOperation =
+        await this.blockchainOperationService.ensurePendingOperation(
+          confirmationOperationInput,
+        );
+      this.assertBursaOperationPayload(
+        existingConfirmationOperation,
+        confirmationOperationInput.payloadHash,
+        'Konfirmasi listing',
+      );
+
+      const claimedConfirmationOperation =
+        await this.blockchainOperationService.claimForExecution(
+          confirmationOperationInput.idempotencyKey,
+        );
+      const confirmationOperation =
+        claimedConfirmationOperation ??
+        (await this.blockchainOperationService.ensurePendingOperation(
+          confirmationOperationInput,
+        ));
+      this.assertBursaOperationPayload(
+        confirmationOperation,
+        confirmationOperationInput.payloadHash,
+        'Konfirmasi listing',
+      );
+
+      let confirmationTxHash = confirmationOperation.transactionHash;
+      if (
+        confirmationOperation.status === BlockchainOperationStatus.CONFIRMED &&
+        confirmationTxHash
+      ) {
+        // The blockchain call already succeeded; only the local projection may
+        // need to be completed on a retry.
+      } else if (claimedConfirmationOperation) {
+        try {
+          confirmationTxHash = await this.blockchainService.confirmBursaListing(
+            Number(listing.blockchainListingId),
+            kthUser.walletAddress,
+          );
+        } catch (error: unknown) {
+          await this.blockchainOperationService
+            .markFailed(
+              confirmationOperationInput.idempotencyKey,
+              error,
+              'retryable',
+              new Date(Date.now() + 15_000),
+            )
+            .catch((persistError: unknown) => {
+              this.logger.error(
+                'Unable to persist failed Bursa confirmation operation',
+                persistError,
+              );
+            });
+          throw error;
+        }
+        try {
+          await this.blockchainOperationService.markConfirmed(
+            confirmationOperationInput.idempotencyKey,
+            {
+              txHash: confirmationTxHash,
+              chainId: confirmationOperationInput.chainId,
+              contractAddress: confirmationOperationInput.contractAddress,
+            },
+          );
+        } catch (error: unknown) {
+          await this.blockchainOperationService
+            .markFailed(
+              confirmationOperationInput.idempotencyKey,
+              error,
+              'reconciliation',
+            )
+            .catch((persistError: unknown) => {
+              this.logger.error(
+                'Unable to mark Bursa confirmation for reconciliation',
+                persistError,
+              );
+            });
+          throw new ServiceUnavailableException(
+            'Konfirmasi listing sudah dikirim ke blockchain, tetapi status lokal memerlukan rekonsiliasi.',
+          );
+        }
+      } else {
+        this.assertBursaOperationCanProceed(
+          confirmationOperation,
+          'Konfirmasi listing',
+        );
+      }
+
+      if (!confirmationTxHash) {
+        throw new ServiceUnavailableException(
+          'Konfirmasi listing berhasil diproses tetapi transaction hash belum tersedia.',
+        );
+      }
+
       await this.prisma.$transaction(async (tx) => {
         await tx.bursaListing.update({
           where: { id: listing.id },
@@ -639,9 +822,100 @@ export class BursaService {
       });
     }
 
-    const activationTxHash = await this.blockchainService.activateBursaListing(
-      Number(listing.blockchainListingId),
+    const activationOperationInput = createBursaListingActivateOperationInput(
+      listing.id,
     );
+    const existingActivationOperation =
+      await this.blockchainOperationService.ensurePendingOperation(
+        activationOperationInput,
+      );
+    this.assertBursaOperationPayload(
+      existingActivationOperation,
+      activationOperationInput.payloadHash,
+      'Aktivasi listing',
+    );
+
+    const claimedActivationOperation =
+      await this.blockchainOperationService.claimForExecution(
+        activationOperationInput.idempotencyKey,
+      );
+    const activationOperation =
+      claimedActivationOperation ??
+      (await this.blockchainOperationService.ensurePendingOperation(
+        activationOperationInput,
+      ));
+    this.assertBursaOperationPayload(
+      activationOperation,
+      activationOperationInput.payloadHash,
+      'Aktivasi listing',
+    );
+
+    let activationTxHash = activationOperation.transactionHash;
+    if (
+      activationOperation.status === BlockchainOperationStatus.CONFIRMED &&
+      activationTxHash
+    ) {
+      // Reuse the confirmed transaction when the database projection is retried.
+    } else if (claimedActivationOperation) {
+      try {
+        activationTxHash = await this.blockchainService.activateBursaListing(
+          Number(listing.blockchainListingId),
+        );
+      } catch (error: unknown) {
+        await this.blockchainOperationService
+          .markFailed(
+            activationOperationInput.idempotencyKey,
+            error,
+            'retryable',
+            new Date(Date.now() + 15_000),
+          )
+          .catch((persistError: unknown) => {
+            this.logger.error(
+              'Unable to persist failed Bursa activation operation',
+              persistError,
+            );
+          });
+        throw error;
+      }
+      try {
+        await this.blockchainOperationService.markConfirmed(
+          activationOperationInput.idempotencyKey,
+          {
+            txHash: activationTxHash,
+            chainId: activationOperationInput.chainId,
+            contractAddress: activationOperationInput.contractAddress,
+          },
+        );
+      } catch (error: unknown) {
+        await this.blockchainOperationService
+          .markFailed(
+            activationOperationInput.idempotencyKey,
+            error,
+            'reconciliation',
+          )
+          .catch((persistError: unknown) => {
+            this.logger.error(
+              'Unable to mark Bursa activation for reconciliation',
+              persistError,
+            );
+          });
+        throw new ServiceUnavailableException(
+          'Aktivasi listing sudah dikirim ke blockchain, tetapi status lokal memerlukan rekonsiliasi.',
+        );
+      }
+    } else {
+      this.assertBursaOperationCanProceed(
+        activationOperation,
+        'Aktivasi listing',
+      );
+    }
+
+    if (!activationTxHash) {
+      throw new ServiceUnavailableException(
+        'Aktivasi listing berhasil diproses tetapi transaction hash belum tersedia.',
+      );
+    }
+
     const updated = await this.prisma.bursaListing.update({
       where: { id: listing.id },
       data: {
@@ -677,9 +951,100 @@ export class BursaService {
     if (Number(listing.volumeSoldTco2e) > 0) {
       throw new BadRequestException('Listing cannot be cancelled after a sale');
     }
-    const cancellationTxHash = await this.blockchainService.cancelBursaListing(
-      Number(listing.blockchainListingId),
+
+    if (listing.status === 'CANCELLED' && listing.cancellationTxHash) {
+      return this.toWorkflowListing(listing);
+    }
+
+    const blockchainListingId = Number(listing.blockchainListingId);
+    const operationInput = createBursaListingCancelOperationInput(
+      listing.id,
+      blockchainListingId,
     );
+    const existingOperation =
+      await this.blockchainOperationService.ensurePendingOperation(
+        operationInput,
+      );
+    this.assertBursaOperationPayload(
+      existingOperation,
+      operationInput.payloadHash,
+      'Pembatalan listing',
+    );
+
+    const claimedOperation =
+      await this.blockchainOperationService.claimForExecution(
+        operationInput.idempotencyKey,
+      );
+    const operation =
+      claimedOperation ??
+      (await this.blockchainOperationService.ensurePendingOperation(
+        operationInput,
+      ));
+    this.assertBursaOperationPayload(
+      operation,
+      operationInput.payloadHash,
+      'Pembatalan listing',
+    );
+
+    let cancellationTxHash = operation.transactionHash;
+    if (
+      operation.status === BlockchainOperationStatus.CONFIRMED &&
+      cancellationTxHash
+    ) {
+      // The chain operation is complete; only the local projection may need
+      // to be completed after a retried request.
+    } else if (claimedOperation) {
+      try {
+        cancellationTxHash =
+          await this.blockchainService.cancelBursaListing(blockchainListingId);
+      } catch (error: unknown) {
+        await this.blockchainOperationService
+          .markFailed(
+            operationInput.idempotencyKey,
+            error,
+            'retryable',
+            new Date(Date.now() + 15_000),
+          )
+          .catch((persistError: unknown) => {
+            this.logger.error(
+              'Unable to persist failed Bursa cancellation operation',
+              persistError,
+            );
+          });
+        throw error;
+      }
+      try {
+        await this.blockchainOperationService.markConfirmed(
+          operationInput.idempotencyKey,
+          {
+            txHash: cancellationTxHash,
+            chainId: operationInput.chainId,
+            contractAddress: operationInput.contractAddress,
+          },
+        );
+      } catch (error: unknown) {
+        await this.blockchainOperationService
+          .markFailed(operationInput.idempotencyKey, error, 'reconciliation')
+          .catch((persistError: unknown) => {
+            this.logger.error(
+              'Unable to mark Bursa cancellation for reconciliation',
+              persistError,
+            );
+          });
+        throw new ServiceUnavailableException(
+          'Pembatalan listing sudah dikirim ke blockchain, tetapi status lokal memerlukan rekonsiliasi.',
+        );
+      }
+    } else {
+      this.assertBursaOperationCanProceed(operation, 'Pembatalan listing');
+    }
+
+    if (!cancellationTxHash) {
+      throw new ServiceUnavailableException(
+        'Pembatalan listing berhasil diproses tetapi transaction hash belum tersedia.',
+      );
+    }
+
     const updated = await this.prisma.bursaListing.update({
       where: { id: listing.id },
       data: {
@@ -724,33 +1089,128 @@ export class BursaService {
     if (!listing.blockchainListingId) {
       throw new BadRequestException('Listing is not active on blockchain');
     }
-    const txHash = await this.blockchainService.updateBursaMarketPrice(
-      Number(listing.blockchainListingId),
+
+    const blockchainListingId = Number(listing.blockchainListingId);
+    const operationInput = createBursaMarketPriceUpdateOperationInput(
+      listing.id,
+      blockchainListingId,
       dto.marketPricePerTonIDR,
     );
-    const updated = await this.prisma.bursaListing.update({
-      where: { id: listing.id },
-      data: {
-        currentPricePerTonIdr: dto.marketPricePerTonIDR,
-        pricePerTonIdr: dto.marketPricePerTonIDR,
-      },
-      include: {
-        carbonToken: { include: { project: true } },
-        project: true,
-        kthGroup: true,
-      },
-    });
-    await this.prisma.bursaPriceSnapshot.create({
-      data: {
-        listingId: listing.id,
-        floorPricePerTonIdr: updated.floorPricePerTonIdr,
-        marketPricePerTonIdr: updated.currentPricePerTonIdr,
-        volumeAvailableTco2e: updated.volumeAvailableTco2e,
-        volumeSoldTco2e: updated.volumeSoldTco2e,
-        formulaVersion: updated.pricingFormulaVersion,
-        oracleMerkleRoot: updated.projectSnapshotMerkleRoot,
-        txHash,
-      },
+    const existingOperation =
+      await this.blockchainOperationService.ensurePendingOperation(
+        operationInput,
+      );
+    this.assertBursaOperationPayload(
+      existingOperation,
+      operationInput.payloadHash,
+      'Perubahan harga listing',
+    );
+
+    const claimedOperation =
+      await this.blockchainOperationService.claimForExecution(
+        operationInput.idempotencyKey,
+      );
+    const operation =
+      claimedOperation ??
+      (await this.blockchainOperationService.ensurePendingOperation(
+        operationInput,
+      ));
+    this.assertBursaOperationPayload(
+      operation,
+      operationInput.payloadHash,
+      'Perubahan harga listing',
+    );
+
+    let txHash = operation.transactionHash;
+    if (operation.status === BlockchainOperationStatus.CONFIRMED && txHash) {
+      // Reuse the confirmed transaction when only the local projection is
+      // being retried.
+    } else if (claimedOperation) {
+      try {
+        txHash = await this.blockchainService.updateBursaMarketPrice(
+          blockchainListingId,
+          dto.marketPricePerTonIDR,
+        );
+      } catch (error: unknown) {
+        await this.blockchainOperationService
+          .markFailed(
+            operationInput.idempotencyKey,
+            error,
+            'retryable',
+            new Date(Date.now() + 15_000),
+          )
+          .catch((persistError: unknown) => {
+            this.logger.error(
+              'Unable to persist failed Bursa price update operation',
+              persistError,
+            );
+          });
+        throw error;
+      }
+      try {
+        await this.blockchainOperationService.markConfirmed(
+          operationInput.idempotencyKey,
+          {
+            txHash,
+            chainId: operationInput.chainId,
+            contractAddress: operationInput.contractAddress,
+          },
+        );
+      } catch (error: unknown) {
+        await this.blockchainOperationService
+          .markFailed(operationInput.idempotencyKey, error, 'reconciliation')
+          .catch((persistError: unknown) => {
+            this.logger.error(
+              'Unable to mark Bursa price update for reconciliation',
+              persistError,
+            );
+          });
+        throw new ServiceUnavailableException(
+          'Perubahan harga sudah dikirim ke blockchain, tetapi status lokal memerlukan rekonsiliasi.',
+        );
+      }
+    } else {
+      this.assertBursaOperationCanProceed(operation, 'Perubahan harga listing');
+    }
+
+    if (!txHash) {
+      throw new ServiceUnavailableException(
+        'Perubahan harga berhasil diproses tetapi transaction hash belum tersedia.',
+      );
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedListing = await tx.bursaListing.update({
+        where: { id: listing.id },
+        data: {
+          currentPricePerTonIdr: dto.marketPricePerTonIDR,
+          pricePerTonIdr: dto.marketPricePerTonIDR,
+        },
+        include: {
+          carbonToken: { include: { project: true } },
+          project: true,
+          kthGroup: true,
+        },
+      });
+      const existingSnapshot = await tx.bursaPriceSnapshot.findFirst({
+        where: { listingId: listing.id, txHash },
+        select: { id: true },
+      });
+      if (!existingSnapshot) {
+        await tx.bursaPriceSnapshot.create({
+          data: {
+            listingId: listing.id,
+            floorPricePerTonIdr: updatedListing.floorPricePerTonIdr,
+            marketPricePerTonIdr: updatedListing.currentPricePerTonIdr,
+            volumeAvailableTco2e: updatedListing.volumeAvailableTco2e,
+            volumeSoldTco2e: updatedListing.volumeSoldTco2e,
+            formulaVersion: updatedListing.pricingFormulaVersion,
+            oracleMerkleRoot: updatedListing.projectSnapshotMerkleRoot,
+            txHash,
+          },
+        });
+      }
+      return updatedListing;
     });
     return this.toWorkflowListing(updated);
   }
@@ -759,6 +1219,7 @@ export class BursaService {
     buyerUserId: string,
     listingId: string,
     volumeTco2e: number,
+    requestId?: string,
   ): Promise<BursaPurchaseResult> {
     const buyer = await this.prisma.user.findUnique({
       where: { id: buyerUserId },
@@ -773,18 +1234,61 @@ export class BursaService {
       );
     }
 
-    const eligibility = await this.getPurchaseEligibility(buyerUserId);
-    if (!eligibility.canPurchase || eligibility.purchaseRequirementTCO2e <= 0) {
-      throw new BadRequestException(eligibility.message);
-    }
-
     // ERC-1155 SPE-GRK is currently denominated in whole tCO2e units. Round
     // up so a fractional deficit is fully covered rather than under-offset.
-    const settlementVolume = Math.ceil(volumeTco2e);
-    if (settlementVolume > Math.ceil(eligibility.purchaseRequirementTCO2e)) {
-      throw new BadRequestException(
-        `Purchase volume exceeds the required offset volume of ${eligibility.purchaseRequirementTCO2e} tCO2e`,
-      );
+    const requestedSettlementVolume = Math.ceil(volumeTco2e);
+    const purchaseOrderId = requestId ?? randomUUID();
+    const existingOrder = await this.prisma.bursaOrder.findUnique({
+      where: { id: purchaseOrderId },
+      include: { allocations: true },
+    });
+
+    if (existingOrder) {
+      if (
+        existingOrder.buyerUserId !== buyerUserId ||
+        existingOrder.listingId !== listingId
+      ) {
+        throw new ConflictException(
+          'Purchase request ID sudah digunakan untuk pembelian lain.',
+        );
+      }
+      if (Number(existingOrder.volumeTco2e) !== requestedSettlementVolume) {
+        throw new ConflictException(
+          'Purchase request ID sudah digunakan dengan volume yang berbeda.',
+        );
+      }
+      if (existingOrder.status === 'COMPLETED' && existingOrder.txHash) {
+        return this.toBursaPurchaseResult(existingOrder, existingOrder.txHash);
+      }
+      if (existingOrder.status === 'FAILED') {
+        throw new ConflictException(
+          'Purchase sebelumnya gagal. Gunakan request ID baru untuk mencoba kembali.',
+        );
+      }
+      if (existingOrder.status === 'COMPLETED') {
+        throw new ServiceUnavailableException(
+          'Purchase sudah selesai tetapi transaction hash belum tersimpan. Status memerlukan rekonsiliasi.',
+        );
+      }
+    }
+
+    let settlementVolume = requestedSettlementVolume;
+    if (!existingOrder) {
+      const eligibility = await this.getPurchaseEligibility(buyerUserId);
+      if (
+        !eligibility.canPurchase ||
+        eligibility.purchaseRequirementTCO2e <= 0
+      ) {
+        throw new BadRequestException(eligibility.message);
+      }
+
+      if (settlementVolume > Math.ceil(eligibility.purchaseRequirementTCO2e)) {
+        throw new BadRequestException(
+          `Purchase volume exceeds the required offset volume of ${eligibility.purchaseRequirementTCO2e} tCO2e`,
+        );
+      }
+    } else {
+      settlementVolume = Number(existingOrder.volumeTco2e);
     }
 
     const listing = await this.prisma.bursaListing.findUnique({
@@ -792,7 +1296,11 @@ export class BursaService {
       include: { seller: true, carbonToken: true, kthGroup: true },
     });
     if (!listing) throw new NotFoundException('Listing not found');
-    if (listing.status !== 'ACTIVE' && listing.status !== 'PARTIALLY_FILLED') {
+    if (
+      !existingOrder &&
+      listing.status !== 'ACTIVE' &&
+      listing.status !== 'PARTIALLY_FILLED'
+    ) {
       throw new BadRequestException('Listing is no longer active');
     }
     if (!listing.blockchainListingId) {
@@ -804,96 +1312,310 @@ export class BursaService {
       );
     }
     if (Number(listing.volumeAvailableTco2e) < settlementVolume) {
-      throw new BadRequestException('Not enough volume available');
+      if (!existingOrder) {
+        throw new BadRequestException('Not enough volume available');
+      }
+      throw new ServiceUnavailableException(
+        'Purchase sudah tercatat di blockchain, tetapi proyeksi volume listing memerlukan rekonsiliasi.',
+      );
     }
 
-    const quote = await this.blockchainService.quoteBursaPurchase(
-      Number(listing.blockchainListingId),
-      settlementVolume,
-    );
-    this.logger.log(
-      `Executing Bursa settlement: ${buyer.walletAddress} buys ${settlementVolume} tCO2e from listing ${listing.id}`,
-    );
-    const txHash = await this.blockchainService.purchaseBursaListing(
-      Number(listing.blockchainListingId),
-      buyer.walletAddress,
-      settlementVolume,
-      quote.totalCostRkb,
-    );
-    const recipients = await this.blockchainService.getBursaRevenueRecipients();
-    const allocations = this.calculateAllocations(quote.totalCostRkb, {
-      ...recipients,
-      restoration: listing.kthGroup.walletAddress,
-      maintenance: listing.kthGroup.walletAddress,
-    });
+    if (!existingOrder) {
+      const blockchainListing =
+        await this.blockchainService.getBursaListingState(
+          Number(listing.blockchainListingId),
+        );
+      if (!listing.carbonToken.blockchainTokenId) {
+        throw new ConflictException(
+          'Token lokal belum memiliki asset ID blockchain yang valid.',
+        );
+      }
+      const expectedAssetId = Number(listing.carbonToken.blockchainTokenId);
+      const sellerWallet = listing.seller.walletAddress;
+      const chainRemainingVolume =
+        blockchainListing.totalAmount - blockchainListing.soldAmount;
 
-    const newVolume = Number(listing.volumeAvailableTco2e) - settlementVolume;
-    const newStatus = newVolume <= 0 ? 'FILLED' : 'PARTIALLY_FILLED';
-    const remainingDeficit = Math.max(
-      0,
-      (eligibility.complianceDeficitTCO2e ?? 0) - settlementVolume,
-    );
+      if (
+        blockchainListing.assetId !== expectedAssetId ||
+        (sellerWallet &&
+          blockchainListing.seller.toLowerCase() !== sellerWallet.toLowerCase())
+      ) {
+        throw new ConflictException(
+          'Referensi listing database tidak cocok dengan listing blockchain aktif.',
+        );
+      }
+      if (![1, 2].includes(blockchainListing.status)) {
+        throw new BadRequestException(
+          'Listing blockchain belum aktif atau sudah ditutup.',
+        );
+      }
+      if (chainRemainingVolume < settlementVolume) {
+        throw new ConflictException(
+          'Pasokan listing blockchain lebih kecil dari proyeksi database. Rekonsiliasi diperlukan.',
+        );
+      }
+    }
 
-    const order = await this.prisma.$transaction(async (tx) => {
-      const createdOrder = await tx.bursaOrder.create({
-        data: {
+    let order: BursaOrderWithAllocations;
+    if (existingOrder) {
+      order = existingOrder;
+    } else {
+      const quote = await this.blockchainService.quoteBursaPurchase(
+        Number(listing.blockchainListingId),
+        settlementVolume,
+      );
+      order = await this.prisma.bursaOrder.upsert({
+        where: { id: purchaseOrderId },
+        create: {
+          id: purchaseOrderId,
           listingId: listing.id,
           buyerUserId,
           volumeTco2e: settlementVolume,
           pricePerTonIdr: quote.unitPricePerTonIdr,
           totalAmountIdr: quote.totalCostRkb,
-          txHash,
-          status: 'COMPLETED',
-          completedAt: new Date(),
-          allocations: {
-            create: allocations.map((allocation) => ({
-              category: allocation.category,
-              recipientWalletAddress: allocation.recipientWalletAddress,
-              basisPoints: allocation.basisPoints,
-              amountIdr: allocation.amountIdr,
-              status: 'CONFIRMED',
-              txHash,
-            })),
-          },
+          status: 'PENDING_BLOCKCHAIN',
         },
+        update: {},
         include: { allocations: true },
       });
+      if (
+        order.listingId !== listing.id ||
+        order.buyerUserId !== buyerUserId ||
+        Number(order.volumeTco2e) !== settlementVolume
+      ) {
+        throw new ConflictException(
+          'Purchase request ID sudah digunakan untuk pembelian lain.',
+        );
+      }
+    }
 
+    const blockchainListingId = Number(listing.blockchainListingId);
+    const operationInput = createBursaPurchaseOperationInput(
+      order.id,
+      listing.id,
+      blockchainListingId,
+      buyer.walletAddress,
+      Number(order.volumeTco2e),
+      Number(order.totalAmountIdr),
+    );
+    const existingOperation =
+      await this.blockchainOperationService.ensurePendingOperation(
+        operationInput,
+      );
+    this.assertBursaOperationPayload(
+      existingOperation,
+      operationInput.payloadHash,
+      'Purchase Bursa',
+    );
+    const claimedOperation =
+      await this.blockchainOperationService.claimForExecution(
+        operationInput.idempotencyKey,
+      );
+    const operation =
+      claimedOperation ??
+      (await this.blockchainOperationService.ensurePendingOperation(
+        operationInput,
+      ));
+    this.assertBursaOperationPayload(
+      operation,
+      operationInput.payloadHash,
+      'Purchase Bursa',
+    );
+
+    let txHash = operation.transactionHash;
+    if (operation.status === BlockchainOperationStatus.CONFIRMED && txHash) {
+      // Reuse the confirmed transaction when only the local projection is
+      // being retried.
+    } else if (claimedOperation) {
+      try {
+        this.logger.log(
+          `Executing Bursa settlement: ${buyer.walletAddress} buys ${settlementVolume} tCO2e from listing ${listing.id}`,
+        );
+        txHash = await this.blockchainService.purchaseBursaListing(
+          blockchainListingId,
+          buyer.walletAddress,
+          settlementVolume,
+          Number(order.totalAmountIdr),
+        );
+      } catch (error: unknown) {
+        await this.blockchainOperationService
+          .markFailed(
+            operationInput.idempotencyKey,
+            error,
+            'retryable',
+            new Date(Date.now() + 15_000),
+          )
+          .catch((persistError: unknown) => {
+            this.logger.error(
+              'Unable to persist failed Bursa purchase operation',
+              persistError,
+            );
+          });
+        throw error;
+      }
+      try {
+        await this.blockchainOperationService.markConfirmed(
+          operationInput.idempotencyKey,
+          {
+            txHash,
+            chainId: operationInput.chainId,
+            contractAddress: operationInput.contractAddress,
+          },
+        );
+      } catch (error: unknown) {
+        await this.blockchainOperationService
+          .markFailed(operationInput.idempotencyKey, error, 'reconciliation')
+          .catch((persistError: unknown) => {
+            this.logger.error(
+              'Unable to mark Bursa purchase for reconciliation',
+              persistError,
+            );
+          });
+        throw new ServiceUnavailableException(
+          'Pembelian sudah dikirim ke blockchain, tetapi status lokal memerlukan rekonsiliasi.',
+        );
+      }
+    } else {
+      this.assertBursaOperationCanProceed(operation, 'Purchase Bursa');
+      throw new ServiceUnavailableException(
+        'Purchase Bursa sedang diproses atau menunggu jadwal retry.',
+      );
+    }
+
+    if (!txHash) {
+      throw new ServiceUnavailableException(
+        'Purchase Bursa berhasil diproses tetapi transaction hash belum tersedia.',
+      );
+    }
+
+    const recipients = await this.blockchainService.getBursaRevenueRecipients();
+    const allocations = this.calculateAllocations(
+      Number(order.totalAmountIdr),
+      {
+        ...recipients,
+        restoration: listing.kthGroup.walletAddress,
+        maintenance: listing.kthGroup.walletAddress,
+      },
+    );
+    const buyerCompanyId = buyer.companies[0]?.id;
+
+    const completedOrder = await this.prisma.$transaction(async (tx) => {
+      const currentOrder = await tx.bursaOrder.findUnique({
+        where: { id: order.id },
+        include: { allocations: true },
+      });
+      if (!currentOrder) {
+        throw new ServiceUnavailableException(
+          'Order Bursa tidak ditemukan saat menyelesaikan proyeksi lokal.',
+        );
+      }
+      if (currentOrder.status === 'COMPLETED' && currentOrder.txHash) {
+        return currentOrder;
+      }
+
+      const currentListing = await tx.bursaListing.findUnique({
+        where: { id: listing.id },
+        select: {
+          volumeAvailableTco2e: true,
+          volumeSoldTco2e: true,
+        },
+      });
+      if (!currentListing) {
+        throw new ServiceUnavailableException(
+          'Listing Bursa tidak ditemukan saat menyelesaikan proyeksi lokal.',
+        );
+      }
+      const currentAvailableVolume = Number(
+        currentListing.volumeAvailableTco2e,
+      );
+      if (currentAvailableVolume < settlementVolume) {
+        throw new ServiceUnavailableException(
+          'Transaksi blockchain sudah terkonfirmasi, tetapi volume lokal tidak mencukupi. Rekonsiliasi diperlukan.',
+        );
+      }
+
+      const newVolume = currentAvailableVolume - settlementVolume;
       await tx.bursaListing.update({
         where: { id: listing.id },
         data: {
           volumeAvailableTco2e: newVolume,
           volumeSoldTco2e: { increment: settlementVolume },
-          status: newStatus,
+          status: newVolume <= 0 ? 'FILLED' : 'PARTIALLY_FILLED',
         },
       });
 
-      await tx.carbonToken.update({
-        where: { id: listing.carbonTokenId },
+      const tokenUpdate = await tx.carbonToken.updateMany({
+        where: {
+          id: listing.carbonTokenId,
+          availableBalanceTco2e: { gte: settlementVolume },
+        },
         data: { availableBalanceTco2e: { decrement: settlementVolume } },
       });
+      if (tokenUpdate.count !== 1) {
+        throw new ServiceUnavailableException(
+          'Transaksi blockchain sudah terkonfirmasi, tetapi saldo token lokal tidak mencukupi. Rekonsiliasi diperlukan.',
+        );
+      }
 
-      const company = buyer.companies[0];
-      if (company) {
-        await tx.company.update({
-          where: { id: company.id },
-          data: {
-            carbonDeficitTco2e: remainingDeficit,
-            offsetCostIdr: remainingDeficit * quote.unitPricePerTonIdr,
-            complianceRating:
-              remainingDeficit > 0
-                ? ComplianceRating.WARNING
-                : ComplianceRating.COMPLIANT,
-          },
+      if (currentOrder.allocations.length === 0) {
+        await tx.bursaRevenueAllocation.createMany({
+          data: allocations.map((allocation) => ({
+            orderId: currentOrder.id,
+            category: allocation.category,
+            recipientWalletAddress: allocation.recipientWalletAddress,
+            basisPoints: allocation.basisPoints,
+            amountIdr: allocation.amountIdr,
+            status: 'CONFIRMED',
+            txHash,
+          })),
         });
       }
 
-      return createdOrder;
+      if (buyerCompanyId) {
+        const company = await tx.company.findUnique({
+          where: { id: buyerCompanyId },
+          select: { carbonDeficitTco2e: true },
+        });
+        if (company) {
+          const remainingDeficit = Math.max(
+            0,
+            Number(company.carbonDeficitTco2e) - settlementVolume,
+          );
+          await tx.company.update({
+            where: { id: buyerCompanyId },
+            data: {
+              carbonDeficitTco2e: remainingDeficit,
+              offsetCostIdr: remainingDeficit * Number(order.pricePerTonIdr),
+              complianceRating:
+                remainingDeficit > 0
+                  ? ComplianceRating.WARNING
+                  : ComplianceRating.COMPLIANT,
+            },
+          });
+        }
+      }
+
+      return tx.bursaOrder.update({
+        where: { id: currentOrder.id },
+        data: {
+          txHash,
+          status: 'COMPLETED',
+          completedAt: currentOrder.completedAt ?? new Date(),
+        },
+        include: { allocations: true },
+      });
     });
 
+    return this.toBursaPurchaseResult(completedOrder, txHash);
+  }
+
+  private toBursaPurchaseResult(
+    order: BursaOrderWithAllocations,
+    txHash: string,
+  ): BursaPurchaseResult {
     return {
       id: order.id,
-      txHash,
+      txHash: order.txHash ?? txHash,
       listingId: order.listingId,
       volumeTco2e: Number(order.volumeTco2e),
       pricePerTonIdr: Number(order.pricePerTonIdr),

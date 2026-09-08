@@ -1,6 +1,39 @@
 import type { ZodType } from 'zod';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+/**
+ * Resolves the API Base URL dynamically.
+ *
+ * If the app is configured with a localhost backend (e.g. 'http://localhost:3000')
+ * but is being accessed from another device on LAN (e.g. 'http://192.168.58.209:5173'),
+ * dynamically rewrite the host to window.location.hostname so the browser connects
+ * to the developer's server rather than the client device's loopback interface.
+ */
+export function resolveApiBaseUrl(
+  configuredUrl: string = import.meta.env.VITE_API_BASE_URL || '',
+  currentHostname?: string
+): string {
+  if (!configuredUrl) return '';
+
+  const hostname =
+    currentHostname ||
+    (typeof window !== 'undefined' && window.location ? window.location.hostname : '');
+
+  if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    try {
+      const url = new URL(configuredUrl);
+      if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+        url.hostname = hostname;
+        return url.origin;
+      }
+    } catch {
+      // Relative paths or non-standard URLs are returned as-is
+    }
+  }
+
+  return configuredUrl;
+}
+
+export const BASE_URL = resolveApiBaseUrl();
 
 export class ApiValidationError extends Error {
   constructor(

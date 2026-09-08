@@ -42,6 +42,7 @@
     "ml:studio": "poetry --directory ./ml run studio",
     "db:generate": "pnpm --filter ./server prisma:generate",
     "db:migrate": "pnpm --filter ./server prisma:migrate",
+    "db:reset": "pnpm --filter ./server prisma:migrate:reset",
     "db:deploy": "pnpm --filter ./server prisma:migrate:deploy",
     "db:status": "pnpm --filter ./server prisma:migrate:status",
     "db:seed": "pnpm --filter ./server prisma:seed",

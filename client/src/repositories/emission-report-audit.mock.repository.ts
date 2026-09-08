@@ -14,14 +14,21 @@ export class MockEmissionReportAuditRepository implements EmissionReportAuditRep
   private detail: EmissionReportAuditDetail = { ...MOCK_EMISSION_REPORT_AUDIT_DETAIL };
 
   async getQueue(
-    status?: 'submitted' | 'revision_required' | 'approved'
+    status?: 'all' | 'submitted' | 'revision_required' | 'approved'
   ): Promise<EmissionReportAuditListItem[]> {
-    return status ? this.queue.filter((item) => item.status === status) : this.queue;
+    return status && status !== 'all'
+      ? this.queue.filter((item) => item.status === status)
+      : this.queue;
   }
 
   async getDetail(id: string): Promise<EmissionReportAuditDetail> {
-    if (id !== this.detail.id) throw new Error('Emission report was not found');
-    return this.detail;
+    const item = this.queue.find((q) => q.id === id);
+    if (!item) throw new Error('Emission report was not found');
+    return {
+      ...this.detail,
+      ...item,
+      auditResult: item.auditResult ?? this.detail.auditResult,
+    };
   }
 
   async decide(

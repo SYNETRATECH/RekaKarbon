@@ -68,6 +68,76 @@ export interface ForestProjectProgressDetail {
   disbursementHistory: ForestProjectDisbursement[];
 }
 
+export type ForestInspectionMethod = 'drone' | 'satellite' | 'field' | 'hybrid';
+
+export type ForestInspectionStatus =
+  'scheduled' | 'due' | 'submitted' | 'in_review' | 'revision_required' | 'verified' | 'overdue';
+
+export interface ForestInspectionIndicator {
+  id?: string;
+  code: string;
+  label: string;
+  targetValue: number | null;
+  unit: string | null;
+}
+
+export interface ForestInspectionDecision {
+  id: string;
+  decision: 'approved' | 'request_revision';
+  verifiedSequestrationTCO2e: number | null;
+  notes: string | null;
+  merkleRoot: string | null;
+  blockchainTxHash: string | null;
+  decidedAt: string;
+  auditorUserId: string;
+}
+
+export interface ForestInspectionSubmission {
+  id: string;
+  landName: string;
+  actualSequestrationTCO2e: number;
+  areaHectares: number | null;
+  survivalRatePercent: number | null;
+  canopyHeightMeters: number | null;
+  ndviScore: number | null;
+  notes: string | null;
+  snapshotHash: string | null;
+  status: ForestInspectionStatus;
+  submittedAt: string;
+  submittedByUserId: string;
+  latestDecision: ForestInspectionDecision | null;
+}
+
+export interface ForestInspectionCheckpoint {
+  id: string;
+  sequenceNo: number;
+  title: string;
+  scheduledAt: string;
+  submissionDeadline: string | null;
+  method: ForestInspectionMethod;
+  instructions: string | null;
+  status: ForestInspectionStatus;
+  indicators: ForestInspectionIndicator[];
+  latestSubmission: ForestInspectionSubmission | null;
+}
+
+export interface CreateForestInspectionIndicatorInput {
+  code: string;
+  label: string;
+  targetValue?: number;
+  unit?: string;
+}
+
+export interface CreateForestInspectionCheckpointInput {
+  sequenceNo: number;
+  title: string;
+  scheduledAt: string;
+  submissionDeadline?: string;
+  method: ForestInspectionMethod;
+  instructions?: string;
+  indicators?: CreateForestInspectionIndicatorInput[];
+}
+
 export interface ForestProjectItem {
   id: string;
   projectName: string;
@@ -87,6 +157,7 @@ export interface ForestProjectItem {
   assignedAuditor?: ForestProjectAuditorOption | null;
   auditorAssignedAt?: string | null;
   auditedAt?: string | null;
+  inspectionTimeline?: ForestInspectionCheckpoint[];
   speCertificateId?: string;
   speMinted?: boolean;
   speTokenId?: string;
@@ -128,6 +199,9 @@ export interface CreateForestProjectInput {
   targetSequestrationTCO2e: number;
   budgetTotalIDR: number;
   kthGroupName: string;
+  auditorUserId: string;
+  projectStartDate: string;
+  inspectionCheckpoints: CreateForestInspectionCheckpointInput[];
   budgetReportFileName?: string;
   budgetReportFileSizeBytes?: number;
 }
@@ -140,6 +214,9 @@ export interface ForestProjectEditorFormData {
   targetSequestrationTCO2e: string;
   fundingBudgetIDR: string;
   assignedKTH: string;
+  auditorUserId: string;
+  projectStartDate: string;
+  inspectionCheckpoints: CreateForestInspectionCheckpointInput[];
   budgetReportFileName: string;
   budgetReportFileSize: number;
 }

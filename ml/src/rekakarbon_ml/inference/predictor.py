@@ -22,6 +22,7 @@ from ..training.transformers import (
     SECTOR_TO_IDX,
     EmissionFeatureEngineer,
 )
+from .types import PredictionResult
 
 
 class CarbonAnomalyPredictor:
@@ -91,6 +92,17 @@ class CarbonAnomalyPredictor:
         df = pd.DataFrame([payload])
         res = self.predict_batch(df)
         return res[0]
+
+    def predict_single_typed(
+        self, record: Dict[str, Any], validate: bool = False
+    ) -> PredictionResult:
+        """Runs end-to-end anomaly audit returning a strongly-typed PredictionResult DTO."""
+        res_dict = self.predict_single(record, validate=validate)
+        return PredictionResult(**res_dict)
+
+    def predict_batch_typed(self, df: pd.DataFrame) -> List[PredictionResult]:
+        """Runs vectorized anomaly audit returning a list of strongly-typed PredictionResult DTOs."""
+        return [PredictionResult(**res) for res in self.predict_batch(df)]
 
     def predict_batch(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
         """Runs vectorized multi-scope anomaly audit on a DataFrame of company reports."""
