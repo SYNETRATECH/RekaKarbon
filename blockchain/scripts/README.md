@@ -90,6 +90,7 @@ WALLET_CREDIT_RECIPIENT=0x... \
 WALLET_CREDIT_AMOUNT_IDR=700000000000 \
 WALLET_CREDIT_EXPECTED_BALANCE_BEFORE=... \
 WALLET_CREDIT_CONFIRM=MINT \
+QBFT_ENV_FILE=/opt/rekakarbon/qbft/shared/network/generated/.env \
 pnpm qbft:fund-wallet-credit
 ```
 

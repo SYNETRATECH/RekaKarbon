@@ -13,8 +13,11 @@ const WALLET_CREDIT_ABI = [
 ] as const;
 
 function loadEnvironment(): void {
+  const configuredNetworkEnvironment = process.env.QBFT_ENV_FILE?.trim();
   const environmentFiles = [
-    path.resolve(process.cwd(), 'networks/local-qbft/generated/.env'),
+    configuredNetworkEnvironment
+      ? path.resolve(configuredNetworkEnvironment)
+      : path.resolve(process.cwd(), 'networks/local-qbft/generated/.env'),
     path.resolve(process.cwd(), '.env'),
   ];
 
