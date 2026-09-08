@@ -216,11 +216,24 @@ jobs:
             printf 'ALLOW_DEPLOY_NEW=%s\n' "$ALLOW_DEPLOY_NEW" >> "$QBFT_DIR/.env"
             trap 'rm -f "$QBFT_DIR/.env"' EXIT
 
-            cd "$RELEASE_ROOT"
-            corepack enable
-            pnpm install --frozen-lockfile --filter ./blockchain... --ignore-scripts
-            pnpm --filter ./blockchain qbft:preflight
-            pnpm --filter ./blockchain exec hardhat run scripts/deploy.ts --network besu_qbft
+            # The VM only needs Docker. Run the Node/pnpm/Hardhat toolchain in a
+            # disposable Node container so the host does not need Node.js or
+            # Corepack installed. Host networking lets Hardhat reach the QBFT
+            # RPC bound to 127.0.0.1:8545.
+            docker run --rm \
+              --network host \
+              --user "$(id -u):$(id -g)" \
+              --env HOME=/tmp/rekakarbon-home \
+              --env COREPACK_HOME=/tmp/rekakarbon-corepack \
+              --volume "$RELEASE_ROOT:/workspace" \
+              --workdir /workspace \
+              node:24.15.0-bookworm \
+              bash -Eeuo pipefail -c '
+                corepack pnpm --version
+                corepack pnpm install --frozen-lockfile --filter ./blockchain... --ignore-scripts
+                corepack pnpm --filter ./blockchain qbft:preflight
+                corepack pnpm --filter ./blockchain exec hardhat run scripts/deploy.ts --network besu_qbft
+              '
 
             MANIFEST="$QBFT_DIR/deployment-info.json"
             test -s "$MANIFEST" || { echo 'Manifest deployment tidak dibuat.' >&2; exit 1; }
