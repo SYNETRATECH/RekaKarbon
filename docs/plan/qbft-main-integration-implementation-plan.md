@@ -1,5 +1,25 @@
 # Rencana Implementasi Integrasi `main` dan QBFT
 
+## Status Eksekusi (checkpoint 8 September 2026)
+
+Branch kerja: `integration/qbft-main-sync` berbasis `origin/main@1d77cee`.
+
+- **Selesai:** baseline/security cleanup, migration widening yang reversible, tooling
+  QBFT/preflight/deployment manifest, guard backend chain/bytecode/role, rekonsiliasi
+  listing Bursa, deduplikasi history wallet, health probe dinamis, perbaikan frontend
+  selektif, dan workflow deploy manual-only berbasis Tailscale + SSH key.
+- **Terverifikasi lokal:** blockchain typecheck/compile, 34 smart-contract tests, Prisma
+  schema validate, Prettier, YAML workflow parse, dan syntax transpile file TS/TSX yang
+  diubah.
+- **Tertunda karena lingkungan:** server lint/typecheck/Jest dan client build/typecheck
+  penuh menunggu dependency workspace dapat dipasang tanpa mengganggu proses `server:dev`
+  yang sedang aktif.
+- **Belum dieksekusi:** bootstrap/cutover VM QBFT, deployment kontrak staging/produksi,
+  restart backend di VM, dan top-up Rp700.000.000.000. Semua memerlukan approval
+  environment, secret runtime, alamat kontrak/wallet, serta bukti health staging.
+
+Checkpoint ini tidak mengubah `main`, `dev/blockchain(V2)`, database, atau VM remote.
+
 ## 1. Tujuan
 
 Dokumen ini menjadi urutan kerja resmi untuk menggabungkan perubahan QBFT dari
