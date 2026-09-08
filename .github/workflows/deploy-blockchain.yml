@@ -47,7 +47,7 @@ jobs:
       RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}
       PROJECT_DIR: ${{ vars.BLOCKCHAIN_PROJECT_DIR || '/home/indah/VM_BLOCKHAIN' }}
       NETWORK_ENV_FILE: ${{ vars.QBFT_NETWORK_ENV_FILE || '/home/indah/VM_BLOCKHAIN/qbft/shared/generated/.env' }}
-      BLOCKCHAIN_ENV_FILE: ${{ vars.BLOCKCHAIN_ENV_FILE || '/home/indah/VM_BLOCKHAIN/shared/.env' }}
+      BLOCKCHAIN_ENV_FILE: ${{ vars.BLOCKCHAIN_ENV_FILE || '/home/indah/VM_BLOCKHAIN/qbft/shared/.env' }}
       BACKEND_ENV_FILE: ${{ vars.BLOCKCHAIN_BACKEND_ENV_FILE || '/home/indah/VM_BLOCKHAIN/shared/.env' }}
       BACKEND_HEALTH_URL: ${{ vars.BLOCKCHAIN_BACKEND_HEALTH_URL || 'http://127.0.0.1:3000/health' }}
 
