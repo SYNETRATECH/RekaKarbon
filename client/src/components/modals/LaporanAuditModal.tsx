@@ -103,7 +103,7 @@ export default function LaporanAuditModal({
                     : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                 }`}
               >
-                Skor Kepercayaan: {auditResult.trustScore}%
+                Skor Kepercayaan: {auditResult.trustScore}/100
               </span>
             </div>
 

@@ -21,7 +21,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ServiceWorkerRegister, OfflineIndicator, InstallPromptBanner } from '@/components/pwa';
-import brandIcon from './assets/icon.png';
+import brandIcon from '@/assets/icon.png';
 import './styles/index.css';
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -39,7 +39,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           name="description"
           content="Platform Terintegrasi Pengukuran, Verifikasi, dan Bursa Kredit Karbon Indonesia"
         />
-        <link rel="icon" type="image/png" href={brandIcon} />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/apple-icon.png" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

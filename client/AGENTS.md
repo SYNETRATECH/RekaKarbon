@@ -190,6 +190,19 @@ pnpm client:build        # Production build
 
 Enforces: **View layer cannot import `lib/mock` directly**. Data must flow through `store` → `repository`.
 
+### 7. Asset Management Standards (`src/assets` vs `public/`)
+
+- **`src/assets/` (Bundled Module Pipeline)**:
+  - MUST be used for assets directly imported in TypeScript, TSX, or CSS (e.g., `import logo from '@/assets/brand/icon.png'`).
+  - Automatically processed by Vite: includes content hashing for immutable cache busting (`[name]-[hash].[ext]`), compile-time link verification, and support for inlining queries (`?inline` used in client PDF generation).
+  - Categorized under `brand/`, `images/`, and `media/`.
+  - Heavy images (>200 KB) must be compressed/resized before adding to prevent LCP degradation.
+- **`public/` (Static Root Directory)**:
+  - MUST be used for browser root conventions (`favicon.ico`, `favicon.svg`, `favicon-96x96.png`, `manifest.webmanifest`, `offline.html`, `sw.js`).
+  - MUST be used for PWA icons (`public/icons/`) and dynamic/runtime mock attachments (`public/proofs/`) referenced by raw string paths in database records or mock data (e.g., `/proofs/bukti_transfer.svg`).
+  - Never import files in `public/` using ESM `import` statements; reference them via root-relative paths (`/icons/...`).
+  - Dead or orphaned assets must be pruned promptly.
+
 ---
 
 ## 🌐 Environment Variables

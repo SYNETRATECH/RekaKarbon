@@ -596,8 +596,8 @@ export default function AuditorEmissionReportsRoute() {
                             : 'border-emerald-300 bg-emerald-50 text-emerald-700'
                         }`}
                       >
-                        {report.auditResult.isAnomaly ? 'AI: Anomali' : 'AI: Wajar'} (
-                        {Math.round(report.auditResult.trustScore)}%)
+                        {report.auditResult.isAnomaly ? 'AI: Anomali' : 'AI: Wajar'} · Skor{' '}
+                        {Math.round(report.auditResult.trustScore)}/100
                       </Badge>
                     )}
                   </div>
