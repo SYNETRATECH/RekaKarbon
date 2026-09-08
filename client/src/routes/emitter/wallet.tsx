@@ -202,9 +202,9 @@ export default function EmitterWallet() {
               Belum ada riwayat transaksi.
             </div>
           ) : (
-            history.map((tx: any) => (
+            history.map((tx, index) => (
               <div
-                key={tx.id}
+                key={`${tx.id}-${tx.type}-${tx.amount}-${tx.date}-${index}`}
                 className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-100"
               >
                 <div className="flex items-center gap-4">
