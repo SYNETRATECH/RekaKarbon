@@ -31,24 +31,32 @@ export function isAllowedOrigin(
     return true;
   }
 
+  // Normalize origin by stripping trailing slash
+  const normalizedOrigin = origin.replace(/\/+$/, '');
+
+  // Normalize allowed origins by trimming and stripping trailing slashes
+  const normalizedAllowed = allowedOrigins.map((p) =>
+    p.trim().replace(/\/+$/, ''),
+  );
+
   // 2. Universal wildcard allowed
-  if (allowedOrigins.includes('*')) {
+  if (normalizedAllowed.includes('*')) {
     return true;
   }
 
   // 3. Exact origin match
-  if (allowedOrigins.includes(origin)) {
+  if (normalizedAllowed.includes(normalizedOrigin)) {
     return true;
   }
 
-  // 4. Wildcard pattern matching (e.g. 'https://*.rekakarbon.id')
-  const matchesWildcard = allowedOrigins.some((pattern) => {
+  // 4. Wildcard pattern matching (e.g. 'https://*.rekakarbon.id', 'https://*.farrelad.com')
+  const matchesWildcard = normalizedAllowed.some((pattern) => {
     if (!pattern.includes('*')) return false;
     const regexPattern =
       '^' +
       pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') +
       '$';
-    return new RegExp(regexPattern).test(origin);
+    return new RegExp(regexPattern).test(normalizedOrigin);
   });
   if (matchesWildcard) {
     return true;
@@ -57,7 +65,7 @@ export function isAllowedOrigin(
   // 5. Automatic private network / LAN allowance in development mode
   if (isDev) {
     const isPrivateLan = PRIVATE_LAN_REGEXES.some((regex) =>
-      regex.test(origin),
+      regex.test(normalizedOrigin),
     );
     if (isPrivateLan) {
       return true;

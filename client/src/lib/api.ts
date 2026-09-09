@@ -12,11 +12,23 @@ export function resolveApiBaseUrl(
   configuredUrl: string = import.meta.env.VITE_API_BASE_URL || '',
   currentHostname?: string
 ): string {
-  if (!configuredUrl) return '';
-
   const hostname =
     currentHostname ||
     (typeof window !== 'undefined' && window.location ? window.location.hostname : '');
+
+  // If accessed from production domain rekakarbon.farrelad.com, default to api.rekakarbon.farrelad.com
+  // when VITE_API_BASE_URL is not explicitly configured with an external endpoint
+  if (hostname === 'rekakarbon.farrelad.com' || hostname.endsWith('.farrelad.com')) {
+    if (
+      !configuredUrl ||
+      configuredUrl.includes('localhost') ||
+      configuredUrl.includes('127.0.0.1')
+    ) {
+      return 'https://api.rekakarbon.farrelad.com';
+    }
+  }
+
+  if (!configuredUrl) return '';
 
   if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
     try {

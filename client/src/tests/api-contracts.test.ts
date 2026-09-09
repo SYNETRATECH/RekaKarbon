@@ -204,5 +204,17 @@ describe('Client-Side API Contract & Envelope Tests', () => {
       );
       expect(resolveApiBaseUrl('/api', '192.168.58.209')).toBe('/api');
     });
+
+    it('automatically resolves to https://api.rekakarbon.farrelad.com when accessed from rekakarbon.farrelad.com and no explicit URL configured or set to localhost', () => {
+      expect(resolveApiBaseUrl('', 'rekakarbon.farrelad.com')).toBe(
+        'https://api.rekakarbon.farrelad.com'
+      );
+      expect(resolveApiBaseUrl('http://localhost:3000', 'rekakarbon.farrelad.com')).toBe(
+        'https://api.rekakarbon.farrelad.com'
+      );
+      expect(resolveApiBaseUrl('https://custom-api.farrelad.com', 'rekakarbon.farrelad.com')).toBe(
+        'https://custom-api.farrelad.com'
+      );
+    });
   });
 });
