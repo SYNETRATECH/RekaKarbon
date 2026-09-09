@@ -31,6 +31,10 @@ export interface RegulatorRepository {
   assignForestProjectAuditor(projectId: string, auditorUserId: string): Promise<ForestProjectItem>;
   mintForestProjectSpe(projectId: string): Promise<ForestProjectMintResult>;
   createForestProject(input: CreateForestProjectInput): Promise<ForestProjectItem>;
+  uploadBudgetReport(
+    projectId: string,
+    file: File
+  ): Promise<{ fileName: string; fileSizeBytes: number }>;
   getKTHGroups(): Promise<KTHGroupItem[]>;
   createKTHGroup(input: CreateKTHGroupInput): Promise<KTHGroupItem>;
   getKTHTransactions(): Promise<KTHTransactionItem[]>;
@@ -154,6 +158,21 @@ export class ApiRegulatorRepository implements RegulatorRepository {
       ForestProjectApiItemSchema
     );
     return mapApiProjectToItem(project);
+  }
+  async uploadBudgetReport(
+    projectId: string,
+    file: File
+  ): Promise<{ fileName: string; fileSizeBytes: number }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post<{ fileName: string; fileSizeBytes: number }>(
+      `/regulator/forest-projects/${encodeURIComponent(projectId)}/budget-report`,
+      formData,
+      z.object({
+        fileName: z.string(),
+        fileSizeBytes: z.number(),
+      })
+    );
   }
   async getKTHGroups(): Promise<KTHGroupItem[]> {
     return api.get<KTHGroupItem[]>('/regulator/kth-groups', z.array(KTHGroupItemSchema));

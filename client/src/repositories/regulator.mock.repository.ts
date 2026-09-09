@@ -158,6 +158,17 @@ export class MockRegulatorRepository implements RegulatorRepository {
     this.projects.unshift(project);
     return project;
   }
+  async uploadBudgetReport(
+    projectId: string,
+    file: File
+  ): Promise<{ fileName: string; fileSizeBytes: number }> {
+    const project = this.projects.find((p) => p.id === projectId);
+    if (project) {
+      project.budgetReportFileName = file.name;
+      project.budgetReportFileSize = file.size;
+    }
+    return { fileName: file.name, fileSizeBytes: file.size };
+  }
   async getKTHGroups(): Promise<KTHGroupItem[]> {
     return this.kthGroups;
   }

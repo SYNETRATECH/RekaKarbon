@@ -12,6 +12,18 @@ export function resolveApiBaseUrl(
   configuredUrl: string = import.meta.env.VITE_API_BASE_URL || '',
   currentHostname?: string
 ): string {
+  let targetUrl = configuredUrl || 'http://localhost:3000';
+
+  // Fix stale/invalid 8100 port config to point to standard NestJS backend port 3000
+  if (targetUrl.includes(':8100')) {
+    if (typeof window !== 'undefined') {
+      console.warn(
+        '[RekaKarbon API Client] Rewriting stale port 8100 to standard NestJS port 3000'
+      );
+    }
+    targetUrl = targetUrl.replace(':8100', ':3000');
+  }
+
   const hostname =
     currentHostname ||
     (typeof window !== 'undefined' && window.location ? window.location.hostname : '');
@@ -19,30 +31,28 @@ export function resolveApiBaseUrl(
   // If accessed from production domain rekakarbon.farrelad.com, default to api.rekakarbon.farrelad.com
   // when VITE_API_BASE_URL is not explicitly configured with an external endpoint
   if (hostname === 'rekakarbon.farrelad.com' || hostname.endsWith('.farrelad.com')) {
-    if (
-      !configuredUrl ||
-      configuredUrl.includes('localhost') ||
-      configuredUrl.includes('127.0.0.1')
-    ) {
-      return 'https://api.rekakarbon.farrelad.com';
+    if (!targetUrl || targetUrl.includes('localhost') || targetUrl.includes('127.0.0.1')) {
+      targetUrl = 'https://api.rekakarbon.farrelad.com';
     }
   }
 
-  if (!configuredUrl) return '';
-
   if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
     try {
-      const url = new URL(configuredUrl);
+      const url = new URL(targetUrl);
       if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
         url.hostname = hostname;
-        return url.origin;
+        targetUrl = url.origin;
       }
     } catch {
       // Relative paths or non-standard URLs are returned as-is
     }
   }
 
-  return configuredUrl;
+  if (typeof window !== 'undefined') {
+    console.info(`[RekaKarbon API Client] Initialized API Base URL: "${targetUrl}"`);
+  }
+
+  return targetUrl;
 }
 
 export const BASE_URL = resolveApiBaseUrl();
@@ -143,6 +153,18 @@ export const api = {
   patch: <T>(path: string, body?: unknown, schema?: ZodType<T>) =>
     apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }, schema),
   delete: <T>(path: string, schema?: ZodType<T>) => apiFetch<T>(path, { method: 'DELETE' }, schema),
+  getBlob: async (path: string): Promise<Blob> => {
+    const token = getAuthToken();
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: 'GET',
+      headers,
+    });
+    if (!res.ok) {
+      throw new Error(`Download Error ${res.status}: ${res.statusText}`);
+    }
+    return res.blob();
+  },
   upload: async <T>(path: string, formData: FormData, schema?: ZodType<T>): Promise<T> => {
     const token = getAuthToken();
     const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};

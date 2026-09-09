@@ -108,6 +108,9 @@ export interface ForestProjectItem {
   auditorAssignedAt: string | null;
   auditedAt: string | null;
   inspectionTimeline: ForestInspectionCheckpointItem[];
+  budgetReportFileName?: string;
+  budgetReportFileSizeBytes?: number;
+  budgetReportStorageKey?: string;
 }
 
 export interface ForestProjectMintResult {

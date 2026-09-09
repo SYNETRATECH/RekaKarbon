@@ -17,6 +17,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
+import { StorageService } from '../storage/storage.service';
 import {
   DisbursementItem,
   Project,
@@ -150,6 +151,7 @@ export class ProjectsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly blockchainService: BlockchainService,
+    private readonly storageService: StorageService,
   ) {}
 
   private get projectInclude() {
@@ -699,6 +701,10 @@ export class ProjectsService {
           })),
         },
         coordinatesJson: dto.coordinates as unknown as Prisma.InputJsonValue,
+        budgetReportFileName: dto.budgetReportFileName || null,
+        budgetReportFileSizeBytes: dto.budgetReportFileSizeBytes
+          ? BigInt(dto.budgetReportFileSizeBytes)
+          : null,
       },
       include: projectIncludeConfig,
     });
@@ -1010,6 +1016,11 @@ export class ProjectsService {
         inspectionTimeline: r.inspectionCheckpoints.map(
           toForestInspectionCheckpointItem,
         ),
+        budgetReportFileName: r.budgetReportFileName ?? undefined,
+        budgetReportFileSizeBytes: r.budgetReportFileSizeBytes
+          ? Number(r.budgetReportFileSizeBytes)
+          : undefined,
+        budgetReportStorageKey: r.budgetReportStorageKey ?? undefined,
       };
     });
   }
@@ -1195,6 +1206,180 @@ export class ProjectsService {
       stages,
       disbursementHistory,
       tokenBuyers,
+      budgetReportFileName: r.budgetReportFileName || undefined,
+      budgetReportFileSize: r.budgetReportFileSizeBytes
+        ? Number(r.budgetReportFileSizeBytes)
+        : undefined,
+    };
+  }
+
+  async generateProjectBudgetReportPdf(projectId: string): Promise<Buffer> {
+    const project = await this.findProjectById(projectId);
+
+    const contentText = [
+      `REKAKARBON - LAPORAN ANGGARAN & TRANSPARANSI RESTORASI PROYEK`,
+      `======================================================================`,
+      `Nama Proyek           : ${project.name}`,
+      `ID Proyek             : ${project.id}`,
+      `Wilayah / Provinsi    : ${project.region}`,
+      `Luas Area Hutan       : ${project.area} Hektar`,
+      `Cadangan CO2 (tCO2e)  : ${project.carbon} tCO2e`,
+      `Pohon Ditanam         : ${project.plantedTrees || 0} / ${project.targetTrees || 0} Pohon`,
+      `Indeks Vegetasi       : NDVI ${project.ndvi} | EVI ${project.evi}`,
+      `Status Reboisasi      : ${project.reforestationStatus} (Kelangsungan Hidup ${(project.survivalRate * 100).toFixed(1)}%)`,
+      `----------------------------------------------------------------------`,
+      `TOTAL ANGGARAN RESTORASI : Rp ${(project.totalBudget || 0).toLocaleString('id-ID')}`,
+      `DANA TERCAIRKAN          : Rp ${(project.disbursedBudget || 0).toLocaleString('id-ID')}`,
+      `SISA ANGGARAN PROYEK     : Rp ${((project.totalBudget || 0) - (project.disbursedBudget || 0)).toLocaleString('id-ID')}`,
+      `ALOKASI DANA DARURAT     : Rp ${(project.emergencyFundUsed || 0).toLocaleString('id-ID')}`,
+      `----------------------------------------------------------------------`,
+      `RIWAYAT ALIRAN DANA VENDOR (DISBURSEMENT LEDGER):`,
+      ...(project.disbursementHistory && project.disbursementHistory.length > 0
+        ? project.disbursementHistory.map(
+            (d, idx) =>
+              `  ${idx + 1}. [${d.date}] ${d.desc} - Rp ${d.amount.toLocaleString('id-ID')} (${d.category})`,
+          )
+        : ['  - Belum ada riwayat alokasi vendor']),
+      `----------------------------------------------------------------------`,
+      `PENEBUS & PEMBELI KREDIT KARBON (SPE-GRK):`,
+      ...(project.tokenBuyers && project.tokenBuyers.length > 0
+        ? project.tokenBuyers.map(
+            (b, idx) =>
+              `  ${idx + 1}. ${b.companyName} (${b.sector}) - ${b.tCO2e} tCO2e - Rp ${b.amountIDR.toLocaleString('id-ID')} [${b.speCertificateId}]`,
+          )
+        : ['  - Belum ada data pembeli token']),
+      `======================================================================`,
+      `STATUS LEDGER : TERVERIFIKASI BLOCKCHAIN BESU ON-CHAIN (SPE-KLHK)`,
+      `Diterbitkan Pada : ${new Date().toLocaleString('id-ID')}`,
+    ];
+
+    const pdfLines = contentText.map((line) =>
+      line.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)'),
+    );
+
+    let streamBody = 'BT\n/F1 9 Tf\n13 TL\n35 770 Td\n';
+    pdfLines.forEach((line) => {
+      streamBody += `(${line}) '\n`;
+    });
+    streamBody += 'ET\n';
+
+    const streamLength = Buffer.byteLength(streamBody, 'utf-8');
+
+    const objects = [
+      `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`,
+      `2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`,
+      `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`,
+      `4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>\nendobj\n`,
+      `5 0 obj\n<< /Length ${streamLength} >>\nstream\n${streamBody}endstream\nendobj\n`,
+    ];
+
+    const pdfHeader = '%PDF-1.4\n';
+    const offsets = [pdfHeader.length];
+    let body = pdfHeader;
+
+    objects.forEach((obj) => {
+      offsets.push(body.length);
+      body += obj;
+    });
+
+    const xrefOffset = body.length;
+    let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+    offsets.slice(1).forEach((offset) => {
+      xref += `${offset.toString().padStart(10, '0')} 00000 n \n`;
+    });
+
+    const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+
+    return Buffer.from(body + xref + trailer, 'utf-8');
+  }
+
+  async uploadProjectBudgetReport(
+    projectId: string,
+    file: Express.Multer.File,
+  ): Promise<{ fileName: string; fileSizeBytes: number; storageKey: string }> {
+    const project = await this.prisma.forestProject.findUnique({
+      where: { id: projectId },
+      select: { id: true },
+    });
+    if (!project) {
+      throw new NotFoundException(
+        `Proyek dengan ID '${projectId}' tidak ditemukan.`,
+      );
+    }
+
+    const isAllowedExt = /\.(pdf|xlsx|xls)$/i.test(file.originalname);
+    if (!isAllowedExt) {
+      throw new BadRequestException(
+        'Format berkas laporan anggaran tidak valid. Harus berupa PDF atau Excel (.pdf, .xlsx, .xls).',
+      );
+    }
+
+    const storageKey = await this.storageService.uploadFileToMinio(
+      file,
+      'projects/budget-reports',
+    );
+
+    await this.prisma.forestProject.update({
+      where: { id: projectId },
+      data: {
+        budgetReportFileName: file.originalname,
+        budgetReportFileSizeBytes: BigInt(file.size),
+        budgetReportStorageKey: storageKey,
+      },
+    });
+
+    return {
+      fileName: file.originalname,
+      fileSizeBytes: file.size,
+      storageKey,
+    };
+  }
+
+  async getProjectBudgetReportFile(projectId: string): Promise<{
+    buffer: Buffer;
+    fileName: string;
+    mimeType: string;
+  }> {
+    const projectRecord = await this.prisma.forestProject.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        budgetReportFileName: true,
+        budgetReportStorageKey: true,
+      },
+    });
+
+    if (!projectRecord) {
+      throw new NotFoundException(
+        `Proyek dengan ID '${projectId}' tidak ditemukan.`,
+      );
+    }
+
+    if (projectRecord.budgetReportStorageKey) {
+      try {
+        const buffer = await this.storageService.getFileBuffer(
+          projectRecord.budgetReportStorageKey,
+        );
+        const fileName =
+          projectRecord.budgetReportFileName || `Laporan_Anggaran_${projectId}`;
+        let mimeType = 'application/pdf';
+        if (fileName.endsWith('.xlsx')) {
+          mimeType =
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        } else if (fileName.endsWith('.xls')) {
+          mimeType = 'application/vnd.ms-excel';
+        }
+        return { buffer, fileName, mimeType };
+      } catch (_err) {
+        // Fallback to generated PDF report if storage fetch fails
+      }
+    }
+
+    const buffer = await this.generateProjectBudgetReportPdf(projectId);
+    return {
+      buffer,
+      fileName: `Laporan_Anggaran_Proyek_${projectId}.pdf`,
+      mimeType: 'application/pdf',
     };
   }
 }

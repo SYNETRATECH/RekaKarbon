@@ -213,6 +213,8 @@ export default function ProjectEditorPage() {
     budgetReportFileSize: editingProjectData?.budgetReportFileSize || 0,
   });
 
+  const [budgetReportFile, setBudgetReportFile] = useState<File | null>(null);
+
   // Coordinates & Spatial Map State
   const [coordinates, setCoordinates] = useState<[number, number][]>(
     normalizePolygonCoordinates(editingProjectData)
@@ -536,7 +538,14 @@ export default function ProjectEditorPage() {
           : {}),
       };
 
-      await regulatorRepository.createForestProject(input);
+      const createdProject = await regulatorRepository.createForestProject(input);
+      if (budgetReportFile && createdProject?.id) {
+        try {
+          await regulatorRepository.uploadBudgetReport(createdProject.id, budgetReportFile);
+        } catch (uploadError) {
+          console.error('Unggah proposal laporan anggaran gagal:', uploadError);
+        }
+      }
       navigate('/projects');
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Proyek gagal disimpan.');
@@ -909,6 +918,7 @@ export default function ProjectEditorPage() {
                   <button
                     type="button"
                     onClick={() => {
+                      setBudgetReportFile(null);
                       handleInputChange('budgetReportFileName', '');
                       handleInputChange('budgetReportFileSize', 0);
                     }}
@@ -934,6 +944,7 @@ export default function ProjectEditorPage() {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
+                        setBudgetReportFile(file);
                         handleInputChange('budgetReportFileName', file.name);
                         handleInputChange('budgetReportFileSize', file.size);
                       }
