@@ -495,7 +495,7 @@ The ML pipeline implements the comprehensive testing methodology defined in the 
 
 ---
 
-## 9. Model Deployment & Serving Lifecycle
+### 9. Model Deployment & Serving Lifecycle
 
 To transition smoothly from Python statistical training to low-latency enterprise production, RekaKarbon adopts a **3-Stage Model Deployment Lifecycle**:
 
@@ -520,13 +520,13 @@ flowchart LR
     end
 ```
 
-### Stage 1: Cross-Platform ONNX Serialization & Non-Python Runtime Architecture
+#### Stage 1: Cross-Platform ONNX Serialization & Non-Python Runtime Architecture
 
 A fundamental architectural requirement of the RekaKarbon ecosystem is that **production web applications must never depend on Python microservices for core real-time inference**. Python microservices (e.g. FastAPI, Flask) introduce inter-service HTTP serialization bottlenecks, cold-start latency spikes (30–70 ms), high container memory consumption, and multi-service failure points.
 
 To achieve **zero-Python runtime portability**, the machine learning pipeline serializes trained Scikit-Learn pipelines into Open Neural Network Exchange (ONNX) format via `skl2onnx`:
 
-#### a. The ONNX Graph Conversion Setup (`skl2onnx`)
+##### a. The ONNX Graph Conversion Setup (`skl2onnx`)
 
 During the training pipeline (`src/rekakarbon_ml/training/onnx_exporter.py`), the sub-pipeline comprising `RobustScaler` and `IsolationForest` is converted into a unified, self-contained binary computational graph:
 
@@ -555,7 +555,7 @@ Within the resulting ONNX graph:
 1. The **`RobustScaler`** transformer is mapped to an ONNX `Scaler` node storing the median shift vector ($\mathbf{\mu}_{med} \in \mathbb{R}^{20}$) and interquartile range scaling factor ($\mathbf{s}_{IQR} \in \mathbb{R}^{20}$).
 2. The **`IsolationForest`** ensemble is mapped to optimized `ai.onnx.ml.TreeEnsembleRegressor` nodes, where 100 decision trees are encoded as flattened contiguous C-struct arrays of thresholds, feature indices, and node split conditions.
 
-#### b. The Input & Output Data Contract
+##### b. The Input & Output Data Contract
 
 Any target runtime (Node.js, C++, Go, Rust, Java, C#) consuming `anomaly_pipeline.onnx` must strictly satisfy the following input tensor contract:
 
@@ -567,7 +567,7 @@ Any target runtime (Node.js, C++, Go, Rust, Java, C#) consuming `anomaly_pipelin
 | **Output Node 1**   | `"label"`                 | Predicted class label (`[-1]` for anomaly, `[1]` for compliant).                    |
 | **Output Node 2**   | `"scores"`                | Raw decision score float representing isolation path length divergence.             |
 
-#### c. Cross-Platform Execution & Deterministic Parity Guarantees
+##### c. Cross-Platform Execution & Deterministic Parity Guarantees
 
 ONNX Runtime (`ort`) provides native C++ inference engines with zero-overhead language bindings across all major platforms:
 
@@ -581,7 +581,7 @@ ONNX Runtime (`ort`) provides native C++ inference engines with zero-overhead la
 
 ---
 
-### Stage 2: Local Simulation & Interactive Auditor Studio (Streamlit App)
+#### Stage 2: Local Simulation & Interactive Auditor Studio (Streamlit App)
 
 Before deploying model updates to backend servers, domain experts, machine learning engineers, and auditors test model behavior locally through a modular **Streamlit Prototyping Studio** (`src/rekakarbon_ml/studio/app.py`):
 
@@ -598,7 +598,7 @@ poetry run studio
 
 ---
 
-### Stage 3: Production In-Process Serving (Node.js / NestJS Backend)
+#### Stage 3: Production In-Process Serving (Node.js / NestJS Backend)
 
 Rather than running an external Python Flask/FastAPI microservice—which introduces serialization overhead, network latency (30–50 ms), and inter-service failure points—the production NestJS backend ([`server/src/audit/`](../server/src/audit/)) executes the model **directly in-process** using `onnxruntime-node`:
 
