@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,12 +22,86 @@ import type {
 
 @Injectable()
 export class RegulatorService {
+  private readonly logger = new Logger(RegulatorService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getNationalForestRegions(): Promise<NationalForestRegion[]> {
+    this.logger.log('Fetching national forest regions from database...');
     const records = await this.prisma.nationalForestRegion.findMany({
       orderBy: { createdAt: 'desc' },
     });
+    this.logger.log(`Found ${records.length} national forest region records`);
+
+    if (records.length === 0) {
+      this.logger.warn(
+        'Tabel national_forest_regions kosong. Mengagregasi data wilayah dari tabel forest_projects...',
+      );
+      const projects = await this.prisma.forestProject.findMany({
+        select: {
+          id: true,
+          province: true,
+          areaHectares: true,
+          targetSequestrationTco2e: true,
+          actualSequestrationTco2e: true,
+          budgetDisbursedIdr: true,
+          budgetTotalIdr: true,
+          ndviScore: true,
+        },
+      });
+      this.logger.log(
+        `Mengagregasi ${projects.length} proyek kehutanan menjadi data wilayah nasional`,
+      );
+
+      const regionMap = new Map<
+        string,
+        {
+          id: string;
+          regionName: string;
+          areaHectares: number;
+          carbonSequestrationTco2e: number;
+          fundingDisbursedIdr: number;
+          healthSum: number;
+          count: number;
+        }
+      >();
+
+      for (const p of projects) {
+        const prov = p.province?.trim() || 'Nasional';
+        const item = regionMap.get(prov) || {
+          id: p.id,
+          regionName: `Wilayah ${prov}`,
+          areaHectares: 0,
+          carbonSequestrationTco2e: 0,
+          fundingDisbursedIdr: 0,
+          healthSum: 0,
+          count: 0,
+        };
+        item.areaHectares += Number(p.areaHectares || 0);
+        item.carbonSequestrationTco2e += Number(
+          p.actualSequestrationTco2e || p.targetSequestrationTco2e || 0,
+        );
+        item.fundingDisbursedIdr += Number(
+          p.budgetDisbursedIdr || p.budgetTotalIdr || 0,
+        );
+        item.healthSum += Math.round(Number(p.ndviScore || 0.75) * 100);
+        item.count += 1;
+        regionMap.set(prov, item);
+      }
+
+      return Array.from(regionMap.values()).map((r) => ({
+        id: r.id,
+        regionName: r.regionName,
+        areaHectares: r.areaHectares,
+        carbonSequestrationTCO2e: r.carbonSequestrationTco2e,
+        fundingDisbursedIDR: r.fundingDisbursedIdr,
+        forestHealthPercent: Math.min(
+          100,
+          Math.max(0, Math.round(r.healthSum / r.count)),
+        ),
+      }));
+    }
+
     return records.map((r) => ({
       id: r.id,
       regionName: r.regionName,
@@ -38,6 +113,7 @@ export class RegulatorService {
   }
 
   async getForestProjects(): Promise<ForestProjectItem[]> {
+    this.logger.log('Fetching all regulator forest projects...');
     const records = await this.prisma.forestProject.findMany({
       include: {
         kthGroup: true,
@@ -50,6 +126,9 @@ export class RegulatorService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    this.logger.log(
+      `Retrieved ${records.length} forest projects from database`,
+    );
     return records.map((r) => {
       const auditStatus: 'verified' | 'in_review' | 'flagged' =
         r.status === ProjectStatus.AUDITED || r.status === ProjectStatus.MINTED

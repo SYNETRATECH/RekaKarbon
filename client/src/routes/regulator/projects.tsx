@@ -43,6 +43,7 @@ import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 import { useToast } from '../../hooks/use-toast';
 
 export async function clientLoader() {
+  console.info('[RegulatorProjects] Memuat daftar proyek kehutanan...');
   const [forestProjects, projects] = await Promise.all([
     regulatorRepository.getForestProjects().catch((err) => {
       console.error('[RegulatorProjects Loader Error: getForestProjects]', err);
@@ -53,6 +54,9 @@ export async function clientLoader() {
       return [];
     }),
   ]);
+  console.info(
+    `[RegulatorProjects] Selesai memuat: ${forestProjects.length} proyek regulator, ${projects.length} proyek umum.`
+  );
   return { forestProjects, projects };
 }
 

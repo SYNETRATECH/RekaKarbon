@@ -28,11 +28,21 @@ import { regulatorRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const regions = await regulatorRepository.getNationalForestRegions().catch((err) => {
-    console.error('[RegulatorDashboard Loader Error: getNationalForestRegions]', err);
-    return [];
-  });
-  return { regions };
+  console.info('[RegulatorDashboard] Memuat data status wilayah nasional & proyek kehutanan...');
+  const [regions, forestProjects] = await Promise.all([
+    regulatorRepository.getNationalForestRegions().catch((err) => {
+      console.error('[RegulatorDashboard Loader Error: getNationalForestRegions]', err);
+      return [];
+    }),
+    regulatorRepository.getForestProjects().catch((err) => {
+      console.error('[RegulatorDashboard Loader Error: getForestProjects]', err);
+      return [];
+    }),
+  ]);
+  console.info(
+    `[RegulatorDashboard] Selesai memuat: ${regions.length} wilayah, ${forestProjects.length} proyek kehutanan.`
+  );
+  return { regions, forestProjects };
 }
 
 clientLoader.hydrate = true as const;
@@ -50,7 +60,54 @@ export function meta() {
 
 export default function RegulatorDashboard() {
   const loaderData = (useLoaderData<typeof clientLoader>() || {}) as any;
-  const regions: any[] = loaderData?.regions || loaderData?.nationalForestRegions || [];
+  const rawRegions: any[] = loaderData?.regions || loaderData?.nationalForestRegions || [];
+  const forestProjects: any[] = loaderData?.forestProjects || [];
+
+  // Jika tabel wilayah nasional kosong atau bernilai 0, agregasi langsung dari forest-projects
+  const hasValidRegions = rawRegions.some((r: any) => Number(r.areaHectares) > 0);
+
+  const regions: any[] = hasValidRegions
+    ? rawRegions
+    : (() => {
+        if (!forestProjects.length) return [];
+        console.info(
+          '[RegulatorDashboard] Tabel wilayah nasional belum tersedia. Mengagregasi metrik dari data proyek kehutanan (forest-projects)...'
+        );
+        const groupMap = new Map<string, any>();
+        for (const p of forestProjects) {
+          const loc = p.location || p.region || 'Nasional';
+          const existing = groupMap.get(loc) || {
+            id: p.id,
+            regionName: `Wilayah ${loc}`,
+            areaHectares: 0,
+            carbonSequestrationTCO2e: 0,
+            fundingDisbursedIDR: 0,
+            forestHealthPercentSum: 0,
+            count: 0,
+          };
+          existing.areaHectares += Number(p.areaHectares || 0);
+          existing.carbonSequestrationTCO2e += Number(
+            p.actualSequestrationTCO2e || p.targetSequestrationTCO2e || 0
+          );
+          existing.fundingDisbursedIDR += Number(
+            p.progressDetail?.disbursedBudgetIDR || p.fundingBudgetIDR || 0
+          );
+          existing.forestHealthPercentSum += Number(
+            p.progressDetail?.survivalRatePercent || p.forestHealthPercent || 75
+          );
+          existing.count += 1;
+          groupMap.set(loc, existing);
+        }
+
+        return Array.from(groupMap.values()).map((g) => ({
+          id: g.id,
+          regionName: g.regionName,
+          areaHectares: g.areaHectares,
+          carbonSequestrationTCO2e: g.carbonSequestrationTCO2e,
+          fundingDisbursedIDR: g.fundingDisbursedIDR,
+          forestHealthPercent: Math.round(g.forestHealthPercentSum / g.count),
+        }));
+      })();
 
   const totalAreaHa = regions.reduce((acc: number, r: any) => acc + (r.areaHectares || 0), 0);
   const totalCarbonTCO2e = regions.reduce(
