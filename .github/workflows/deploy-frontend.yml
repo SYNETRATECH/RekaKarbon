@@ -57,7 +57,11 @@ jobs:
         run: |
           echo "Building with BASE_URL=$BASE_URL"
           pnpm run client:build
-          cp ./client/build/client/index.html ./client/build/client/404.html
+          if [ -f ./client/build/client/__spa-fallback.html ]; then
+            cp ./client/build/client/__spa-fallback.html ./client/build/client/404.html
+          else
+            cp ./client/build/client/index.html ./client/build/client/404.html
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5

@@ -69,19 +69,32 @@ export async function apiFetch<T>(
   schema?: ZodType<T>
 ): Promise<T> {
   const token = getAuthToken();
+  const method = options?.method || 'GET';
+  const fullUrl = `${BASE_URL}${path}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options?.headers as Record<string, string> | undefined),
   };
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  console.info(`[API Request] ${method} ${fullUrl}`);
+
+  let res: Response;
+  try {
+    res = await fetch(fullUrl, {
+      ...options,
+      headers,
+    });
+  } catch (netErr: any) {
+    console.error(`[API Network / CORS Error] Failed to fetch ${method} ${fullUrl}:`, netErr);
+    throw new Error(
+      `Koneksi API gagal (${method} ${path}): ${netErr?.message || 'NetworkError'}. Pastikan backend aktif dan CORS diizinkan.`
+    );
+  }
 
   if (!res.ok) {
     if (res.status === 401 && typeof window !== 'undefined') {
+      console.warn(`[API Auth] 401 Unauthorized for ${path}. Clearing token.`);
       localStorage.removeItem('rekakarbon_token');
     }
     const errorData = await res.json().catch(() => null);
@@ -89,6 +102,10 @@ export async function apiFetch<T>(
       errorData?.error?.message ||
       errorData?.message ||
       `API Error ${res.status}: ${res.statusText}`;
+    console.error(
+      `[API HTTP Error] ${method} ${fullUrl} [Status ${res.status}]:`,
+      errorData || errorMessage
+    );
     throw new Error(errorMessage);
   }
 
@@ -96,12 +113,17 @@ export async function apiFetch<T>(
   const rawData =
     json && typeof json === 'object' && 'success' in json && 'data' in json ? json.data : json;
 
+  console.info(`[API Success] ${method} ${path} - Received data:`, rawData);
+
   if (schema) {
     const result = schema.safeParse(rawData);
     if (!result.success) {
-      if (import.meta.env.DEV) {
-        console.error(`[API Schema Error] ${path}:`, result.error.format());
-      }
+      console.error(
+        `[API Schema Validation Error] Endpoint: ${path}\nErrors:`,
+        result.error.issues,
+        '\nRaw Payload:',
+        rawData
+      );
       throw new ApiValidationError(
         path,
         result.error.issues,

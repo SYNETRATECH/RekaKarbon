@@ -57,7 +57,7 @@ export const CarbonVolumeSchema = z
 
 export const HectaresSchema = z
   .number()
-  .positive({ message: 'Luas area hektar harus bernilai positif (> 0)' });
+  .nonnegative({ message: 'Luas area hektar tidak boleh bernilai negatif' });
 
 export const FileSizeBytesSchema = z
   .number()

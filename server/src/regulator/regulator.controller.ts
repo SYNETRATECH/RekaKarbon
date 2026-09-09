@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Logger,
   Param,
   ParseUUIDPipe,
   Post,
@@ -35,6 +36,8 @@ import { PtbaeService } from '../compliance/ptbae.service';
 @Roles(Role.regulator, Role.superadmin)
 @Controller('regulator')
 export class RegulatorController {
+  private readonly logger = new Logger(RegulatorController.name);
+
   constructor(
     private readonly regulatorService: RegulatorService,
     private readonly ptbaeService: PtbaeService,
@@ -47,7 +50,11 @@ export class RegulatorController {
   })
   @Get('forest-regions')
   async getForestRegions(@Query() _query: RegulatorQueryDto) {
+    this.logger.log('GET /regulator/forest-regions requested');
     const data = await this.regulatorService.getNationalForestRegions();
+    this.logger.log(
+      `GET /regulator/forest-regions returning ${data.length} regions`,
+    );
     return { success: true, data };
   }
 
@@ -55,7 +62,11 @@ export class RegulatorController {
   @ApiResponse({ status: 200, description: 'Forest projects retrieved.' })
   @Get('forest-projects')
   async getForestProjects(@Query() _query: RegulatorQueryDto) {
+    this.logger.log('GET /regulator/forest-projects requested');
     const data = await this.regulatorService.getForestProjects();
+    this.logger.log(
+      `GET /regulator/forest-projects returning ${data.length} projects`,
+    );
     return { success: true, data };
   }
 

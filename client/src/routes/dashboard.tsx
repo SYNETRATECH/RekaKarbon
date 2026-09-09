@@ -57,11 +57,24 @@ export async function clientLoader() {
     ]);
     return { role, complianceData, emissionReports, projects, companies };
   } else if (role === 'regulator') {
+    console.info('[Dashboard Root] Loading data for Regulator role...');
     const [forestProjects, nationalForestRegions, kthGroups] = await Promise.all([
-      regulatorRepository.getForestProjects().catch(() => []),
-      regulatorRepository.getNationalForestRegions().catch(() => []),
-      regulatorRepository.getKTHGroups().catch(() => []),
+      regulatorRepository.getForestProjects().catch((err) => {
+        console.error('[Dashboard Root Error: getForestProjects]', err);
+        return [];
+      }),
+      regulatorRepository.getNationalForestRegions().catch((err) => {
+        console.error('[Dashboard Root Error: getNationalForestRegions]', err);
+        return [];
+      }),
+      regulatorRepository.getKTHGroups().catch((err) => {
+        console.error('[Dashboard Root Error: getKTHGroups]', err);
+        return [];
+      }),
     ]);
+    console.info(
+      `[Dashboard Root] Regulator data loaded: ${forestProjects.length} forest projects, ${nationalForestRegions.length} regions, ${kthGroups.length} KTH groups.`
+    );
     return {
       role,
       forestProjects,
