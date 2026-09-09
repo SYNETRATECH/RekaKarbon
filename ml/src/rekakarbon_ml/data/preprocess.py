@@ -10,11 +10,13 @@ import os
 from typing import Any, Dict, Tuple
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 from ..config import get_dataset_config, get_paths_config, get_random_state
 from ..data.feature_registry import generate_feature_manifest
 from ..data.generator import EmissionDataGenerator
 from ..data.validator import validate_raw_dataframe
+from ..training.transformers import DERIVED_FEATURE_NAMES, EmissionFeatureEngineer
 
 
 def generate_dataset_summary(
@@ -86,8 +88,6 @@ def preprocess_dataset(
             pd.read_json(input_path) if input_path.endswith(".json") else pd.read_csv(input_path)
         )
         cfg = get_dataset_config()
-        from sklearn.model_selection import train_test_split
-
         stratify_col = raw_df["is_anomaly"] if "is_anomaly" in raw_df.columns else None
         train_df, temp_df = train_test_split(
             raw_df,
@@ -110,8 +110,6 @@ def preprocess_dataset(
         print(f"Loading raw dataset from existing file: {default_raw_path}...")
         raw_df = pd.read_csv(default_raw_path)
         cfg = get_dataset_config()
-        from sklearn.model_selection import train_test_split
-
         stratify_col = raw_df["is_anomaly"] if "is_anomaly" in raw_df.columns else None
         train_df, temp_df = train_test_split(
             raw_df,
@@ -166,8 +164,6 @@ def preprocess_dataset(
 
     # 5. Transform full raw dataset into derived feature matrix
     print("Executing EmissionFeatureEngineer preprocessing transformer...")
-    from ..training.transformers import DERIVED_FEATURE_NAMES, EmissionFeatureEngineer
-
     transformer = EmissionFeatureEngineer()
     engineered_matrix = transformer.transform(raw_df)
 

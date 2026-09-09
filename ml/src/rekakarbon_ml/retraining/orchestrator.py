@@ -29,6 +29,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 from ..config import get_ml_config, get_retraining_config
 from ..evaluation.evaluator import ModelEvaluator, generate_model_metadata
@@ -206,8 +207,6 @@ class RetrainingOrchestrator:
                     test_split_path,
                 )
                 merged_df = pd.read_csv(ingestion_result.output_path)
-                from sklearn.model_selection import train_test_split
-
                 _, test_df = train_test_split(
                     merged_df,
                     test_size=0.15,

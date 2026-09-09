@@ -28,11 +28,13 @@ from rekakarbon_ml.monitoring.drift_detector import (
     DriftReport,
     compute_psi,
 )
+from rekakarbon_ml.retraining import FeedbackRecord
 from rekakarbon_ml.retraining.data_ingestion import (
     DataIngestionPipeline,
     IngestionConfig,
 )
 from rekakarbon_ml.retraining.orchestrator import RetrainingOrchestrator
+from rekakarbon_ml.training.transformers import DERIVED_FEATURE_NAMES
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -174,8 +176,6 @@ class TestDriftDetector:
         synthetic_prod_df: pd.DataFrame,
     ) -> None:
         """DriftReport.feature_psi must contain an entry for every engineered feature."""
-        from rekakarbon_ml.training.transformers import DERIVED_FEATURE_NAMES
-
         detector = DriftDetector(synthetic_train_df)
         report = detector.detect(synthetic_prod_df)
 
@@ -334,8 +334,6 @@ class TestFeedbackRecordSerialisation:
 
     def test_reject_anomaly_verdict_maps_to_is_anomaly_1(self) -> None:
         """REJECT_ANOMALY verdict must produce is_anomaly=1 in the feedback row."""
-        from rekakarbon_ml.retraining import FeedbackRecord
-
         record = FeedbackRecord(
             company_id="PT_TEST_001",
             report_period="2025-Q3",
@@ -351,8 +349,6 @@ class TestFeedbackRecordSerialisation:
 
     def test_pass_verified_verdict_maps_to_is_anomaly_0(self) -> None:
         """PASS_VERIFIED verdict must produce is_anomaly=0 in the feedback row."""
-        from rekakarbon_ml.retraining import FeedbackRecord
-
         record = FeedbackRecord(
             company_id="PT_TEST_002",
             report_period="2025-Q3",

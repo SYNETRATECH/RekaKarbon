@@ -3,6 +3,7 @@ Model Evaluation, Quality Gates & Metadata Manifest Generator for RekaKarbon ML.
 Evaluates classification performance, per-fraud recall, and exports model cards for production.
 """
 
+import argparse
 import json
 import os
 from datetime import datetime, timezone
@@ -304,8 +305,7 @@ def generate_model_metadata(
 
 
 def main() -> None:
-    import argparse
-
+    # Lazy import inside CLI main to break potential circular reference
     from ..config import DEFAULT_RANDOM_STATE, get_dataset_config
     from ..inference.predictor import CarbonAnomalyPredictor
 
