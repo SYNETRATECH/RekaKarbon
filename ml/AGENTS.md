@@ -165,7 +165,7 @@ ml/
 - **Mathematical Summation Integrity**: Cross-validate that $\text{reported\_scope1} + \text{reported\_scope2} + \text{reported\_scope3} \approx \text{reported\_emissions\_tco2e}$. If arithmetic discrepancy exceeds $5\%$, flag `DISKREPANSI_PENJUMLAHAN_SCOPE`.
 - **Boundary Checks**: Production output, fuel volumes, and costs must be strictly non-negative, and cement clinker production cannot exceed $120\%$ of finished cement volume.
 
-### 5. Automated Quality Gate Enforcement
+### 5. Automated Quality Gate Enforcement & Configuration Documentation
 
 - **Rule**: Any retrained model artifact MUST pass the automated acceptance thresholds enforced in `src/rekakarbon_ml/evaluation/evaluator.py`:
   - $F_1 \ge 0.85$
@@ -173,6 +173,7 @@ ml/
   - $\text{Under-Reporting Fraud Recall} \ge 0.92$
   - $\text{False Positive Rate} \le 0.10$
 - **Metadata Card**: Whenever the model is trained, update `models/model_metadata.json` via `generate_model_metadata()` to record training timestamp, git commit hash, and benchmark parameters.
+- **Model & Pipeline Configuration Transparency**: When documenting evaluation metrics in `README.md`, agents MUST document the exact model hyperparameters, preprocessing steps, thermodynamic factors, and retraining triggers alongside the results to ensure scientific falsifiability, prevent train/serving skew, and comply with Model Card standards.
 
 ### 6. Verificator Decision Support Integration Contracts
 
