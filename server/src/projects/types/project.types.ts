@@ -99,4 +99,6 @@ export interface Project {
   tokenBuyers: TokenBuyer[];
   emergencyFundAllocated?: number;
   emergencyFundUsed?: number;
+  budgetReportFileName?: string;
+  budgetReportFileSize?: number;
 }

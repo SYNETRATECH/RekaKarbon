@@ -1,3 +1,1 @@
 company_id,report_period,verificator_id,verificator_verdict,ml_prediction,sector,production_tonnes,reported_emissions_tco2e,reported_scope1_tco2e,reported_scope2_tco2e,reported_scope3_tco2e,historical_emissions_tco2e,stat_fuel_liters,mob_fuel_liters,coal_kg,gas_m3,electricity_kwh,cost_solar_idr,cost_coal_idr,cost_gas_idr,cost_pln_idr,clinker_tonnes,is_anomaly,anomaly_type,received_at
-comp-001,2025,auditor-1,PASS_VERIFIED,,"Manufaktur & Pengolahan",450000,48200,28920,16870,2410,48200,4850000,1240000,0,0,15000000,99425000000,0,0,0,0,0,NORMAL,2025-06-15T10:00:00.000Z
-comp-002,2025,auditor-2,REJECT_ANOMALY,,"Semen & Bahan Bangunan",200000,1500,500,1000,0,1500,0,0,0,0,0,0,0,0,0,0,1,VERIFICATOR_FLAGGED,2025-06-16T11:00:00.000Z

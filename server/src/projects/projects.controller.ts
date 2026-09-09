@@ -3,10 +3,12 @@ import {
   Get,
   Param,
   Query,
+  Res,
   NotFoundException,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { ProjectsService } from './projects.service';
 import { ProjectQueryDto } from './dto';
 
@@ -66,5 +68,32 @@ export class ProjectsController {
       success: true,
       data: project,
     };
+  }
+
+  @ApiOperation({
+    summary: 'Download project budget & transparency report as PDF',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 'b2c3d4e5-0002-4000-8000-000000000001',
+    description: 'Project UUID identifier',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'PDF report generated and downloaded successfully.',
+  })
+  @Get(':id/budget-report')
+  async getProjectBudgetReport(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Res() res: Response,
+  ) {
+    const { buffer, fileName, mimeType } =
+      await this.projectsService.getProjectBudgetReportFile(id);
+    res.set({
+      'Content-Type': mimeType,
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
+      'Content-Length': buffer.length.toString(),
+    });
+    res.end(buffer);
   }
 }

@@ -83,4 +83,21 @@ export class StorageService {
       return '';
     }
   }
+
+  async getFileBuffer(fileName: string): Promise<Buffer> {
+    try {
+      const dataStream = await this.minioClient.getObject(
+        this.bucketName,
+        fileName,
+      );
+      const chunks: Buffer[] = [];
+      for await (const chunk of dataStream) {
+        chunks.push(chunk as Buffer);
+      }
+      return Buffer.concat(chunks);
+    } catch (error) {
+      this.logger.error(`Failed to get file object for: ${fileName}`, error);
+      throw error;
+    }
+  }
 }

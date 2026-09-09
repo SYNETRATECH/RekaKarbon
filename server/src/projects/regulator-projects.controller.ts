@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,8 +7,11 @@ import {
   ParseUUIDPipe,
   Post,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -62,6 +66,32 @@ export class RegulatorProjectsController {
     return {
       success: true,
       data: projects,
+    };
+  }
+
+  @ApiOperation({
+    summary:
+      'Upload budget report proposal document (PDF/Excel) for a forestry project',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Budget report proposal uploaded successfully.',
+  })
+  @Post('forest-projects/:id/budget-report')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadBudgetReport(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException(
+        'File laporan anggaran proposal wajib diunggah.',
+      );
+    }
+    const data = await this.projectsService.uploadProjectBudgetReport(id, file);
+    return {
+      success: true,
+      data,
     };
   }
 

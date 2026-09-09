@@ -18,6 +18,11 @@ async function bootstrap() {
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:8100',
+    'http://127.0.0.1:8100',
+    'http://localhost:8101',
+    'http://127.0.0.1:8101',
     'https://rekakarbon.farrelad.com',
     'https://*.farrelad.com',
     'https://app.rekakarbon.id',
@@ -99,7 +104,5 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port, '0.0.0.0');
-  const logger = new Logger('Bootstrap');
-  logger.log(`Server listening on http://localhost:${port} (0.0.0.0:${port})`);
 }
 void bootstrap();

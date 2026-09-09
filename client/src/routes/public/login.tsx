@@ -5,6 +5,7 @@ import { Mail, Lock, ShieldCheck, ArrowLeft, UserCheck, UserPlus, Eye, EyeOff } 
 import brandIcon from '@/assets/icon.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NextDevUserOverlay } from '@/components/NextDevUserOverlay';
 
 export function meta() {
   return [
@@ -278,6 +279,15 @@ export default function LoginRoute() {
           </div>
         </div>
       </main>
+
+      {/* Next.js Dev Overlay - Bottom Left Demo User Preset Switcher Container */}
+      <NextDevUserOverlay
+        onSelectUser={(email, password) => {
+          setEmailInput(email);
+          setPasswordInput(password);
+          setAuthMode('login');
+        }}
+      />
 
       {/* Footer System Bar */}
       <footer className="h-14 px-6 md:px-12 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-200/60 bg-white/50 backdrop-blur-xs">

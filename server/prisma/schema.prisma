@@ -677,6 +677,9 @@ model ForestProject {
   bufferAllocatedPercent   Decimal       @default(8.0) @map("buffer_allocated_percent") @db.Decimal(5, 2)
   bufferUsedPercent        Decimal       @default(0.0) @map("buffer_used_percent") @db.Decimal(5, 2)
   trendDataJson            Json?         @map("trend_data_json")
+  budgetReportFileName     String?       @map("budget_report_file_name") @db.Text
+  budgetReportFileSizeBytes BigInt?      @map("budget_report_file_size_bytes")
+  budgetReportStorageKey   String?       @map("budget_report_storage_key") @db.Text
   createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 

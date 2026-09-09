@@ -107,6 +107,8 @@ export const ProjectSchema = z.object({
   stages: z.array(ReforestationStageSchema),
   disbursementHistory: z.array(DisbursementItemSchema),
   tokenBuyers: z.array(TokenBuyerSchema),
+  budgetReportFileName: z.string().optional(),
+  budgetReportFileSize: z.number().optional(),
 });
 
 export type ProjectCoordinateType = z.infer<typeof ProjectCoordinateSchema>;

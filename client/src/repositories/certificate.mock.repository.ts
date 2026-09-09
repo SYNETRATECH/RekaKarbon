@@ -9,7 +9,20 @@ import { MOCK_PURCHASED_CERTIFICATES } from '../lib/mock/certificates';
 
 export class MockCertificateRepository implements CertificateRepository {
   private lastRetirement: RetirementCertificateResult | null = null;
-  private readonly retirementHistory: RetirementCertificateHistoryItem[] = [];
+  private readonly retirementHistory: RetirementCertificateHistoryItem[] = [
+    {
+      certificateId: 1,
+      certificateNumber: 'SPE-RET-2026-SEMEN-NUSANTARA-001',
+      retiree: '0x627306090abaB3A6e1400e9345bC60c78a8BEf57',
+      assetId: 1,
+      amountRetired: 2330,
+      txHash: '0x8831a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1',
+      blockNumber: 14890,
+      retiredAt: '2026-02-15T10:00:00.000Z',
+      chainId: 1337,
+      contractAddress: '0x9FBDa871d559710256a2502A2517b794B482Db40',
+    },
+  ];
 
   async getPurchasedCertificates(): Promise<PurchasedCertificate[]> {
     return MOCK_PURCHASED_CERTIFICATES;

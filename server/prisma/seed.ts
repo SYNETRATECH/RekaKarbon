@@ -1,4 +1,7 @@
 import { randomUUID } from 'crypto';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as Minio from 'minio';
 import * as bcrypt from 'bcrypt';
 import {
   PrismaClient,
@@ -7,8 +10,11 @@ import {
   KybCategory,
   KybStatus,
   PtbaeStatus,
+  PtbaeApplicationStatus,
   ComplianceRating,
   SensorStatus,
+  EmissionReportStatus,
+  ReportMethod,
   EcosystemType,
   ProjectStatus,
   StageStatus,
@@ -35,6 +41,66 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 const DEFAULT_SEED_PASSWORD = 'password123';
+
+async function uploadProposalToMinio(fileName: string): Promise<string> {
+  const localFilePath = path.join(
+    __dirname,
+    '../src/storage/dummy/project-proposal',
+    fileName,
+  );
+  const storageKey = `projects/budget-reports/${fileName}`;
+  if (!fs.existsSync(localFilePath)) {
+    console.warn(`⚠️ File proposal lokal tidak ditemukan: ${localFilePath}`);
+    return storageKey;
+  }
+
+  const endPointRaw = process.env.STORAGE_ENDPOINT || 'http://127.0.0.1:9000';
+  const isHttps = endPointRaw.startsWith('https://');
+  let endPoint = endPointRaw.replace('https://', '').replace('http://', '');
+  let port = isHttps ? 443 : 80;
+
+  if (endPoint.includes(':')) {
+    const parts = endPoint.split(':');
+    endPoint = parts[0];
+    port = parseInt(parts[1], 10);
+  } else if (
+    endPointRaw === 'http://127.0.0.1:9000' ||
+    endPoint === '127.0.0.1'
+  ) {
+    port = 9000;
+  }
+
+  const minioClient = new Minio.Client({
+    endPoint,
+    port,
+    useSSL: isHttps,
+    accessKey: process.env.STORAGE_ACCESS_KEY || 'minioadmin',
+    secretKey: process.env.STORAGE_SECRET_KEY || 'minioadmin',
+  });
+  const bucketName = process.env.STORAGE_BUCKET || 'rekakarbon-documents';
+
+  try {
+    const exists = await minioClient
+      .bucketExists(bucketName)
+      .catch(() => false);
+    if (!exists) {
+      await minioClient.makeBucket(bucketName, 'us-east-1').catch(() => {});
+    }
+    const stats = fs.statSync(localFilePath);
+    const fileStream = fs.createReadStream(localFilePath);
+    await minioClient.putObject(
+      bucketName,
+      storageKey,
+      fileStream,
+      stats.size,
+      { 'Content-Type': 'application/pdf' },
+    );
+    console.log(`  📄 MinIO proposal synced: ${storageKey}`);
+  } catch (err) {
+    console.warn(`  ⚠️ Skip MinIO upload for ${fileName}:`, err);
+  }
+  return storageKey;
+}
 
 const ADDITIONAL_EMITTERS = [
   {
@@ -290,11 +356,12 @@ async function seedAdditionalEmitterAccounts(
           complianceYear: 2026,
           quotaTco2e: emitter.emissionCapTco2e,
           sourceDocument:
-            'Data seed kompatibilitas; ganti dengan dokumen PTBAE-PU resmi perusahaan',
-          status: PtbaeStatus.LEGACY,
+            'SK Menteri LHK No. SK.720/MENLHK/SETJEN/KUM.1/12/2025 tentang Penetapan PTBAE-PU Sektor Industri',
+          status: PtbaeStatus.VERIFIED,
           assignedAt: new Date('2026-01-01T00:00:00.000Z'),
+          verifiedAt: new Date('2026-01-05T00:00:00.000Z'),
           notes:
-            'Nilai ini hanya untuk pengujian. Nilai resmi harus ditetapkan per perusahaan dan tahun.',
+            'Dokumen resmi alokasi kuota emisi PTBAE-PU terverifikasi KLHK untuk tahun ketaatan 2026.',
         },
       });
     }
@@ -410,51 +477,52 @@ async function main() {
     },
   });
 
+  // 4 Standard Emitter Presentation Demo State Accounts
   const userEmitter1 = await prisma.user.create({
     data: {
       id: userEmitter1Id,
-      email: 'director@suralaya.co.id',
+      email: 'admin@semennusantara.co.id',
       passwordHash: defaultPasswordHash,
-      fullName: 'Ir. Bambang Suralaya (Direktur Operasional)',
+      fullName: 'Ir. Budi Santoso (Full Flow - Selesai)',
       role: Role.emitter,
       status: UserStatus.ACTIVE,
-      walletAddress: '0x7A8B9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B',
+      walletAddress: '0x627306090abaB3A6e1400e9345bC60c78a8BEf57',
     },
   });
 
   const userEmitter2 = await prisma.user.create({
     data: {
       id: userEmitter2Id,
-      email: 'sustainability@sementuban.co.id',
+      email: 'director@suralaya.co.id',
       passwordHash: defaultPasswordHash,
-      fullName: 'Maya Kartika, S.T. (VP ESG PT Semen Tuban)',
+      fullName: 'Bambang Herdian (Terisi Semua, Belum Burn)',
       role: Role.emitter,
       status: UserStatus.ACTIVE,
-      walletAddress: '0x9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D',
+      walletAddress: '0x7A8B9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B',
     },
   });
 
   const userEmitter3 = await prisma.user.create({
     data: {
       id: userEmitter3Id,
-      email: 'sustainability@pertamina-ru4.co.id',
+      email: 'emitter.pupuk@pupukkaltim.co.id',
       passwordHash: defaultPasswordHash,
-      fullName: 'Budi Santoso (HSE Manager Pertamina RU IV)',
+      fullName: 'Rahmat Hidayat (Laporan Terisi, Belum PTBAE)',
       role: Role.emitter,
       status: UserStatus.ACTIVE,
-      walletAddress: '0x1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C',
+      walletAddress: '0x8A7B6C5D4E3F2A1B0C9D8E7F6A5B4C3D2E1F0A9B',
     },
   });
 
   const userEmitter4 = await prisma.user.create({
     data: {
       id: userEmitter4Id,
-      email: 'environment@pupukkaltim.com',
+      email: 'emitter.baru@indocement.co.id',
       passwordHash: defaultPasswordHash,
-      fullName: 'Siti Aminah (VP Lingkungan Hidup Pupuk Kaltim)',
+      fullName: 'Agus Setiawan (Akun Baru - Belum Laporan)',
       role: Role.emitter,
       status: UserStatus.ACTIVE,
-      walletAddress: '0x2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D',
+      walletAddress: '0x1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C',
     },
   });
 
@@ -541,12 +609,35 @@ async function main() {
     },
   });
 
-  // 4. Seed Companies & Smokestacks
+  // 4. Seed Corporate Companies & CEMS Smokestacks
   console.log('🏭 Seeding Corporate Companies & CEMS Smokestacks...');
-  const companySuralaya = await prisma.company.create({
+  const companyTuban = await prisma.company.create({
     data: {
       id: randomUUID(),
       userId: userEmitter1.id,
+      name: 'PT Semen Nusantara Tuban',
+      sector: 'Industri Semen & Manufaktur Klinker',
+      region: 'Tuban, Jawa Timur',
+      latitude: -6.8981,
+      longitude: 112.0491,
+      emissionCapTco2e: 1100000.0,
+      actualEmissionTco2e: 2350000.0,
+      carbonDeficitTco2e: 1250000.0,
+      offsetCostIdr: 37500000000.0,
+      complianceRating: ComplianceRating.NON_COMPLIANT,
+      auditDate: new Date('2026-02-15'),
+      paymentDeadline: new Date('2026-12-31'),
+      stackSensorsDescription: '8 Cerobong Tanur Kalsinasi Rotari',
+      picAuditor: 'Rian Hermawan, M.T (PT Sucofindo)',
+      description:
+        'Proses kalsinasi limestone menghasilkan emisi gas buang intensif.',
+    },
+  });
+
+  const companySuralaya = await prisma.company.create({
+    data: {
+      id: randomUUID(),
+      userId: userEmitter2.id,
       name: 'PLTU Suralaya (Unit 1-8)',
       sector: 'Pembangkit Listrik (PLTU Batubara)',
       region: 'Cilegon, Banten',
@@ -588,56 +679,10 @@ async function main() {
     },
   });
 
-  const companyTuban = await prisma.company.create({
-    data: {
-      id: randomUUID(),
-      userId: userEmitter2.id,
-      name: 'PT Semen Nusantara Tuban',
-      sector: 'Industri Semen & Manufaktur Klinker',
-      region: 'Tuban, Jawa Timur',
-      latitude: -6.8981,
-      longitude: 112.0491,
-      emissionCapTco2e: 1100000.0,
-      actualEmissionTco2e: 2350000.0,
-      carbonDeficitTco2e: 1250000.0,
-      offsetCostIdr: 37500000000.0,
-      complianceRating: ComplianceRating.NON_COMPLIANT,
-      auditDate: new Date('2026-02-15'),
-      paymentDeadline: new Date('2026-12-31'),
-      stackSensorsDescription: '8 Cerobong Tanur Kalsinasi Rotari',
-      picAuditor: 'Rian Hermawan, M.T (PT Sucofindo)',
-      description:
-        'Proses kalsinasi limestone menghasilkan emisi gas buang intensif.',
-    },
-  });
-
-  await prisma.company.create({
+  const companyPupuk = await prisma.company.create({
     data: {
       id: randomUUID(),
       userId: userEmitter3.id,
-      name: 'PT Pertamina (Persero) RU IV Cilacap',
-      sector: 'Minyak & Gas Bumi (Kilang Pengolahan)',
-      region: 'Cilacap, Jawa Tengah',
-      latitude: -7.7303,
-      longitude: 109.0093,
-      emissionCapTco2e: 4500000.0,
-      actualEmissionTco2e: 4450000.0,
-      carbonDeficitTco2e: 0.0,
-      offsetCostIdr: 0.0,
-      complianceRating: ComplianceRating.COMPLIANT,
-      auditDate: new Date('2026-03-10'),
-      paymentDeadline: new Date('2026-12-31'),
-      stackSensorsDescription: '24 Flare & Stack CEMS Terintegrasi',
-      picAuditor: 'Tim Auditor Internal KLHK',
-      description:
-        'Kilang pengolahan minyak dengan efisiensi tinggi, memenuhi ambang batas emisi.',
-    },
-  });
-
-  await prisma.company.create({
-    data: {
-      id: randomUUID(),
-      userId: userEmitter4.id,
       name: 'PT Pupuk Kaltim',
       sector: 'Industri Pupuk & Amonia',
       region: 'Bontang, Kalimantan Timur',
@@ -654,6 +699,131 @@ async function main() {
       picAuditor: 'Rian Hermawan, M.T (PT Sucofindo)',
       description:
         'Pabrik pupuk dengan emisi CO2 dari proses reforming gas alam.',
+    },
+  });
+
+  const _companyIndocement = await prisma.company.create({
+    data: {
+      id: randomUUID(),
+      userId: userEmitter4.id,
+      name: 'PT Indocement Tunggal Ambal',
+      sector: 'Industri Semen & Bahan Bangunan',
+      region: 'Citeureup, Jawa Barat',
+      latitude: -6.485,
+      longitude: 106.892,
+      emissionCapTco2e: 950000.0,
+      actualEmissionTco2e: 920000.0,
+      carbonDeficitTco2e: 0,
+      offsetCostIdr: 0,
+      complianceRating: ComplianceRating.COMPLIANT,
+      auditDate: new Date('2026-06-01'),
+      paymentDeadline: new Date('2026-12-31'),
+      stackSensorsDescription: '8 titik CEMS kiln dan unit pembakaran klinker',
+      description: 'Akun uji emitter baru untuk sektor semen dan manufaktur.',
+    },
+  });
+
+  // Seed Emission Reports for FY 2026
+  console.log('📋 Seeding Emission Reports (FY 2026)...');
+  const reportSemen = await prisma.emissionReport.create({
+    data: {
+      id: randomUUID(),
+      companyId: companyTuban.id,
+      year: 2026,
+      totalEmissionsTco2e: 14830,
+      merkleRoot:
+        '0x8f9a2b4c1d3e5f7a9b0c2d4e6f8a1b3c5d7e9f0a2b4c6d8e0f2a4b6c8d0e2f4a',
+      blockchainTxHash: '0x11223344556677889900aabbccddeeff',
+      status: EmissionReportStatus.APPROVED,
+      reportMethod: ReportMethod.UPLOAD,
+      sector: 'manufaktur',
+    },
+  });
+
+  const reportSuralaya = await prisma.emissionReport.create({
+    data: {
+      id: randomUUID(),
+      companyId: companySuralaya.id,
+      year: 2026,
+      totalEmissionsTco2e: 27500,
+      merkleRoot:
+        '0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
+      blockchainTxHash: '0x223344556677889900aabbccddeeff11',
+      status: EmissionReportStatus.SUBMITTED,
+      reportMethod: ReportMethod.UPLOAD,
+      sector: 'pembangkit',
+    },
+  });
+
+  await prisma.emissionReport.create({
+    data: {
+      id: randomUUID(),
+      companyId: companyPupuk.id,
+      year: 2026,
+      totalEmissionsTco2e: 18200,
+      merkleRoot: '0x3344556677889900aabbccddeeff1122',
+      blockchainTxHash: '0x3344556677889900aabbccddeeff1122',
+      status: EmissionReportStatus.SUBMITTED,
+      reportMethod: ReportMethod.UPLOAD,
+      sector: 'pupuk',
+    },
+  });
+
+  // Seed PTBAE Applications for 2026
+  console.log('🏛️ Seeding PTBAE Applications (2026)...');
+  await prisma.ptbaeApplication.create({
+    data: {
+      id: randomUUID(),
+      companyId: companyTuban.id,
+      emissionReportId: reportSemen.id,
+      submittedByUserId: userEmitter1.id,
+      complianceYear: 2026,
+      status: PtbaeApplicationStatus.APPROVED,
+      facilityName: 'Pabrik Semen Unit Tuban I-IV',
+      technicalData: {
+        machineryDescription: 'Dry Process Kiln dengan Precalciner & WHRPG',
+        fuelTypes: ['Batu Bara', 'Biomassa Sekam Padi'],
+        installedCapacityMW: 120,
+        energyEfficiencyPercent: 88.5,
+        mitigationTechnology: 'Waste Heat Recovery Power Generation',
+      },
+      productionData: {
+        plannedVolumeTons: 4800000,
+        actualVolumeTons: 4750000,
+        productUnit: 'Ton Klinker',
+      },
+      baselineEmissionTco2e: 14830,
+      mitigationPlan:
+        'Pemasangan WHRPG dan substitusi bahan bakar biomassa sekam padi.',
+      submittedAt: new Date('2026-01-12T10:00:00.000Z'),
+    },
+  });
+
+  await prisma.ptbaeApplication.create({
+    data: {
+      id: randomUUID(),
+      companyId: companySuralaya.id,
+      emissionReportId: reportSuralaya.id,
+      submittedByUserId: userEmitter2.id,
+      complianceYear: 2026,
+      status: PtbaeApplicationStatus.SUBMITTED,
+      facilityName: 'PLTU Suralaya Unit 1-7',
+      technicalData: {
+        machineryDescription: 'Subcritical & Supercritical Coal Fired Boiler',
+        fuelTypes: ['Batu Bara', 'Pelet Biomasa Kayu'],
+        installedCapacityMW: 3400,
+        energyEfficiencyPercent: 82.0,
+        mitigationTechnology: 'Biomass Co-firing 5%',
+      },
+      productionData: {
+        plannedVolumeTons: 22000000,
+        actualVolumeTons: 21500000,
+        productUnit: 'MWh',
+      },
+      baselineEmissionTco2e: 27500,
+      mitigationPlan:
+        'Co-firing biomasa pelet kayu sebesar 5% pada boiler unit 5-7.',
+      submittedAt: new Date('2026-02-01T11:00:00.000Z'),
     },
   });
 
@@ -752,190 +922,448 @@ async function main() {
 
   // 7. Seed National Forest Regions & KTH Groups
   console.log('🌳 Seeding National Forest Regions & Social Forestry Groups...');
-  const regionJatim = await prisma.nationalForestRegion.create({
+  const regionKalbar = await prisma.nationalForestRegion.create({
     data: {
       id: randomUUID(),
-      regionName: 'Jawa & Nusa Tenggara (Restorasi Pesisir & Agro)',
-      areaHectares: 900000.0,
-      carbonSequestrationTco2e: 9800000.0,
-      fundingDisbursedIdr: 4000000000.0,
-      forestHealthPercent: 94.2,
+      regionName: 'Kalimantan Barat (Restorasi Hutan Endemik)',
+      areaHectares: 1800000.0,
+      carbonSequestrationTco2e: 18500000.0,
+      fundingDisbursedIdr: 5800000000.0,
+      forestHealthPercent: 92.4,
     },
   });
 
-  await prisma.nationalForestRegion.create({
+  const regionBengkulu = await prisma.nationalForestRegion.create({
     data: {
       id: randomUUID(),
-      regionName: 'Kalimantan Peatland & Dipterocarp Biosphere',
-      areaHectares: 2400000.0,
-      carbonSequestrationTco2e: 24500000.0,
-      fundingDisbursedIdr: 12500000000.0,
-      forestHealthPercent: 91.8,
+      regionName: 'Sumatera & Bengkulu (Restorasi Gambut & Komoditas)',
+      areaHectares: 1200000.0,
+      carbonSequestrationTco2e: 12400000.0,
+      fundingDisbursedIdr: 3200000000.0,
+      forestHealthPercent: 88.5,
     },
   });
 
-  const kthTuban = await prisma.kthGroup.create({
+  const regionSulut = await prisma.nationalForestRegion.create({
     data: {
       id: randomUUID(),
-      groupName: 'KTH Mangrove Tuban Mandiri',
-      leaderName: 'Haji Supardi',
-      memberCount: 62,
-      location: 'Kecamatan Jenu, Kabupaten Tuban, Jawa Timur',
-      registrationNumber: 'SK.LHK-8832/KTH/2023',
+      regionName: 'Sulawesi Utara (Konservasi Pohon Cempaka)',
+      areaHectares: 950000.0,
+      carbonSequestrationTco2e: 9100000.0,
+      fundingDisbursedIdr: 3900000000.0,
+      forestHealthPercent: 94.1,
+    },
+  });
+
+  const regionBali = await prisma.nationalForestRegion.create({
+    data: {
+      id: randomUUID(),
+      regionName: 'Bali & Nusa Tenggara (Pembibitan Tanaman Endemik)',
+      areaHectares: 850000.0,
+      carbonSequestrationTco2e: 8800000.0,
+      fundingDisbursedIdr: 4500000000.0,
+      forestHealthPercent: 96.0,
+    },
+  });
+
+  const kthKalbar = await prisma.kthGroup.create({
+    data: {
+      id: randomUUID(),
+      groupName: 'KTH Dayak Kapuas Mandiri',
+      leaderName: 'Herujono Hadisuparto',
+      memberCount: 95,
+      location: 'Sintang / Pontianak, Kalimantan Barat',
+      registrationNumber: 'SK.LHK-7712/KTH/2023',
       walletAddress: '0x8a1c948571029485710294857102948571029485',
-      totalIncentiveReceivedIdr: 1000000000.0,
+      totalIncentiveReceivedIdr: 2200000000.0,
       kybStatus: KybStatus.VERIFIED,
     },
   });
 
-  const kthBaluran = await prisma.kthGroup.create({
+  const kthBengkulu = await prisma.kthGroup.create({
     data: {
       id: randomUUID(),
-      groupName: 'KTH Rimba Baluran Lestari',
-      leaderName: 'Sutrisno, S.Hut',
-      memberCount: 84,
-      location: 'Situbondo / Banyuwangi, Jawa Timur',
-      registrationNumber: 'SK.LHK-9410/KTH/2024',
+      groupName: 'KTH Bukit Barisan Bengkulu',
+      leaderName: 'H. Suhartadi, M.Si',
+      memberCount: 72,
+      location: 'Kabupaten Bengkulu Tengah, Bengkulu',
+      registrationNumber: 'SK.LHK-8841/KTH/2024',
       walletAddress: '0x6B7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C',
-      totalIncentiveReceivedIdr: 1850000000.0,
+      totalIncentiveReceivedIdr: 1200000000.0,
       kybStatus: KybStatus.VERIFIED,
     },
   });
 
-  // 8. Seed Forest Projects & Stages
-  console.log('🌲 Seeding Forest Conservation Projects & Stages...');
-  const projectBaluran = await prisma.forestProject.create({
+  const kthSulut = await prisma.kthGroup.create({
     data: {
       id: randomUUID(),
-      regionId: regionJatim.id,
-      kthGroupId: kthBaluran.id,
-      projectName: 'Taman Nasional Baluran Canopy Restoration',
+      groupName: 'KTH Minahasa Cempaka Lestari',
+      leaderName: 'Ir. Suprianto, M.For',
+      memberCount: 68,
+      location: 'Manado / Minahasa, Sulawesi Utara',
+      registrationNumber: 'SK.LHK-9102/KTH/2023',
+      walletAddress: '0x7C8D9E0F1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D',
+      totalIncentiveReceivedIdr: 1750000000.0,
+      kybStatus: KybStatus.VERIFIED,
+    },
+  });
+
+  const kthBali = await prisma.kthGroup.create({
+    data: {
+      id: randomUUID(),
+      groupName: 'KTH Wana Giri Bali',
+      leaderName: 'I Wayan Siringo-ringo',
+      memberCount: 110,
+      location: 'Buleleng / Karangasem, Bali',
+      registrationNumber: 'SK.LHK-6520/KTH/2022',
+      walletAddress: '0x8D9E0F1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D7E',
+      totalIncentiveReceivedIdr: 3100000000.0,
+      kybStatus: KybStatus.VERIFIED,
+    },
+  });
+
+  // 8. Seed Forest Projects & Proposals
+  console.log(
+    '🌲 Uploading proposal files to MinIO and Seeding 4 Forestry Projects...',
+  );
+
+  const keyKalbar = await uploadProposalToMinio(
+    'Proposal_Rehabilitasi_Hutan_Kalimantan_Barat.pdf',
+  );
+  const keyBengkulu = await uploadProposalToMinio(
+    'Proposal_Peningkatan_Fungsi_Hutan_Bengkulu.pdf',
+  );
+  const keySulut = await uploadProposalToMinio(
+    'Proposal_Konservasi_Pohon_Cempaka_Sulawesi_Utara.pdf',
+  );
+  const keyBali = await uploadProposalToMinio(
+    'Proposal_Pengembangan_Bibit_Endemik_Bali.pdf',
+  );
+
+  // PROYEK 1: Kalbar (Active dMRV - 3 Checkpoints)
+  const projectKalbar = await prisma.forestProject.create({
+    data: {
+      id: 'b2c3d4e5-0002-4000-8000-000000000001',
+      regionId: regionKalbar.id,
+      kthGroupId: kthKalbar.id,
+      projectName: 'Rehabilitasi Hutan Terdegradasi Spesies Endemik Kalbar',
       ecosystemType: EcosystemType.TROPICAL_RAINFOREST,
-      province: 'Jawa Timur',
-      latitude: -7.8385,
-      longitude: 114.3725,
-      areaHectares: 25000.0,
-      targetSequestrationTco2e: 1500000.0,
-      actualSequestrationTco2e: 1240000.0,
-      carbonStockTco2e: 1240000.0,
-      carbonPricePerTonIdr: 260000.0,
-      ndviScore: 0.78,
-      eviScore: 0.61,
-      survivalRatePercent: 87.5,
-      canopyHeightMeters: 1.85,
-      budgetTotalIdr: 4850000000.0,
-      budgetDisbursedIdr: 3750000000.0,
-      status: ProjectStatus.ACTIVE_DMRV,
-      speCertificateId: 'SPE-GRK-00192-REKA-2026',
-      bufferAllocatedPercent: 8.0,
-      bufferUsedPercent: 0.0,
-      trendDataJson: {
-        labels: ['2021', '2022', '2023', '2024', '2025'],
-        data: [1.15, 1.18, 1.2, 1.22, 1.24],
-      },
-      coordinatesJson: [
-        { lat: -7.732, lng: 114.398 },
-        { lat: -7.735, lng: 114.471 },
-        { lat: -7.822, lng: 114.478 },
-        { lat: -7.889, lng: 114.452 },
-        { lat: -7.911, lng: 114.331 },
-        { lat: -7.832, lng: 114.288 },
-        { lat: -7.748, lng: 114.321 },
-      ],
-    },
-  });
-
-  const projectMangrove = await prisma.forestProject.create({
-    data: {
-      id: randomUUID(),
-      regionId: regionJatim.id,
-      kthGroupId: kthTuban.id,
-      projectName: 'Restorasi Mangrove Hutan Lindung Tuban',
-      ecosystemType: EcosystemType.MANGROVE_BLUE_CARBON,
-      province: 'Jawa Timur',
-      latitude: -6.8854,
-      longitude: 112.0123,
-      areaHectares: 12000.0,
-      targetSequestrationTco2e: 980000.0,
-      actualSequestrationTco2e: 860000.0,
-      carbonStockTco2e: 860000.0,
-      carbonPricePerTonIdr: 650000.0,
-      ndviScore: 0.82,
-      eviScore: 0.68,
-      survivalRatePercent: 91.2,
+      province: 'Kalimantan Barat',
+      latitude: -1.2388,
+      longitude: 110.2408,
+      areaHectares: 35000.0,
+      targetSequestrationTco2e: 2100000.0,
+      actualSequestrationTco2e: 1450000.0,
+      carbonStockTco2e: 1450000.0,
+      carbonPricePerTonIdr: 280000.0,
+      ndviScore: 0.81,
+      eviScore: 0.65,
+      survivalRatePercent: 88.5,
       canopyHeightMeters: 2.1,
-      budgetTotalIdr: 3500000000.0,
-      budgetDisbursedIdr: 2800000000.0,
+      budgetTotalIdr: 5800000000.0,
+      budgetDisbursedIdr: 4200000000.0,
       status: ProjectStatus.ACTIVE_DMRV,
-      speCertificateId: 'SPE-GRK-00241-TUBAN-2026',
+      speCertificateId: 'SPE-GRK-00318-KALBAR-2026',
+      budgetReportFileName: 'Proposal_Rehabilitasi_Hutan_Kalimantan_Barat.pdf',
+      budgetReportFileSizeBytes: BigInt(2014863),
+      budgetReportStorageKey: keyKalbar,
       bufferAllocatedPercent: 8.0,
       bufferUsedPercent: 0.0,
       trendDataJson: {
         labels: ['2021', '2022', '2023', '2024', '2025'],
-        data: [1.1, 1.14, 1.19, 1.22, 1.26],
+        data: [1.12, 1.18, 1.25, 1.32, 1.45],
       },
       coordinatesJson: [
-        { lat: -6.87, lng: 111.98 },
-        { lat: -6.86, lng: 112.05 },
-        { lat: -6.9, lng: 112.08 },
-        { lat: -6.93, lng: 112.03 },
-        { lat: -6.92, lng: 111.96 },
-        { lat: -6.88, lng: 111.95 },
+        { lat: -1.2325, lng: 110.224 },
+        { lat: -1.221, lng: 110.2345 },
+        { lat: -1.2245, lng: 110.2505 },
+        { lat: -1.236, lng: 110.2605 },
+        { lat: -1.2505, lng: 110.255 },
+        { lat: -1.258, lng: 110.239 },
+        { lat: -1.249, lng: 110.222 },
+        { lat: -1.2325, lng: 110.224 },
       ],
+      inspectionCheckpoints: {
+        create: [
+          {
+            sequenceNo: 1,
+            title: 'Tahun 1: Pembibitan Endemik & Pemetaan GIS',
+            scheduledAt: new Date('2025-03-15'),
+            submissionDeadline: new Date('2025-04-15'),
+            method: 'FIELD',
+            instructions:
+              'Pemeriksaan 50.000 bibit kayu lokal & pembukaan jalur sekat bakar.',
+          },
+          {
+            sequenceNo: 2,
+            title: 'Tahun 2: Penanaman Blok & Pemberdayaan Masyarakat',
+            scheduledAt: new Date('2025-09-20'),
+            submissionDeadline: new Date('2025-10-20'),
+            method: 'HYBRID',
+            instructions:
+              'Verifikasi penanaman blok utama & verifikasi insentif KTH Kapuas.',
+          },
+          {
+            sequenceNo: 3,
+            title: 'Tahun 3: Monitoring IoT Kanopi & Verifikasi LiDAR Drone',
+            scheduledAt: new Date('2026-04-10'),
+            submissionDeadline: new Date('2026-05-10'),
+            method: 'DRONE',
+            instructions:
+              'Pemindaian orthophoto LiDAR multispektral dan kalibrasi sensor CHM.',
+          },
+        ],
+      },
     },
   });
 
-  const stageBaluran1 = await prisma.projectStage.create({
+  // PROYEK 2: Bengkulu (Draft - 1 Checkpoint)
+  const _projectBengkulu = await prisma.forestProject.create({
+    data: {
+      id: 'b2c3d4e5-0002-4000-8000-000000000002',
+      regionId: regionBengkulu.id,
+      kthGroupId: kthBengkulu.id,
+      projectName: 'Peningkatan Fungsi Hutan & Komoditas Lokal Bengkulu',
+      ecosystemType: EcosystemType.PEATLAND_RESTORATION,
+      province: 'Bengkulu',
+      latitude: -3.6958,
+      longitude: 102.5369,
+      areaHectares: 18500.0,
+      targetSequestrationTco2e: 1250000.0,
+      actualSequestrationTco2e: 0.0,
+      carbonStockTco2e: 0.0,
+      carbonPricePerTonIdr: 250000.0,
+      ndviScore: 0.62,
+      eviScore: 0.48,
+      survivalRatePercent: 72.0,
+      canopyHeightMeters: 1.1,
+      budgetTotalIdr: 3200000000.0,
+      budgetDisbursedIdr: 0.0,
+      status: ProjectStatus.DRAFT,
+      budgetReportFileName: 'Proposal_Peningkatan_Fungsi_Hutan_Bengkulu.pdf',
+      budgetReportFileSizeBytes: BigInt(2719977),
+      budgetReportStorageKey: keyBengkulu,
+      bufferAllocatedPercent: 8.0,
+      bufferUsedPercent: 0.0,
+      trendDataJson: {
+        labels: ['2023', '2024', '2025'],
+        data: [0.55, 0.58, 0.62],
+      },
+      coordinatesJson: [
+        { lat: -3.688, lng: 102.518 },
+        { lat: -3.6765, lng: 102.531 },
+        { lat: -3.6805, lng: 102.5485 },
+        { lat: -3.694, lng: 102.559 },
+        { lat: -3.7095, lng: 102.5515 },
+        { lat: -3.716, lng: 102.534 },
+        { lat: -3.706, lng: 102.516 },
+        { lat: -3.688, lng: 102.518 },
+      ],
+      inspectionCheckpoints: {
+        create: [
+          {
+            sequenceNo: 1,
+            title: 'Tahun 1: Survei Topografi & Pembuatan Sekat Bakar Sempadan',
+            scheduledAt: new Date('2026-06-01'),
+            submissionDeadline: new Date('2026-07-01'),
+            method: 'FIELD',
+            instructions:
+              'Survei batas lahan kritis gambut Bengkulu & sosialisasi komoditas lokal.',
+          },
+        ],
+      },
+    },
+  });
+
+  // PROYEK 3: Sulut (Active dMRV - 2 Checkpoints)
+  const _projectSulut = await prisma.forestProject.create({
+    data: {
+      id: 'b2c3d4e5-0002-4000-8000-000000000003',
+      regionId: regionSulut.id,
+      kthGroupId: kthSulut.id,
+      projectName: 'Konservasi & Perkebunan Partisipatif Pohon Cempaka Sulut',
+      ecosystemType: EcosystemType.AGROFORESTRY,
+      province: 'Sulawesi Utara',
+      latitude: 0.8429,
+      longitude: 124.3876,
+      areaHectares: 14200.0,
+      targetSequestrationTco2e: 950000.0,
+      actualSequestrationTco2e: 680000.0,
+      carbonStockTco2e: 680000.0,
+      carbonPricePerTonIdr: 310000.0,
+      ndviScore: 0.84,
+      eviScore: 0.69,
+      survivalRatePercent: 92.5,
+      canopyHeightMeters: 2.4,
+      budgetTotalIdr: 3900000000.0,
+      budgetDisbursedIdr: 2500000000.0,
+      status: ProjectStatus.ACTIVE_DMRV,
+      speCertificateId: 'SPE-GRK-00412-SULUT-2026',
+      budgetReportFileName:
+        'Proposal_Konservasi_Pohon_Cempaka_Sulawesi_Utara.pdf',
+      budgetReportFileSizeBytes: BigInt(1420331),
+      budgetReportStorageKey: keySulut,
+      bufferAllocatedPercent: 8.0,
+      bufferUsedPercent: 0.0,
+      trendDataJson: {
+        labels: ['2022', '2023', '2024', '2025'],
+        data: [0.42, 0.52, 0.61, 0.68],
+      },
+      coordinatesJson: [
+        { lat: 0.8515, lng: 124.368 },
+        { lat: 0.8615, lng: 124.382 },
+        { lat: 0.857, lng: 124.3995 },
+        { lat: 0.844, lng: 124.409 },
+        { lat: 0.8295, lng: 124.401 },
+        { lat: 0.824, lng: 124.384 },
+        { lat: 0.833, lng: 124.3695 },
+        { lat: 0.8515, lng: 124.368 },
+      ],
+      inspectionCheckpoints: {
+        create: [
+          {
+            sequenceNo: 1,
+            title: 'Tahun 1: Pembibitan Pohon Cempaka Elmerrillia Spp',
+            scheduledAt: new Date('2025-05-10'),
+            submissionDeadline: new Date('2025-06-10'),
+            method: 'FIELD',
+            instructions:
+              'Penyiapan 30.000 bibit cempaka berkualitas tinggi di persemaian MFRI Manado.',
+          },
+          {
+            sequenceNo: 2,
+            title: 'Tahun 2: Penanaman Partisipatif & Pelatihan KTH',
+            scheduledAt: new Date('2025-11-18'),
+            submissionDeadline: new Date('2025-12-18'),
+            method: 'HYBRID',
+            instructions:
+              'Penanaman tumpangsari cempaka dengan tanaman pangan KTH Minahasa.',
+          },
+        ],
+      },
+    },
+  });
+
+  // PROYEK 4: Bali (Minted - 4 Checkpoints)
+  const projectBali = await prisma.forestProject.create({
+    data: {
+      id: 'b2c3d4e5-0002-4000-8000-000000000004',
+      regionId: regionBali.id,
+      kthGroupId: kthBali.id,
+      projectName: 'Pengembangan Bibit Tanaman Endemik Kayu Asli Bali',
+      ecosystemType: EcosystemType.TROPICAL_RAINFOREST,
+      province: 'Bali',
+      latitude: -8.3335,
+      longitude: 115.0901,
+      areaHectares: 22000.0,
+      targetSequestrationTco2e: 1600000.0,
+      actualSequestrationTco2e: 1600000.0,
+      carbonStockTco2e: 1600000.0,
+      carbonPricePerTonIdr: 350000.0,
+      ndviScore: 0.89,
+      eviScore: 0.74,
+      survivalRatePercent: 95.0,
+      canopyHeightMeters: 3.2,
+      budgetTotalIdr: 4500000000.0,
+      budgetDisbursedIdr: 4500000000.0,
+      status: ProjectStatus.MINTED,
+      speCertificateId: 'SPE-GRK-00590-BALI-2026',
+      budgetReportFileName: 'Proposal_Pengembangan_Bibit_Endemik_Bali.pdf',
+      budgetReportFileSizeBytes: BigInt(3945787),
+      budgetReportStorageKey: keyBali,
+      bufferAllocatedPercent: 8.0,
+      bufferUsedPercent: 0.0,
+      trendDataJson: {
+        labels: ['2021', '2022', '2023', '2024', '2025'],
+        data: [1.1, 1.25, 1.4, 1.52, 1.6],
+      },
+      coordinatesJson: [
+        { lat: -8.3245, lng: 115.075 },
+        { lat: -8.316, lng: 115.087 },
+        { lat: -8.3215, lng: 115.1015 },
+        { lat: -8.333, lng: 115.108 },
+        { lat: -8.346, lng: 115.1 },
+        { lat: -8.3515, lng: 115.086 },
+        { lat: -8.342, lng: 115.073 },
+        { lat: -8.3245, lng: 115.075 },
+      ],
+      inspectionCheckpoints: {
+        create: [
+          {
+            sequenceNo: 1,
+            title: 'Tahun 1: Pembibitan 1.1 Juta Stek Sawo Kecik & Majegau',
+            scheduledAt: new Date('2023-04-10'),
+            submissionDeadline: new Date('2023-05-10'),
+            method: 'FIELD',
+            instructions:
+              'Produksi massal bibit kayu endemik Bali untuk pengrajin lokal.',
+          },
+          {
+            sequenceNo: 2,
+            title: 'Tahun 2: Inter-cropping Agroforestri KTH Wana Giri',
+            scheduledAt: new Date('2024-02-15'),
+            submissionDeadline: new Date('2024-03-15'),
+            method: 'FIELD',
+            instructions:
+              'Integrasi tanaman sela pangan dengan tegakan kayu industri Bali.',
+          },
+          {
+            sequenceNo: 3,
+            title: 'Tahun 3: Monitoring Kanopi & Kelangsungan Hidup Pohon',
+            scheduledAt: new Date('2024-10-20'),
+            submissionDeadline: new Date('2024-11-20'),
+            method: 'SATELLITE',
+            instructions:
+              'Analisis time-series citra Sentinel-2 & verifikasi kelangsungan hidup 95%.',
+          },
+          {
+            sequenceNo: 4,
+            title:
+              'Tahun 4: Audit Verifikasi Sucofindo & Minting Token SPE-GRK',
+            scheduledAt: new Date('2025-06-12'),
+            submissionDeadline: new Date('2025-07-12'),
+            method: 'HYBRID',
+            instructions:
+              'Audit fisik lapangan akhir dan pencetakan sertifikat offset karbon.',
+          },
+        ],
+      },
+    },
+  });
+
+  const stageKalbar1 = await prisma.projectStage.create({
     data: {
       id: randomUUID(),
-      projectId: projectBaluran.id,
+      projectId: projectKalbar.id,
       yearNumber: 1,
-      title: 'Tahun 1: Pembibitan & Persiapan Lahan Kritis',
+      title: 'Tahun 1: Pembibitan Endemik & Pemetaan GIS',
       milestoneDescription:
-        'Pengadaan 40.000 bibit endemik dan pembuatan sekat bakar.',
+        'Pengadaan 50.000 bibit kayu lokal & pembentukan KTH Kapuas.',
       status: StageStatus.COMPLETED,
-      canopyDensityPercent: 32.0,
-      farmerIncentiveIdr: 350000000.0,
-      incentiveStatus: 'DISBURSED',
-      speCreditsMinted: 1200.0,
-      plantedTrees: 40000,
-      targetTrees: 40000,
-    },
-  });
-
-  await prisma.projectStage.create({
-    data: {
-      id: randomUUID(),
-      projectId: projectBaluran.id,
-      yearNumber: 2,
-      title: 'Tahun 2: Penanaman Intensif & Monitoring IoT',
-      milestoneDescription:
-        'Pemasangan 12 unit sensor kanopi dan verifikasi LiDAR drone.',
-      status: StageStatus.IN_PROGRESS,
-      canopyDensityPercent: 48.5,
+      canopyDensityPercent: 42.0,
       farmerIncentiveIdr: 450000000.0,
-      incentiveStatus: 'PENDING_AUDIT',
-      speCreditsMinted: 2400.0,
-      plantedTrees: 38500,
-      targetTrees: 40000,
-    },
-  });
-
-  const stageMangrove1 = await prisma.projectStage.create({
-    data: {
-      id: randomUUID(),
-      projectId: projectMangrove.id,
-      yearNumber: 1,
-      title: 'Tahun 1: Pembibitan Mangrove Rhizophora',
-      milestoneDescription:
-        'Penanaman 50.000 bibit mangrove dan pembangunan tanggul penahan ombak.',
-      status: StageStatus.COMPLETED,
-      canopyDensityPercent: 55.0,
-      farmerIncentiveIdr: 300000000.0,
       incentiveStatus: 'DISBURSED',
-      speCreditsMinted: 2400.0,
+      speCreditsMinted: 2800.0,
       plantedTrees: 50000,
       targetTrees: 50000,
+    },
+  });
+
+  const stageBali1 = await prisma.projectStage.create({
+    data: {
+      id: randomUUID(),
+      projectId: projectBali.id,
+      yearNumber: 1,
+      title: 'Tahun 1: Pembibitan 1.1 Juta Stek Sawo Kecik',
+      milestoneDescription:
+        'Penyediaan bibit sawo kecik & majegau untuk pengrajin kayu Bali.',
+      status: StageStatus.COMPLETED,
+      canopyDensityPercent: 68.0,
+      farmerIncentiveIdr: 650000000.0,
+      incentiveStatus: 'DISBURSED',
+      speCreditsMinted: 5000.0,
+      plantedTrees: 100000,
+      targetTrees: 100000,
     },
   });
 
@@ -943,8 +1371,8 @@ async function main() {
   console.log('🌱 Seeding Forest Environmental Sensor Telemetry Logs...');
   await prisma.forestSensorTelemetryLog.create({
     data: {
-      projectId: projectBaluran.id,
-      nodeId: 'SENSOR-NODE-BALURAN-01',
+      projectId: projectKalbar.id,
+      nodeId: 'SENSOR-NODE-KALBAR-01',
       canopyMoisturePercent: 84.5,
       soilMoisturePercent: 91.2,
       ambientTempC: 28.4,
@@ -955,8 +1383,8 @@ async function main() {
 
   await prisma.forestSensorTelemetryLog.create({
     data: {
-      projectId: projectMangrove.id,
-      nodeId: 'SENSOR-NODE-MANGROVE-04',
+      projectId: projectBali.id,
+      nodeId: 'SENSOR-NODE-BALI-04',
       canopyMoisturePercent: 92.0,
       soilMoisturePercent: 98.4,
       ambientTempC: 27.2,
@@ -970,8 +1398,8 @@ async function main() {
   await prisma.droneMission.create({
     data: {
       id: randomUUID(),
-      projectId: projectBaluran.id,
-      missionName: 'LiDAR & Multispectral Survey Baluran Q1-2026',
+      projectId: projectKalbar.id,
+      missionName: 'LiDAR & Multispectral Survey Kalbar Q1-2026',
       flightDate: new Date('2026-02-10'),
       droneModel: 'DJI Matrice 350 RTK + Zenmuse L2',
       gsdCmPx: 2.15,
@@ -983,11 +1411,11 @@ async function main() {
 
   // 11. Seed Carbon Tokens & Bursa DEX Market
   console.log('🪙 Seeding Carbon Tokens & DEX Market Listings...');
-  const tokenBaluran = await prisma.carbonToken.create({
+  const tokenKalbar = await prisma.carbonToken.create({
     data: {
       id: randomUUID(),
-      speCertificateNumber: 'SPE-BALURAN-2026-001',
-      projectId: projectBaluran.id,
+      speCertificateNumber: 'SPE-KALBAR-2026-001',
+      projectId: projectKalbar.id,
       totalMintedTco2e: 50000.0,
       availableBalanceTco2e: 48750.0,
       vintageYear: 2026,
@@ -998,14 +1426,14 @@ async function main() {
     },
   });
 
-  const listingBaluran = await prisma.bursaListing.create({
+  const listingKalbar = await prisma.bursaListing.create({
     data: {
       id: randomUUID(),
       sellerUserId: userAdmin.id,
-      carbonTokenId: tokenBaluran.id,
-      projectName: 'Taman Nasional Baluran Canopy Restoration',
+      carbonTokenId: tokenKalbar.id,
+      projectName: 'Rehabilitasi Hutan Terdegradasi Spesies Endemik Kalbar',
       volumeAvailableTco2e: 48750.0,
-      pricePerTonIdr: 260000.0,
+      pricePerTonIdr: 280000.0,
       status: ListingStatus.ACTIVE,
     },
   });
@@ -1013,11 +1441,30 @@ async function main() {
   await prisma.bursaOrder.create({
     data: {
       id: randomUUID(),
-      listingId: listingBaluran.id,
+      listingId: listingKalbar.id,
+      buyerUserId: userEmitter1.id,
+      volumeTco2e: 2330.0,
+      retiredVolumeTco2e: 2330.0,
+      pricePerTonIdr: 280000.0,
+      totalAmountIdr: 652400000.0,
+      txHash:
+        '0x8831a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1',
+      blockNumber: '#184890',
+      verificationStatus: 'Terverifikasi (KLHK On-Chain - Burned)',
+      auditorName: 'Rian Hermawan, M.T (Sucofindo)',
+      status: OrderStatus.COMPLETED,
+      completedAt: new Date('2026-02-15T10:00:00.000Z'),
+    },
+  });
+
+  await prisma.bursaOrder.create({
+    data: {
+      id: randomUUID(),
+      listingId: listingKalbar.id,
       buyerUserId: userBuyer.id,
       volumeTco2e: 1250.0,
-      pricePerTonIdr: 260000.0,
-      totalAmountIdr: 325000000.0,
+      pricePerTonIdr: 280000.0,
+      totalAmountIdr: 350000000.0,
       txHash:
         '0x8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b',
       blockNumber: '#184410',
@@ -1028,11 +1475,11 @@ async function main() {
     },
   });
 
-  const tokenMangrove = await prisma.carbonToken.create({
+  const tokenBali = await prisma.carbonToken.create({
     data: {
       id: randomUUID(),
-      speCertificateNumber: 'SPE-TUBAN-2026-001',
-      projectId: projectMangrove.id,
+      speCertificateNumber: 'SPE-BALI-2026-001',
+      projectId: projectBali.id,
       totalMintedTco2e: 70000.0,
       availableBalanceTco2e: 0.0,
       vintageYear: 2026,
@@ -1043,14 +1490,14 @@ async function main() {
     },
   });
 
-  const listingMangrove = await prisma.bursaListing.create({
+  const listingBali = await prisma.bursaListing.create({
     data: {
       id: randomUUID(),
       sellerUserId: userAdmin.id,
-      carbonTokenId: tokenMangrove.id,
-      projectName: 'Restorasi Mangrove Hutan Lindung Tuban',
+      carbonTokenId: tokenBali.id,
+      projectName: 'Pengembangan Bibit Tanaman Endemik Kayu Asli Bali',
       volumeAvailableTco2e: 0.0,
-      pricePerTonIdr: 260000.0,
+      pricePerTonIdr: 350000.0,
       status: ListingStatus.FILLED,
     },
   });
@@ -1058,11 +1505,11 @@ async function main() {
   await prisma.bursaOrder.create({
     data: {
       id: randomUUID(),
-      listingId: listingMangrove.id,
+      listingId: listingBali.id,
       buyerUserId: userEmitter2.id,
       volumeTco2e: 50000.0,
-      pricePerTonIdr: 260000.0,
-      totalAmountIdr: 13000000000.0,
+      pricePerTonIdr: 350000.0,
+      totalAmountIdr: 17500000000.0,
       txHash: '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d',
       blockNumber: '#184410',
       verificationStatus: 'Terverifikasi (KLHK On-Chain)',
@@ -1075,11 +1522,11 @@ async function main() {
   await prisma.bursaOrder.create({
     data: {
       id: randomUUID(),
-      listingId: listingMangrove.id,
+      listingId: listingBali.id,
       buyerUserId: userBuyer.id,
       volumeTco2e: 20000.0,
-      pricePerTonIdr: 260000.0,
-      totalAmountIdr: 5200000000.0,
+      pricePerTonIdr: 350000.0,
+      totalAmountIdr: 7000000000.0,
       txHash: '0x4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a',
       blockNumber: '#184102',
       verificationStatus: 'Terverifikasi (KLHK On-Chain)',
@@ -1094,27 +1541,28 @@ async function main() {
   await prisma.kthIncentiveDisbursement.create({
     data: {
       id: randomUUID(),
-      projectId: projectBaluran.id,
-      kthGroupId: kthBaluran.id,
-      stageId: stageBaluran1.id,
-      amountIdr: 350000000.0,
-      volumeTco2e: 1200.0,
+      projectId: projectKalbar.id,
+      kthGroupId: kthKalbar.id,
+      stageId: stageKalbar1.id,
+      amountIdr: 450000000.0,
+      volumeTco2e: 2800.0,
       category: 'Restorasi & Pembibitan',
-      description: 'Pengadaan 40.000 bibit endemik dan pembuatan sekat bakar',
-      vendorName: 'KTH Baluran Mandiri',
+      description:
+        'Pengadaan 50.000 bibit endemik dan pemetaan jalur GIS KTH Kapuas',
+      vendorName: 'KTH Dayak Kapuas Mandiri',
       txHash:
         '0x3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c',
       blockNumber: '#183100',
       itemsJson: [
         {
-          name: 'Pengadaan Bibit Pohon Endemik Baluran',
-          qty: 40000,
+          name: 'Pengadaan Bibit Pohon Endemik Kalbar (Kayu Ulin & Meranti)',
+          qty: 50000,
           unit: 'Batang',
-          price: 7500,
-          total: 300000000,
+          price: 8000,
+          total: 400000000,
         },
         {
-          name: 'Pembuatan Sekat Bakar & Jalur Pemadam Firebreak',
+          name: 'Operasional Pemetaan Lahan GIS & Batas Sekat Bakar',
           qty: 5,
           unit: 'KM',
           price: 10000000,
@@ -1132,38 +1580,31 @@ async function main() {
   await prisma.kthIncentiveDisbursement.create({
     data: {
       id: randomUUID(),
-      projectId: projectMangrove.id,
-      kthGroupId: kthTuban.id,
-      stageId: stageMangrove1.id,
-      amountIdr: 45000000.0,
-      volumeTco2e: 1000.0,
-      category: 'Pemeliharaan',
+      projectId: projectBali.id,
+      kthGroupId: kthBali.id,
+      stageId: stageBali1.id,
+      amountIdr: 650000000.0,
+      volumeTco2e: 5000.0,
+      category: 'Pembibitan & Agroforestri',
       description:
-        'Insentif bulanan KTH (Dinas Kehutanan Jawa Timur & KTH Tuban)',
-      vendorName: 'Dinas Kehutanan Jawa Timur & KTH Tuban',
+        'Pengadaan 1.1 juta stek Sawo Kecik & Majegau untuk KTH Wana Giri Bali',
+      vendorName: 'Dinas Kehutanan Bali & KTH Wana Giri',
       txHash: '0x8f3a9b2c1d4e7f0a5b6c7d8e9f0a1b2c',
       blockNumber: '#184920',
       itemsJson: [
         {
-          name: 'Insentif Tanam & Pemeliharaan KTH (15 Anggota)',
-          qty: 15,
+          name: 'Pengadaan Bibit Sawo Kecik & Majegau KTH (110 Anggota)',
+          qty: 110,
           unit: 'Anggota',
-          price: 2000000,
-          total: 30000000,
+          price: 5000000,
+          total: 550000000,
         },
         {
-          name: 'Pengadaan Pupuk Kompos Organik Bio-Fertilizer',
-          qty: 30,
+          name: 'Operasional Persemaian Massal & Pupuk Organik',
+          qty: 100,
           unit: 'Karung',
-          price: 300000,
-          total: 9000000,
-        },
-        {
-          name: 'Operasional Alat Penyiangan & Pemangkasan',
-          qty: 6,
-          unit: 'Set',
           price: 1000000,
-          total: 6000000,
+          total: 100000000,
         },
       ],
       proofImagesJson: [
@@ -1175,51 +1616,6 @@ async function main() {
     },
   });
 
-  await prisma.kthIncentiveDisbursement.create({
-    data: {
-      id: randomUUID(),
-      projectId: projectMangrove.id,
-      kthGroupId: kthTuban.id,
-      stageId: stageMangrove1.id,
-      amountIdr: 85000000.0,
-      volumeTco2e: 1500.0,
-      category: 'Monitoring',
-      description: 'Sewa UAV & pemindaian orthophoto udara dMRV',
-      vendorName: 'PT Aero Mapping Indonesia',
-      txHash: '0x3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a',
-      blockNumber: '#183712',
-      itemsJson: [
-        {
-          name: 'Sewa Drone VTOL LiDAR Multiterrain (3 Hari)',
-          qty: 3,
-          unit: 'Hari',
-          price: 20000000,
-          total: 60000000,
-        },
-        {
-          name: 'Jasa Pengolahan Citra dMRV & Model CHM',
-          qty: 1,
-          unit: 'Paket',
-          price: 15000000,
-          total: 15000000,
-        },
-        {
-          name: 'Honor Pilot Drone Sertifikasi FASI & Surveyor',
-          qty: 2,
-          unit: 'Orang',
-          price: 5000000,
-          total: 10000000,
-        },
-      ],
-      proofImagesJson: [
-        '/proofs/nota_pembelian.svg',
-        '/proofs/bukti_transfer.svg',
-        '/proofs/sertifikat_spe.svg',
-      ],
-      disbursedAt: new Date('2025-06-28T14:30:00.000Z'),
-    },
-  });
-
   // 14. Seed Multi-Sig Governance Requests & Signatures
   console.log('✍️ Seeding Multi-Sig Governance Requests & Signatures...');
   const multiSigReq = await prisma.multiSigRequest.create({
@@ -1228,13 +1624,13 @@ async function main() {
       applicantUserId: userKth1.id,
       requestType: MultiSigTxType.MINT_CREDIT,
       description:
-        'Minting 2.400 SPE-GRK Carbon Offset Credits untuk Restorasi Mangrove Tuban Tahap 2.',
+        'Minting 5.000 SPE-GRK Carbon Offset Credits untuk Pengembangan Bibit Endemik Bali.',
       requiredSigners: 2,
       currentSignersCount: 2,
       status: MultiSigStatus.APPROVED,
       payloadJson: {
-        projectId: projectMangrove.id,
-        volumeTco2e: 2400,
+        projectId: projectBali.id,
+        volumeTco2e: 5000,
         vintage: 2026,
       },
     },
@@ -1267,7 +1663,7 @@ async function main() {
   await seedAdditionalEmitterAccounts(defaultPasswordHash);
 
   // 14b. Seed compatibility PTBAE allocations for every company.
-  // These values mirror the legacy company cap until an official yearly allocation is uploaded.
+  console.log('🏛️ Seeding Official PTBAE-PU Quota Allocations (FY 2026)...');
   const seededCompanies = await prisma.company.findMany({
     select: { id: true, emissionCapTco2e: true },
   });
@@ -1275,13 +1671,14 @@ async function main() {
     data: seededCompanies.map((company) => ({
       companyId: company.id,
       complianceYear: 2026,
-      quotaTco2e: company.emissionCapTco2e,
+      quotaTco2e: company.emissionCapTco2e || 1100000.0,
       sourceDocument:
-        'Data seed kompatibilitas; ganti dengan dokumen PTBAE-PU resmi perusahaan',
-      status: PtbaeStatus.LEGACY,
+        'SK Menteri LHK No. SK.720/MENLHK/SETJEN/KUM.1/12/2025 tentang Penetapan PTBAE-PU Sektor Industri',
+      status: PtbaeStatus.VERIFIED,
       assignedAt: new Date('2026-01-01T00:00:00.000Z'),
+      verifiedAt: new Date('2026-01-05T00:00:00.000Z'),
       notes:
-        'Nilai ini bukan ambang universal. Nilai resmi harus ditetapkan per perusahaan dan tahun.',
+        'Dokumen resmi alokasi kuota emisi PTBAE-PU terverifikasi KLHK untuk tahun ketaatan 2026.',
     })),
     skipDuplicates: true,
   });

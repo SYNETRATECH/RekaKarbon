@@ -85,6 +85,8 @@ jobs:
           cp server/nginx.conf bundle/server/ 2>/dev/null || true
           cp -r server/dist bundle/server/dist
           cp -r server/prisma bundle/server/prisma
+          mkdir -p bundle/server/src
+          cp -r server/src/storage bundle/server/src/storage 2>/dev/null || true
 
           mkdir -p bundle/ml/models bundle/ml/src bundle/ml/data
           cp -r ml/models/* bundle/ml/models/ 2>/dev/null || true

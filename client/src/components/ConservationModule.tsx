@@ -4,6 +4,8 @@ import { useMapStore } from '../store/useMapStore';
 import { useUIStore } from '../store/useUIStore';
 import NDVIGauge from './NDVIGauge';
 import { calculateGeodetics } from '../utils/geodetics';
+import { projectRepository } from '../repositories';
+import { toast } from '@/hooks/use-toast';
 import {
   Activity,
   Download,
@@ -13,6 +15,9 @@ import {
   ExternalLink,
   Search,
   FileCheck2,
+  FileText,
+  FileSpreadsheet,
+  Loader2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -41,6 +46,7 @@ export default function ConservationModule() {
   );
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedReportStage, setSelectedReportStage] = useState<any | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Drag & Wheel scroll handler for iPad touch feel inside tablet iframe
   const editorScrollRef = useRef<HTMLDivElement>(null);
@@ -97,12 +103,43 @@ export default function ConservationModule() {
 
   const activeProj = projects[activeIndex];
 
+  const handleDownloadReport = async () => {
+    if (!activeProj) return;
+    if (!activeProj.budgetReportFileName) {
+      toast({
+        title: 'Laporan Anggaran Belum Tersedia',
+        description: 'Emitter/Pengelola proyek belum mengunggah berkas proposal laporan anggaran.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      setIsDownloading(true);
+      const downloadFileName =
+        activeProj.budgetReportFileName ||
+        `Laporan_Anggaran_${activeProj.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      await projectRepository.downloadBudgetReport(activeProj.id, downloadFileName);
+      toast({
+        title: 'Berhasil Mengunduh Laporan Anggaran',
+        description: `Berkas ${downloadFileName} berhasil diunduh.`,
+      });
+    } catch (err: any) {
+      console.error('Failed to download project report:', err);
+      toast({
+        title: 'Gagal Mengunduh Laporan',
+        description: err?.message || 'Terjadi kesalahan saat mengunduh berkas laporan dari server.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const handleExplorerSearch = (query: string) => {
     if (!query.trim() || !activeProj) return;
     const q = query.trim().toLowerCase();
     let foundItem: any = null;
 
-    // Search buyers in active project
     if (activeProj.tokenBuyers) {
       const b = activeProj.tokenBuyers.find(
         (tb) =>
@@ -118,27 +155,9 @@ export default function ConservationModule() {
     if (foundItem) {
       setSelectedExplorerTx({ item: foundItem, type: 'tokenBuyer', project: activeProj });
     } else {
-      // Dynamic verified fallback for typed query
-      setSelectedExplorerTx({
-        item: {
-          txHash: q.startsWith('0x') ? q : `0x${q.slice(0, 30)}...`,
-          blockNumber: `#184${Math.floor(Math.random() * 900 + 100)}`,
-          companyName: `Verichain Verified Query (${query})`,
-          sector: 'Audit Transparansi Karbon',
-          tCO2e: 12500,
-          amountIDR: 3250000000,
-          purchaseDate: new Date().toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          }),
-          speCertificateId: `SPE-KLHK-${Math.floor(Math.random() * 8999 + 1000)}`,
-          verificationStatus: 'Terverifikasi (KLHK On-Chain)',
-          auditor: 'Sistem AI dMRV & Verichain Ledger',
-          desc: 'Pencarian Hash Transaksi Publik Terverifikasi On-Chain',
-        },
-        type: 'tokenBuyer',
-        project: activeProj,
+      toast({
+        title: 'Pencarian Penebus Tidak Ditemukan',
+        description: `Tidak ada data transaksi pembeli yang cocok dengan "${query}".`,
       });
     }
   };
@@ -157,31 +176,9 @@ export default function ConservationModule() {
     if (foundTx) {
       setSelectedDisbursementTx({ tx: foundTx, project: activeProj });
     } else {
-      setSelectedDisbursementTx({
-        tx: {
-          id: `DISB-${Math.floor(Math.random() * 8999 + 1000)}`,
-          date: new Date().toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          }),
-          amount: 45000000,
-          desc: `Pencairan Aliran Dana (${query}) - Terverifikasi Blockchain`,
-          category: 'Operasional Lapangan & Logistik Bibit',
-          txHash: q.startsWith('0x') ? q : `0x${q.slice(0, 30)}...`,
-          blockNumber: `#184${Math.floor(Math.random() * 900 + 100)}`,
-          vendor: `Vendor Terdaftar (${query})`,
-          items: [
-            {
-              name: `Pengadaan Bibit & Jasa Konservasi (${query})`,
-              qty: 1000,
-              unit: 'Pohon',
-              price: 45000,
-              total: 45000000,
-            },
-          ],
-        },
-        project: activeProj,
+      toast({
+        title: 'Pencarian Vendor Tidak Ditemukan',
+        description: `Tidak ada data alokasi dana vendor yang cocok dengan "${query}".`,
       });
     }
   };
@@ -246,15 +243,30 @@ export default function ConservationModule() {
 
           {/* Action Button Row */}
           <div className="flex gap-2 w-full shrink-0 font-sans">
-            <button
-              onClick={() => {
-                setDownloadNotice('LAPORAN_ANGGARAN_TUBAN_2026.pdf');
-              }}
-              className="w-full bg-primary-gradient hover:opacity-95 text-white text-[10px] font-extrabold py-2.5 px-3 rounded-xl border border-emerald-700 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center leading-none"
-            >
-              <Download className="w-3.5 h-3.5 text-[#00C48C]" />
-              Unduh Laporan Anggaran Proyek (PDF)
-            </button>
+            {activeProj.budgetReportFileName ? (
+              <button
+                onClick={handleDownloadReport}
+                disabled={isDownloading}
+                className="w-full bg-primary-gradient hover:opacity-95 text-white text-[10px] font-extrabold py-2.5 px-3 rounded-xl border border-emerald-700 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center leading-none disabled:opacity-50"
+              >
+                {isDownloading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : activeProj.budgetReportFileName.endsWith('.xlsx') ||
+                  activeProj.budgetReportFileName.endsWith('.xls') ? (
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#00C48C]" />
+                ) : (
+                  <FileText className="w-3.5 h-3.5 text-[#00C48C]" />
+                )}
+                {isDownloading
+                  ? 'Mengunduh Berkasa Laporan...'
+                  : `Unduh ${activeProj.budgetReportFileName}`}
+              </button>
+            ) : (
+              <div className="w-full bg-slate-50 border border-slate-200/80 text-slate-500 text-[10px] font-extrabold py-2.5 px-3 rounded-xl shadow-2xs flex items-center justify-center gap-1.5 text-center leading-none">
+                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                Belum Ada Laporan Anggaran (Proposal)
+              </div>
+            )}
           </div>
 
           {/* Selected Project Quick Metrics */}
