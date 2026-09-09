@@ -10,7 +10,11 @@ const TILE_URLS = {
   street: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{y}/{x}{r}.png',
 };
 
-export default function MapCanvas() {
+interface MapCanvasProps {
+  hideControls?: boolean;
+}
+
+export default function MapCanvas({ hideControls = false }: MapCanvasProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
@@ -349,56 +353,49 @@ export default function MapCanvas() {
   return (
     <div className="w-full h-full relative bg-transparent">
       {/* Tombol Focus Area Melayang (Bawah Tengah) */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[400]">
-        <button
-          onClick={handleFocusBounds}
-          className="bg-white/80 backdrop-blur border border-white/60 hover:bg-white text-slate-800 px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-black/5 flex items-center gap-2 transition-all cursor-pointer active:scale-95"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      {!hideControls && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[400]">
+          <button
+            onClick={handleFocusBounds}
+            className="bg-white/80 backdrop-blur border border-white/60 hover:bg-white text-slate-800 px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-black/5 flex items-center gap-2 transition-all cursor-pointer active:scale-95"
           >
-            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-            <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-          Focus Area
-        </button>
-      </div>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Focus Area
+          </button>
+        </div>
+      )}
 
       {/* Leaflet Node */}
       <div ref={mapRef} className="z-0 w-full h-full"></div>
 
-      {/* Legend overlay inside map (Bottom Left, sedikit lebih tinggi agar tidak terpotong) */}
-      <div className="absolute bottom-8 left-6 z-[400] bg-white/80 backdrop-blur-md border border-white/60 p-3.5 rounded-2xl shadow-xl text-[11px] font-bold space-y-2 text-left pointer-events-auto">
-        {activeModule === 'conservation' ? (
-          <>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 border border-emerald-600 block"></span>
-              <span className="text-slate-600">Area Proyek Aktif</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 animate-pulse block"></span>
-              <span className="text-rose-700 font-extrabold">Belum Bayar Karbon (Defisit)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block"></span>
-              <span className="text-slate-600">Lunas Offset Karbon</span>
-            </div>
-          </>
-        )}
-      </div>
+      {/* Legend overlay inside map (Bottom Left, rendered only for corporate module) */}
+      {!hideControls && activeModule === 'corporate' && (
+        <div className="absolute bottom-8 left-6 z-[400] bg-white/80 backdrop-blur-md border border-white/60 p-3.5 rounded-2xl shadow-xl text-[11px] font-bold space-y-2 text-left pointer-events-auto">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 animate-pulse block"></span>
+            <span className="text-rose-700 font-extrabold">Belum Bayar Karbon (Defisit)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block"></span>
+            <span className="text-slate-600">Lunas Offset Karbon</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

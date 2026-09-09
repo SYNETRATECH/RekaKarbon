@@ -1,5 +1,6 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CSSTablet3D } from './CSSTablet3D';
+import { MobileMapContainer } from './MobileMapContainer';
 
 export default function MapTeaserSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -7,6 +8,29 @@ export default function MapTeaserSection() {
   const headerContainerRef = useRef<HTMLDivElement>(null);
   const headerTitleRef = useRef<HTMLHeadingElement>(null);
   const headerSubRef = useRef<HTMLParagraphElement>(null);
+
+  const [isMobileOrPortrait, setIsMobileOrPortrait] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth <= 768 || window.innerHeight > window.innerWidth;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const isSmall = window.innerWidth <= 768;
+      setIsMobileOrPortrait(isSmall || isPortrait);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
 
   return (
     <section
@@ -45,16 +69,27 @@ export default function MapTeaserSection() {
             </p>
           </div>
 
-          {/* Sticky 3D CSS Tablet Container */}
+          {/* Sticky Interactive Container (3D Tablet for Desktop/Landscape, Spatial Map for Mobile/Portrait) */}
           <div className="relative w-full flex-1 flex items-center justify-center overflow-visible min-h-0 z-20">
-            <CSSTablet3D
-              sectionRef={sectionRef}
-              backdropRef={backdropRef}
-              headerContainerRef={headerContainerRef}
-              headerTitleRef={headerTitleRef}
-              headerSubRef={headerSubRef}
-              targetUrl="/portal-transparansi"
-            />
+            {isMobileOrPortrait ? (
+              <MobileMapContainer
+                sectionRef={sectionRef}
+                backdropRef={backdropRef}
+                headerContainerRef={headerContainerRef}
+                headerTitleRef={headerTitleRef}
+                headerSubRef={headerSubRef}
+                targetUrl="/portal-transparansi"
+              />
+            ) : (
+              <CSSTablet3D
+                sectionRef={sectionRef}
+                backdropRef={backdropRef}
+                headerContainerRef={headerContainerRef}
+                headerTitleRef={headerTitleRef}
+                headerSubRef={headerSubRef}
+                targetUrl="/portal-transparansi"
+              />
+            )}
           </div>
         </div>
       </div>
