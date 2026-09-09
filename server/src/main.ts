@@ -14,13 +14,24 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const corsOriginsEnv = process.env.CORS_ORIGINS;
-  const defaultAllowedOrigins = [
+  const builtInAllowedOrigins = [
     'http://localhost:5173',
+    'http://127.0.0.1:5173',
     'http://localhost:3000',
+    'https://rekakarbon.farrelad.com',
+    'https://*.farrelad.com',
+    'https://app.rekakarbon.id',
+    'https://*.rekakarbon.id',
   ];
-  const allowedOrigins = corsOriginsEnv
-    ? corsOriginsEnv.split(',').map((o) => o.trim())
-    : defaultAllowedOrigins;
+  const envOrigins = corsOriginsEnv
+    ? corsOriginsEnv
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean)
+    : [];
+  const allowedOrigins = Array.from(
+    new Set([...builtInAllowedOrigins, ...envOrigins]),
+  );
   const isDev = process.env.NODE_ENV !== 'production';
 
   app.enableCors({
