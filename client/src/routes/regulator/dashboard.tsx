@@ -28,7 +28,10 @@ import { regulatorRepository } from '../../repositories';
 import { RouteSkeletonLoader } from '../../components/ui/RouteSkeletonLoader';
 
 export async function clientLoader() {
-  const regions = await regulatorRepository.getNationalForestRegions().catch(() => []);
+  const regions = await regulatorRepository.getNationalForestRegions().catch((err) => {
+    console.error('[RegulatorDashboard Loader Error: getNationalForestRegions]', err);
+    return [];
+  });
   return { regions };
 }
 

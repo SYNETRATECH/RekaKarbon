@@ -44,8 +44,14 @@ import { useToast } from '../../hooks/use-toast';
 
 export async function clientLoader() {
   const [forestProjects, projects] = await Promise.all([
-    regulatorRepository.getForestProjects().catch(() => []),
-    projectRepository.getProjects().catch(() => []),
+    regulatorRepository.getForestProjects().catch((err) => {
+      console.error('[RegulatorProjects Loader Error: getForestProjects]', err);
+      return [];
+    }),
+    projectRepository.getProjects().catch((err) => {
+      console.error('[RegulatorProjects Loader Error: getProjects]', err);
+      return [];
+    }),
   ]);
   return { forestProjects, projects };
 }

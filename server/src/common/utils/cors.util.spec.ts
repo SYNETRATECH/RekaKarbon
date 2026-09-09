@@ -6,6 +6,8 @@ describe('isAllowedOrigin', () => {
     'http://localhost:3000',
     'https://app.rekakarbon.id',
     'https://*.rekakarbon.id',
+    'https://rekakarbon.farrelad.com',
+    'https://*.farrelad.com',
   ];
 
   it('allows requests with missing or undefined origin (curl, mobile, server-to-server)', () => {
@@ -24,6 +26,9 @@ describe('isAllowedOrigin', () => {
     expect(
       isAllowedOrigin('https://app.rekakarbon.id', allowedOrigins, false),
     ).toBe(true);
+    expect(
+      isAllowedOrigin('https://rekakarbon.farrelad.com', allowedOrigins, false),
+    ).toBe(true);
   });
 
   it('matches wildcard domain patterns', () => {
@@ -34,8 +39,48 @@ describe('isAllowedOrigin', () => {
       isAllowedOrigin('https://admin.rekakarbon.id', allowedOrigins, false),
     ).toBe(true);
     expect(
+      isAllowedOrigin('https://api.farrelad.com', allowedOrigins, false),
+    ).toBe(true);
+    expect(
+      isAllowedOrigin('https://staging.farrelad.com', allowedOrigins, false),
+    ).toBe(true);
+    expect(
       isAllowedOrigin('https://otherdomain.com', allowedOrigins, false),
     ).toBe(false);
+  });
+
+  it('handles trailing slashes gracefully on incoming origin or configured patterns', () => {
+    // Incoming origin with trailing slash
+    expect(
+      isAllowedOrigin(
+        'https://rekakarbon.farrelad.com/',
+        allowedOrigins,
+        false,
+      ),
+    ).toBe(true);
+    expect(
+      isAllowedOrigin('https://app.rekakarbon.id/', allowedOrigins, false),
+    ).toBe(true);
+
+    // Configured allowed origin containing trailing slash
+    const originsWithTrailingSlash = [
+      'https://rekakarbon.farrelad.com/',
+      'https://*.farrelad.com/',
+    ];
+    expect(
+      isAllowedOrigin(
+        'https://rekakarbon.farrelad.com',
+        originsWithTrailingSlash,
+        false,
+      ),
+    ).toBe(true);
+    expect(
+      isAllowedOrigin(
+        'https://api.farrelad.com',
+        originsWithTrailingSlash,
+        false,
+      ),
+    ).toBe(true);
   });
 
   describe('Development Mode (isDev = true)', () => {
