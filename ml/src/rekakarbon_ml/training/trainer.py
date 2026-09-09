@@ -6,6 +6,8 @@ Supports training on persisted raw dataset splits (data/splits/train.csv) or inp
 
 import argparse
 import os
+import pathlib
+import sys
 from typing import Tuple
 
 import joblib
@@ -108,9 +110,6 @@ def train_and_save_pipeline(
 
 def _enable_cross_platform_unpickling() -> None:
     """Enables unpickling of WindowsPath objects on POSIX/Linux platforms."""
-    import pathlib
-    import sys
-
     if sys.platform != "win32":
         try:
             # Map WindowsPath to PureWindowsPath on POSIX to prevent UnsupportedOperation
@@ -129,6 +128,8 @@ def load_pipeline(model_path: str = "models/anomaly_pipeline.pkl") -> Pipeline:
 
 
 def main() -> None:
+    # Lazy imports inside CLI main to break circular import cycle:
+    # predictor.py imports load_pipeline from trainer.py
     from ..evaluation.evaluator import ModelEvaluator, generate_model_metadata
     from ..inference.predictor import CarbonAnomalyPredictor
 
