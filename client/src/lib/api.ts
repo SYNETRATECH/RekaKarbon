@@ -12,7 +12,7 @@ export function resolveApiBaseUrl(
   configuredUrl: string = import.meta.env.VITE_API_BASE_URL || '',
   currentHostname?: string
 ): string {
-  let targetUrl = configuredUrl || 'http://localhost:3000';
+  let targetUrl = configuredUrl || '';
 
   // Fix stale/invalid 8100 port config to point to standard NestJS backend port 3000
   if (targetUrl.includes(':8100')) {

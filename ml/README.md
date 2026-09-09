@@ -539,15 +539,11 @@ initial_type = [("float_input", FloatTensorType([None, 20]))]
 
 # Specify strict target opsets for maximum cross-platform runtime support
 target_opset = {
-    "": 15,           # Standard ONNX opset for mathematical operators and array manipulation
-    "ai.onnx.ml": 3   # Classical Machine Learning opset (TreeEnsembleRegressor, Scaler)
+    "": 15,  # Standard ONNX opset for mathematical operators and array manipulation
+    "ai.onnx.ml": 3,  # Classical Machine Learning opset (TreeEnsembleRegressor, Scaler)
 }
 
-onnx_model = convert_sklearn(
-    sub_pipeline,
-    initial_types=initial_type,
-    target_opset=target_opset
-)
+onnx_model = convert_sklearn(sub_pipeline, initial_types=initial_type, target_opset=target_opset)
 ```
 
 Within the resulting ONNX graph:
