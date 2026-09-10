@@ -18,7 +18,9 @@ import {
   FileText,
   FileSpreadsheet,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
+import { ReportIssueModal } from './modals/ReportIssueModal';
 import {
   Dialog,
   DialogContent,
@@ -36,7 +38,7 @@ import AuditReportModal from './modals/AuditReportModal';
 import LightboxModal from './modals/LightboxModal';
 
 export default function ConservationModule() {
-  const [blockchainSubTab, setBlockchainSubTab] = useState<'buyers' | 'vendors'>('buyers');
+  const [blockchainSubTab, setBlockchainSubTab] = useState<'buyers' | 'vendors'>('vendors');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedExplorerTx, setSelectedExplorerTx] = useState<any | null>(null);
@@ -47,6 +49,12 @@ export default function ConservationModule() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedReportStage, setSelectedReportStage] = useState<any | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [reportModalData, setReportModalData] = useState<{
+    isOpen: boolean;
+    targetType: 'PROJECT' | 'TRANSACTION';
+    targetId: string;
+    targetName: string;
+  }>({ isOpen: false, targetType: 'PROJECT', targetId: '', targetName: '' });
 
   // Drag & Wheel scroll handler for iPad touch feel inside tablet iframe
   const editorScrollRef = useRef<HTMLDivElement>(null);
@@ -247,7 +255,7 @@ export default function ConservationModule() {
               <button
                 onClick={handleDownloadReport}
                 disabled={isDownloading}
-                className="w-full bg-primary-gradient hover:opacity-95 text-white text-[10px] font-extrabold py-2.5 px-3 rounded-xl border border-emerald-700 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center leading-none disabled:opacity-50"
+                className="flex-1 bg-primary-gradient hover:opacity-95 text-white text-[10px] font-extrabold py-2.5 px-3 rounded-xl border border-emerald-700 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center leading-none disabled:opacity-50"
               >
                 {isDownloading ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -257,16 +265,28 @@ export default function ConservationModule() {
                 ) : (
                   <FileText className="w-3.5 h-3.5 text-[#00C48C]" />
                 )}
-                {isDownloading
-                  ? 'Mengunduh Berkasa Laporan...'
-                  : `Unduh ${activeProj.budgetReportFileName}`}
+                {isDownloading ? 'Mengunduh Proposal...' : 'Unduh Proposal'}
               </button>
             ) : (
-              <div className="w-full bg-slate-50 border border-slate-200/80 text-slate-500 text-[10px] font-extrabold py-2.5 px-3 rounded-xl shadow-2xs flex items-center justify-center gap-1.5 text-center leading-none">
+              <div className="flex-1 bg-slate-50 border border-slate-200/80 text-slate-500 text-[10px] font-extrabold py-2.5 px-3 rounded-xl shadow-2xs flex items-center justify-center gap-1.5 text-center leading-none">
                 <FileText className="w-3.5 h-3.5 text-slate-400" />
-                Belum Ada Laporan Anggaran (Proposal)
+                Proposal N/A
               </div>
             )}
+            <button
+              onClick={() =>
+                setReportModalData({
+                  isOpen: true,
+                  targetType: 'PROJECT',
+                  targetId: activeProj.id,
+                  targetName: activeProj.name,
+                })
+              }
+              className="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl border border-rose-200 shadow-2xs transition-all flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
+              title="Laporkan Masalah Proyek Ini"
+            >
+              <AlertTriangle className="w-4 h-4 text-rose-600" />
+            </button>
           </div>
 
           {/* Selected Project Quick Metrics */}
@@ -562,17 +582,6 @@ export default function ConservationModule() {
             <div className="space-y-2.5 border-t border-slate-100 pt-3">
               <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
                 <button
-                  onClick={() => setBlockchainSubTab('buyers')}
-                  className={`flex-1 py-1.5 px-2 text-[9px] font-extrabold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                    blockchainSubTab === 'buyers'
-                      ? 'bg-white text-[var(--color-primary)] shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Users className="w-3 h-3 text-[#00C48C]" />
-                  Pembeli Token ({activeProj.tokenBuyers ? activeProj.tokenBuyers.length : 0})
-                </button>
-                <button
                   onClick={() => setBlockchainSubTab('vendors')}
                   className={`flex-1 py-1.5 px-2 text-[9px] font-extrabold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
                     blockchainSubTab === 'vendors'
@@ -583,6 +592,17 @@ export default function ConservationModule() {
                   <Wallet className="w-3 h-3 text-emerald-600" />
                   Aliran Dana (
                   {activeProj.disbursementHistory ? activeProj.disbursementHistory.length : 0})
+                </button>
+                <button
+                  onClick={() => setBlockchainSubTab('buyers')}
+                  className={`flex-1 py-1.5 px-2 text-[9px] font-extrabold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                    blockchainSubTab === 'buyers'
+                      ? 'bg-white text-[var(--color-primary)] shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Users className="w-3 h-3 text-[#00C48C]" />
+                  Pembeli Token ({activeProj.tokenBuyers ? activeProj.tokenBuyers.length : 0})
                 </button>
               </div>
 
@@ -825,17 +845,19 @@ export default function ConservationModule() {
                       : 'bg-white border-slate-200/80 hover:border-emerald-300'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <h4
-                      className={`font-extrabold text-sm ${isActive ? 'text-white' : 'text-slate-900'}`}
-                    >
-                      {proj.name}
-                    </h4>
-                    <span
-                      className={`text-[9px] font-bold ${isActive ? 'text-emerald-200' : 'text-slate-500'}`}
-                    >
-                      {proj.region}
-                    </span>
+                  <div className="flex items-center justify-between gap-1">
+                    <div>
+                      <h4
+                        className={`font-extrabold text-sm ${isActive ? 'text-white' : 'text-slate-900'}`}
+                      >
+                        {proj.name}
+                      </h4>
+                      <span
+                        className={`text-[9px] font-bold ${isActive ? 'text-emerald-200' : 'text-slate-500'}`}
+                      >
+                        {proj.region}
+                      </span>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[10px] mt-2">
                     <div>
@@ -927,6 +949,14 @@ export default function ConservationModule() {
         selectedTx={selectedDisbursementTx}
         onClose={() => setSelectedDisbursementTx(null)}
         onPreviewImage={(imgUrl) => setLightboxImage(imgUrl)}
+        onReportIssue={(txData) => {
+          setReportModalData({
+            isOpen: true,
+            targetType: 'TRANSACTION',
+            targetId: txData.tx.id || `tx-${txData.tx.date}`,
+            targetName: `Faktur ${txData.tx.vendor || txData.tx.category} - Rp ${txData.tx.amount.toLocaleString('id-ID')}`,
+          });
+        }}
       />
 
       <DroneAuditModal
@@ -943,6 +973,14 @@ export default function ConservationModule() {
         isOpen={isReportModalOpen}
         onOpenChange={setIsReportModalOpen}
         selectedReportStage={selectedReportStage}
+      />
+
+      <ReportIssueModal
+        isOpen={reportModalData.isOpen}
+        onClose={() => setReportModalData((prev) => ({ ...prev, isOpen: false }))}
+        targetType={reportModalData.targetType}
+        targetId={reportModalData.targetId}
+        targetName={reportModalData.targetName}
       />
 
       <LightboxModal />

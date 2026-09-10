@@ -10,6 +10,13 @@ import type {
   VerichainLedgerSearchResult,
   ForestProjectAuditorOption,
   ForestProjectMintResult,
+  ProjectReportItem,
+  TransactionReportItem,
+  CompanyReportItem,
+  IssueReportItem,
+  CreateIssueReportInput,
+  UpdateIssueReportStatusInput,
+  IssueReportTargetType,
 } from '../types';
 import {
   NationalForestRegionSchema,
@@ -39,6 +46,15 @@ export interface RegulatorRepository {
   createKTHGroup(input: CreateKTHGroupInput): Promise<KTHGroupItem>;
   getKTHTransactions(): Promise<KTHTransactionItem[]>;
   getRegulationUploads(): Promise<RegulationDocumentUploadItem[]>;
+  getProjectReports(): Promise<ProjectReportItem[]>;
+  getTransactionReports(): Promise<TransactionReportItem[]>;
+  getCompanyReports(): Promise<CompanyReportItem[]>;
+  createIssueReport(input: CreateIssueReportInput): Promise<IssueReportItem>;
+  getIssueReports(targetType?: IssueReportTargetType): Promise<IssueReportItem[]>;
+  updateIssueReportStatus(
+    id: string,
+    input: UpdateIssueReportStatusInput
+  ): Promise<IssueReportItem>;
   searchVerichainLedger(
     query: string,
     projects: Project[],
@@ -191,6 +207,30 @@ export class ApiRegulatorRepository implements RegulatorRepository {
       '/regulator/regulation-uploads',
       z.array(RegulationDocumentUploadItemSchema)
     );
+  }
+  async getProjectReports(): Promise<ProjectReportItem[]> {
+    return api.get<ProjectReportItem[]>('/regulator/reports/projects');
+  }
+  async getTransactionReports(): Promise<TransactionReportItem[]> {
+    return api.get<TransactionReportItem[]>('/regulator/reports/transactions');
+  }
+  async getCompanyReports(): Promise<CompanyReportItem[]> {
+    return api.get<CompanyReportItem[]>('/regulator/reports/companies');
+  }
+  async createIssueReport(input: CreateIssueReportInput): Promise<IssueReportItem> {
+    return api.post<IssueReportItem>('/regulator/issue-reports', input);
+  }
+  async getIssueReports(targetType?: IssueReportTargetType): Promise<IssueReportItem[]> {
+    const url = targetType
+      ? `/regulator/issue-reports?targetType=${targetType}`
+      : '/regulator/issue-reports';
+    return api.get<IssueReportItem[]>(url);
+  }
+  async updateIssueReportStatus(
+    id: string,
+    input: UpdateIssueReportStatusInput
+  ): Promise<IssueReportItem> {
+    return api.patch<IssueReportItem>(`/regulator/issue-reports/${encodeURIComponent(id)}`, input);
   }
   async searchVerichainLedger(
     query: string,

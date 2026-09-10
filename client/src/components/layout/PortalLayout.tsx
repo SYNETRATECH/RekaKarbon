@@ -2,7 +2,7 @@ import { useLocation, Outlet, Link } from 'react-router';
 import { useAuthStore, type ClientUserRole } from '@/store/useAuthStore';
 import PortalSidebar from './PortalSidebar';
 import LogoutDialog from '@/components/LogoutDialog';
-import { Search, Bell, Settings, ChevronDown } from 'lucide-react';
+import { Search, Bell, Settings, ChevronDown, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -90,24 +90,34 @@ export default function PortalLayout({ authenticatedRole, children }: PortalLayo
 
             <div className="h-6 w-px bg-slate-200"></div>
 
-            {/* Profile Dropdown */}
-            <Link
-              to="/profile"
-              className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-opacity"
-            >
-              <div className="w-9 h-9 rounded-full bg-primary text-white font-black text-xs flex items-center justify-center shadow-2xs">
-                {userProfile?.avatar || 'LV'}
-              </div>
-              <div className="text-left hidden sm:block">
-                <p className="text-xs font-extrabold text-slate-900 leading-none">
-                  {userProfile?.name}
-                </p>
-                <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                  {userProfile?.roleTitle}
-                </span>
-              </div>
-              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-            </Link>
+            {/* Profile Dropdown or Guest Login */}
+            {userProfile ? (
+              <Link
+                to="/profile"
+                className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-opacity"
+              >
+                <div className="w-9 h-9 rounded-full bg-primary text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                  {userProfile?.avatar || 'LV'}
+                </div>
+                <div className="text-left hidden sm:block">
+                  <p className="text-xs font-extrabold text-slate-900 leading-none">
+                    {userProfile?.name}
+                  </p>
+                  <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
+                    {userProfile?.roleTitle}
+                  </span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#033C2E] hover:bg-[#022c22] text-[#00E599] font-extrabold text-xs transition-all shadow-xs"
+              >
+                <span>Masuk Portal</span>
+                <LogIn className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
         </header>
 

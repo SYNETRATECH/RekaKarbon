@@ -29,6 +29,8 @@ import {
   NotificationType,
   PriorityLevel,
   BursaAttestationStatus,
+  IssueReportTargetType,
+  IssueReportStatus,
 } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
@@ -1802,6 +1804,190 @@ async function main() {
       actionUrl: '/governance',
     },
   });
+
+  // ---------------------------------------------------------
+  // 17. REGULATOR REPORTS SEED (PROJECT, TRANSACTION & COMPANY)
+  // ---------------------------------------------------------
+  console.log('🌱 Seeding Regulator Reports...');
+
+  const projects = await prisma.forestProject.findMany();
+  if (projects.length > 0) {
+    for (const proj of projects) {
+      await prisma.projectReport.upsert({
+        where: { reportCode: `REP-PRJ-${proj.id.slice(0, 8).toUpperCase()}` },
+        update: {},
+        create: {
+          id: randomUUID(),
+          projectId: proj.id,
+          reportCode: `REP-PRJ-${proj.id.slice(0, 8).toUpperCase()}`,
+          reportTitle: `Laporan Audit dMRV & Sekuestrasi - ${proj.projectName}`,
+          reportPeriod: 'Tahun 2025/2026',
+          verifiedAreaHectares: proj.areaHectares,
+          verifiedSequestrationTco2e: proj.actualSequestrationTco2e,
+          budgetDisbursedIdr: proj.budgetDisbursedIdr,
+          forestHealthPercent: 94.5,
+          ndviScore: proj.ndviScore,
+          status: 'VERIFIED',
+          summaryNotes: `Kawasan ${proj.projectName} memenuhi target dMRV KLHK dengan kesehatan vegetasi tinggi dan tidak ditemukan deforestasi.`,
+        },
+      });
+    }
+  }
+
+  const disbursements = await prisma.kthIncentiveDisbursement.findMany();
+  if (disbursements.length > 0) {
+    for (const d of disbursements) {
+      await prisma.transactionReport.upsert({
+        where: { reportCode: `REP-TX-${d.id.slice(0, 8).toUpperCase()}` },
+        update: {},
+        create: {
+          id: randomUUID(),
+          disbursementId: d.id,
+          reportCode: `REP-TX-${d.id.slice(0, 8).toUpperCase()}`,
+          invoiceNumber: `INV/RK/${new Date().getFullYear()}/${d.id.slice(0, 6).toUpperCase()}`,
+          vendorName: d.vendorName || 'PT Solusi Konservasi Nusantara',
+          category: d.category || 'Bibit & Reboisasi',
+          totalAmountIdr: d.amountIdr,
+          taxAmountIdr: Number(d.amountIdr) * 0.11,
+          invoiceItemsJson: [
+            {
+              item: 'Pengadaan Bibit Rhizophora Mucronata',
+              qty: 5000,
+              unitPriceIdr: 15000,
+              totalIdr: 75000000,
+            },
+            {
+              item: 'Biaya Penanaman & Pemagaran Lahan (KTH)',
+              qty: 1,
+              unitPriceIdr: 45000000,
+              totalIdr: 45000000,
+            },
+            {
+              item: 'Jasa Monitoring Drone & dMRV Surveilans',
+              qty: 1,
+              unitPriceIdr:
+                Number(d.amountIdr) - 120000000 > 0
+                  ? Number(d.amountIdr) - 120000000
+                  : 30000000,
+              totalIdr:
+                Number(d.amountIdr) - 120000000 > 0
+                  ? Number(d.amountIdr) - 120000000
+                  : 30000000,
+            },
+          ],
+          proofDocumentUrl:
+            'https://rekakarbon.id/documents/proofs/faktur-insentif-01.pdf',
+          blockchainTxHash:
+            d.txHash ||
+            '0x7f83b1a2c9d8e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9',
+          verificationStatus: 'Terverifikasi (KLHK On-Chain)',
+          transactionDate: d.disbursedAt,
+        },
+      });
+    }
+  }
+
+  const companies = await prisma.company.findMany();
+  if (companies.length > 0) {
+    for (const comp of companies) {
+      await prisma.companyReport.upsert({
+        where: { reportCode: `REP-CMP-${comp.id.slice(0, 8).toUpperCase()}` },
+        update: {},
+        create: {
+          id: randomUUID(),
+          companyId: comp.id,
+          reportCode: `REP-CMP-${comp.id.slice(0, 8).toUpperCase()}`,
+          complianceYear: 2025,
+          actualEmissionTco2e: comp.actualEmissionTco2e,
+          quotaPtbaeTco2e: comp.emissionCapTco2e,
+          deficitTco2e: comp.carbonDeficitTco2e,
+          offsetCostIdr: comp.offsetCostIdr,
+          carbonTaxPayableIdr: Number(comp.carbonDeficitTco2e) * 650000,
+          complianceRating: comp.complianceRating,
+          auditorNotes: `Evaluasi kepatuhan emisi tahunan untuk ${comp.name}.`,
+          status: 'FINAL',
+          auditedAt: comp.auditDate || new Date(),
+        },
+      });
+    }
+  }
+
+  // Seed Issue Reports (Pengaduan Masuk / Incident Reports)
+  console.log('🚨 Seeding Issue Reports (Pengaduan Masuk)...');
+  const sampleProject = projects[0];
+  const sampleDisbursement = disbursements[0];
+  const sampleCompany = companies[0];
+
+  if (sampleProject) {
+    await prisma.issueReport.upsert({
+      where: { reportCode: 'IR-PRJ-2026-001' },
+      update: {},
+      create: {
+        id: randomUUID(),
+        reportCode: 'IR-PRJ-2026-001',
+        targetType: IssueReportTargetType.PROJECT,
+        targetId: sampleProject.id,
+        targetName: sampleProject.projectName,
+        category: 'Indikasi Manipulasi dMRV & NDVI',
+        reporterName: 'Masyarakat Sadar Hutan (NGO)',
+        reporterEmail: 'investigasi@hutanlestari.org',
+        description:
+          'Ditemukan perbedaan citra satelit independen dengan klaim NDVI dMRV di area zona timur proyek.',
+        evidenceUrl: 'https://rekakarbon.id/evidence/ndvi-discrepancy-log.pdf',
+        status: IssueReportStatus.PENDING,
+        reportedAt: new Date('2026-09-08T14:30:00.000Z'),
+      },
+    });
+  }
+
+  if (sampleDisbursement) {
+    await prisma.issueReport.upsert({
+      where: { reportCode: 'IR-TX-2026-002' },
+      update: {},
+      create: {
+        id: randomUUID(),
+        reportCode: 'IR-TX-2026-002',
+        targetType: IssueReportTargetType.TRANSACTION,
+        targetId: sampleDisbursement.id,
+        targetName: `Faktur ${sampleDisbursement.vendorName || 'Pengadaan Bibit'} - IDR ${Number(sampleDisbursement.amountIdr).toLocaleString('id-ID')}`,
+        category: 'Fiktif / Ketidaksesuaian Faktur',
+        reporterName: 'Tim Audit Internal KTH',
+        reporterEmail: 'audit@kth-mandiri.org',
+        description:
+          'Kuantitas bibit Mangrove yang diterima di lapangan (3.000 polibag) tidak sesuai dengan faktur klaim (5.000 polibag).',
+        evidenceUrl:
+          'https://rekakarbon.id/evidence/berita-acara-penerimaan.pdf',
+        status: IssueReportStatus.UNDER_INVESTIGATION,
+        regulatorNotes:
+          'Sedang memanggil vendor penyedia bibit untuk klarifikasi faktur.',
+        reportedAt: new Date('2026-09-05T09:15:00.000Z'),
+      },
+    });
+  }
+
+  if (sampleCompany) {
+    await prisma.issueReport.upsert({
+      where: { reportCode: 'IR-CMP-2026-003' },
+      update: {},
+      create: {
+        id: randomUUID(),
+        reportCode: 'IR-CMP-2026-003',
+        targetType: IssueReportTargetType.COMPANY,
+        targetId: sampleCompany.id,
+        targetName: sampleCompany.name,
+        category: 'Pelanggaran Batas Emisi & Sensor CEMS',
+        reporterName: 'Warga Sekitar Kawasan Industri',
+        reporterEmail: 'pengaduan.warga@gmail.com',
+        description:
+          'Cerobong asap utama mengeluarkan asap pekat berlebih di luar jam operasional normal (malam hari). Terindikasi bypass sensor CEMS.',
+        evidenceUrl: 'https://rekakarbon.id/evidence/foto-cerobong-malam.jpg',
+        status: IssueReportStatus.ACTION_TAKEN,
+        regulatorNotes:
+          'Inspeksi mendadak KLHK telah dilakukan. Teguran tertulis & kalibrasi ulang CEMS diterbitkan.',
+        reportedAt: new Date('2026-08-28T21:00:00.000Z'),
+      },
+    });
+  }
 
   console.log(
     '\n================================================================',

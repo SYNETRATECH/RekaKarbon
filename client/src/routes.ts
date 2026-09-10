@@ -6,6 +6,10 @@ export default [
   route('portal-transparansi', 'routes/public/portal-transparansi.tsx'),
   route('portal', 'routes/public/portal-transparansi.tsx', { id: 'routes/public/portal' }),
   route('verifikasi-sertifikat', 'routes/public/certificate-verification.tsx'),
+  route('regulator', 'routes/regulator/reports.tsx', { id: 'routes/public/regulator' }),
+  route('regulator/reports', 'routes/regulator/reports.tsx', {
+    id: 'routes/public/regulator-reports',
+  }),
 
   // Shared Authenticated Portal Shell
   layout('routes/app.tsx', [

@@ -139,7 +139,7 @@ export default function PortalTransparansiRoute() {
                 </div>
               </div>
 
-              {/* FLOATING MODULE PANEL (Right) */}
+              {/* FLOATING MODULE PANEL (Right) - Contains Aliran Dana subtab on left */}
               <div className="absolute top-6 right-6 bottom-6 pointer-events-auto w-[420px] z-40 flex">
                 <div className="w-full h-full flex flex-col min-h-0 bg-white rounded-[32px] border border-slate-200/60 shadow-[0_16px_40px_rgba(0,0,0,0.1)] p-1.5 overflow-hidden">
                   {activeModule === 'conservation' ? <ConservationModule /> : <CorporateModule />}

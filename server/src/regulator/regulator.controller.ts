@@ -6,6 +6,7 @@ import {
   Logger,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -22,6 +23,7 @@ import {
   AssignForestProjectAuditorDto,
   CreateKthGroupDto,
   RegulatorQueryDto,
+  UpdateIssueReportStatusDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -170,6 +172,53 @@ export class RegulatorController {
       });
     }
     const data = await this.ptbaeService.upsertAllocation(dto);
+    return { success: true, data };
+  }
+
+  @ApiOperation({ summary: 'Retrieve regulator project audit reports' })
+  @ApiResponse({ status: 200, description: 'Project reports retrieved.' })
+  @Get('reports/projects')
+  async getProjectReports() {
+    this.logger.log('GET /regulator/reports/projects requested');
+    const data = await this.regulatorService.getProjectReports();
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Retrieve regulator transaction and invoice breakdown reports',
+  })
+  @ApiResponse({ status: 200, description: 'Transaction reports retrieved.' })
+  @Get('reports/transactions')
+  async getTransactionReports() {
+    this.logger.log('GET /regulator/reports/transactions requested');
+    const data = await this.regulatorService.getTransactionReports();
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Retrieve regulator company emission compliance reports',
+  })
+  @ApiResponse({ status: 200, description: 'Company reports retrieved.' })
+  @Get('reports/companies')
+  async getCompanyReports() {
+    this.logger.log('GET /regulator/reports/companies requested');
+    const data = await this.regulatorService.getCompanyReports();
+    return { success: true, data };
+  }
+
+  @ApiOperation({
+    summary: 'Update status & notes of a submitted issue report',
+  })
+  @ApiResponse({ status: 200, description: 'Issue report status updated.' })
+  @ApiParam({ name: 'id', description: 'Issue report UUID' })
+  @Roles(Role.regulator, Role.superadmin)
+  @Patch('issue-reports/:id')
+  async updateIssueReportStatus(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() dto: UpdateIssueReportStatusDto,
+  ) {
+    this.logger.log(`PATCH /regulator/issue-reports/${id} requested`);
+    const data = await this.regulatorService.updateIssueReportStatus(id, dto);
     return { success: true, data };
   }
 }

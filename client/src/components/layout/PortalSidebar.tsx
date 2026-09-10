@@ -18,6 +18,7 @@ import {
   Camera,
   Settings,
   Landmark,
+  FileCheck2,
   type LucideIcon,
 } from 'lucide-react';
 import brandIcon from '@/assets/icon.png';
@@ -138,6 +139,12 @@ export default function PortalSidebar({ role }: PortalSidebarProps) {
               label: 'Listing Bursa Karbon',
               icon: ArrowLeftRight,
               targetPath: '/regulator/bursa',
+            },
+            {
+              id: 'regulator-reports',
+              label: 'Pengaduan Pelanggaran',
+              icon: FileCheck2,
+              targetPath: '/regulator/reports',
             },
           ],
         },

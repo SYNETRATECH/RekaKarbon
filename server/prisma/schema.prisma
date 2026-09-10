@@ -365,6 +365,7 @@ model Company {
   emissionReports      EmissionReport[]
   ptbaeAllocations     PtbaeAllocation[]
   ptbaeApplications    PtbaeApplication[]
+  companyReports       CompanyReport[]
 
   @@index([complianceRating])
   @@index([region])
@@ -693,6 +694,7 @@ model ForestProject {
   disbursements         KthIncentiveDisbursement[]
   bursaListings         BursaListing[]
   inspectionCheckpoints ForestInspectionCheckpoint[]
+  projectReports        ProjectReport[]
 
   @@index([regionId])
   @@index([kthGroupId])
@@ -938,6 +940,7 @@ model BursaOrder {
   listing     BursaListing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
   buyer       User                     @relation("BuyerOrders", fields: [buyerUserId], references: [id])
   allocations BursaRevenueAllocation[]
+  reports     TransactionReport[]
 
   @@index([listingId])
   @@index([buyerUserId, status])
@@ -1018,6 +1021,7 @@ model KthIncentiveDisbursement {
   project  ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   kthGroup KthGroup      @relation(fields: [kthGroupId], references: [id], onDelete: Cascade)
   stage    ProjectStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  reports  TransactionReport[]
 
   @@index([projectId])
   @@index([kthGroupId])
@@ -1237,4 +1241,119 @@ model WebPushSubscription {
 
   @@index([userId])
   @@map("web_push_subscriptions")
+}
+
+// ---------------------------------------------------------
+// 8. REGULATOR REPORTS HUB (PROJECT, TRANSACTION & COMPANY)
+// ---------------------------------------------------------
+
+enum IssueReportTargetType {
+  PROJECT
+  TRANSACTION
+  COMPANY
+}
+
+enum IssueReportStatus {
+  PENDING
+  UNDER_INVESTIGATION
+  ACTION_TAKEN
+  DISMISSED
+}
+
+model IssueReport {
+  id             String                @id @default(uuid()) @db.Uuid
+  reportCode     String                @unique @map("report_code") @db.Text
+  targetType     IssueReportTargetType @map("target_type")
+  targetId       String                @map("target_id") @db.Text
+  targetName     String                @map("target_name") @db.Text
+  category       String                @db.Text
+  reporterName   String?               @map("reporter_name") @db.Text
+  reporterEmail  String?               @map("reporter_email") @db.Text
+  description    String                @db.Text
+  evidenceUrl    String?               @map("evidence_url") @db.Text
+  status         IssueReportStatus     @default(PENDING)
+  regulatorNotes String?               @map("regulator_notes") @db.Text
+  reportedAt     DateTime              @default(now()) @map("reported_at") @db.Timestamptz
+  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([targetType, status])
+  @@index([reportedAt(sort: Desc)])
+  @@map("issue_reports")
+}
+
+model ProjectReport {
+  id                         String   @id @default(uuid()) @db.Uuid
+  projectId                  String   @map("project_id") @db.Uuid
+  reportCode                 String   @unique @map("report_code") @db.Text
+  reportTitle                String   @map("report_title") @db.Text
+  reportPeriod               String   @map("report_period") @db.Text
+  verifiedAreaHectares       Decimal  @map("verified_area_hectares") @db.Decimal(12, 2)
+  verifiedSequestrationTco2e Decimal  @map("verified_sequestration_tco2e") @db.Decimal(14, 2)
+  budgetDisbursedIdr         Decimal  @map("budget_disbursed_idr") @db.Decimal(16, 2)
+  forestHealthPercent        Decimal  @map("forest_health_percent") @db.Decimal(5, 2)
+  ndviScore                  Decimal  @default(0.75) @map("ndvi_score") @db.Decimal(4, 3)
+  status                     String   @default("VERIFIED") @db.Text
+  summaryNotes               String?  @map("summary_notes") @db.Text
+  pdfStorageKey              String?  @map("pdf_storage_key") @db.Text
+  generatedAt                DateTime @default(now()) @map("generated_at") @db.Timestamptz
+  createdAt                  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  project ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+  @@map("project_reports")
+}
+
+model TransactionReport {
+  id                 String   @id @default(uuid()) @db.Uuid
+  disbursementId     String?  @map("disbursement_id") @db.Uuid
+  orderId            String?  @map("order_id") @db.Uuid
+  reportCode         String   @unique @map("report_code") @db.Text
+  invoiceNumber      String   @map("invoice_number") @db.Text
+  vendorName         String   @map("vendor_name") @db.Text
+  category           String   @db.Text
+  totalAmountIdr     Decimal  @map("total_amount_idr") @db.Decimal(16, 2)
+  taxAmountIdr       Decimal  @default(0) @map("tax_amount_idr") @db.Decimal(16, 2)
+  invoiceItemsJson   Json     @map("invoice_items_json")
+  proofDocumentUrl   String?  @map("proof_document_url") @db.Text
+  blockchainTxHash   String?  @map("blockchain_tx_hash") @db.Text
+  verificationStatus String   @default("Terverifikasi KLHK") @map("verification_status") @db.Text
+  transactionDate    DateTime @default(now()) @map("transaction_date") @db.Timestamptz
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  disbursement KthIncentiveDisbursement? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
+  order        BursaOrder?               @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([disbursementId])
+  @@index([orderId])
+  @@index([invoiceNumber])
+  @@map("transaction_reports")
+}
+
+model CompanyReport {
+  id                  String           @id @default(uuid()) @db.Uuid
+  companyId           String           @map("company_id") @db.Uuid
+  reportCode          String           @unique @map("report_code") @db.Text
+  complianceYear      Int              @map("compliance_year")
+  actualEmissionTco2e Decimal          @map("actual_emission_tco2e") @db.Decimal(14, 2)
+  quotaPtbaeTco2e     Decimal          @map("quota_ptbae_tco2e") @db.Decimal(14, 2)
+  deficitTco2e        Decimal          @map("deficit_tco2e") @db.Decimal(14, 2)
+  offsetCostIdr       Decimal          @default(0) @map("offset_cost_idr") @db.Decimal(20, 2)
+  carbonTaxPayableIdr Decimal          @default(0) @map("carbon_tax_payable_idr") @db.Decimal(16, 2)
+  complianceRating    ComplianceRating @default(COMPLIANT) @map("compliance_rating")
+  auditorNotes        String?          @map("auditor_notes") @db.Text
+  status              String           @default("FINAL") @db.Text
+  auditedAt           DateTime?        @map("audited_at") @db.Timestamptz
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([complianceYear])
+  @@index([complianceRating])
+  @@map("company_reports")
 }
