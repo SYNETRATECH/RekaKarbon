@@ -25,6 +25,11 @@ on:
         required: true
         default: false
         type: boolean
+      skip_tests:
+        description: 'Bypass smart contract tests and typecheck before packaging'
+        required: true
+        default: false
+        type: boolean
       restart_backend:
         description: Restart backend setelah manifest kontrak tersinkron
         required: true
@@ -76,10 +81,16 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify blockchain package before transfer
+        if: ${{ !inputs.skip_tests }}
         run: |
           pnpm blockchain:typecheck
           pnpm blockchain:compile
           pnpm blockchain:test
+
+      - name: Compile smart contracts (when tests bypassed)
+        if: ${{ inputs.skip_tests }}
+        run: |
+          pnpm blockchain:compile
 
       - name: Package immutable QBFT release
         run: |
