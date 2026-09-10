@@ -10,7 +10,7 @@ import {
   SCENARIO_1_COMPLIANT_MANUFACTURING,
   SCENARIO_2_STOICHIOMETRIC_UNDERREPORTING,
   SCENARIO_4_CEMENT_PROCESS_OMISSION,
-} from '../../test/fixtures/ml-report-scenarios.fixture';
+} from '../fixtures/ml-report-scenarios.fixture';
 
 describe('ReportsService - ML Anomaly Detection Integration', () => {
   let service: ReportsService;
