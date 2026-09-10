@@ -77,8 +77,11 @@ const allowDeployNew = process.env.ALLOW_DEPLOY_NEW === 'true';
 const manifestPath = path.resolve(
   process.env.DEPLOYMENT_MANIFEST_PATH?.trim() || 'deployment-info.json'
 );
-const gasPrice = parseOptionalBigInt(process.env.BESU_GAS_PRICE_WEI, 'BESU_GAS_PRICE_WEI');
-const transactionOverrides = gasPrice === undefined ? {} : { gasPrice };
+const DEFAULT_MIN_GAS_PRICE = 1_000_000_000n; // 1 Gwei (well above --min-gas-price=1 wei)
+const gasPrice =
+  parseOptionalBigInt(process.env.BESU_GAS_PRICE_WEI, 'BESU_GAS_PRICE_WEI') ??
+  DEFAULT_MIN_GAS_PRICE;
+const transactionOverrides: TransactionOverrides = { gasPrice };
 
 function parsePositiveBigInt(value: string, name: string): bigint {
   if (!/^\d+$/u.test(value)) {
@@ -108,8 +111,47 @@ function parseDeploymentMode(value: string): DeploymentMode {
   );
 }
 
-function requireAddress(name: string): string {
-  const value = process.env[name]?.trim();
+function tryReadManifestAddresses(): {
+  rekaKarbonAddress?: string;
+  emissionReportRegistryAddress?: string;
+} {
+  const candidatePaths = [
+    manifestPath,
+    path.resolve(process.cwd(), 'deployment-info.json'),
+    path.resolve(process.cwd(), '../shared/deployment-info.json'),
+  ];
+
+  for (const candidatePath of candidatePaths) {
+    try {
+      if (fs.existsSync(candidatePath)) {
+        const raw = JSON.parse(fs.readFileSync(candidatePath, 'utf8')) as {
+          contracts?: {
+            rekaKarbon?: { address?: string };
+            emissionReportRegistry?: { address?: string };
+          };
+          rekaKarbonAddress?: string;
+          emissionReportRegistryAddress?: string;
+        };
+        const carbon = raw.contracts?.rekaKarbon?.address || raw.rekaKarbonAddress;
+        const registry =
+          raw.contracts?.emissionReportRegistry?.address || raw.emissionReportRegistryAddress;
+        if (carbon && registry && ethers.isAddress(carbon) && ethers.isAddress(registry)) {
+          return {
+            rekaKarbonAddress: ethers.getAddress(carbon),
+            emissionReportRegistryAddress: ethers.getAddress(registry),
+          };
+        }
+      }
+    } catch {
+      // Ignore read errors and proceed to next candidate
+    }
+  }
+
+  return {};
+}
+
+function requireAddress(name: string, fallback?: string): string {
+  const value = process.env[name]?.trim() || fallback;
   if (!value || !ethers.isAddress(value)) {
     throw new Error(`${name} wajib berisi alamat EVM yang valid.`);
   }
@@ -309,12 +351,23 @@ async function main(): Promise<void> {
       );
     }
 
-    const { address: signerAddress } = await requireDeployer();
+    const { signer, address: signerAddress } = await requireDeployer();
     if (deployerAddress !== signerAddress) {
       throw new Error('Alamat deployer tidak konsisten dengan PRIVATE_KEY.');
     }
 
-    const RekaKarbon = await ethers.getContractFactory('RekaKarbon');
+    const balance = await ethers.provider.getBalance(signerAddress);
+    console.log(
+      `Deployer address: ${signerAddress}, Saldo: ${ethers.formatEther(balance)} native token (${balance.toString()} wei)`
+    );
+    if (balance === 0n) {
+      console.warn(
+        `⚠️ PERINGATAN: Saldo deployer ${signerAddress} adalah 0 wei. ` +
+          'Jika jaringan mewajibkan gas (--min-gas-price > 0), transaksi deployment akan gagal.'
+      );
+    }
+
+    const RekaKarbon = await ethers.getContractFactory('RekaKarbon', signer);
     const rekaKarbon = await RekaKarbon.deploy(transactionOverrides);
     await rekaKarbon.waitForDeployment();
     const rekaKarbonTransaction = rekaKarbon.deploymentTransaction();
@@ -326,7 +379,10 @@ async function main(): Promise<void> {
     );
     rekaKarbonAddress = await rekaKarbon.getAddress();
 
-    const EmissionReportRegistry = await ethers.getContractFactory('EmissionReportRegistry');
+    const EmissionReportRegistry = await ethers.getContractFactory(
+      'EmissionReportRegistry',
+      signer
+    );
     const registry = await EmissionReportRegistry.deploy(transactionOverrides);
     await registry.waitForDeployment();
     const registryTransaction = registry.deploymentTransaction();
@@ -337,8 +393,15 @@ async function main(): Promise<void> {
     );
     emissionReportRegistryAddress = await registry.getAddress();
   } else {
-    rekaKarbonAddress = requireAddress('CARBON_TOKEN_CONTRACT_ADDRESS');
-    emissionReportRegistryAddress = requireAddress('EMISSION_REGISTRY_CONTRACT_ADDRESS');
+    const manifestAddresses = tryReadManifestAddresses();
+    rekaKarbonAddress = requireAddress(
+      'CARBON_TOKEN_CONTRACT_ADDRESS',
+      manifestAddresses.rekaKarbonAddress
+    );
+    emissionReportRegistryAddress = requireAddress(
+      'EMISSION_REGISTRY_CONTRACT_ADDRESS',
+      manifestAddresses.emissionReportRegistryAddress
+    );
   }
 
   await verifyBytecode(rekaKarbonAddress);
@@ -401,5 +464,20 @@ async function main(): Promise<void> {
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : 'Kesalahan tidak diketahui.';
   console.error(`Deployment gagal: ${message}`);
+  if (error && typeof error === 'object') {
+    const errObj = error as Record<string, unknown>;
+    if (errObj.code) console.error(`Error Code: ${String(errObj.code)}`);
+    if (errObj.shortMessage && errObj.shortMessage !== message) {
+      console.error(`Short message: ${String(errObj.shortMessage)}`);
+    }
+    if (errObj.info) console.error('Error info:', JSON.stringify(errObj.info, null, 2));
+    if (errObj.data) console.error('Error data:', JSON.stringify(errObj.data, null, 2));
+    if (errObj.transaction) {
+      console.error('Error transaction:', JSON.stringify(errObj.transaction, null, 2));
+    }
+    if (error instanceof Error && error.stack) {
+      console.error('Stack trace:', error.stack);
+    }
+  }
   process.exitCode = 1;
 });
