@@ -35,6 +35,16 @@ on:
         required: true
         default: false
         type: boolean
+      carbon_token_address:
+        description: '(Opsional) Override alamat kontrak RekaKarbon untuk verify-existing'
+        required: false
+        default: ''
+        type: string
+      emission_registry_address:
+        description: '(Opsional) Override alamat kontrak EmissionReportRegistry untuk verify-existing'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -174,12 +184,14 @@ jobs:
           DEPLOYMENT_MODE: ${{ inputs.deployment_mode }}
           ALLOW_DEPLOY_NEW: ${{ inputs.allow_deploy_new }}
           BLOCKCHAIN_PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
+          CARBON_TOKEN_ADDRESS_OVERRIDE: ${{ inputs.carbon_token_address }}
+          EMISSION_REGISTRY_ADDRESS_OVERRIDE: ${{ inputs.emission_registry_address }}
         with:
           host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
           username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
           key: ${{ secrets.BLOCKCHAIN_SSH_PRIVATE_KEY }}
           port: ${{ vars.BLOCKCHAIN_SSH_PORT || '22' }}
-          envs: RELEASE_ID,PROJECT_DIR,NETWORK_ENV_FILE,BLOCKCHAIN_ENV_FILE,DEPLOYMENT_MODE,ALLOW_DEPLOY_NEW,BLOCKCHAIN_PRIVATE_KEY
+          envs: RELEASE_ID,PROJECT_DIR,NETWORK_ENV_FILE,BLOCKCHAIN_ENV_FILE,DEPLOYMENT_MODE,ALLOW_DEPLOY_NEW,BLOCKCHAIN_PRIVATE_KEY,CARBON_TOKEN_ADDRESS_OVERRIDE,EMISSION_REGISTRY_ADDRESS_OVERRIDE
           script_stop: true
           script: |
             set -Eeuo pipefail
@@ -283,10 +295,22 @@ jobs:
               exit 1
             }
 
-            # If a shared deployment-info.json exists, copy it into QBFT_DIR so verify-existing can discover it
-            if [ -f "$PROJECT_DIR/shared/deployment-info.json" ] && [ ! -f "$QBFT_DIR/deployment-info.json" ]; then
-              echo "Reusing existing deployment-info.json from $PROJECT_DIR/shared/deployment-info.json"
-              cp "$PROJECT_DIR/shared/deployment-info.json" "$QBFT_DIR/deployment-info.json"
+            # Locate existing deployment-info.json across shared, current, or earlier releases
+            if [ ! -f "$QBFT_DIR/deployment-info.json" ]; then
+              if [ -f "$PROJECT_DIR/shared/deployment-info.json" ]; then
+                echo "Reusing existing deployment-info.json from $PROJECT_DIR/shared/deployment-info.json"
+                cp "$PROJECT_DIR/shared/deployment-info.json" "$QBFT_DIR/deployment-info.json"
+              elif [ -f "$PROJECT_DIR/current/blockchain/deployment-info.json" ]; then
+                echo "Reusing existing deployment-info.json from $PROJECT_DIR/current/blockchain/deployment-info.json"
+                cp "$PROJECT_DIR/current/blockchain/deployment-info.json" "$QBFT_DIR/deployment-info.json"
+              else
+                # Search previous release directories in reverse chronological order
+                LATEST_PREVIOUS_MANIFEST="$(find "$PROJECT_DIR/releases" -mindepth 3 -maxdepth 3 -name "deployment-info.json" 2>/dev/null | grep -v "$RELEASE_ID" | sort -r | head -n 1 || true)"
+                if [ -n "$LATEST_PREVIOUS_MANIFEST" ] && [ -f "$LATEST_PREVIOUS_MANIFEST" ]; then
+                  echo "Discovered earlier deployment-info.json at $LATEST_PREVIOUS_MANIFEST"
+                  cp "$LATEST_PREVIOUS_MANIFEST" "$QBFT_DIR/deployment-info.json"
+                fi
+              fi
             fi
 
             # The deployer key is written only into this release's temporary .env
@@ -296,6 +320,14 @@ jobs:
             printf '\nPRIVATE_KEY=%s\n' "$BLOCKCHAIN_PRIVATE_KEY" >> "$QBFT_DIR/.env"
             printf 'DEPLOYMENT_MODE=%s\n' "$DEPLOYMENT_MODE" >> "$QBFT_DIR/.env"
             printf 'ALLOW_DEPLOY_NEW=%s\n' "$ALLOW_DEPLOY_NEW" >> "$QBFT_DIR/.env"
+            printf 'DEPLOYMENT_MANIFEST_PATH=/workspace/blockchain/deployment-info.json\n' >> "$QBFT_DIR/.env"
+
+            if [ -n "${CARBON_TOKEN_ADDRESS_OVERRIDE:-}" ]; then
+              printf 'CARBON_TOKEN_CONTRACT_ADDRESS=%s\n' "$CARBON_TOKEN_ADDRESS_OVERRIDE" >> "$QBFT_DIR/.env"
+            fi
+            if [ -n "${EMISSION_REGISTRY_ADDRESS_OVERRIDE:-}" ]; then
+              printf 'EMISSION_REGISTRY_CONTRACT_ADDRESS=%s\n' "$EMISSION_REGISTRY_ADDRESS_OVERRIDE" >> "$QBFT_DIR/.env"
+            fi
             trap 'rm -f "$QBFT_DIR/.env"' EXIT
 
             # Run deployment container
