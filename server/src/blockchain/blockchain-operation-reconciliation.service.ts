@@ -1,12 +1,15 @@
 import {
   Injectable,
+  Inject,
   Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { BlockchainOperationStatus, Prisma } from '@prisma/client';
 import { BlockchainOperationService } from './blockchain-operation.service';
 import { BlockchainService } from './blockchain.service';
+import { blockchainConfig } from './config/blockchain.config';
 import type { BlockchainTransactionStatus } from './types';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -37,18 +40,20 @@ export class BlockchainOperationReconciliationService
     private readonly prisma: PrismaService,
     private readonly blockchainService: BlockchainService,
     private readonly operationService: BlockchainOperationService,
+    @Inject(blockchainConfig.KEY)
+    private readonly config: ConfigType<typeof blockchainConfig>,
   ) {}
 
   onModuleInit(): void {
-    if (process.env.BLOCKCHAIN_RECONCILIATION_WORKER_ENABLED === 'false') {
+    if (!this.config.reconciliationWorkerEnabled) {
       this.logger.log('Blockchain receipt reconciliation worker is disabled.');
       return;
     }
 
-    const intervalMs = this.getPositiveIntegerEnv(
-      'BLOCKCHAIN_RECONCILIATION_INTERVAL_MS',
-      DEFAULT_RECONCILIATION_INTERVAL_MS,
-    );
+    const intervalMs =
+      this.config.reconciliationIntervalMs > 0
+        ? this.config.reconciliationIntervalMs
+        : DEFAULT_RECONCILIATION_INTERVAL_MS;
     this.workerTimer = setInterval(() => {
       void this.reconcileSubmittedOperations();
     }, intervalMs);
@@ -177,17 +182,12 @@ export class BlockchainOperationReconciliationService
   }
 
   private normalizeLimit(requestedLimit?: number): number {
-    const defaultLimit = this.getPositiveIntegerEnv(
-      'BLOCKCHAIN_RECONCILIATION_BATCH_SIZE',
-      DEFAULT_RECONCILIATION_BATCH_SIZE,
-    );
+    const defaultLimit =
+      this.config.reconciliationBatchSize > 0
+        ? this.config.reconciliationBatchSize
+        : DEFAULT_RECONCILIATION_BATCH_SIZE;
     const limit = requestedLimit ?? defaultLimit;
     if (!Number.isSafeInteger(limit) || limit <= 0) return defaultLimit;
     return Math.min(limit, MAX_RECONCILIATION_BATCH_SIZE);
-  }
-
-  private getPositiveIntegerEnv(name: string, fallback: number): number {
-    const value = Number(process.env[name]);
-    return Number.isSafeInteger(value) && value > 0 ? value : fallback;
   }
 }
