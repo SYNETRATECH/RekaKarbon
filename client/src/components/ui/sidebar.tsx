@@ -484,6 +484,7 @@ function SidebarMenuButton({
   tooltip,
   className,
   asChild,
+  children,
   ...props
 }: useRender.ComponentProps<'button'> &
   React.ComponentProps<'button'> & {
@@ -492,15 +493,16 @@ function SidebarMenuButton({
     tooltip?: string | React.ComponentProps<typeof TooltipContent>;
   } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar();
+  const effectiveRender = render || (asChild ? (children as React.ReactElement) : undefined);
   const comp = useRender({
     defaultTagName: 'button',
     props: mergeProps<'button'>(
       {
         className: cn(sidebarMenuButtonVariants({ variant, size }), className),
       },
-      props
+      asChild ? props : { children, ...props }
     ),
-    render: !tooltip ? render : <TooltipTrigger render={render} />,
+    render: !tooltip ? effectiveRender : <TooltipTrigger render={effectiveRender} />,
     state: {
       slot: 'sidebar-menu-button',
       sidebar: 'menu-button',

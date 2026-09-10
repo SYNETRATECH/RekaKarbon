@@ -317,3 +317,102 @@ export interface KTHGroupModel {
 }
 
 export type RegulationUploadModel = RegulationDocumentUploadItem;
+
+export interface ProjectReportItem {
+  id: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  reportCode: string;
+  reportTitle: string;
+  reportPeriod: string;
+  verifiedAreaHectares: number;
+  verifiedSequestrationTco2e: number;
+  budgetDisbursedIdr: number;
+  forestHealthPercent: number;
+  ndviScore: number;
+  status: string;
+  summaryNotes?: string;
+  pdfStorageKey?: string;
+  generatedAt: string;
+}
+
+export interface TransactionInvoiceItem {
+  item: string;
+  qty: number;
+  unitPriceIdr: number;
+  totalIdr: number;
+}
+
+export interface TransactionReportItem {
+  id: string;
+  disbursementId?: string;
+  orderId?: string;
+  reportCode: string;
+  invoiceNumber: string;
+  vendorName: string;
+  category: string;
+  projectName: string;
+  kthGroupName: string;
+  totalAmountIdr: number;
+  taxAmountIdr: number;
+  invoiceItemsJson: TransactionInvoiceItem[];
+  proofDocumentUrl?: string;
+  blockchainTxHash?: string;
+  verificationStatus: string;
+  transactionDate: string;
+}
+
+export interface CompanyReportItem {
+  id: string;
+  companyId: string;
+  companyName: string;
+  sector: string;
+  reportCode: string;
+  complianceYear: number;
+  actualEmissionTco2e: number;
+  quotaPtbaeTco2e: number;
+  deficitTco2e: number;
+  offsetCostIdr: number;
+  carbonTaxPayableIdr: number;
+  complianceRating: string;
+  auditorNotes?: string;
+  status: string;
+  auditedAt?: string | null;
+}
+
+export type IssueReportTargetType = 'PROJECT' | 'TRANSACTION' | 'COMPANY';
+export type IssueReportStatus = 'PENDING' | 'UNDER_INVESTIGATION' | 'ACTION_TAKEN' | 'DISMISSED';
+
+export interface IssueReportItem {
+  id: string;
+  reportCode: string;
+  targetType: IssueReportTargetType;
+  targetId: string;
+  targetName: string;
+  category: string;
+  reporterName?: string | null;
+  reporterEmail?: string | null;
+  description: string;
+  evidenceUrl?: string | null;
+  status: IssueReportStatus;
+  regulatorNotes?: string | null;
+  reportedAt: string;
+  updatedAt: string;
+}
+
+export interface CreateIssueReportInput {
+  targetType: IssueReportTargetType;
+  targetId: string;
+  targetName: string;
+  category: string;
+  reporterName?: string;
+  reporterEmail?: string;
+  description: string;
+  evidenceUrl?: string;
+}
+
+export interface UpdateIssueReportStatusInput {
+  status: IssueReportStatus;
+  regulatorNotes?: string;
+}

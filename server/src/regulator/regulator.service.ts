@@ -5,8 +5,20 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { KybStatus, ProjectStatus, Role, UserStatus } from '@prisma/client';
-import { AssignForestProjectAuditorDto, CreateKthGroupDto } from './dto';
+import {
+  KybStatus,
+  ProjectStatus,
+  Role,
+  UserStatus,
+  IssueReportTargetType,
+  IssueReportStatus,
+} from '@prisma/client';
+import {
+  AssignForestProjectAuditorDto,
+  CreateKthGroupDto,
+  CreateIssueReportDto,
+  UpdateIssueReportStatusDto,
+} from './dto';
 import {
   forestInspectionCheckpointIncludeConfig,
   toForestInspectionCheckpointItem,
@@ -413,5 +425,185 @@ export class RegulatorService {
         status: 'published',
       };
     });
+  }
+
+  async getProjectReports() {
+    this.logger.log('Fetching project reports for regulator...');
+    const records = await this.prisma.projectReport.findMany({
+      include: { project: true },
+      orderBy: { generatedAt: 'desc' },
+    });
+    return records.map((r) => ({
+      id: r.id,
+      projectId: r.projectId,
+      projectName: r.project?.projectName || 'Proyek Kehutanan',
+      region: r.project?.province || 'Jawa Timur',
+      reportCode: r.reportCode,
+      reportTitle: r.reportTitle,
+      reportPeriod: r.reportPeriod,
+      verifiedAreaHectares: Number(r.verifiedAreaHectares),
+      verifiedSequestrationTco2e: Number(r.verifiedSequestrationTco2e),
+      budgetDisbursedIdr: Number(r.budgetDisbursedIdr),
+      forestHealthPercent: Number(r.forestHealthPercent),
+      ndviScore: Number(r.ndviScore),
+      status: r.status,
+      summaryNotes: r.summaryNotes,
+      pdfStorageKey: r.pdfStorageKey,
+      generatedAt: r.generatedAt.toISOString(),
+    }));
+  }
+
+  async getTransactionReports() {
+    this.logger.log(
+      'Fetching transaction and invoice reports for regulator...',
+    );
+    const records = await this.prisma.transactionReport.findMany({
+      include: {
+        disbursement: { include: { kthGroup: true, project: true } },
+        order: { include: { buyer: true } },
+      },
+      orderBy: { transactionDate: 'desc' },
+    });
+    return records.map((t) => ({
+      id: t.id,
+      disbursementId: t.disbursementId,
+      orderId: t.orderId,
+      reportCode: t.reportCode,
+      invoiceNumber: t.invoiceNumber,
+      vendorName: t.vendorName,
+      category: t.category,
+      projectName: t.disbursement?.project?.projectName || 'Restorasi Mangrove',
+      kthGroupName:
+        t.disbursement?.kthGroup?.groupName || 'Kelompok Tani Hutan',
+      totalAmountIdr: Number(t.totalAmountIdr),
+      taxAmountIdr: Number(t.taxAmountIdr),
+      invoiceItemsJson: t.invoiceItemsJson,
+      proofDocumentUrl: t.proofDocumentUrl,
+      blockchainTxHash: t.blockchainTxHash,
+      verificationStatus: t.verificationStatus,
+      transactionDate: t.transactionDate.toISOString(),
+    }));
+  }
+
+  async getCompanyReports() {
+    this.logger.log('Fetching company emission reports for regulator...');
+    const records = await this.prisma.companyReport.findMany({
+      include: { company: true },
+      orderBy: { complianceYear: 'desc' },
+    });
+    return records.map((c) => ({
+      id: c.id,
+      companyId: c.companyId,
+      companyName: c.company?.name || 'Perusahaan Industri',
+      sector: c.company?.sector || 'Manufaktur',
+      reportCode: c.reportCode,
+      complianceYear: c.complianceYear,
+      actualEmissionTco2e: Number(c.actualEmissionTco2e),
+      quotaPtbaeTco2e: Number(c.quotaPtbaeTco2e),
+      deficitTco2e: Number(c.deficitTco2e),
+      offsetCostIdr: Number(c.offsetCostIdr),
+      carbonTaxPayableIdr: Number(c.carbonTaxPayableIdr),
+      complianceRating: c.complianceRating,
+      auditorNotes: c.auditorNotes,
+      status: c.status,
+      auditedAt: c.auditedAt ? c.auditedAt.toISOString() : null,
+    }));
+  }
+
+  async createIssueReport(dto: CreateIssueReportDto) {
+    this.logger.log(
+      `Creating issue report for targetType=${dto.targetType}, targetId=${dto.targetId}`,
+    );
+    const prefix =
+      dto.targetType === IssueReportTargetType.PROJECT
+        ? 'IR-PRJ'
+        : dto.targetType === IssueReportTargetType.TRANSACTION
+          ? 'IR-TX'
+          : 'IR-CMP';
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const reportCode = `${prefix}-${new Date().getFullYear()}-${randomSuffix}`;
+
+    const record = await this.prisma.issueReport.create({
+      data: {
+        reportCode,
+        targetType: dto.targetType,
+        targetId: dto.targetId,
+        targetName: dto.targetName,
+        category: dto.category,
+        reporterName: dto.reporterName || 'Anonim / Publik',
+        reporterEmail: dto.reporterEmail || null,
+        description: dto.description,
+        evidenceUrl: dto.evidenceUrl || null,
+        status: IssueReportStatus.PENDING,
+      },
+    });
+
+    return record;
+  }
+
+  async getIssueReports(targetType?: IssueReportTargetType) {
+    this.logger.log(
+      `Fetching issue reports filter targetType=${targetType || 'ALL'}`,
+    );
+    const records = await this.prisma.issueReport.findMany({
+      where: targetType ? { targetType } : undefined,
+      orderBy: { reportedAt: 'desc' },
+    });
+    return records.map((r) => ({
+      id: r.id,
+      reportCode: r.reportCode,
+      targetType: r.targetType,
+      targetId: r.targetId,
+      targetName: r.targetName,
+      category: r.category,
+      reporterName: r.reporterName,
+      reporterEmail: r.reporterEmail,
+      description: r.description,
+      evidenceUrl: r.evidenceUrl,
+      status: r.status,
+      regulatorNotes: r.regulatorNotes,
+      reportedAt: r.reportedAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString(),
+    }));
+  }
+
+  async updateIssueReportStatus(id: string, dto: UpdateIssueReportStatusDto) {
+    this.logger.log(`Updating issue report id=${id} status to ${dto.status}`);
+    const existing = await this.prisma.issueReport.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(
+        `Laporan pengaduan dengan ID ${id} tidak ditemukan.`,
+      );
+    }
+
+    const updated = await this.prisma.issueReport.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        regulatorNotes:
+          dto.regulatorNotes !== undefined
+            ? dto.regulatorNotes
+            : existing.regulatorNotes,
+      },
+    });
+
+    return {
+      id: updated.id,
+      reportCode: updated.reportCode,
+      targetType: updated.targetType,
+      targetId: updated.targetId,
+      targetName: updated.targetName,
+      category: updated.category,
+      reporterName: updated.reporterName,
+      reporterEmail: updated.reporterEmail,
+      description: updated.description,
+      evidenceUrl: updated.evidenceUrl,
+      status: updated.status,
+      regulatorNotes: updated.regulatorNotes,
+      reportedAt: updated.reportedAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+    };
   }
 }

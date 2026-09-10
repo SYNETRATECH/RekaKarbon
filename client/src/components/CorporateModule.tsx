@@ -1,12 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatCarbon } from '@/lib/formatters';
 import { useMapStore } from '../store/useMapStore';
-import { Search } from 'lucide-react';
+import { Search, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { ReportIssueModal } from './modals/ReportIssueModal';
 
 export default function CorporateModule() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [reportModalData, setReportModalData] = useState<{
+    isOpen: boolean;
+    targetId: string;
+    targetName: string;
+  }>({ isOpen: false, targetId: '', targetName: '' });
 
   // Drag & Wheel scroll handler for iPad touch feel inside tablet iframe
   const corpScrollRef = useRef<HTMLDivElement>(null);
@@ -173,17 +179,34 @@ export default function CorporateModule() {
                       {comp.sector} · {comp.region}
                     </p>
                   </div>
-                  <span
-                    className={`text-[8px] font-extrabold uppercase px-2 py-1 rounded-full shrink-0 ${
-                      isUnpaid
-                        ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                        : isSelected
-                          ? 'bg-emerald-800 text-emerald-100 border-none'
-                          : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                    }`}
-                  >
-                    {isUnpaid ? 'Belum Bayar' : 'Lunas'}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={`text-[8px] font-extrabold uppercase px-2 py-1 rounded-full ${
+                        isUnpaid
+                          ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                          : isSelected
+                            ? 'bg-emerald-800 text-emerald-100 border-none'
+                            : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      }`}
+                    >
+                      {isUnpaid ? 'Belum Bayar' : 'Lunas'}
+                    </span>
+                    <button
+                      type="button"
+                      title="Laporkan Masalah Perusahaan"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReportModalData({
+                          isOpen: true,
+                          targetId: comp.id,
+                          targetName: comp.name,
+                        });
+                      }}
+                      className="p-1 rounded-lg bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white border border-rose-200/60 transition-all cursor-pointer"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-[10px]">
@@ -227,6 +250,15 @@ export default function CorporateModule() {
           </div>
         )}
       </div>
+
+      {/* Modal Submisi Pelaporan Masalah Perusahaan */}
+      <ReportIssueModal
+        isOpen={reportModalData.isOpen}
+        onClose={() => setReportModalData({ isOpen: false, targetId: '', targetName: '' })}
+        targetType="COMPANY"
+        targetId={reportModalData.targetId}
+        targetName={reportModalData.targetName}
+      />
     </div>
   );
 }

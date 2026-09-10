@@ -1,4 +1,4 @@
-import { FileSpreadsheet, Eye, CheckCircle2 } from 'lucide-react';
+import { FileSpreadsheet, Eye, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { formatCurrency, formatQuantity } from '@/lib/formatters';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -15,18 +15,20 @@ interface TransactionReceiptModalProps {
   selectedTx: any | null;
   onClose: () => void;
   onPreviewImage?: (imgUrl: string) => void;
+  onReportIssue?: (selectedTx: any) => void;
 }
 
 export default function TransactionReceiptModal({
   selectedTx,
   onClose,
   onPreviewImage,
+  onReportIssue,
 }: TransactionReceiptModalProps) {
   if (!selectedTx) return null;
 
   return (
     <Dialog open={!!selectedTx} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="p-6 sm:p-7 max-w-3xl border-slate-200 bg-white shadow-2xl space-y-6 text-left max-h-[90vh] flex flex-col rounded-3xl font-sans">
+      <DialogContent className="p-6 sm:p-7 max-w-3xl border-slate-200 bg-white shadow-2xl space-y-6 text-left max-h-[90vh] flex flex-col rounded-3xl font-sans [&>button.absolute]:hidden">
         <DialogTitle className="sr-only">Bukti Aliran Dana Blockchain</DialogTitle>
 
         {/* Modal Header */}
@@ -48,6 +50,17 @@ export default function TransactionReceiptModal({
               </span>
             </div>
           </div>
+          {onReportIssue && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onReportIssue(selectedTx)}
+              className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl border border-rose-200 shadow-2xs transition-all flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
+              title="Laporkan Masalah Transaksi Ini"
+            >
+              <AlertTriangle className="w-4 h-4 text-rose-600" />
+            </Button>
+          )}
         </div>
 
         {/* Scrollable Modal Content */}
