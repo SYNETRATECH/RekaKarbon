@@ -43,6 +43,7 @@ describe('BlockchainService', () => {
     chainId: 1338,
     reconciliationWorkerEnabled: true,
     reconciliationIntervalMs: 30000,
+    reconciliationBatchSize: 20,
   };
 
   const createServiceWithConfig = async (
