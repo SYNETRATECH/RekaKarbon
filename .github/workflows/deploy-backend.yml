@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       skip_tests:
-        description: 'Bypass test, lint, and typecheck jobs for fast deployment'
+        description: 'Bypass test, lint, and typecheck jobs'
         required: true
         default: false
         type: boolean
@@ -114,6 +114,7 @@ jobs:
   deploy:
     name: Deploy to Target Server
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Set Release ID
