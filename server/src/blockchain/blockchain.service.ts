@@ -510,6 +510,9 @@ export class BlockchainService implements OnModuleInit {
       );
       const receipt = await tx.wait();
       if (!receipt) throw new Error('Transaction receipt was not returned');
+      if (receipt.status !== undefined && receipt.status !== 1) {
+        throw new Error('Wallet credit transaction was reverted');
+      }
       return receipt.hash;
     } catch (error) {
       this.logger.error('Error minting wallet credit:', error);

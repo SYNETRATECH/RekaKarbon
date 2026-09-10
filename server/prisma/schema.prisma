@@ -108,6 +108,7 @@ enum BlockchainOperationType {
   BURSA_LISTING_CANCEL
   CARBON_RETIREMENT
   KTH_INCENTIVE_DISBURSEMENT
+  WALLET_DEPOSIT_MINT
 }
 
 enum BlockchainOperationStatus {
@@ -329,6 +330,7 @@ model User {
   decidedForestInspections        ForestInspectionDecision[]   @relation("ForestInspectionDecisionAuditor")
   walletDeposits                  WalletDeposit[]              @relation("WalletDeposits")
   walletLedgerEntries             WalletLedgerEntry[]          @relation("WalletLedgerEntries")
+  walletLinkChallenges            WalletLinkChallenge[]        @relation("WalletLinkChallenges")
 
   @@map("users")
 }
@@ -627,6 +629,23 @@ model WalletLedgerEntry {
   @@index([walletAddress, createdAt])
   @@index([depositId])
   @@map("wallet_ledger_entries")
+}
+
+model WalletLinkChallenge {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  walletAddress String    @map("wallet_address") @db.Text
+  nonce         String    @unique @db.Text
+  message       String    @db.Text
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt    DateTime? @map("consumed_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation("WalletLinkChallenges", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([consumedAt])
+  @@map("wallet_link_challenges")
 }
 
 model PtbaeApplicationDocument {

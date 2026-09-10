@@ -62,7 +62,7 @@ export { healthRepository } from './health.repository';
 export type { HealthRepository } from './health.repository';
 
 export { walletRepository } from './wallet.repository';
-export type { WalletRepository } from './wallet.repository';
+export type { WalletLinkInput, WalletRepository } from './wallet.repository';
 
 export { kthRepository } from './kth.repository';
 export type { KthRepository } from './kth.repository';

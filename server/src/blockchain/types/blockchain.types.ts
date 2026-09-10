@@ -2,6 +2,7 @@ export interface BlockchainTransactionReceipt {
   hash: string;
   logs: BlockchainLog[];
   blockNumber?: number | bigint;
+  status?: number;
 }
 
 export interface BlockchainTransactionStatus {
