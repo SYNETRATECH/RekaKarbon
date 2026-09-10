@@ -283,6 +283,12 @@ jobs:
               exit 1
             }
 
+            # If a shared deployment-info.json exists, copy it into QBFT_DIR so verify-existing can discover it
+            if [ -f "$PROJECT_DIR/shared/deployment-info.json" ] && [ ! -f "$QBFT_DIR/deployment-info.json" ]; then
+              echo "Reusing existing deployment-info.json from $PROJECT_DIR/shared/deployment-info.json"
+              cp "$PROJECT_DIR/shared/deployment-info.json" "$QBFT_DIR/deployment-info.json"
+            fi
+
             # The deployer key is written only into this release's temporary .env
             # and removed by the EXIT trap after Hardhat finishes.
             cp "$BLOCKCHAIN_ENV_SOURCE" "$QBFT_DIR/.env"
@@ -318,6 +324,10 @@ jobs:
               echo 'Alamat kontrak pada manifest tidak lengkap.' >&2
               exit 1
             }
+
+            # Persist manifest to shared so future releases can automatically find existing addresses
+            mkdir -p "$PROJECT_DIR/shared"
+            cp "$MANIFEST" "$PROJECT_DIR/shared/deployment-info.json"
 
             echo "QBFT deployment berhasil. Release: $RELEASE_ID"
             echo "Chain ID: $CHAIN_ID"
