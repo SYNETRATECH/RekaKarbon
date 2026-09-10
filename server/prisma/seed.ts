@@ -28,6 +28,7 @@ import {
   FileCategory,
   NotificationType,
   PriorityLevel,
+  BursaAttestationStatus,
 } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
@@ -730,7 +731,7 @@ async function main() {
       id: randomUUID(),
       companyId: companyTuban.id,
       year: 2026,
-      totalEmissionsTco2e: 14830,
+      totalEmissionsTco2e: 2350000,
       merkleRoot:
         '0x8f9a2b4c1d3e5f7a9b0c2d4e6f8a1b3c5d7e9f0a2b4c6d8e0f2a4b6c8d0e2f4a',
       blockchainTxHash: '0x11223344556677889900aabbccddeeff',
@@ -792,7 +793,7 @@ async function main() {
         actualVolumeTons: 4750000,
         productUnit: 'Ton Klinker',
       },
-      baselineEmissionTco2e: 14830,
+      baselineEmissionTco2e: 2350000,
       mitigationPlan:
         'Pemasangan WHRPG dan substitusi bahan bakar biomassa sekam padi.',
       submittedAt: new Date('2026-01-12T10:00:00.000Z'),
@@ -1431,9 +1432,19 @@ async function main() {
       id: randomUUID(),
       sellerUserId: userAdmin.id,
       carbonTokenId: tokenKalbar.id,
+      projectId: projectKalbar.id,
+      kthGroupId: kthKalbar.id,
       projectName: 'Rehabilitasi Hutan Terdegradasi Spesies Endemik Kalbar',
+      vintageYear: 2026,
+      initialVolumeTco2e: 50000.0,
+      verifiedSaleableVolumeTco2e: 50000.0,
       volumeAvailableTco2e: 48750.0,
+      floorPricePerTonIdr: 250000.0,
+      currentPricePerTonIdr: 280000.0,
       pricePerTonIdr: 280000.0,
+      blockchainListingId: BigInt(1),
+      kthConfirmationStatus: BursaAttestationStatus.CONFIRMED,
+      kthConfirmedAt: new Date('2026-01-21T10:00:00.000Z'),
       status: ListingStatus.ACTIVE,
     },
   });
@@ -1495,10 +1506,58 @@ async function main() {
       id: randomUUID(),
       sellerUserId: userAdmin.id,
       carbonTokenId: tokenBali.id,
+      projectId: projectBali.id,
+      kthGroupId: kthBali.id,
       projectName: 'Pengembangan Bibit Tanaman Endemik Kayu Asli Bali',
+      vintageYear: 2026,
+      initialVolumeTco2e: 70000.0,
+      verifiedSaleableVolumeTco2e: 70000.0,
       volumeAvailableTco2e: 0.0,
+      floorPricePerTonIdr: 300000.0,
+      currentPricePerTonIdr: 350000.0,
       pricePerTonIdr: 350000.0,
+      blockchainListingId: BigInt(2),
+      kthConfirmationStatus: BursaAttestationStatus.CONFIRMED,
+      kthConfirmedAt: new Date('2026-01-23T10:00:00.000Z'),
       status: ListingStatus.FILLED,
+    },
+  });
+
+  // Additional Active Listing 3: Mangrove Blue Carbon
+  const tokenMangrove = await prisma.carbonToken.create({
+    data: {
+      id: randomUUID(),
+      speCertificateNumber: 'SPE-MANGROVE-2026-001',
+      projectId: projectKalbar.id,
+      totalMintedTco2e: 15000.0,
+      availableBalanceTco2e: 12500.0,
+      vintageYear: 2026,
+      blockchainTokenId: BigInt(3),
+      mintTxHash:
+        '0x5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b',
+      mintedAt: new Date('2026-02-01T10:00:00.000Z'),
+    },
+  });
+
+  await prisma.bursaListing.create({
+    data: {
+      id: randomUUID(),
+      sellerUserId: userAdmin.id,
+      carbonTokenId: tokenMangrove.id,
+      projectId: projectKalbar.id,
+      kthGroupId: kthKalbar.id,
+      projectName: 'Restorasi Ekosistem Mangrove & Karbon Biru Kutai',
+      vintageYear: 2026,
+      initialVolumeTco2e: 15000.0,
+      verifiedSaleableVolumeTco2e: 15000.0,
+      volumeAvailableTco2e: 12500.0,
+      floorPricePerTonIdr: 500000.0,
+      currentPricePerTonIdr: 550000.0,
+      pricePerTonIdr: 550000.0,
+      blockchainListingId: BigInt(3),
+      kthConfirmationStatus: BursaAttestationStatus.CONFIRMED,
+      kthConfirmedAt: new Date('2026-02-02T10:00:00.000Z'),
+      status: ListingStatus.ACTIVE,
     },
   });
 
