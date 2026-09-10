@@ -72,5 +72,6 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 filterwarnings = [
     "ignore::DeprecationWarning:joblib.*:",
+    "ignore::PendingDeprecationWarning:shap.*:",
 ]
 

@@ -4,10 +4,9 @@ Generates balanced compliant vs anomalous submissions reflecting Indonesian indu
 incorporating physical fuel stoichiometry, electricity grids, and multi-scope reporting.
 """
 
-from typing import List
-
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 from ..config import get_dataset_config, get_random_state
 from .benchmark_loader import (
@@ -43,7 +42,7 @@ class EmissionDataGenerator:
         self,
         n_samples: int | None = None,
         anomaly_ratio: float | None = None,
-        sectors: List[str] | None = None,
+        sectors: list[str] | None = None,
         severity: str | None = None,
         severity_distribution: dict[str, float] | None = None,
     ) -> pd.DataFrame:
@@ -324,8 +323,6 @@ class EmissionDataGenerator:
         val_ratio: float = 0.15,
         test_ratio: float = 0.15,
     ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        from sklearn.model_selection import train_test_split
-
         total = n_total if n_total is not None else self.dataset_config.default_n_samples
         ratio = (
             anomaly_ratio

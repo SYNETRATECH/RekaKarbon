@@ -13,6 +13,7 @@ from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import FloatTensorType
 from sklearn.pipeline import Pipeline
 
+from ..data.generator import EmissionDataGenerator
 from .transformers import DERIVED_FEATURE_NAMES
 
 
@@ -51,8 +52,6 @@ def verify_onnx_parity(
     Validates numerical parity between Scikit-Learn decision function and ONNX Runtime.
     """
     if sample_df is None:
-        from ..data.generator import EmissionDataGenerator
-
         gen = EmissionDataGenerator(random_state=99)
         sample_df = gen.generate_dataset(n_samples=50)
 

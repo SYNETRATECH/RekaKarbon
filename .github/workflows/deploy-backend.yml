@@ -3,6 +3,11 @@ name: Deploy NestJS Backend to Host (Bare-Metal)
 on:
   workflow_dispatch:
     inputs:
+      skip_tests:
+        description: 'Bypass test, lint, and typecheck jobs'
+        required: true
+        default: false
+        type: boolean
       run_seed:
         description: 'Run database seeder after deploy'
         required: true
@@ -12,6 +17,7 @@ on:
 jobs:
   test:
     name: Test Backend
+    if: ${{ !inputs.skip_tests }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -41,6 +47,7 @@ jobs:
   build:
     name: Build Artifact
     needs: test
+    if: ${{ !cancelled() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.create_bundle.outputs.release_id }}
@@ -107,6 +114,7 @@ jobs:
   deploy:
     name: Deploy to Target Server
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Set Release ID

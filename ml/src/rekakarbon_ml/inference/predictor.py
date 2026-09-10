@@ -16,6 +16,7 @@ from ..data.benchmark_loader import (
     SUPPORTED_SECTORS,
     SectorBenchmarkLoader,
 )
+from ..data.schema import validate_emission_dict
 from ..training.trainer import load_pipeline
 from ..training.transformers import (
     RAW_FEATURE_COLUMNS,
@@ -65,6 +66,8 @@ class CarbonAnomalyPredictor:
     def compute_shap_values(self, df_raw: pd.DataFrame) -> np.ndarray:
         """Computes exact SHAP feature contribution values using TreeExplainer."""
         if self._shap_explainer is None:
+            # Lazy import: SHAP initializes matplotlib and LLVM components (~700ms overhead).
+            # Deferring until requested keeps fast-path API prediction latency minimal.
             import shap
 
             detector = self.pipeline.named_steps["detector"]
@@ -80,8 +83,6 @@ class CarbonAnomalyPredictor:
     def predict_single(self, record: Dict[str, Any], validate: bool = False) -> Dict[str, Any]:
         """Runs end-to-end anomaly audit on a single company report dict."""
         if validate:
-            from ..data.schema import validate_emission_dict
-
             is_valid, err_msg, validated = validate_emission_dict(record)
             if not is_valid or validated is None:
                 raise ValueError(f"Input validation error: {err_msg}")
