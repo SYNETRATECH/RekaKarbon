@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   OnModuleInit,
   InternalServerErrorException,
   BadRequestException,
@@ -7,9 +8,11 @@ import {
   ServiceUnavailableException,
   Logger,
 } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { ethers } from 'ethers';
 import * as RekaKarbonABI from './config/RekaKarbon.json';
 import * as EmissionRegistryABI from './config/EmissionReportRegistry.json';
+import { blockchainConfig } from './config/blockchain.config';
 import type {
   BlockchainEvent,
   BlockchainBursaListingResult,
@@ -38,15 +41,16 @@ export class BlockchainService implements OnModuleInit {
   private rekaKarbonContract: CarbonTokenContract | null = null;
   private registryContract: EmissionRegistryContract | null = null;
 
+  constructor(
+    @Inject(blockchainConfig.KEY)
+    private readonly config: ConfigType<typeof blockchainConfig>,
+  ) {}
+
   onModuleInit() {
-    const rpcUrl =
-      process.env.BESU_RPC_URL ||
-      process.env.QBFT_RPC_URL ||
-      process.env.RPC_URL;
-    const privateKey = process.env.PRIVATE_KEY;
-    const rekaKarbonAddress =
-      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
-    const registryAddress = process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
+    const rpcUrl = this.config.rpcUrl;
+    const privateKey = this.config.privateKey;
+    const rekaKarbonAddress = this.config.carbonTokenAddress;
+    const registryAddress = this.config.emissionRegistryAddress;
 
     if (!rpcUrl || !privateKey || !rekaKarbonAddress || !registryAddress) {
       this.logger.warn(
@@ -102,8 +106,7 @@ export class BlockchainService implements OnModuleInit {
   }
 
   private async getTransactionOverrides(
-    contractAddress: string | undefined = process.env
-      .CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS,
+    contractAddress: string | undefined = this.config.carbonTokenAddress,
     contractName = 'RekaKarbon',
   ): Promise<BlockchainTransactionOverrides> {
     if (!this.provider) {
@@ -117,7 +120,10 @@ export class BlockchainService implements OnModuleInit {
     }
 
     await this.assertWriteTarget(contractAddress, contractName);
-    return getNominalTransactionOverrides(this.provider);
+    return getNominalTransactionOverrides(this.provider, {
+      gasPriceWei: this.config.gasPriceWei,
+      maxGasPriceWei: this.config.maxGasPriceWei,
+    });
   }
 
   private async assertWriteTarget(
@@ -220,9 +226,8 @@ export class BlockchainService implements OnModuleInit {
 
   async getHealth(): Promise<BlockchainHealth> {
     const configuredChainId = this.getConfiguredChainId();
-    const contractAddress =
-      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
-    const registryAddress = process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
+    const contractAddress = this.config.carbonTokenAddress;
+    const registryAddress = this.config.emissionRegistryAddress;
 
     if (
       !this.provider ||
@@ -380,15 +385,7 @@ export class BlockchainService implements OnModuleInit {
   }
 
   private getConfiguredChainId(): number | undefined {
-    const configuredValue =
-      process.env.BESU_CHAIN_ID ||
-      process.env.QBFT_CHAIN_ID ||
-      process.env.CHAIN_ID ||
-      '1338';
-    const configuredChainId = Number(configuredValue);
-    return Number.isInteger(configuredChainId) && configuredChainId > 0
-      ? configuredChainId
-      : undefined;
+    return this.config.chainId > 0 ? this.config.chainId : undefined;
   }
 
   async getCarbonBalance(address: string, tokenId: number): Promise<number> {
@@ -1134,8 +1131,7 @@ export class BlockchainService implements OnModuleInit {
       );
     }
 
-    const contractAddress =
-      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+    const contractAddress = this.config.carbonTokenAddress;
     if (!contractAddress) {
       throw new InternalServerErrorException(
         'Carbon token contract address is not configured',
@@ -1191,8 +1187,7 @@ export class BlockchainService implements OnModuleInit {
       );
     }
 
-    const contractAddress =
-      process.env.CARBON_TOKEN_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS;
+    const contractAddress = this.config.carbonTokenAddress;
     if (!contractAddress) {
       throw new InternalServerErrorException(
         'Carbon token contract address is not configured',
@@ -1301,7 +1296,7 @@ export class BlockchainService implements OnModuleInit {
         year,
         rootHash,
         await this.getTransactionOverrides(
-          process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS,
+          this.config.emissionRegistryAddress,
           'EmissionReportRegistry',
         ),
       );
@@ -1356,7 +1351,7 @@ export class BlockchainService implements OnModuleInit {
         status,
         notes,
         await this.getTransactionOverrides(
-          process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS,
+          this.config.emissionRegistryAddress,
           'EmissionReportRegistry',
         ),
       );
@@ -1388,7 +1383,7 @@ export class BlockchainService implements OnModuleInit {
     contractAddress: string;
   }> {
     const contract = this.ensureRegistry();
-    const contractAddress = process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
+    const contractAddress = this.config.emissionRegistryAddress;
     if (!contractAddress) {
       throw new InternalServerErrorException(
         'Emission registry contract address is not configured',
@@ -1415,7 +1410,7 @@ export class BlockchainService implements OnModuleInit {
         rootHash,
         anchorType,
         await this.getTransactionOverrides(
-          process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS,
+          this.config.emissionRegistryAddress,
           'EmissionReportRegistry',
         ),
       );
