@@ -19,12 +19,20 @@ function requirePositiveFee(value: bigint | null, source: string): bigint {
   return value;
 }
 
+export interface FeePolicyConfig {
+  gasPriceWei?: string;
+  maxGasPriceWei?: string;
+}
+
 /** Resolve a non-zero network fee for every backend-originated transaction. */
 export async function getNominalTransactionOverrides(
   provider: ethers.JsonRpcProvider,
+  config?: FeePolicyConfig,
 ): Promise<BlockchainTransactionOverrides> {
   const feeData = await provider.getFeeData();
-  const configuredGasPrice = readWeiEnvironment('BLOCKCHAIN_GAS_PRICE_WEI');
+  const configuredGasPrice = config?.gasPriceWei
+    ? BigInt(config.gasPriceWei)
+    : readWeiEnvironment('BLOCKCHAIN_GAS_PRICE_WEI');
   const gasPrice =
     configuredGasPrice ?? feeData.gasPrice ?? feeData.maxFeePerGas;
   const positiveGasPrice = requirePositiveFee(
@@ -32,7 +40,9 @@ export async function getNominalTransactionOverrides(
     'gasPrice/maxFeePerGas',
   );
 
-  const maximumGasPrice = readWeiEnvironment('BLOCKCHAIN_MAX_GAS_PRICE_WEI');
+  const maximumGasPrice = config?.maxGasPriceWei
+    ? BigInt(config.maxGasPriceWei)
+    : readWeiEnvironment('BLOCKCHAIN_MAX_GAS_PRICE_WEI');
   if (maximumGasPrice !== undefined && positiveGasPrice > maximumGasPrice) {
     throw new Error(
       `Resolved gas price ${positiveGasPrice} wei exceeds BLOCKCHAIN_MAX_GAS_PRICE_WEI`,

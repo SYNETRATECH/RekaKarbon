@@ -4,10 +4,15 @@ import {
 } from '@prisma/client';
 import { ethers } from 'ethers';
 import type { CreateBlockchainOperationInput } from './types';
+import type { BlockchainConfig } from './config/blockchain.config';
 
 const DEFAULT_ACTIVE_CHAIN_ID = 1338;
 
-export function getConfiguredBlockchainChainId(): number | null {
+export function getConfiguredBlockchainChainId(
+  config?: Partial<BlockchainConfig>,
+): number | null {
+  if (config?.chainId && config.chainId > 0) return config.chainId;
+
   const rawValue =
     process.env.BESU_CHAIN_ID?.trim() || process.env.QBFT_CHAIN_ID?.trim();
   if (!rawValue) return DEFAULT_ACTIVE_CHAIN_ID;
@@ -16,12 +21,22 @@ export function getConfiguredBlockchainChainId(): number | null {
   return Number.isInteger(chainId) && chainId > 0 ? chainId : null;
 }
 
-export function getConfiguredRegistryAddress(): string | null {
+export function getConfiguredRegistryAddress(
+  config?: Partial<BlockchainConfig>,
+): string | null {
+  if (config?.emissionRegistryAddress) {
+    return config.emissionRegistryAddress;
+  }
   const address = process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS?.trim();
   return address || null;
 }
 
-export function getConfiguredTokenAddress(): string | null {
+export function getConfiguredTokenAddress(
+  config?: Partial<BlockchainConfig>,
+): string | null {
+  if (config?.carbonTokenAddress) {
+    return config.carbonTokenAddress;
+  }
   const address = process.env.CARBON_TOKEN_CONTRACT_ADDRESS?.trim();
   return address || null;
 }

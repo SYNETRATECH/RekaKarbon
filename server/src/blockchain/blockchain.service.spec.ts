@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BlockchainService } from './blockchain.service';
+import {
+  blockchainConfig,
+  type BlockchainConfig,
+} from './config/blockchain.config';
 import { ethers } from 'ethers';
 import type {
   BlockchainTransaction,
@@ -29,44 +33,59 @@ jest.mock('ethers', () => {
 
 describe('BlockchainService', () => {
   let service: BlockchainService;
-  let originalEnv: NodeJS.ProcessEnv;
 
-  beforeAll(() => {
-    originalEnv = { ...process.env };
-  });
+  const defaultMockConfig: BlockchainConfig = {
+    rpcUrl: 'http://127.0.0.1:8545',
+    privateKey:
+      '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+    carbonTokenAddress: '0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0',
+    emissionRegistryAddress: '0x9DdaF0CD259887258Bc13a92C0a6dA92698644C1',
+    chainId: 1338,
+    reconciliationWorkerEnabled: true,
+    reconciliationIntervalMs: 30000,
+    reconciliationBatchSize: 20,
+  };
+
+  const createServiceWithConfig = async (
+    config: Partial<BlockchainConfig> = {},
+  ): Promise<BlockchainService> => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        BlockchainService,
+        {
+          provide: blockchainConfig.KEY,
+          useValue: { ...defaultMockConfig, ...config },
+        },
+      ],
+    }).compile();
+
+    return module.get<BlockchainService>(BlockchainService);
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    process.env = { ...originalEnv };
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [BlockchainService],
-    }).compile();
-
-    service = module.get<BlockchainService>(BlockchainService);
-  });
-
-  afterAll(() => {
-    process.env = originalEnv;
+    service = await createServiceWithConfig();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('onModuleInit without env configuration', () => {
-    it('should fail initialization gracefully if env vars are missing', () => {
-      delete process.env.BESU_RPC_URL;
-      delete process.env.PRIVATE_KEY;
-      delete process.env.CARBON_TOKEN_CONTRACT_ADDRESS;
-      delete process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS;
+  describe('onModuleInit without complete configuration', () => {
+    it('should fail initialization gracefully if config properties are missing', async () => {
+      const incompleteService = await createServiceWithConfig({
+        rpcUrl: undefined,
+        privateKey: undefined,
+        carbonTokenAddress: undefined,
+        emissionRegistryAddress: undefined,
+      });
 
-      service.onModuleInit();
+      incompleteService.onModuleInit();
       expect(ethers.JsonRpcProvider).not.toHaveBeenCalled();
     });
   });
 
-  describe('with env configuration', () => {
+  describe('with valid configuration', () => {
     let mockContract: Pick<
       CarbonTokenContract,
       | 'balanceOf'
@@ -83,15 +102,6 @@ describe('BlockchainService', () => {
       >;
 
     beforeEach(() => {
-      process.env.BESU_RPC_URL = 'http://127.0.0.1:8545';
-      process.env.PRIVATE_KEY =
-        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
-      process.env.CARBON_TOKEN_CONTRACT_ADDRESS =
-        '0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0';
-      process.env.EMISSION_REGISTRY_CONTRACT_ADDRESS =
-        '0x9DdaF0CD259887258Bc13a92C0a6dA92698644C1';
-      process.env.BESU_CHAIN_ID = '1338';
-
       const transaction: BlockchainTransaction = {
         wait: jest.fn().mockResolvedValue({
           hash: '0xtesttxhash',

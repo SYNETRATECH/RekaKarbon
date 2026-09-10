@@ -1,4 +1,4 @@
-name: Deploy QBFT Blockchain (Manual)
+name: Deploy QBFT Blockchain
 
 on:
   workflow_dispatch:
@@ -35,6 +35,16 @@ on:
         required: true
         default: false
         type: boolean
+      carbon_token_address:
+        description: '(Opsional) Override alamat kontrak RekaKarbon untuk verify-existing'
+        required: false
+        default: ''
+        type: string
+      emission_registry_address:
+        description: '(Opsional) Override alamat kontrak EmissionReportRegistry untuk verify-existing'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -135,8 +145,6 @@ jobs:
       PROJECT_DIR: ${{ vars.BLOCKCHAIN_PROJECT_DIR || '/home/indah/VM_BLOCKHAIN' }}
       NETWORK_ENV_FILE: ${{ vars.QBFT_NETWORK_ENV_FILE || '/home/indah/VM_BLOCKHAIN/qbft/shared/generated/.env' }}
       BLOCKCHAIN_ENV_FILE: ${{ vars.BLOCKCHAIN_ENV_FILE || '/home/indah/VM_BLOCKHAIN/qbft/shared/.env' }}
-      BACKEND_ENV_FILE: ${{ vars.BLOCKCHAIN_BACKEND_ENV_FILE || '/home/indah/VM_BLOCKHAIN/shared/.env' }}
-      BACKEND_HEALTH_URL: ${{ vars.BLOCKCHAIN_BACKEND_HEALTH_URL || 'http://127.0.0.1:3000/health' }}
 
     steps:
       - name: Set Release ID
@@ -166,25 +174,24 @@ jobs:
           target: /tmp
 
       - name: Preflight, start QBFT, deploy contracts, and smoke test
+        id: deploy_contracts
         uses: appleboy/ssh-action@v1.2.5
         env:
           RELEASE_ID: ${{ env.RELEASE_ID }}
           PROJECT_DIR: ${{ env.PROJECT_DIR }}
           NETWORK_ENV_FILE: ${{ env.NETWORK_ENV_FILE }}
           BLOCKCHAIN_ENV_FILE: ${{ env.BLOCKCHAIN_ENV_FILE }}
-          BACKEND_ENV_FILE: ${{ env.BACKEND_ENV_FILE }}
-          BACKEND_HEALTH_URL: ${{ env.BACKEND_HEALTH_URL }}
           DEPLOYMENT_MODE: ${{ inputs.deployment_mode }}
           ALLOW_DEPLOY_NEW: ${{ inputs.allow_deploy_new }}
-          RESTART_BACKEND: ${{ inputs.restart_backend }}
-          BACKEND_PROCESS_MANAGER: systemd
           BLOCKCHAIN_PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
+          CARBON_TOKEN_ADDRESS_OVERRIDE: ${{ inputs.carbon_token_address }}
+          EMISSION_REGISTRY_ADDRESS_OVERRIDE: ${{ inputs.emission_registry_address }}
         with:
           host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
           username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
           key: ${{ secrets.BLOCKCHAIN_SSH_PRIVATE_KEY }}
           port: ${{ vars.BLOCKCHAIN_SSH_PORT || '22' }}
-          envs: RELEASE_ID,PROJECT_DIR,NETWORK_ENV_FILE,BLOCKCHAIN_ENV_FILE,BACKEND_ENV_FILE,BACKEND_HEALTH_URL,DEPLOYMENT_MODE,ALLOW_DEPLOY_NEW,RESTART_BACKEND,BACKEND_PROCESS_MANAGER,BLOCKCHAIN_PRIVATE_KEY
+          envs: RELEASE_ID,PROJECT_DIR,NETWORK_ENV_FILE,BLOCKCHAIN_ENV_FILE,DEPLOYMENT_MODE,ALLOW_DEPLOY_NEW,BLOCKCHAIN_PRIVATE_KEY,CARBON_TOKEN_ADDRESS_OVERRIDE,EMISSION_REGISTRY_ADDRESS_OVERRIDE
           script_stop: true
           script: |
             set -Eeuo pipefail
@@ -206,12 +213,25 @@ jobs:
             rm -f "$QBFT_ARCHIVE"
 
             command -v docker >/dev/null 2>&1 || { echo 'Docker tidak tersedia.' >&2; exit 1; }
+
+            # Ensure Docker Compose v2 is available (Compose v1 is incompatible with Docker Engine 26+)
+            if ! docker compose version >/dev/null 2>&1; then
+              echo 'Docker Compose v2 plugin tidak ditemukan. Mengunduh Compose v2 plugin...'
+              mkdir -p "$HOME/.docker/cli-plugins"
+              COMPOSE_ARCH="$(uname -m)"
+              case "$COMPOSE_ARCH" in
+                x86_64) COMPOSE_ARCH="x86_64" ;;
+                aarch64) COMPOSE_ARCH="aarch64" ;;
+                *) COMPOSE_ARCH="x86_64" ;;
+              esac
+              curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${COMPOSE_ARCH}" -o "$HOME/.docker/cli-plugins/docker-compose"
+              chmod +x "$HOME/.docker/cli-plugins/docker-compose"
+            fi
+
             if docker compose version >/dev/null 2>&1; then
               compose() { docker compose "$@"; }
-            elif command -v docker-compose >/dev/null 2>&1; then
-              compose() { docker-compose "$@"; }
             else
-              echo 'Docker Compose v2 maupun legacy tidak tersedia.' >&2
+              echo 'Gagal menginisialisasi Docker Compose v2.' >&2
               exit 1
             fi
             docker version --format '{{.Server.Version}}'
@@ -239,10 +259,17 @@ jobs:
               exit 1
             }
 
-            # Compose receives only the generated network environment. It never
-            # receives the deployer key or the backend database secrets.
-            compose --env-file "$NETWORK_ENV" -f "$QBFT_DIR/docker-compose.qbft.yml" config --quiet
-            compose --env-file "$NETWORK_ENV" -f "$QBFT_DIR/docker-compose.qbft.yml" up -d
+            # Remove leftover transient/renamed containers from aborted previous runs
+            docker ps -a --filter "name=rekakarbon-qbft" --format '{{.ID}} {{.Names}}' | while read -r cid cname; do
+              if [[ "$cname" =~ ^[0-9a-f]+_rekakarbon-qbft ]]; then
+                echo "Cleaning up leftover transient container: $cname ($cid)"
+                docker rm -f "$cid" || true
+              fi
+            done
+
+            # Compose receives only the generated network environment.
+            compose --project-name blockchain --env-file "$NETWORK_ENV" -f "$QBFT_DIR/docker-compose.qbft.yml" config --quiet
+            compose --project-name blockchain --env-file "$NETWORK_ENV" -f "$QBFT_DIR/docker-compose.qbft.yml" up -d --remove-orphans
 
             echo 'Menunggu RPC QBFT dan block progression...'
             for attempt in $(seq 1 30); do
@@ -268,6 +295,24 @@ jobs:
               exit 1
             }
 
+            # Locate existing deployment-info.json across shared, current, or earlier releases
+            if [ ! -f "$QBFT_DIR/deployment-info.json" ]; then
+              if [ -f "$PROJECT_DIR/shared/deployment-info.json" ]; then
+                echo "Reusing existing deployment-info.json from $PROJECT_DIR/shared/deployment-info.json"
+                cp "$PROJECT_DIR/shared/deployment-info.json" "$QBFT_DIR/deployment-info.json"
+              elif [ -f "$PROJECT_DIR/current/blockchain/deployment-info.json" ]; then
+                echo "Reusing existing deployment-info.json from $PROJECT_DIR/current/blockchain/deployment-info.json"
+                cp "$PROJECT_DIR/current/blockchain/deployment-info.json" "$QBFT_DIR/deployment-info.json"
+              else
+                # Search previous release directories in reverse chronological order
+                LATEST_PREVIOUS_MANIFEST="$(find "$PROJECT_DIR/releases" -mindepth 3 -maxdepth 3 -name "deployment-info.json" 2>/dev/null | grep -v "$RELEASE_ID" | sort -r | head -n 1 || true)"
+                if [ -n "$LATEST_PREVIOUS_MANIFEST" ] && [ -f "$LATEST_PREVIOUS_MANIFEST" ]; then
+                  echo "Discovered earlier deployment-info.json at $LATEST_PREVIOUS_MANIFEST"
+                  cp "$LATEST_PREVIOUS_MANIFEST" "$QBFT_DIR/deployment-info.json"
+                fi
+              fi
+            fi
+
             # The deployer key is written only into this release's temporary .env
             # and removed by the EXIT trap after Hardhat finishes.
             cp "$BLOCKCHAIN_ENV_SOURCE" "$QBFT_DIR/.env"
@@ -275,12 +320,17 @@ jobs:
             printf '\nPRIVATE_KEY=%s\n' "$BLOCKCHAIN_PRIVATE_KEY" >> "$QBFT_DIR/.env"
             printf 'DEPLOYMENT_MODE=%s\n' "$DEPLOYMENT_MODE" >> "$QBFT_DIR/.env"
             printf 'ALLOW_DEPLOY_NEW=%s\n' "$ALLOW_DEPLOY_NEW" >> "$QBFT_DIR/.env"
+            printf 'DEPLOYMENT_MANIFEST_PATH=/workspace/blockchain/deployment-info.json\n' >> "$QBFT_DIR/.env"
+
+            if [ -n "${CARBON_TOKEN_ADDRESS_OVERRIDE:-}" ]; then
+              printf 'CARBON_TOKEN_CONTRACT_ADDRESS=%s\n' "$CARBON_TOKEN_ADDRESS_OVERRIDE" >> "$QBFT_DIR/.env"
+            fi
+            if [ -n "${EMISSION_REGISTRY_ADDRESS_OVERRIDE:-}" ]; then
+              printf 'EMISSION_REGISTRY_CONTRACT_ADDRESS=%s\n' "$EMISSION_REGISTRY_ADDRESS_OVERRIDE" >> "$QBFT_DIR/.env"
+            fi
             trap 'rm -f "$QBFT_DIR/.env"' EXIT
 
-            # The VM only needs Docker. Run the Node/pnpm/Hardhat toolchain in a
-            # disposable Node container so the host does not need Node.js or
-            # Corepack installed. Host networking lets Hardhat reach the QBFT
-            # RPC bound to 127.0.0.1:8545.
+            # Run deployment container
             docker run --rm \
               --network host \
               --user "$(id -u):$(id -g)" \
@@ -307,61 +357,55 @@ jobs:
               exit 1
             }
 
-            if [ -f "$BACKEND_ENV_FILE" ]; then
-              tmp_backend_env="$(mktemp "$BACKEND_ENV_FILE.tmp.XXXXXX")"
-              awk -v carbon="$CARBON_ADDRESS" -v registry="$REGISTRY_ADDRESS" -v chain="$CHAIN_ID" '
-                function emit(key, value) {
-                  if (seen[key] == 0) {
-                    print key "=" value
-                    seen[key] = 1
-                  }
-                }
-                /^CARBON_TOKEN_CONTRACT_ADDRESS=/ { emit("CARBON_TOKEN_CONTRACT_ADDRESS", carbon); next }
-                /^EMISSION_REGISTRY_CONTRACT_ADDRESS=/ { emit("EMISSION_REGISTRY_CONTRACT_ADDRESS", registry); next }
-                /^BESU_CHAIN_ID=/ { emit("BESU_CHAIN_ID", chain); next }
-                { print }
-                END {
-                  emit("CARBON_TOKEN_CONTRACT_ADDRESS", carbon)
-                  emit("EMISSION_REGISTRY_CONTRACT_ADDRESS", registry)
-                  emit("BESU_CHAIN_ID", chain)
-                }
-              ' "$BACKEND_ENV_FILE" > "$tmp_backend_env"
-              mv "$tmp_backend_env" "$BACKEND_ENV_FILE"
-              chmod 600 "$BACKEND_ENV_FILE"
-            else
-              echo "Backend env tidak ditemukan; manifest hanya disimpan pada release: $MANIFEST"
-            fi
-
-            if [ "$RESTART_BACKEND" = 'true' ]; then
-              case "$BACKEND_PROCESS_MANAGER" in
-                systemd)
-                  sudo systemctl restart rekakarbon-backend
-                  ;;
-                pm2)
-                  pm2 reload rekakarbon-backend --update-env
-                  ;;
-                *)
-                  echo 'restart_backend=true tetapi backend_process_manager=none.' >&2
-                  exit 1
-                  ;;
-              esac
-
-              for attempt in $(seq 1 24); do
-                if curl -fsS --max-time 5 "$BACKEND_HEALTH_URL" | grep -q '"status":"ok"'; then
-                  echo 'Backend health check passed.'
-                  break
-                fi
-                if [ "$attempt" -eq 24 ]; then
-                  echo 'Backend health check gagal setelah restart.' >&2
-                  exit 1
-                fi
-                sleep 5
-              done
-            else
-              echo 'Backend restart dilewati; pilih restart_backend=true setelah deploy backend disiapkan.'
-            fi
+            # Persist manifest to shared so future releases can automatically find existing addresses
+            mkdir -p "$PROJECT_DIR/shared"
+            cp "$MANIFEST" "$PROJECT_DIR/shared/deployment-info.json"
 
             echo "QBFT deployment berhasil. Release: $RELEASE_ID"
             echo "Chain ID: $CHAIN_ID"
             echo "RekaKarbon: $CARBON_ADDRESS"
             echo "EmissionReportRegistry: $REGISTRY_ADDRESS"
+
+      - name: Restart Backend Service on Backend Host
+        if: inputs.restart_backend
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          BACKEND_PROJECT_DIR: ${{ secrets.BACKEND_PROJECT_DIR }}
+          BACKEND_SSH_PASSWORD: ${{ secrets.BACKEND_SSH_PASSWORD }}
+        with:
+          host: ${{ secrets.BACKEND_SSH_HOST }}
+          username: ${{ secrets.BACKEND_SSH_USERNAME }}
+          password: ${{ secrets.BACKEND_SSH_PASSWORD }}
+          port: 22
+          envs: BACKEND_PROJECT_DIR,BACKEND_SSH_PASSWORD
+          script_stop: true
+          script: |
+            set -e
+            PROJECT_DIR_INPUT="${BACKEND_PROJECT_DIR}"
+            PROJECT_DIR=$(eval echo "$PROJECT_DIR_INPUT")
+
+            echo "Target backend host project directory: $PROJECT_DIR"
+            echo "Restarting rekakarbon-backend systemd service on backend host..."
+            echo "$BACKEND_SSH_PASSWORD" | sudo -S systemctl restart rekakarbon-backend
+
+            echo "Waiting for backend to be healthy..."
+            MAX_RETRIES=12
+            RETRY_COUNT=0
+            HTTP_STATUS="000"
+
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8006/health || true)
+              if [ "$HTTP_STATUS" = "200" ]; then
+                echo "Backend health check passed (HTTP $HTTP_STATUS)"
+                break
+              fi
+              echo "Backend not ready yet (HTTP $HTTP_STATUS), waiting 5 seconds... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
+              sleep 5
+              RETRY_COUNT=$((RETRY_COUNT+1))
+            done
+
+            if [ "$HTTP_STATUS" != "200" ]; then
+              echo "Backend health check failed after $((MAX_RETRIES * 5)) seconds (HTTP $HTTP_STATUS)"
+              echo "$BACKEND_SSH_PASSWORD" | sudo -S systemctl status rekakarbon-backend --no-pager || true
+              exit 1
+            fi

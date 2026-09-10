@@ -41,11 +41,24 @@ describe('BlockchainOperationReconciliationService', () => {
       markFailed,
     } as unknown as BlockchainOperationService;
 
+    const mockConfig = {
+      rpcUrl: 'http://127.0.0.1:8545',
+      privateKey:
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      carbonTokenAddress: contractAddress,
+      emissionRegistryAddress: contractAddress,
+      chainId: 1338,
+      reconciliationWorkerEnabled: true,
+      reconciliationIntervalMs: 30000,
+      reconciliationBatchSize: 20,
+    };
+
     return {
       service: new BlockchainOperationReconciliationService(
         prisma,
         blockchainService,
         operationService,
+        mockConfig,
       ),
       findMany,
       getTransactionStatus,

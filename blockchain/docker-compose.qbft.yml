@@ -1,3 +1,5 @@
+name: blockchain
+
 services:
   qbft-bootnode-1:
     image: ${QBFT_BESU_IMAGE:-hyperledger/besu:26.8.1}
