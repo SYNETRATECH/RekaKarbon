@@ -51,6 +51,7 @@ export class WalletController {
   ) {
     const userAddress = await this.getAuthenticatedWallet(req);
     const result = await this.walletService.createDeposit(
+      req.user.userId,
       userAddress,
       dto.amountIDR,
     );

@@ -63,10 +63,21 @@ export class XenditService {
   verifyWebhook(callbackToken: string | undefined): boolean {
     const expectedToken = process.env.XENDIT_WEBHOOK_TOKEN;
     if (!expectedToken) {
-      this.logger.warn(
-        'XENDIT_WEBHOOK_TOKEN not configured, skipping validation',
+      const allowUnsignedDevelopmentWebhook =
+        process.env.NODE_ENV !== 'production' &&
+        process.env.ALLOW_UNSIGNED_XENDIT_WEBHOOK === 'true';
+
+      if (allowUnsignedDevelopmentWebhook) {
+        this.logger.warn(
+          'Unsigned Xendit webhook validation is explicitly enabled for development.',
+        );
+        return true;
+      }
+
+      this.logger.error(
+        'XENDIT_WEBHOOK_TOKEN is not configured; rejecting callback.',
       );
-      return true; // Bypass in dev if not set
+      return false;
     }
     return callbackToken === expectedToken;
   }

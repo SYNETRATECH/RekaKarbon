@@ -24,24 +24,15 @@ export class ApiWalletRepository implements WalletRepository {
 
 export class MockWalletRepository implements WalletRepository {
   async getBalance(): Promise<number> {
-    return Promise.resolve(500000000000); // 500 Miliar IDR mock
+    return Promise.resolve(0);
   }
 
-  async deposit(amount: number): Promise<{ invoiceUrl: string }> {
+  async deposit(_amount: number): Promise<{ invoiceUrl: string }> {
     return Promise.resolve({ invoiceUrl: 'https://checkout-staging.xendit.co/web/mock-invoice' });
   }
 
   async getHistory(): Promise<WalletTransaction[]> {
-    return Promise.resolve([
-      {
-        id: 'mock-1',
-        type: 'DEPOSIT',
-        title: 'Top-up Xendit (Corporate Deposit)',
-        amount: 500000000000,
-        date: new Date().toISOString(),
-        status: 'SUCCESS',
-      },
-    ]);
+    return Promise.resolve([]);
   }
 }
 

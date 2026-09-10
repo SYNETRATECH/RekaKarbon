@@ -187,7 +187,7 @@ export default function EmitterWallet() {
           <div>
             <h3 className="text-lg font-black text-slate-900">Riwayat Transaksi Dompet</h3>
             <span className="text-[10px] font-bold text-slate-400">
-              Menampilkan data asli dari Blockchain
+              Menampilkan settlement wallet dan transaksi blockchain terverifikasi
             </span>
           </div>
           <Button variant="outline" size="sm" className="text-[10px] font-bold rounded-lg h-8">
