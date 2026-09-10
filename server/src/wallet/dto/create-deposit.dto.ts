@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, Min } from 'class-validator';
+import { IsInt, IsNumber, Min } from 'class-validator';
 
 export class CreateDepositDto {
   @ApiProperty({
@@ -8,6 +8,7 @@ export class CreateDepositDto {
     minimum: 10000,
   })
   @IsNumber()
+  @IsInt({ message: 'Amount IDR harus berupa bilangan bulat.' })
   @Min(10000, { message: 'Minimum deposit is Rp 10.000' })
   amountIDR!: number;
 }

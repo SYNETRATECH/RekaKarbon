@@ -6,7 +6,12 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import { BlockchainOperationStatus, Prisma } from '@prisma/client';
+import {
+  BlockchainOperationStatus,
+  Prisma,
+  WalletDepositStatus,
+  WalletLedgerEntryType,
+} from '@prisma/client';
 import { BlockchainOperationService } from './blockchain-operation.service';
 import { BlockchainService } from './blockchain.service';
 import { blockchainConfig } from './config/blockchain.config';
@@ -16,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 const DEFAULT_RECONCILIATION_INTERVAL_MS = 30_000;
 const DEFAULT_RECONCILIATION_BATCH_SIZE = 20;
 const MAX_RECONCILIATION_BATCH_SIZE = 100;
+const SUBMITTED_WITHOUT_HASH_TIMEOUT_MS = 5 * 60_000;
 
 export interface BlockchainReconciliationSummary {
   scanned: number;
@@ -23,6 +29,7 @@ export interface BlockchainReconciliationSummary {
   failed: number;
   pending: number;
   mismatched: number;
+  reconciliationRequired: number;
   errors: number;
 }
 
@@ -77,6 +84,7 @@ export class BlockchainOperationReconciliationService
       failed: 0,
       pending: 0,
       mismatched: 0,
+      reconciliationRequired: 0,
       errors: 0,
     };
 
@@ -92,6 +100,21 @@ export class BlockchainOperationReconciliationService
         orderBy: [{ submittedAt: 'asc' }, { createdAt: 'asc' }],
         take: this.normalizeLimit(requestedLimit),
       });
+      const limit = this.normalizeLimit(requestedLimit);
+      const orphanedOperations =
+        operations.length < limit
+          ? await this.prisma.blockchainOperation.findMany({
+              where: {
+                status: BlockchainOperationStatus.SUBMITTED,
+                transactionHash: null,
+                submittedAt: {
+                  lt: new Date(Date.now() - SUBMITTED_WITHOUT_HASH_TIMEOUT_MS),
+                },
+              },
+              orderBy: [{ submittedAt: 'asc' }, { createdAt: 'asc' }],
+              take: limit - operations.length,
+            })
+          : [];
 
       for (const operation of operations) {
         summary.scanned += 1;
@@ -109,6 +132,10 @@ export class BlockchainOperationReconciliationService
           }
 
           if (!this.matchesOperation(operation, transactionStatus)) {
+            await this.markWalletDepositForReconciliation(
+              operation,
+              'Blockchain receipt does not match the configured chain or contract.',
+            );
             await this.operationService.markFailed(
               operation.idempotencyKey,
               new Error(
@@ -121,6 +148,7 @@ export class BlockchainOperationReconciliationService
           }
 
           if (transactionStatus.status === 'confirmed') {
+            await this.finalizeWalletDeposit(operation, transactionStatus);
             await this.operationService.markConfirmed(
               operation.idempotencyKey,
               {
@@ -134,6 +162,10 @@ export class BlockchainOperationReconciliationService
             continue;
           }
 
+          await this.markWalletDepositFailed(
+            operation,
+            'Blockchain transaction was mined but reverted.',
+          );
           await this.operationService.markFailed(
             operation.idempotencyKey,
             new Error('Blockchain transaction was mined but reverted.'),
@@ -144,6 +176,30 @@ export class BlockchainOperationReconciliationService
           summary.errors += 1;
           this.logger.error(
             `Failed to reconcile blockchain operation ${operation.idempotencyKey}.`,
+            error instanceof Error ? error.stack : undefined,
+          );
+        }
+      }
+
+      for (const operation of orphanedOperations) {
+        summary.scanned += 1;
+        try {
+          await this.markWalletDepositForReconciliation(
+            operation,
+            'Operasi blockchain sudah submitted lebih dari lima menit tetapi transaction hash belum tersimpan.',
+          );
+          await this.operationService.markFailed(
+            operation.idempotencyKey,
+            new Error(
+              'Submitted blockchain operation has no transaction hash after timeout.',
+            ),
+            'reconciliation',
+          );
+          summary.reconciliationRequired += 1;
+        } catch (error: unknown) {
+          summary.errors += 1;
+          this.logger.error(
+            `Failed to quarantine orphaned blockchain operation ${operation.idempotencyKey}.`,
             error instanceof Error ? error.stack : undefined,
           );
         }
@@ -179,6 +235,122 @@ export class BlockchainOperationReconciliationService
       operation.contractAddress.toLowerCase() ===
       transactionStatus.contractAddress.toLowerCase()
     );
+  }
+
+  private async finalizeWalletDeposit(
+    operation: Prisma.BlockchainOperationGetPayload<object>,
+    transactionStatus: BlockchainTransactionStatus,
+  ): Promise<void> {
+    if (operation.aggregateType !== 'WalletDeposit') return;
+
+    const blockNumber = transactionStatus.blockNumber;
+    if (blockNumber === null) {
+      throw new Error('Confirmed wallet deposit receipt has no block number.');
+    }
+
+    await this.prisma.$transaction(async (transaction) => {
+      const deposit = await transaction.walletDeposit.findUnique({
+        where: { id: operation.aggregateId },
+      });
+      if (!deposit) {
+        throw new Error(
+          `Wallet deposit ${operation.aggregateId} was not found during reconciliation.`,
+        );
+      }
+
+      if (deposit.status === WalletDepositStatus.SETTLED) {
+        if (
+          deposit.blockchainTxHash &&
+          deposit.blockchainTxHash !== transactionStatus.txHash
+        ) {
+          throw new Error(
+            `Wallet deposit ${deposit.id} is settled with a different transaction hash.`,
+          );
+        }
+        return;
+      }
+
+      if (
+        deposit.status === WalletDepositStatus.CANCELLED ||
+        deposit.status === WalletDepositStatus.FAILED_PERMANENT
+      ) {
+        await transaction.walletDeposit.update({
+          where: { id: deposit.id },
+          data: {
+            status: WalletDepositStatus.RECONCILIATION_REQUIRED,
+            blockchainTxHash: transactionStatus.txHash,
+            blockNumber: BigInt(blockNumber),
+            lastError:
+              'Receipt mint terkonfirmasi setelah deposit ditandai tidak dapat diproses; diperlukan rekonsiliasi manual.',
+          },
+        });
+        return;
+      }
+
+      await transaction.walletDeposit.update({
+        where: { id: deposit.id },
+        data: {
+          status: WalletDepositStatus.SETTLED,
+          blockchainTxHash: transactionStatus.txHash,
+          blockNumber: BigInt(blockNumber),
+          confirmedAt: new Date(),
+          lastError: null,
+        },
+      });
+
+      await transaction.walletLedgerEntry.upsert({
+        where: { idempotencyKey: `deposit:${deposit.id}:credit` },
+        create: {
+          userId: deposit.userId,
+          depositId: deposit.id,
+          walletAddress: deposit.walletAddress,
+          entryType: WalletLedgerEntryType.DEPOSIT_CREDIT,
+          amountIdr: deposit.amountIdr,
+          tokenAmount: deposit.tokenAmount,
+          idempotencyKey: `deposit:${deposit.id}:credit`,
+          reference: deposit.externalId,
+          description:
+            'Top-up Wallet RKB_CREDIT melalui pembayaran terverifikasi',
+        },
+        update: {},
+      });
+    });
+  }
+
+  private async markWalletDepositForReconciliation(
+    operation: Prisma.BlockchainOperationGetPayload<object>,
+    reason: string,
+  ): Promise<void> {
+    if (operation.aggregateType !== 'WalletDeposit') return;
+
+    await this.prisma.walletDeposit.updateMany({
+      where: {
+        id: operation.aggregateId,
+        status: { not: WalletDepositStatus.SETTLED },
+      },
+      data: {
+        status: WalletDepositStatus.RECONCILIATION_REQUIRED,
+        lastError: reason,
+      },
+    });
+  }
+
+  private async markWalletDepositFailed(
+    operation: Prisma.BlockchainOperationGetPayload<object>,
+    reason: string,
+  ): Promise<void> {
+    if (operation.aggregateType !== 'WalletDeposit') return;
+
+    await this.prisma.walletDeposit.updateMany({
+      where: {
+        id: operation.aggregateId,
+        status: { not: WalletDepositStatus.SETTLED },
+      },
+      data: {
+        status: WalletDepositStatus.FAILED_PERMANENT,
+        lastError: reason,
+      },
+    });
   }
 
   private normalizeLimit(requestedLimit?: number): number {

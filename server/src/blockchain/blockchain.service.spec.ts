@@ -90,6 +90,7 @@ describe('BlockchainService', () => {
       CarbonTokenContract,
       | 'balanceOf'
       | 'mintOffsetCredit'
+      | 'mintWalletCredit'
       | 'MINISTRY_ROLE'
       | 'DEPOSIT_ROLE'
       | 'ORACLE_ROLE'
@@ -111,6 +112,7 @@ describe('BlockchainService', () => {
       mockContract = {
         balanceOf: jest.fn().mockResolvedValue(BigInt(150)),
         mintOffsetCredit: jest.fn().mockResolvedValue(transaction),
+        mintWalletCredit: jest.fn().mockResolvedValue(transaction),
         MINISTRY_ROLE: jest.fn().mockResolvedValue('MINISTRY_ROLE'),
         DEPOSIT_ROLE: jest.fn().mockResolvedValue('DEPOSIT_ROLE'),
         ORACLE_ROLE: jest.fn().mockResolvedValue('ORACLE_ROLE'),
@@ -210,6 +212,23 @@ describe('BlockchainService', () => {
         '-6.2,106.8',
         { gasPrice: 1n },
       );
+    });
+
+    it('should reject a reverted wallet credit transaction', async () => {
+      mockContract.mintWalletCredit = jest.fn().mockResolvedValue({
+        wait: jest.fn().mockResolvedValue({
+          hash: '0xrevertedtxhash',
+          logs: [],
+          status: 0,
+        }),
+      });
+
+      await expect(
+        service.mintWalletCredit(
+          '0x0000000000000000000000000000000000000001',
+          100_000,
+        ),
+      ).rejects.toThrow('Failed to mint wallet credit');
     });
 
     it('should report a ready QBFT target only when contracts and signer roles are valid', async () => {

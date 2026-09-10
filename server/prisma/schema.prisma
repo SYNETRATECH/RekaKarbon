@@ -108,6 +108,7 @@ enum BlockchainOperationType {
   BURSA_LISTING_CANCEL
   CARBON_RETIREMENT
   KTH_INCENTIVE_DISBURSEMENT
+  WALLET_DEPOSIT_MINT
 }
 
 enum BlockchainOperationStatus {
@@ -117,6 +118,26 @@ enum BlockchainOperationStatus {
   FAILED_RETRYABLE
   FAILED_PERMANENT
   RECONCILIATION_REQUIRED
+}
+
+enum WalletDepositStatus {
+  PAYMENT_PENDING
+  PAID
+  MINT_PENDING
+  ONCHAIN_SUBMITTED
+  SETTLED
+  FAILED_RETRYABLE
+  FAILED_PERMANENT
+  RECONCILIATION_REQUIRED
+  CANCELLED
+}
+
+enum WalletLedgerEntryType {
+  DEPOSIT_CREDIT
+  DEPOSIT_REVERSAL
+  PURCHASE_DEBIT
+  REFUND_CREDIT
+  ADJUSTMENT
 }
 
 enum ComplianceRating {
@@ -307,6 +328,9 @@ model User {
   assignedForestProjects          ForestProject[]              @relation("ForestProjectAuditor")
   submittedForestInspections      ForestInspectionSubmission[] @relation("ForestInspectionSubmissionSubmitter")
   decidedForestInspections        ForestInspectionDecision[]   @relation("ForestInspectionDecisionAuditor")
+  walletDeposits                  WalletDeposit[]              @relation("WalletDeposits")
+  walletLedgerEntries             WalletLedgerEntry[]          @relation("WalletLedgerEntries")
+  walletLinkChallenges            WalletLinkChallenge[]        @relation("WalletLinkChallenges")
 
   @@map("users")
 }
@@ -555,6 +579,75 @@ model BlockchainOperation {
   @@map("blockchain_operations")
 }
 
+model WalletDeposit {
+  id               String              @id @default(uuid()) @db.Uuid
+  userId           String              @map("user_id") @db.Uuid
+  walletAddress    String              @map("wallet_address") @db.Text
+  externalId       String              @unique @map("external_id") @db.Text
+  providerEventId  String?             @unique @map("provider_event_id") @db.Text
+  amountIdr        Decimal             @map("amount_idr") @db.Decimal(20, 2)
+  tokenAmount      BigInt              @map("token_amount")
+  invoiceUrl       String?             @map("invoice_url") @db.Text
+  providerStatus   String?             @map("provider_status") @db.Text
+  status           WalletDepositStatus @default(PAYMENT_PENDING)
+  blockchainTxHash String?             @map("blockchain_tx_hash") @db.Text
+  blockNumber      BigInt?             @map("block_number")
+  lastError        String?             @map("last_error") @db.Text
+  paidAt           DateTime?           @map("paid_at") @db.Timestamptz
+  submittedAt      DateTime?           @map("submitted_at") @db.Timestamptz
+  confirmedAt      DateTime?           @map("confirmed_at") @db.Timestamptz
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+
+  user          User                @relation("WalletDeposits", fields: [userId], references: [id], onDelete: Restrict)
+  ledgerEntries WalletLedgerEntry[]
+
+  @@index([userId, createdAt])
+  @@index([walletAddress, createdAt])
+  @@index([status, updatedAt])
+  @@index([blockchainTxHash])
+  @@map("wallet_deposits")
+}
+
+model WalletLedgerEntry {
+  id             String                @id @default(uuid()) @db.Uuid
+  userId         String                @map("user_id") @db.Uuid
+  depositId      String?               @map("deposit_id") @db.Uuid
+  walletAddress  String                @map("wallet_address") @db.Text
+  entryType      WalletLedgerEntryType @map("entry_type")
+  amountIdr      Decimal?              @map("amount_idr") @db.Decimal(20, 2)
+  tokenAmount    BigInt?               @map("token_amount")
+  idempotencyKey String                @unique @map("idempotency_key") @db.Text
+  reference      String?               @db.Text
+  description    String?               @db.Text
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User           @relation("WalletLedgerEntries", fields: [userId], references: [id], onDelete: Restrict)
+  deposit WalletDeposit? @relation(fields: [depositId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([walletAddress, createdAt])
+  @@index([depositId])
+  @@map("wallet_ledger_entries")
+}
+
+model WalletLinkChallenge {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  walletAddress String    @map("wallet_address") @db.Text
+  nonce         String    @unique @db.Text
+  message       String    @db.Text
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt    DateTime? @map("consumed_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation("WalletLinkChallenges", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([consumedAt])
+  @@map("wallet_link_challenges")
+}
+
 model PtbaeApplicationDocument {
   id            String            @id @default(uuid()) @db.Uuid
   applicationId String            @map("application_id") @db.Uuid
@@ -647,42 +740,42 @@ model KthGroup {
 }
 
 model ForestProject {
-  id                       String        @id @default(uuid()) @db.Uuid
-  regionId                 String        @map("region_id") @db.Uuid
-  kthGroupId               String?       @map("kth_group_id") @db.Uuid
-  projectName              String        @map("project_name") @db.Text
-  ecosystemType            EcosystemType @default(MANGROVE_BLUE_CARBON) @map("ecosystem_type")
-  province                 String        @db.Text
-  latitude                 Float         @db.DoublePrecision
-  longitude                Float         @db.DoublePrecision
-  areaHectares             Decimal       @map("area_hectares") @db.Decimal(12, 2)
-  targetSequestrationTco2e Decimal       @map("target_sequestration_tco2e") @db.Decimal(14, 2)
-  actualSequestrationTco2e Decimal       @map("actual_sequestration_tco2e") @db.Decimal(14, 2)
-  carbonStockTco2e         Decimal       @map("carbon_stock_tco2e") @db.Decimal(14, 2)
-  carbonPricePerTonIdr     Decimal       @default(260000) @map("carbon_price_per_ton_idr") @db.Decimal(12, 2)
-  ndviScore                Decimal       @default(0.75) @map("ndvi_score") @db.Decimal(4, 3)
-  eviScore                 Decimal       @default(0.60) @map("evi_score") @db.Decimal(4, 3)
-  survivalRatePercent      Decimal       @default(85.0) @map("survival_rate_percent") @db.Decimal(5, 2)
-  canopyHeightMeters       Decimal       @default(1.50) @map("canopy_height_meters") @db.Decimal(6, 2)
-  budgetTotalIdr           Decimal       @default(0) @map("budget_total_idr") @db.Decimal(16, 2)
-  budgetDisbursedIdr       Decimal       @default(0) @map("budget_disbursed_idr") @db.Decimal(16, 2)
-  status                   ProjectStatus @default(ACTIVE_DMRV)
-  auditorUserId            String?       @map("auditor_user_id") @db.Uuid
-  auditorAssignedAt        DateTime?     @map("auditor_assigned_at") @db.Timestamptz
-  projectStartDate         DateTime?     @map("project_start_date") @db.Date
-  timelineVersion          Int           @default(1) @map("timeline_version")
-  auditorNotes             String?       @map("auditor_notes") @db.Text
-  auditedAt                DateTime?     @map("audited_at") @db.Timestamptz
-  speCertificateId         String?       @map("spe_certificate_id") @db.Text
-  coordinatesJson          Json?         @map("coordinates_json")
-  bufferAllocatedPercent   Decimal       @default(8.0) @map("buffer_allocated_percent") @db.Decimal(5, 2)
-  bufferUsedPercent        Decimal       @default(0.0) @map("buffer_used_percent") @db.Decimal(5, 2)
-  trendDataJson            Json?         @map("trend_data_json")
-  budgetReportFileName     String?       @map("budget_report_file_name") @db.Text
-  budgetReportFileSizeBytes BigInt?      @map("budget_report_file_size_bytes")
-  budgetReportStorageKey   String?       @map("budget_report_storage_key") @db.Text
-  createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt                DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  id                        String        @id @default(uuid()) @db.Uuid
+  regionId                  String        @map("region_id") @db.Uuid
+  kthGroupId                String?       @map("kth_group_id") @db.Uuid
+  projectName               String        @map("project_name") @db.Text
+  ecosystemType             EcosystemType @default(MANGROVE_BLUE_CARBON) @map("ecosystem_type")
+  province                  String        @db.Text
+  latitude                  Float         @db.DoublePrecision
+  longitude                 Float         @db.DoublePrecision
+  areaHectares              Decimal       @map("area_hectares") @db.Decimal(12, 2)
+  targetSequestrationTco2e  Decimal       @map("target_sequestration_tco2e") @db.Decimal(14, 2)
+  actualSequestrationTco2e  Decimal       @map("actual_sequestration_tco2e") @db.Decimal(14, 2)
+  carbonStockTco2e          Decimal       @map("carbon_stock_tco2e") @db.Decimal(14, 2)
+  carbonPricePerTonIdr      Decimal       @default(260000) @map("carbon_price_per_ton_idr") @db.Decimal(12, 2)
+  ndviScore                 Decimal       @default(0.75) @map("ndvi_score") @db.Decimal(4, 3)
+  eviScore                  Decimal       @default(0.60) @map("evi_score") @db.Decimal(4, 3)
+  survivalRatePercent       Decimal       @default(85.0) @map("survival_rate_percent") @db.Decimal(5, 2)
+  canopyHeightMeters        Decimal       @default(1.50) @map("canopy_height_meters") @db.Decimal(6, 2)
+  budgetTotalIdr            Decimal       @default(0) @map("budget_total_idr") @db.Decimal(16, 2)
+  budgetDisbursedIdr        Decimal       @default(0) @map("budget_disbursed_idr") @db.Decimal(16, 2)
+  status                    ProjectStatus @default(ACTIVE_DMRV)
+  auditorUserId             String?       @map("auditor_user_id") @db.Uuid
+  auditorAssignedAt         DateTime?     @map("auditor_assigned_at") @db.Timestamptz
+  projectStartDate          DateTime?     @map("project_start_date") @db.Date
+  timelineVersion           Int           @default(1) @map("timeline_version")
+  auditorNotes              String?       @map("auditor_notes") @db.Text
+  auditedAt                 DateTime?     @map("audited_at") @db.Timestamptz
+  speCertificateId          String?       @map("spe_certificate_id") @db.Text
+  coordinatesJson           Json?         @map("coordinates_json")
+  bufferAllocatedPercent    Decimal       @default(8.0) @map("buffer_allocated_percent") @db.Decimal(5, 2)
+  bufferUsedPercent         Decimal       @default(0.0) @map("buffer_used_percent") @db.Decimal(5, 2)
+  trendDataJson             Json?         @map("trend_data_json")
+  budgetReportFileName      String?       @map("budget_report_file_name") @db.Text
+  budgetReportFileSizeBytes BigInt?       @map("budget_report_file_size_bytes")
+  budgetReportStorageKey    String?       @map("budget_report_storage_key") @db.Text
+  createdAt                 DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                 DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
   region                NationalForestRegion         @relation(fields: [regionId], references: [id])
   kthGroup              KthGroup?                    @relation(fields: [kthGroupId], references: [id], onDelete: SetNull)
@@ -1018,9 +1111,9 @@ model KthIncentiveDisbursement {
   proofImagesJson Json?    @map("proof_images_json")
   disbursedAt     DateTime @default(now()) @map("disbursed_at") @db.Timestamptz
 
-  project  ForestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  kthGroup KthGroup      @relation(fields: [kthGroupId], references: [id], onDelete: Cascade)
-  stage    ProjectStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  project  ForestProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kthGroup KthGroup            @relation(fields: [kthGroupId], references: [id], onDelete: Cascade)
+  stage    ProjectStage?       @relation(fields: [stageId], references: [id], onDelete: SetNull)
   reports  TransactionReport[]
 
   @@index([projectId])

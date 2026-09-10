@@ -1,4 +1,4 @@
-import { BlockchainOperationStatus } from '@prisma/client';
+import { BlockchainOperationStatus, WalletDepositStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainOperationService } from './blockchain-operation.service';
 import { BlockchainOperationReconciliationService } from './blockchain-operation-reconciliation.service';
@@ -25,7 +25,10 @@ describe('BlockchainOperationReconciliationService', () => {
     operation = createOperation(),
     transactionStatus?: BlockchainTransactionStatus,
   ) {
-    const findMany = jest.fn().mockResolvedValue([operation]);
+    const findMany = jest
+      .fn()
+      .mockResolvedValueOnce([operation])
+      .mockResolvedValue([]);
     const getTransactionStatus = jest.fn().mockResolvedValue(transactionStatus);
     const markConfirmed = jest.fn().mockResolvedValue({});
     const markFailed = jest.fn().mockResolvedValue({});
@@ -84,6 +87,7 @@ describe('BlockchainOperationReconciliationService', () => {
       failed: 0,
       pending: 0,
       mismatched: 0,
+      reconciliationRequired: 0,
       errors: 0,
     });
     expect(result.findMany).toHaveBeenCalledWith({
@@ -167,5 +171,161 @@ describe('BlockchainOperationReconciliationService', () => {
     ).resolves.toEqual(expect.objectContaining({ scanned: 1, errors: 1 }));
     expect(result.markConfirmed).not.toHaveBeenCalled();
     expect(result.markFailed).not.toHaveBeenCalled();
+  });
+
+  it('settles a wallet deposit and creates its ledger entry after confirmation', async () => {
+    const operation = {
+      ...createOperation(),
+      aggregateType: 'WalletDeposit',
+      aggregateId: 'deposit-1',
+    };
+    const deposit = {
+      id: 'deposit-1',
+      userId: 'user-1',
+      walletAddress: '0x0000000000000000000000000000000000000001',
+      externalId: 'deposit-external-1',
+      amountIdr: 100_000,
+      tokenAmount: 100_000n,
+      status: WalletDepositStatus.ONCHAIN_SUBMITTED,
+      blockchainTxHash: null,
+    };
+    const walletDepositUpdate = jest.fn().mockResolvedValue(deposit);
+    const walletLedgerEntryUpsert = jest.fn().mockResolvedValue({});
+    const findWalletDeposit = jest.fn().mockResolvedValue(deposit);
+    const transaction = {
+      walletDeposit: {
+        findUnique: findWalletDeposit,
+        update: walletDepositUpdate,
+      },
+      walletLedgerEntry: { upsert: walletLedgerEntryUpsert },
+    };
+    const transactionRunner = jest
+      .fn()
+      .mockImplementation(
+        async (callback: (tx: typeof transaction) => Promise<unknown>) =>
+          callback(transaction),
+      );
+    const findMany = jest
+      .fn()
+      .mockResolvedValueOnce([operation])
+      .mockResolvedValue([]);
+    const getTransactionStatus = jest.fn().mockResolvedValue({
+      status: 'confirmed',
+      txHash: transactionHash,
+      blockNumber: 42,
+      chainId: 1338,
+      contractAddress,
+    });
+    const markConfirmed = jest.fn().mockResolvedValue({});
+    const markFailed = jest.fn().mockResolvedValue({});
+
+    const prisma = {
+      blockchainOperation: { findMany },
+      $transaction: transactionRunner,
+    } as unknown as PrismaService;
+    const blockchainService = {
+      getTransactionStatus,
+    } as unknown as BlockchainService;
+    const operationService = {
+      markConfirmed,
+      markFailed,
+    } as unknown as BlockchainOperationService;
+    const service = new BlockchainOperationReconciliationService(
+      prisma,
+      blockchainService,
+      operationService,
+      {
+        rpcUrl: 'http://127.0.0.1:8545',
+        privateKey:
+          '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+        carbonTokenAddress: contractAddress,
+        emissionRegistryAddress: contractAddress,
+        chainId: 1338,
+        reconciliationWorkerEnabled: true,
+        reconciliationIntervalMs: 30000,
+        reconciliationBatchSize: 20,
+      },
+    );
+
+    await expect(service.reconcileSubmittedOperations()).resolves.toEqual(
+      expect.objectContaining({ scanned: 1, confirmed: 1 }),
+    );
+    expect(walletDepositUpdate).toHaveBeenCalledWith({
+      where: { id: deposit.id },
+      data: expect.objectContaining({
+        status: WalletDepositStatus.SETTLED,
+        blockchainTxHash: transactionHash,
+        blockNumber: 42n,
+      }),
+    });
+    expect(walletLedgerEntryUpsert).toHaveBeenCalledWith({
+      where: { idempotencyKey: `deposit:${deposit.id}:credit` },
+      create: expect.objectContaining({
+        userId: deposit.userId,
+        depositId: deposit.id,
+        tokenAmount: deposit.tokenAmount,
+      }),
+      update: {},
+    });
+    expect(markConfirmed).toHaveBeenCalled();
+  });
+
+  it('quarantines a submitted operation that never recorded a transaction hash', async () => {
+    const operation = {
+      ...createOperation(),
+      aggregateType: 'WalletDeposit',
+      aggregateId: 'deposit-orphaned',
+      transactionHash: null,
+      submittedAt: new Date(Date.now() - 10 * 60_000),
+    };
+    const findMany = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([operation]);
+    const walletDepositUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const markFailed = jest.fn().mockResolvedValue({});
+    const prisma = {
+      blockchainOperation: { findMany },
+      walletDeposit: { updateMany: walletDepositUpdateMany },
+    } as unknown as PrismaService;
+    const blockchainService = {} as BlockchainService;
+    const operationService = {
+      markFailed,
+    } as unknown as BlockchainOperationService;
+    const service = new BlockchainOperationReconciliationService(
+      prisma,
+      blockchainService,
+      operationService,
+      {
+        rpcUrl: 'http://127.0.0.1:8545',
+        privateKey:
+          '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+        carbonTokenAddress: contractAddress,
+        emissionRegistryAddress: contractAddress,
+        chainId: 1338,
+        reconciliationWorkerEnabled: true,
+        reconciliationIntervalMs: 30000,
+        reconciliationBatchSize: 20,
+      },
+    );
+
+    await expect(service.reconcileSubmittedOperations()).resolves.toEqual(
+      expect.objectContaining({ scanned: 1, reconciliationRequired: 1 }),
+    );
+    expect(walletDepositUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: operation.aggregateId,
+        status: { not: WalletDepositStatus.SETTLED },
+      },
+      data: {
+        status: WalletDepositStatus.RECONCILIATION_REQUIRED,
+        lastError: expect.any(String),
+      },
+    });
+    expect(markFailed).toHaveBeenCalledWith(
+      operation.idempotencyKey,
+      expect.any(Error),
+      'reconciliation',
+    );
   });
 });
