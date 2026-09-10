@@ -44,27 +44,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-qbft:
-    name: Deploy QBFT to ${{ inputs.environment }}
+  test:
+    name: Test Smart Contracts
+    if: ${{ !inputs.skip_tests }}
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    env:
-      RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}
-      PROJECT_DIR: ${{ vars.BLOCKCHAIN_PROJECT_DIR || '/home/indah/VM_BLOCKHAIN' }}
-      NETWORK_ENV_FILE: ${{ vars.QBFT_NETWORK_ENV_FILE || '/home/indah/VM_BLOCKHAIN/qbft/shared/generated/.env' }}
-      BLOCKCHAIN_ENV_FILE: ${{ vars.BLOCKCHAIN_ENV_FILE || '/home/indah/VM_BLOCKHAIN/qbft/shared/.env' }}
-      BACKEND_ENV_FILE: ${{ vars.BLOCKCHAIN_BACKEND_ENV_FILE || '/home/indah/VM_BLOCKHAIN/shared/.env' }}
-      BACKEND_HEALTH_URL: ${{ vars.BLOCKCHAIN_BACKEND_HEALTH_URL || 'http://127.0.0.1:3000/health' }}
-
     steps:
-      - name: Checkout deployment commit
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          authkey: ${{ secrets.BLOCKCHAIN_TS_AUTHKEY }}
-          tags: tag:ci
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -80,20 +66,47 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify blockchain package before transfer
-        if: ${{ !inputs.skip_tests }}
-        run: |
-          pnpm blockchain:typecheck
-          pnpm blockchain:compile
-          pnpm blockchain:test
+      - name: Typecheck smart contracts code
+        run: pnpm blockchain:typecheck
 
-      - name: Compile smart contracts (when tests bypassed)
-        if: ${{ inputs.skip_tests }}
-        run: |
-          pnpm blockchain:compile
+      - name: Test smart contracts
+        run: pnpm blockchain:test
+
+  build:
+    name: Build Blockchain Artifact
+    needs: test
+    if: ${{ !cancelled() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.bundle_qbft.outputs.release_id }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Compile smart contracts
+        run: pnpm blockchain:compile
 
       - name: Package immutable QBFT release
+        id: bundle_qbft
         run: |
+          RELEASE_ID="${{ github.sha }}-${{ github.run_id }}"
+          echo "RELEASE_ID=${RELEASE_ID}" >> "$GITHUB_ENV"
+          echo "release_id=${RELEASE_ID}" >> "$GITHUB_OUTPUT"
+
           tar \
             --exclude='blockchain/node_modules' \
             --exclude='blockchain/artifacts' \
@@ -102,8 +115,45 @@ jobs:
             --exclude='blockchain/.env' \
             --exclude='blockchain/deployment-info.json' \
             --exclude='blockchain/deployment-info-*.json' \
-            -czf qbft-release.tar.gz \
+            -czf "qbft-release-${RELEASE_ID}.tar.gz" \
             package.json pnpm-lock.yaml pnpm-workspace.yaml blockchain
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qbft-release-${{ env.RELEASE_ID }}
+          path: qbft-release-${{ env.RELEASE_ID }}.tar.gz
+          retention-days: 1
+
+  deploy:
+    name: Deploy QBFT to ${{ inputs.environment }}
+    needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      PROJECT_DIR: ${{ vars.BLOCKCHAIN_PROJECT_DIR || '/home/indah/VM_BLOCKHAIN' }}
+      NETWORK_ENV_FILE: ${{ vars.QBFT_NETWORK_ENV_FILE || '/home/indah/VM_BLOCKHAIN/qbft/shared/generated/.env' }}
+      BLOCKCHAIN_ENV_FILE: ${{ vars.BLOCKCHAIN_ENV_FILE || '/home/indah/VM_BLOCKHAIN/qbft/shared/.env' }}
+      BACKEND_ENV_FILE: ${{ vars.BLOCKCHAIN_BACKEND_ENV_FILE || '/home/indah/VM_BLOCKHAIN/shared/.env' }}
+      BACKEND_HEALTH_URL: ${{ vars.BLOCKCHAIN_BACKEND_HEALTH_URL || 'http://127.0.0.1:3000/health' }}
+
+    steps:
+      - name: Set Release ID
+        run: |
+          RELEASE_ID="${{ needs.build.outputs.release_id }}"
+          echo "RELEASE_ID=${RELEASE_ID}" >> "$GITHUB_ENV"
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.BLOCKCHAIN_TS_AUTHKEY }}
+          tags: tag:ci
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: qbft-release-${{ env.RELEASE_ID }}
 
       - name: Upload release to VM
         uses: appleboy/scp-action@v1.0.0
@@ -112,7 +162,7 @@ jobs:
           username: ${{ secrets.BLOCKCHAIN_SSH_USERNAME }}
           key: ${{ secrets.BLOCKCHAIN_SSH_PRIVATE_KEY }}
           port: ${{ vars.BLOCKCHAIN_SSH_PORT || '22' }}
-          source: qbft-release.tar.gz
+          source: qbft-release-${{ env.RELEASE_ID }}.tar.gz
           target: /tmp
 
       - name: Preflight, start QBFT, deploy contracts, and smoke test
@@ -127,7 +177,7 @@ jobs:
           DEPLOYMENT_MODE: ${{ inputs.deployment_mode }}
           ALLOW_DEPLOY_NEW: ${{ inputs.allow_deploy_new }}
           RESTART_BACKEND: ${{ inputs.restart_backend }}
-          BACKEND_PROCESS_MANAGER: ${{ inputs.backend_process_manager }}
+          BACKEND_PROCESS_MANAGER: systemd
           BLOCKCHAIN_PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
         with:
           host: ${{ secrets.BLOCKCHAIN_SSH_HOST }}
@@ -141,7 +191,7 @@ jobs:
 
             RELEASE_ROOT="$PROJECT_DIR/releases/$RELEASE_ID"
             QBFT_DIR="$RELEASE_ROOT/blockchain"
-            QBFT_ARCHIVE="/tmp/qbft-release.tar.gz"
+            QBFT_ARCHIVE="/tmp/qbft-release-${RELEASE_ID}.tar.gz"
             NETWORK_ENV="${NETWORK_ENV_FILE:-$PROJECT_DIR/qbft/shared/generated/.env}"
             BLOCKCHAIN_ENV_SOURCE="${BLOCKCHAIN_ENV_FILE:-$PROJECT_DIR/shared/.env}"
             NETWORK_DIR="$(dirname "$NETWORK_ENV")"
