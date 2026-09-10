@@ -325,7 +325,7 @@ jobs:
             echo "EmissionReportRegistry: $REGISTRY_ADDRESS"
 
       - name: Restart Backend Service on Backend Host
-        if: ${{ inputs.restart_backend && secrets.BACKEND_SSH_HOST != '' }}
+        if: inputs.restart_backend
         uses: appleboy/ssh-action@v1.2.5
         env:
           BACKEND_PROJECT_DIR: ${{ secrets.BACKEND_PROJECT_DIR }}
