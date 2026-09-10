@@ -117,8 +117,11 @@ function tryReadManifestAddresses(): {
 } {
   const candidatePaths = [
     manifestPath,
+    path.resolve(process.cwd(), 'blockchain/deployment-info.json'),
     path.resolve(process.cwd(), 'deployment-info.json'),
+    path.resolve(__dirname, '../deployment-info.json'),
     path.resolve(process.cwd(), '../shared/deployment-info.json'),
+    '/workspace/blockchain/deployment-info.json',
   ];
 
   for (const candidatePath of candidatePaths) {
@@ -136,6 +139,7 @@ function tryReadManifestAddresses(): {
         const registry =
           raw.contracts?.emissionReportRegistry?.address || raw.emissionReportRegistryAddress;
         if (carbon && registry && ethers.isAddress(carbon) && ethers.isAddress(registry)) {
+          console.log(`Menemukan manifest kontrak di: ${candidatePath}`);
           return {
             rekaKarbonAddress: ethers.getAddress(carbon),
             emissionReportRegistryAddress: ethers.getAddress(registry),
