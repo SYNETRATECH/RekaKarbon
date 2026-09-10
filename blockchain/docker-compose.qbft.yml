@@ -1,4 +1,4 @@
-name: rekakarbon-qbft
+name: blockchain
 
 services:
   qbft-bootnode-1:
