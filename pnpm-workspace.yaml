@@ -13,3 +13,14 @@ allowBuilds:
   onnxruntime-node: true
   core-js: false
 engineStrict: true
+overrides:
+  multer: ^2.3.0
+  fast-uri: ^3.1.6
+  js-yaml: ^4.3.2
+  js-yaml@3: ^3.15.2
+  adm-zip: ^0.6.0
+  deepmerge-ts: ^8.0.0
+  mysql2: ^3.22.0
+  serialize-javascript: ^7.0.3
+  undici: ^6.27.0
+  tmp: ^0.2.6
