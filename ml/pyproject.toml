@@ -5,30 +5,32 @@ description = "AI/ML Carbon Emissions Anomaly Detection Engine for RekaKarbon dM
 authors = [
     {name = "Farrel Augusta Dinata", email = "farrel.apeiron@gmail.com"}
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
 dependencies = [
-    "scikit-learn>=1.5.0",
-    "skl2onnx>=1.17.0",
-    "onnxruntime>=1.19.0",
-    "onnx>=1.16.0",
-    "pandas>=2.2.0",
+    # Core Data & Numerics
     "numpy>=1.26.0",
-    "streamlit>=1.38.0",
-    "plotly>=5.24.0",
-    "joblib>=1.4.0",
+    "pandas>=2.2.0",
     "openpyxl>=3.1.0",
     "pydantic>=2.7.0",
-    "pytest>=8.3.0",
-    "ruff>=0.9.0",
-    "mypy>=1.15.0",
-    "pandas-stubs>=2.2.0",
-    "types-openpyxl>=3.1.0",
-    "shap (>=0.52.0,<0.53.0)",
     "python-dotenv>=1.0.0",
+    "joblib>=1.4.0",
+
+    # ML, Modeling & Anomaly Detection
+    "scikit-learn>=1.5.0",
+    "pyod>=1.1.0",
+    "torch>=2.3.0",
+
+    # ONNX Serialization & Runtime
+    "onnx>=1.16.0",
+    "onnxruntime>=1.19.0",
+    "skl2onnx>=1.17.0",
+
+    # Visualization, Explainability & Prototyping
     "matplotlib (>=3.11.1,<4.0.0)",
     "seaborn (>=0.13.2,<0.14.0)",
-    "pyod>=1.1.0",
-    "torch>=2.3.0"
+    "plotly>=5.24.0",
+    "shap (>=0.52.0,<0.53.0)",
+    "streamlit>=1.38.0",
 ]
 
 [project.scripts]
@@ -75,3 +77,19 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning:shap.*:",
 ]
 
+[dependency-groups]
+dev = [
+    # Testing
+    "pytest>=8.3.0",
+
+    # Linting & Formatting
+    "ruff>=0.9.0",
+
+    # Static Typing & Type Stubs
+    "mypy>=1.15.0",
+    "pandas-stubs>=2.2.0",
+    "types-openpyxl>=3.1.0",
+
+    # Security & Vulnerability Auditing
+    "pip-audit (>=2.10.1,<3.0.0)",
+]

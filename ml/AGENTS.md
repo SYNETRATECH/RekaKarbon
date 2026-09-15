@@ -22,7 +22,8 @@ AI Agent Governance & Development Guide for the `ml/` subproject. See root [AGEN
 ### Key Development Commands
 
 ```bash
-poetry install               # Install environment and dependencies
+poetry install               # Install environment and all dependencies (including dev tools)
+poetry install --without dev # Install runtime dependencies only (lean Docker/production build)
 poetry run ruff format .     # Format all Python files (PEP 8, 100 cols)
 poetry run ruff check .      # Lint check with auto-fixes
 poetry run mypy src tests    # Static type analysis across package and tests

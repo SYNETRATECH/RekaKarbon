@@ -1,0 +1,5 @@
+{
+  "filter_paths": "node_modules",
+  "detectors_to_exclude": "naming-convention,solc-version,low-level-calls",
+  "legacy_ast": false
+}

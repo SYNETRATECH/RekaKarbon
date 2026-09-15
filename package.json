@@ -35,6 +35,7 @@
     "ml:format:write": "poetry --directory ./ml run ruff format .",
     "ml:typecheck": "poetry --directory ./ml run mypy src tests",
     "ml:test": "poetry --directory ./ml run pytest",
+    "ml:audit": "poetry --directory ./ml run pip-audit",
     "ml:train": "poetry --directory ./ml run train",
     "ml:preprocess": "poetry --directory ./ml run preprocess",
     "ml:eval": "poetry --directory ./ml run eval",
