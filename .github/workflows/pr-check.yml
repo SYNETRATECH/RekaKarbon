@@ -304,8 +304,8 @@ jobs:
         working-directory: ./ml
         run: poetry run pytest -v
 
-  verify-dependencies:
-    name: Security Audit Dependencies
+  verify-node-dependencies:
+    name: Audit Node.js Dependencies (High & Critical)
     needs: detect-changes
     if: needs.detect-changes.outputs.dependencies == 'true'
     runs-on: ubuntu-latest
@@ -327,16 +327,39 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Informative audit (high & moderate)
-        continue-on-error: true
+      - name: Enforce Zero High & Critical Node Vulnerabilities
         run: |
-          echo "=== Informative pnpm audit summary ==="
-          pnpm audit --audit-level high || true
+          echo "Enforcing zero High and Critical vulnerabilities across monorepo..."
+          pnpm audit --audit-level high
 
-      - name: Block on critical vulnerabilities
-        run: |
-          echo "Enforcing zero critical vulnerabilities across workspace..."
-          pnpm audit --audit-level critical
+  verify-python-dependencies:
+    name: Audit Python ML Dependencies
+    needs: detect-changes
+    if: needs.detect-changes.outputs.dependencies == 'true' || needs.detect-changes.outputs.ml == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.4.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install ML dependencies
+        working-directory: ./ml
+        run: poetry install --no-interaction
+
+      - name: Enforce Zero Python ML Vulnerabilities
+        working-directory: ./ml
+        run: poetry run pip-audit
 
   pr-check-complete:
     name: All PR Checks Passed
@@ -349,7 +372,8 @@ jobs:
       - verify-contracts
       - verify-blockchain
       - verify-ml
-      - verify-dependencies
+      - verify-node-dependencies
+      - verify-python-dependencies
     if: always()
     steps:
       - name: Evaluate Status of All PR Checks
@@ -361,7 +385,8 @@ jobs:
           echo "Contracts verification result: ${{ needs.verify-contracts.result }}"
           echo "Blockchain verification result: ${{ needs.verify-blockchain.result }}"
           echo "ML verification result: ${{ needs.verify-ml.result }}"
-          echo "Dependency audit verification result: ${{ needs.verify-dependencies.result }}"
+          echo "Node.js dependency audit result: ${{ needs.verify-node-dependencies.result }}"
+          echo "Python ML dependency audit result: ${{ needs.verify-python-dependencies.result }}"
 
           if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
             echo "❌ One or more required PR verification jobs failed or were cancelled."
