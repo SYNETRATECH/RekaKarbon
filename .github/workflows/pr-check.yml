@@ -24,6 +24,7 @@ jobs:
       contracts: ${{ steps.changes.outputs.contracts }}
       blockchain: ${{ steps.changes.outputs.blockchain }}
       ml: ${{ steps.changes.outputs.ml }}
+      dependencies: ${{ steps.changes.outputs.dependencies }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -73,6 +74,17 @@ jobs:
             ml:
               - 'ml/**'
               - '.github/workflows/pr-check.yml'
+            dependencies:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'client/package.json'
+              - 'server/package.json'
+              - 'blockchain/package.json'
+              - 'ml/poetry.lock'
+              - 'ml/pyproject.toml'
+              - '.github/workflows/pr-check.yml'
+              - '.github/workflows/security-audit.yml'
 
   format-check:
     name: Code Formatting (Prettier)
@@ -292,6 +304,40 @@ jobs:
         working-directory: ./ml
         run: poetry run pytest -v
 
+  verify-dependencies:
+    name: Security Audit Dependencies
+    needs: detect-changes
+    if: needs.detect-changes.outputs.dependencies == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Informative audit (high & moderate)
+        continue-on-error: true
+        run: |
+          echo "=== Informative pnpm audit summary ==="
+          pnpm audit --audit-level high || true
+
+      - name: Block on critical vulnerabilities
+        run: |
+          echo "Enforcing zero critical vulnerabilities across workspace..."
+          pnpm audit --audit-level critical
+
   pr-check-complete:
     name: All PR Checks Passed
     runs-on: ubuntu-latest
@@ -303,6 +349,7 @@ jobs:
       - verify-contracts
       - verify-blockchain
       - verify-ml
+      - verify-dependencies
     if: always()
     steps:
       - name: Evaluate Status of All PR Checks
@@ -314,6 +361,7 @@ jobs:
           echo "Contracts verification result: ${{ needs.verify-contracts.result }}"
           echo "Blockchain verification result: ${{ needs.verify-blockchain.result }}"
           echo "ML verification result: ${{ needs.verify-ml.result }}"
+          echo "Dependency audit verification result: ${{ needs.verify-dependencies.result }}"
 
           if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
             echo "❌ One or more required PR verification jobs failed or were cancelled."

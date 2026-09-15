@@ -1,0 +1,144 @@
+name: Dependency Security Audit
+
+on:
+  schedule:
+    # 05:00 AM Jakarta Time (WIB, UTC+7) = 22:00 UTC
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+    inputs:
+      audit_level:
+        description: 'Audit severity threshold for pnpm'
+        required: true
+        default: 'high'
+        type: choice
+        options:
+          - low
+          - moderate
+          - high
+          - critical
+
+permissions:
+  contents: read
+
+jobs:
+  audit-node:
+    name: Audit Node.js Workspace Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Run pnpm audit (Production & Dev)
+        id: pnpm_audit
+        continue-on-error: true
+        run: |
+          AUDIT_LEVEL="${{ inputs.audit_level || 'high' }}"
+          echo "Running pnpm audit with audit-level: $AUDIT_LEVEL"
+          pnpm audit --audit-level "$AUDIT_LEVEL" > pnpm-audit-report.txt 2>&1 || true
+          cat pnpm-audit-report.txt
+
+      - name: Publish Step Summary
+        run: |
+          echo "## 🛡️ pnpm Security Audit Report (Severity >= ${{ inputs.audit_level || 'high' }})" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          cat pnpm-audit-report.txt | tail -n 50 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  audit-python:
+    name: Audit Python ML Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.1.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Install ML dependencies (including dev / pip-audit)
+        working-directory: ./ml
+        run: poetry install --no-interaction
+
+      - name: Run pip-audit on ML project
+        working-directory: ./ml
+        continue-on-error: true
+        run: |
+          poetry run pip-audit > ml-audit-report.txt 2>&1 || true
+          cat ml-audit-report.txt
+
+      - name: Publish ML Step Summary
+        working-directory: ./ml
+        run: |
+          echo "## 🐍 Python ML Security Audit Report" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          cat ml-audit-report.txt | tail -n 50 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  audit-blockchain:
+    name: Audit Blockchain & Smart Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Compile smart contracts
+        run: pnpm blockchain:compile
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Slither Analyzer & solc-select
+        run: pip install slither-analyzer solc-select
+
+      - name: Run Slither Security Analysis
+        working-directory: ./blockchain
+        continue-on-error: true
+        run: |
+          solc-select install 0.8.24
+          solc-select use 0.8.24
+          slither . --config-file slither.config.json > slither-report.txt 2>&1 || true
+          cat slither-report.txt
+
+      - name: Publish Blockchain Step Summary
+        working-directory: ./blockchain
+        run: |
+          echo "## ⛓️ Smart Contract Static Security Audit (Slither)" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          cat slither-report.txt | tail -n 50 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

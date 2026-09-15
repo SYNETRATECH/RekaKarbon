@@ -5,7 +5,7 @@ description = "AI/ML Carbon Emissions Anomaly Detection Engine for RekaKarbon dM
 authors = [
     {name = "Farrel Augusta Dinata", email = "farrel.apeiron@gmail.com"}
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "scikit-learn>=1.5.0",
     "skl2onnx>=1.17.0",
@@ -75,3 +75,7 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning:shap.*:",
 ]
 
+[dependency-groups]
+dev = [
+    "pip-audit (>=2.10.1,<3.0.0)"
+]
