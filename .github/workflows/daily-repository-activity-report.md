@@ -12,6 +12,20 @@ permissions:
   pull-requests: read
 strict: true
 engine: gemini
+pre-agent-steps:
+  - name: Select Gemini API-key auth
+    run: |
+      set -euo pipefail
+      for target in "$HOME/.gemini/settings.json" "$GITHUB_WORKSPACE/.gemini/settings.json"; do
+        mkdir -p "$(dirname "$target")"
+        tmp="$(mktemp)"
+        if [[ -f "$target" ]]; then
+          jq '.security.auth.selectedType = "gemini-api-key"' "$target" > "$tmp"
+        else
+          printf '%s\n' '{"security":{"auth":{"selectedType":"gemini-api-key"}}}' > "$tmp"
+        fi
+        mv "$tmp" "$target"
+      done
 tools:
   github:
     mode: gh-proxy

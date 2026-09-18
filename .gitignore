@@ -44,7 +44,6 @@ logs/
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
-!.gemini/.env
 
 # vercel
 .vercel
