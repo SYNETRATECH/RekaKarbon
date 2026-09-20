@@ -24,6 +24,7 @@ jobs:
       contracts: ${{ steps.changes.outputs.contracts }}
       blockchain: ${{ steps.changes.outputs.blockchain }}
       ml: ${{ steps.changes.outputs.ml }}
+      ci_notifier: ${{ steps.changes.outputs.ci_notifier }}
       dependencies: ${{ steps.changes.outputs.dependencies }}
     steps:
       - name: Checkout repository
@@ -73,6 +74,9 @@ jobs:
               - '.github/workflows/pr-check.yml'
             ml:
               - 'ml/**'
+              - '.github/workflows/pr-check.yml'
+            ci_notifier:
+              - 'scripts/ci_notifier/**'
               - '.github/workflows/pr-check.yml'
             dependencies:
               - 'package.json'
@@ -304,6 +308,23 @@ jobs:
         working-directory: ./ml
         run: poetry run pytest -v
 
+  verify-notifier:
+    name: Verify CI Notifier (Python & Unittest)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ci_notifier == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Run CI Notifier unit tests
+        run: python3 -m unittest discover -s scripts/ci_notifier/tests
+
   verify-node-dependencies:
     name: Audit Node.js Dependencies (High & Critical)
     needs: detect-changes
@@ -372,6 +393,7 @@ jobs:
       - verify-contracts
       - verify-blockchain
       - verify-ml
+      - verify-notifier
       - verify-node-dependencies
       - verify-python-dependencies
     if: always()
@@ -385,6 +407,7 @@ jobs:
           echo "Contracts verification result: ${{ needs.verify-contracts.result }}"
           echo "Blockchain verification result: ${{ needs.verify-blockchain.result }}"
           echo "ML verification result: ${{ needs.verify-ml.result }}"
+          echo "CI Notifier verification result: ${{ needs.verify-notifier.result }}"
           echo "Node.js dependency audit result: ${{ needs.verify-node-dependencies.result }}"
           echo "Python ML dependency audit result: ${{ needs.verify-python-dependencies.result }}"
 
