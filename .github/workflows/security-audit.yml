@@ -239,7 +239,6 @@ jobs:
           echo "bc_summary=$BC_SUMMARY" >> "$GITHUB_OUTPUT"
 
       - name: Send Notification to Discord
-        if: ${{ secrets.DISCORD_WEBHOOK_URL != '' }}
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           TITLE: ${{ steps.consolidate.outputs.overall_title }}
@@ -252,11 +251,19 @@ jobs:
           BC_STATUS: ${{ steps.consolidate.outputs.bc_status }}
           BC_SUMMARY: ${{ steps.consolidate.outputs.bc_summary }}
         run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL secret not configured. Skipping Discord notification."
+            exit 0
+          fi
           echo "Sending notification to Discord..."
           python3 - << 'EOF'
           import json, os, urllib.request
 
-          webhook_url = os.environ["DISCORD_WEBHOOK_URL"]
+          webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+          if not webhook_url:
+              print("No webhook URL, skipping.")
+              exit(0)
+
           title = os.environ["TITLE"]
           color = int(os.environ["COLOR"])
           run_url = os.environ["RUN_URL"]
@@ -305,7 +312,6 @@ jobs:
           EOF
 
       - name: Send Notification to Telegram
-        if: ${{ secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != '' }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -318,12 +324,20 @@ jobs:
           BC_STATUS: ${{ steps.consolidate.outputs.bc_status }}
           BC_SUMMARY: ${{ steps.consolidate.outputs.bc_summary }}
         run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID secret not configured. Skipping Telegram notification."
+            exit 0
+          fi
           echo "Sending notification to Telegram..."
           python3 - << 'EOF'
           import json, os, urllib.request, urllib.parse
 
-          token = os.environ["TELEGRAM_BOT_TOKEN"]
-          chat_id = os.environ["TELEGRAM_CHAT_ID"]
+          token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+          chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+          if not token or not chat_id:
+              print("Telegram credentials missing, skipping.")
+              exit(0)
+
           title = os.environ["TITLE"]
           run_url = os.environ["RUN_URL"]
 
