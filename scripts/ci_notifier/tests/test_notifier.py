@@ -1,14 +1,14 @@
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
 SRC_PATH = Path(__file__).resolve().parent.parent / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
-from ci_notifier.channels.discord import DiscordChannel
-from ci_notifier.channels.telegram import TelegramChannel
-from ci_notifier.models import AuditReport, AuditStatus, ComponentReport
+from ci_notifier.channels.discord import DiscordChannel  # noqa: E402
+from ci_notifier.channels.telegram import TelegramChannel  # noqa: E402
+from ci_notifier.models import AuditReport, AuditStatus, ComponentReport  # noqa: E402
 
 
 class TestCINotifier(unittest.TestCase):

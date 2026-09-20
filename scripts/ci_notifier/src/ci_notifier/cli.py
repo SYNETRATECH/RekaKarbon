@@ -27,7 +27,9 @@ def build_report_from_env() -> AuditReport:
     server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
     run_url = os.environ.get(
         "RUN_URL",
-        f"{server_url}/{repo}/actions/runs/{run_id}" if run_id != "local" else f"{server_url}/{repo}",
+        f"{server_url}/{repo}/actions/runs/{run_id}"
+        if run_id != "local"
+        else f"{server_url}/{repo}",
     )
 
     node_status = parse_status(os.environ.get("NODE_STATUS", "unknown"))
@@ -37,7 +39,9 @@ def build_report_from_env() -> AuditReport:
     py_summary = os.environ.get("PY_SUMMARY", "Python ML dependency audit status not provided.")
 
     bc_status = parse_status(os.environ.get("BC_STATUS", "unknown"))
-    bc_summary = os.environ.get("BC_SUMMARY", "Blockchain smart contract audit status not provided.")
+    bc_summary = os.environ.get(
+        "BC_SUMMARY", "Blockchain smart contract audit status not provided."
+    )
 
     components: list[ComponentReport] = [
         ComponentReport(

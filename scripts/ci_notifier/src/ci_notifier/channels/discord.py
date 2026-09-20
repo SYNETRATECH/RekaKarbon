@@ -3,28 +3,30 @@ from __future__ import annotations
 import json
 import urllib.error
 import urllib.request
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..models import AuditReport
 from .base import NotificationChannel
 
 
 class DiscordChannel(NotificationChannel):
-    def __init__(self, webhook_url: Optional[str] = None):
+    def __init__(self, webhook_url: str | None = None):
         self.webhook_url = (webhook_url or "").strip()
 
     def is_configured(self) -> bool:
         return bool(self.webhook_url)
 
-    def build_payload(self, report: AuditReport) -> Dict[str, Any]:
+    def build_payload(self, report: AuditReport) -> dict[str, Any]:
         overall_status = report.overall_status
         fields = []
         for comp in report.components:
-            fields.append({
-                "name": comp.name,
-                "value": f"{comp.status.badge_text}\n{comp.summary}",
-                "inline": False,
-            })
+            fields.append(
+                {
+                    "name": comp.name,
+                    "value": f"{comp.status.badge_text}\n{comp.summary}",
+                    "inline": False,
+                }
+            )
 
         return {
             "username": "RekaKarbon Security Bot",
@@ -39,9 +41,7 @@ class DiscordChannel(NotificationChannel):
                         f"Branch: `{report.branch}`"
                     ),
                     "fields": fields,
-                    "footer": {
-                        "text": "RekaKarbon Security CI/CD • Automated Daily Audit"
-                    },
+                    "footer": {"text": "RekaKarbon Security CI/CD • Automated Daily Audit"},
                 }
             ],
         }
@@ -75,6 +75,6 @@ class DiscordChannel(NotificationChannel):
             err_body = e.read().decode("utf-8") if e.fp else ""
             print(f"::error::Discord API HTTPError {e.code}: {err_body}")
             return False
-        except Exception as e:
+        except (urllib.error.URLError, OSError) as e:
             print(f"::error::Failed to deliver to Discord: {e}")
             return False

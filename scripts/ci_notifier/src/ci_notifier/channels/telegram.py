@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import urllib.error
 import urllib.request
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..models import AuditReport
 from .base import NotificationChannel
@@ -12,9 +12,9 @@ from .base import NotificationChannel
 class TelegramChannel(NotificationChannel):
     def __init__(
         self,
-        bot_token: Optional[str] = None,
-        chat_id: Optional[str] = None,
-        thread_id: Optional[str] = None,
+        bot_token: str | None = None,
+        chat_id: str | None = None,
+        thread_id: str | None = None,
     ):
         self.bot_token = (bot_token or "").strip()
         self.chat_id = (chat_id or "").strip()
@@ -23,7 +23,7 @@ class TelegramChannel(NotificationChannel):
     def is_configured(self) -> bool:
         return bool(self.bot_token and self.chat_id)
 
-    def build_payload(self, report: AuditReport) -> Dict[str, Any]:
+    def build_payload(self, report: AuditReport) -> dict[str, Any]:
         component_blocks = []
         for comp in report.components:
             component_blocks.append(
@@ -40,7 +40,7 @@ class TelegramChannel(NotificationChannel):
             f"{components_text}"
         )
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "chat_id": self.chat_id,
             "text": message,
             "parse_mode": "HTML",
@@ -51,13 +51,17 @@ class TelegramChannel(NotificationChannel):
             try:
                 payload["message_thread_id"] = int(self.thread_id)
             except ValueError:
-                print(f"::warning::Invalid TELEGRAM_THREAD_ID '{self.thread_id}', proceeding without thread routing.")
+                print(
+                    f"::warning::Invalid TELEGRAM_THREAD_ID '{self.thread_id}', proceeding without thread routing."
+                )
 
         return payload
 
     def send(self, report: AuditReport, dry_run: bool = False) -> bool:
         if not self.is_configured():
-            print("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured. Skipping Telegram notification.")
+            print(
+                "TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured. Skipping Telegram notification."
+            )
             return True
 
         payload = self.build_payload(report)
@@ -85,6 +89,6 @@ class TelegramChannel(NotificationChannel):
             err_body = e.read().decode("utf-8") if e.fp else ""
             print(f"::error::Telegram API HTTPError {e.code}: {err_body}")
             return False
-        except Exception as e:
+        except (urllib.error.URLError, OSError) as e:
             print(f"::error::Failed to deliver to Telegram: {e}")
             return False
