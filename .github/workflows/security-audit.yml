@@ -202,196 +202,26 @@ jobs:
     needs: [audit-node, audit-python, audit-blockchain]
     if: always()
     steps:
-      - name: Consolidate Audit Summary
-        id: consolidate
-        run: |
-          NODE_STATUS="${{ needs.audit-node.outputs.status || 'unknown' }}"
-          PY_STATUS="${{ needs.audit-python.outputs.status || 'unknown' }}"
-          BC_STATUS="${{ needs.audit-blockchain.outputs.status || 'unknown' }}"
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
-          NODE_SUMMARY="${{ needs.audit-node.outputs.summary || 'Node audit did not complete successfully.' }}"
-          PY_SUMMARY="${{ needs.audit-python.outputs.summary || 'Python audit did not complete successfully.' }}"
-          BC_SUMMARY="${{ needs.audit-blockchain.outputs.summary || 'Blockchain audit did not complete successfully.' }}"
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
 
-          # Overall status determination
-          if [ "$NODE_STATUS" = "issues_detected" ] || [ "$PY_STATUS" = "issues_detected" ] || [ "$BC_STATUS" = "issues_detected" ]; then
-            OVERALL_STATUS="issues_detected"
-            OVERALL_TITLE="🚨 Security Audit Warning - Issues Detected"
-            DISCORD_COLOR=15158332 # Red
-          elif [ "$NODE_STATUS" = "unknown" ] || [ "$PY_STATUS" = "unknown" ] || [ "$BC_STATUS" = "unknown" ]; then
-            OVERALL_STATUS="warning"
-            OVERALL_TITLE="⚠️ Security Audit Incomplete / Job Error"
-            DISCORD_COLOR=16776960 # Yellow
-          else
-            OVERALL_STATUS="clean"
-            OVERALL_TITLE="🛡️ Security Audit Passed - All Clean"
-            DISCORD_COLOR=3066993 # Green
-          fi
-
-          echo "overall_status=$OVERALL_STATUS" >> "$GITHUB_OUTPUT"
-          echo "overall_title=$OVERALL_TITLE" >> "$GITHUB_OUTPUT"
-          echo "discord_color=$DISCORD_COLOR" >> "$GITHUB_OUTPUT"
-          echo "node_status=$NODE_STATUS" >> "$GITHUB_OUTPUT"
-          echo "node_summary=$NODE_SUMMARY" >> "$GITHUB_OUTPUT"
-          echo "py_status=$PY_STATUS" >> "$GITHUB_OUTPUT"
-          echo "py_summary=$PY_SUMMARY" >> "$GITHUB_OUTPUT"
-          echo "bc_status=$BC_STATUS" >> "$GITHUB_OUTPUT"
-          echo "bc_summary=$BC_SUMMARY" >> "$GITHUB_OUTPUT"
-
-      - name: Send Notification to Discord
+      - name: Dispatch Notifications (Discord & Telegram)
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          TITLE: ${{ steps.consolidate.outputs.overall_title }}
-          COLOR: ${{ steps.consolidate.outputs.discord_color }}
-          RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          NODE_STATUS: ${{ steps.consolidate.outputs.node_status }}
-          NODE_SUMMARY: ${{ steps.consolidate.outputs.node_summary }}
-          PY_STATUS: ${{ steps.consolidate.outputs.py_status }}
-          PY_SUMMARY: ${{ steps.consolidate.outputs.py_summary }}
-          BC_STATUS: ${{ steps.consolidate.outputs.bc_status }}
-          BC_SUMMARY: ${{ steps.consolidate.outputs.bc_summary }}
-        run: |
-          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
-            echo "DISCORD_WEBHOOK_URL secret not configured. Skipping Discord notification."
-            exit 0
-          fi
-          echo "Sending notification to Discord..."
-          python3 - << 'EOF'
-          import json, os, urllib.request
-
-          webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
-          if not webhook_url:
-              print("No webhook URL, skipping.")
-              exit(0)
-
-          title = os.environ["TITLE"]
-          color = int(os.environ["COLOR"])
-          run_url = os.environ["RUN_URL"]
-
-          def status_badge(status):
-              if status == "clean":
-                  return "✅ Clean"
-              elif status == "issues_detected":
-                  return "🚨 Vulnerabilities Found"
-              return "⚠️ Incomplete / Failed"
-
-          node_text = f"{status_badge(os.environ['NODE_STATUS'])}\n{os.environ['NODE_SUMMARY']}"
-          py_text = f"{status_badge(os.environ['PY_STATUS'])}\n{os.environ['PY_SUMMARY']}"
-          bc_text = f"{status_badge(os.environ['BC_STATUS'])}\n{os.environ['BC_SUMMARY']}"
-
-          payload = {
-              "username": "RekaKarbon Security Bot",
-              "embeds": [
-                  {
-                      "title": title,
-                      "url": run_url,
-                      "color": color,
-                      "description": f"Workflow run: [#{os.environ.get('GITHUB_RUN_ID', 'Run')}]({run_url})\nRepository: `{os.environ.get('GITHUB_REPOSITORY', 'RekaKarbon')}`\nBranch: `{os.environ.get('GITHUB_REF_NAME', 'main')}`",
-                      "fields": [
-                          {"name": "📦 Node.js Dependencies (pnpm audit)", "value": node_text, "inline": False},
-                          {"name": "🐍 Python ML Dependencies (pip-audit)", "value": py_text, "inline": False},
-                          {"name": "⛓️ Smart Contracts (Slither)", "value": bc_text, "inline": False}
-                      ],
-                      "footer": {
-                          "text": "RekaKarbon Security CI/CD • Automated Daily Audit"
-                      }
-                  }
-              ]
-          }
-
-          req = urllib.request.Request(
-              webhook_url,
-              data=json.dumps(payload).encode('utf-8'),
-              headers={'Content-Type': 'application/json', 'User-Agent': 'GitHub-Actions-Security-Notifier'}
-          )
-          try:
-              with urllib.request.urlopen(req) as resp:
-                  print(f"Discord response code: {resp.status}")
-          except Exception as e:
-              print(f"Failed to post to Discord: {e}")
-          EOF
-
-      - name: Send Notification to Telegram
-        env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
-          TITLE: ${{ steps.consolidate.outputs.overall_title }}
           RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          NODE_STATUS: ${{ steps.consolidate.outputs.node_status }}
-          NODE_SUMMARY: ${{ steps.consolidate.outputs.node_summary }}
-          PY_STATUS: ${{ steps.consolidate.outputs.py_status }}
-          PY_SUMMARY: ${{ steps.consolidate.outputs.py_summary }}
-          BC_STATUS: ${{ steps.consolidate.outputs.bc_status }}
-          BC_SUMMARY: ${{ steps.consolidate.outputs.bc_summary }}
+          NODE_STATUS: ${{ needs.audit-node.outputs.status || 'unknown' }}
+          NODE_SUMMARY: ${{ needs.audit-node.outputs.summary || 'Node audit did not complete successfully.' }}
+          PY_STATUS: ${{ needs.audit-python.outputs.status || 'unknown' }}
+          PY_SUMMARY: ${{ needs.audit-python.outputs.summary || 'Python audit did not complete successfully.' }}
+          BC_STATUS: ${{ needs.audit-blockchain.outputs.status || 'unknown' }}
+          BC_SUMMARY: ${{ needs.audit-blockchain.outputs.summary || 'Blockchain audit did not complete successfully.' }}
         run: |
-          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
-            echo "TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID secret not configured. Skipping Telegram notification."
-            exit 0
-          fi
-          echo "Sending notification to Telegram..."
-          python3 - << 'EOF'
-          import json, os, sys, urllib.request, urllib.error
-
-          token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-          chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
-          thread_id = os.environ.get("TELEGRAM_THREAD_ID", "").strip()
-
-          if not token or not chat_id:
-              print("Telegram credentials missing, skipping.")
-              exit(0)
-
-          title = os.environ["TITLE"]
-          run_url = os.environ["RUN_URL"]
-
-          def status_badge(status):
-              if status == "clean":
-                  return "✅ <b>Clean</b>"
-              elif status == "issues_detected":
-                  return "🚨 <b>Vulnerabilities Found</b>"
-              return "⚠️ <b>Incomplete / Failed</b>"
-
-          repo = os.environ.get('GITHUB_REPOSITORY', 'RekaKarbon')
-          ref = os.environ.get('GITHUB_REF_NAME', 'main')
-
-          message = (
-              f"<b>{title}</b>\n\n"
-              f"📂 <b>Repository:</b> <code>{repo}</code>\n"
-              f"🌿 <b>Branch:</b> <code>{ref}</code>\n"
-              f"🔗 <a href='{run_url}'>View Workflow Run</a>\n\n"
-              f"📦 <b>Node.js (pnpm audit):</b>\n{status_badge(os.environ['NODE_STATUS'])}\n<i>{os.environ['NODE_SUMMARY']}</i>\n\n"
-              f"🐍 <b>Python ML (pip-audit):</b>\n{status_badge(os.environ['PY_STATUS'])}\n<i>{os.environ['PY_SUMMARY']}</i>\n\n"
-              f"⛓️ <b>Blockchain (Slither):</b>\n{status_badge(os.environ['BC_STATUS'])}\n<i>{os.environ['BC_SUMMARY']}</i>"
-          )
-
-          url = f"https://api.telegram.org/bot{token}/sendMessage"
-          payload = {
-              "chat_id": chat_id,
-              "text": message,
-              "parse_mode": "HTML",
-              "disable_web_page_preview": True
-          }
-
-          if thread_id:
-              try:
-                  payload["message_thread_id"] = int(thread_id)
-                  print(f"Routing to Telegram topic/thread ID: {thread_id}")
-              except ValueError:
-                  print(f"Warning: Invalid TELEGRAM_THREAD_ID '{thread_id}', proceeding without thread routing.")
-
-          req = urllib.request.Request(
-              url,
-              data=json.dumps(payload).encode('utf-8'),
-              headers={'Content-Type': 'application/json'}
-          )
-          try:
-              with urllib.request.urlopen(req) as resp:
-                  print(f"Telegram response code: {resp.status}")
-          except urllib.error.HTTPError as e:
-              err_body = e.read().decode('utf-8') if e.fp else ""
-              print(f"::error::Telegram API HTTPError {e.code}: {err_body}")
-              sys.exit(1)
-          except Exception as e:
-              print(f"::error::Failed to post to Telegram: {e}")
-              sys.exit(1)
-          EOF
+          PYTHONPATH=scripts/ci_notifier/src python3 -m ci_notifier.cli

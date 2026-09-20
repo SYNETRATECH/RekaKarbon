@@ -30,6 +30,7 @@
     "blockchain:test": "pnpm --filter ./blockchain test",
     "blockchain:compile": "pnpm --filter ./blockchain compile",
     "blockchain:typecheck": "pnpm --filter ./blockchain typecheck",
+    "notifier:test": "python -m unittest discover -s scripts/ci_notifier/tests",
     "ml:lint": "poetry --directory ./ml run ruff check .",
     "ml:format:check": "poetry --directory ./ml run ruff format --check .",
     "ml:format:write": "poetry --directory ./ml run ruff format .",
