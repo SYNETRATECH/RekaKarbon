@@ -315,6 +315,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
           TITLE: ${{ steps.consolidate.outputs.overall_title }}
           RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           NODE_STATUS: ${{ steps.consolidate.outputs.node_status }}
@@ -330,10 +331,12 @@ jobs:
           fi
           echo "Sending notification to Telegram..."
           python3 - << 'EOF'
-          import json, os, urllib.request, urllib.parse
+          import json, os, sys, urllib.request, urllib.error
 
           token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
           chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+          thread_id = os.environ.get("TELEGRAM_THREAD_ID", "").strip()
+
           if not token or not chat_id:
               print("Telegram credentials missing, skipping.")
               exit(0)
@@ -369,6 +372,13 @@ jobs:
               "disable_web_page_preview": True
           }
 
+          if thread_id:
+              try:
+                  payload["message_thread_id"] = int(thread_id)
+                  print(f"Routing to Telegram topic/thread ID: {thread_id}")
+              except ValueError:
+                  print(f"Warning: Invalid TELEGRAM_THREAD_ID '{thread_id}', proceeding without thread routing.")
+
           req = urllib.request.Request(
               url,
               data=json.dumps(payload).encode('utf-8'),
@@ -377,6 +387,11 @@ jobs:
           try:
               with urllib.request.urlopen(req) as resp:
                   print(f"Telegram response code: {resp.status}")
+          except urllib.error.HTTPError as e:
+              err_body = e.read().decode('utf-8') if e.fp else ""
+              print(f"::error::Telegram API HTTPError {e.code}: {err_body}")
+              sys.exit(1)
           except Exception as e:
-              print(f"Failed to post to Telegram: {e}")
+              print(f"::error::Failed to post to Telegram: {e}")
+              sys.exit(1)
           EOF
