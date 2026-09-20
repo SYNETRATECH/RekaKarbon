@@ -108,7 +108,7 @@ jobs:
           tar -czf "rekakarbon-backend-${RELEASE_ID}.tar.gz" -C bundle .
 
       - name: Upload artifact archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-release-${{ env.RELEASE_ID }}
           path: rekakarbon-backend-${{ env.RELEASE_ID }}.tar.gz
