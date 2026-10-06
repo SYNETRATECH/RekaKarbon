@@ -1,5 +1,4 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
 
 function main() {
   const jsonPath = process.argv[2] || 'pnpm-audit-findings.json';
@@ -14,7 +13,7 @@ function main() {
     const vulns = data.vulnerabilities || {};
     const names = Object.keys(vulns);
     console.log(names.join(' '));
-  } catch (err) {
+  } catch {
     console.log('');
   }
 }
