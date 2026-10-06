@@ -148,10 +148,10 @@ jobs:
       - name: Compile smart contracts
         run: pnpm blockchain:compile
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.13'
 
       - name: Install Slither Analyzer & solc-select
         run: pip install slither-analyzer solc-select
