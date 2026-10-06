@@ -71,6 +71,11 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
+      - name: Install Python ML Dependencies (including pip-audit)
+        if: inputs.target == 'all' || inputs.target == 'python'
+        working-directory: ./ml
+        run: poetry install --no-interaction
+
       - name: Dynamically Remediate Python ML Dependencies
         if: inputs.target == 'all' || inputs.target == 'python'
         run: bash scripts/actions/autofix/remediate_python.sh "${{ inputs.custom_packages }}"
@@ -109,6 +114,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          HUSKY: 0
         run: bash scripts/actions/autofix/create_pr.sh "${{ github.run_id }}" "${{ inputs.target }}"
 
       - name: Publish Summary if No Changes

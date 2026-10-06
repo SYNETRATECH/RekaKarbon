@@ -5,6 +5,9 @@ CUSTOM_PKGS="${1:-}"
 
 cd ml
 
+echo "Ensuring Python ML virtual environment and audit tools are installed..."
+poetry install --no-interaction
+
 echo "Checking Python ML dependencies dynamically..."
 if [ -n "$CUSTOM_PKGS" ]; then
   CLEAN_CUSTOM=$(echo "$CUSTOM_PKGS" | tr ',' ' ')
