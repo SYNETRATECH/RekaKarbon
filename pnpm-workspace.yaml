@@ -12,6 +12,7 @@ allowBuilds:
   unrs-resolver: true
   onnxruntime-node: true
   core-js: false
+auditConfig: { ignoreGhsas: null }
 engineStrict: true
 overrides:
   multer: ^2.3.0
