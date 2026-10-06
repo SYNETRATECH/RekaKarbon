@@ -22,5 +22,12 @@ else
 fi
 
 rm -f pnpm-audit-findings.json
-pnpm install
+
+if [ -n "$CUSTOM_PKGS" ] || [ -n "$NODE_PKGS" ]; then
+  echo "Dependencies updated. Running pnpm install to regenerate lockfile..."
+  pnpm install --prefer-offline || pnpm install
+else
+  echo "No Node packages updated. Skipping full pnpm install."
+fi
+
 pnpm audit --audit-level high --ignore-unfixable || true
