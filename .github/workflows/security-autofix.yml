@@ -41,7 +41,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+
+      - name: Free Disk Space on Runner
+        run: |
+          echo "Disk space before cleanup:"
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+          echo "Disk space after cleanup:"
+          df -h /
 
       - name: Setup pnpm
         if: inputs.target == 'all' || inputs.target == 'node'
@@ -74,7 +82,7 @@ jobs:
       - name: Install Python ML Dependencies (including pip-audit)
         if: inputs.target == 'all' || inputs.target == 'python'
         working-directory: ./ml
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --no-cache
 
       - name: Dynamically Remediate Python ML Dependencies
         if: inputs.target == 'all' || inputs.target == 'python'
