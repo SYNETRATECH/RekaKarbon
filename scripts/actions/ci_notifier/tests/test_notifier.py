@@ -56,6 +56,7 @@ class TestCINotifier(unittest.TestCase):
         self.assertEqual(embed["color"], 15158332)
         self.assertEqual(len(embed["fields"]), 3)
         self.assertIn("🚨 Vulnerabilities Found", embed["fields"][0]["value"])
+        self.assertIn("One-Click Auto-Fix", embed["description"])
 
     def test_telegram_payload_with_thread(self):
         channel = TelegramChannel(
@@ -70,6 +71,43 @@ class TestCINotifier(unittest.TestCase):
         self.assertEqual(payload["message_thread_id"], 3)
         self.assertIn("🛡️ Security Audit Passed - All Clean", payload["text"])
         self.assertIn("✅ <b>Clean</b>", payload["text"])
+        self.assertIn("reply_markup", payload)
+        self.assertEqual(len(payload["reply_markup"]["inline_keyboard"]), 1)
+
+    def test_telegram_payload_with_issues(self):
+        channel = TelegramChannel(
+            bot_token="test_token",
+            chat_id="-1004303358038",
+        )
+        payload = channel.build_payload(self.issues_report)
+        self.assertIn("reply_markup", payload)
+        keyboard = payload["reply_markup"]["inline_keyboard"]
+        self.assertEqual(keyboard[1][0]["text"], "🛠️ Run Auto-Fix")
+        self.assertIn("security-autofix.yml", keyboard[1][0]["url"])
+
+    def test_telegram_payload_with_contract_issues(self):
+        contract_issues_report = AuditReport(
+            title="Security Audit Report",
+            repository="FarrelAD/RekaKarbon",
+            branch="main",
+            run_url="https://github.com/FarrelAD/RekaKarbon/actions/runs/789",
+            run_id="789",
+            components=[
+                ComponentReport(
+                    "⛓️ Smart Contracts (Slither)",
+                    AuditStatus.ISSUES_DETECTED,
+                    "Reentrancy vulnerability",
+                ),
+            ],
+        )
+        channel = TelegramChannel(bot_token="test_token", chat_id="-1004303358038")
+        payload = channel.build_payload(contract_issues_report)
+        keyboard = payload["reply_markup"]["inline_keyboard"]
+        self.assertEqual(len(keyboard), 2)
+        self.assertEqual(len(keyboard[1]), 2)
+        self.assertEqual(keyboard[1][0]["text"], "🛠️ Run Auto-Fix")
+        self.assertEqual(keyboard[1][1]["text"], "📋 Triage Issue")
+        self.assertIn("issues/new", keyboard[1][1]["url"])
 
     def test_unconfigured_channels(self):
         d = DiscordChannel(webhook_url="")

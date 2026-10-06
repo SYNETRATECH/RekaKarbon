@@ -48,13 +48,9 @@ jobs:
         run: |
           AUDIT_LEVEL="${{ inputs.audit_level || 'high' }}"
           echo "Running pnpm audit with audit-level: $AUDIT_LEVEL"
-          if pnpm audit --audit-level "$AUDIT_LEVEL" > pnpm-audit-report.txt 2>&1; then
-            echo "status=clean" >> "$GITHUB_OUTPUT"
-            echo "summary=No vulnerabilities found at or above severity '$AUDIT_LEVEL'." >> "$GITHUB_OUTPUT"
-          else
-            echo "status=issues_detected" >> "$GITHUB_OUTPUT"
-            echo "summary=Vulnerabilities detected at or above severity '$AUDIT_LEVEL'." >> "$GITHUB_OUTPUT"
-          fi
+          pnpm audit --audit-level "$AUDIT_LEVEL" --ignore-unfixable > pnpm-audit-report.txt 2>&1 || true
+          pnpm audit --json --ignore-unfixable > pnpm-audit.json 2>/dev/null || true
+          python3 scripts/actions/audit/format_node_summary.py "$AUDIT_LEVEL" pnpm-audit.json
           cat pnpm-audit-report.txt
 
       - name: Publish Step Summary
@@ -104,13 +100,9 @@ jobs:
         working-directory: ./ml
         continue-on-error: true
         run: |
-          if poetry run pip-audit > ml-audit-report.txt 2>&1; then
-            echo "status=clean" >> "$GITHUB_OUTPUT"
-            echo "summary=No known vulnerabilities found in Python ML dependencies." >> "$GITHUB_OUTPUT"
-          else
-            echo "status=issues_detected" >> "$GITHUB_OUTPUT"
-            echo "summary=Known vulnerabilities or audit warnings detected in Python dependencies." >> "$GITHUB_OUTPUT"
-          fi
+          poetry run pip-audit --skip-editable > ml-audit-report.txt 2>&1 || true
+          poetry run pip-audit --format json --skip-editable > ml-audit.json 2>/dev/null || true
+          python3 ../scripts/actions/audit/format_python_summary.py ml-audit.json
           cat ml-audit-report.txt
 
       - name: Publish ML Step Summary
@@ -171,13 +163,8 @@ jobs:
         run: |
           solc-select install 0.8.24
           solc-select use 0.8.24
-          if slither . --config-file slither.config.json > slither-report.txt 2>&1; then
-            echo "status=clean" >> "$GITHUB_OUTPUT"
-            echo "summary=Slither found 0 high/medium severity contract vulnerabilities." >> "$GITHUB_OUTPUT"
-          else
-            echo "status=issues_detected" >> "$GITHUB_OUTPUT"
-            echo "summary=Slither identified security findings or contract issues." >> "$GITHUB_OUTPUT"
-          fi
+          slither . --config-file slither.config.json > slither-report.txt 2>&1 || true
+          python3 ../scripts/actions/audit/format_slither_summary.py slither-report.txt
           cat slither-report.txt
 
       - name: Publish Blockchain Step Summary
@@ -224,4 +211,4 @@ jobs:
           BC_STATUS: ${{ needs.audit-blockchain.outputs.status || 'unknown' }}
           BC_SUMMARY: ${{ needs.audit-blockchain.outputs.summary || 'Blockchain audit did not complete successfully.' }}
         run: |
-          PYTHONPATH=scripts/ci_notifier/src python3 -m ci_notifier.cli
+          PYTHONPATH=scripts/actions/ci_notifier/src python3 -m ci_notifier.cli

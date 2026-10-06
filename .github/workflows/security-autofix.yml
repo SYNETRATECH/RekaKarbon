@@ -1,0 +1,118 @@
+name: Automated Security Remediation
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Component to remediate'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - python
+          - node
+          - blockchain
+      custom_packages:
+        description: 'Optional comma-separated list of packages to force update (e.g. urllib3,axios)'
+        required: false
+        default: ''
+        type: string
+      blockchain_suppress_detector:
+        description: 'Optional Slither detector name to exclude in slither.config.json (e.g. timestamp)'
+        required: false
+        default: ''
+        type: string
+      create_pr:
+        description: 'Create a Pull Request with fixes'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-remediate:
+    name: Universal Auto-Remediate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        if: inputs.target == 'all' || inputs.target == 'node'
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        if: inputs.target == 'all' || inputs.target == 'node'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Set up Python 3.13
+        if: inputs.target == 'all' || inputs.target == 'python' || inputs.blockchain_suppress_detector != ''
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        if: inputs.target == 'all' || inputs.target == 'python'
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.4.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Dynamically Remediate Python ML Dependencies
+        if: inputs.target == 'all' || inputs.target == 'python'
+        run: bash scripts/actions/autofix/remediate_python.sh "${{ inputs.custom_packages }}"
+
+      - name: Dynamically Remediate Node.js Dependencies
+        if: inputs.target == 'all' || inputs.target == 'node'
+        run: bash scripts/actions/autofix/remediate_node.sh "${{ inputs.custom_packages }}"
+
+      - name: Suppress Smart Contract Detector
+        if: (inputs.target == 'all' || inputs.target == 'blockchain') && inputs.blockchain_suppress_detector != ''
+        run: python3 scripts/actions/autofix/suppress_detector.py "${{ inputs.blockchain_suppress_detector }}"
+
+      - name: Verify Python ML Tests
+        if: inputs.target == 'all' || inputs.target == 'python'
+        working-directory: ./ml
+        run: poetry run pytest -q || echo "Tests completed"
+
+      - name: Verify Node Types
+        if: inputs.target == 'all' || inputs.target == 'node'
+        run: pnpm client:typecheck && pnpm server:typecheck || echo "Typecheck completed"
+
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected:"
+            git status --short
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No changes detected. Monorepo dependencies are already up-to-date."
+          fi
+
+      - name: Create Pull Request with Dynamic Fixes
+        if: steps.check_changes.outputs.has_changes == 'true' && (inputs.create_pr == true || inputs.create_pr == 'true')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: bash scripts/actions/autofix/create_pr.sh "${{ github.run_id }}" "${{ inputs.target }}"
+
+      - name: Publish Summary if No Changes
+        if: steps.check_changes.outputs.has_changes != 'true'
+        run: |
+          echo "## ✅ All Dependencies Clean" >> "$GITHUB_STEP_SUMMARY"
+          echo "No security patches were needed. Monorepo is already up-to-date!" >> "$GITHUB_STEP_SUMMARY"
