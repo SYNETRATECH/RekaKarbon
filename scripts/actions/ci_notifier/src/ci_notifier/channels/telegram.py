@@ -5,7 +5,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from ..models import AuditReport
+from ..models import AuditReport, AuditStatus
 from .base import NotificationChannel
 
 
@@ -40,11 +40,22 @@ class TelegramChannel(NotificationChannel):
             f"{components_text}"
         )
 
+        inline_keyboard = [[{"text": "🔍 View Workflow Run", "url": report.run_url}]]
+        if report.overall_status.value == "issues_detected":
+            action_row = [{"text": "🛠️ Run Auto-Fix", "url": report.autofix_url}]
+            if any(
+                "contract" in c.name.lower() and c.status == AuditStatus.ISSUES_DETECTED
+                for c in report.components
+            ):
+                action_row.append({"text": "📋 Triage Issue", "url": report.new_issue_url})
+            inline_keyboard.append(action_row)
+
         payload: dict[str, Any] = {
             "chat_id": self.chat_id,
             "text": message,
             "parse_mode": "HTML",
             "disable_web_page_preview": True,
+            "reply_markup": {"inline_keyboard": inline_keyboard},
         }
 
         if self.thread_id:

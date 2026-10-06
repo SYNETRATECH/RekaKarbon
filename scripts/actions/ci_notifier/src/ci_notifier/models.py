@@ -67,3 +67,11 @@ class AuditReport:
         if status == AuditStatus.ISSUES_DETECTED:
             return "🚨 Security Audit Warning - Issues Detected"
         return "⚠️ Security Audit Incomplete / Job Error"
+
+    @property
+    def autofix_url(self) -> str:
+        return f"https://github.com/{self.repository}/actions/workflows/security-autofix.yml"
+
+    @property
+    def new_issue_url(self) -> str:
+        return f"https://github.com/{self.repository}/issues/new?title=%5BSecurity%5D+Audit+Findings+Triage&labels=security,bug"

@@ -28,6 +28,19 @@ class DiscordChannel(NotificationChannel):
                 }
             )
 
+        description = (
+            f"Workflow run: [#{report.run_id}]({report.run_url})\n"
+            f"Repository: `{report.repository}`\n"
+            f"Branch: `{report.branch}`"
+        )
+        if overall_status.value == "issues_detected":
+            description += f"\n\n🛠️ **[One-Click Auto-Fix on GitHub Mobile]({report.autofix_url})**"
+            if any(
+                "contract" in c.name.lower() and c.status.value == "issues_detected"
+                for c in report.components
+            ):
+                description += f" • 📋 **[Create Triage Issue]({report.new_issue_url})**"
+
         return {
             "username": "RekaKarbon Security Bot",
             "embeds": [
@@ -35,11 +48,7 @@ class DiscordChannel(NotificationChannel):
                     "title": report.overall_title,
                     "url": report.run_url,
                     "color": overall_status.discord_color,
-                    "description": (
-                        f"Workflow run: [#{report.run_id}]({report.run_url})\n"
-                        f"Repository: `{report.repository}`\n"
-                        f"Branch: `{report.branch}`"
-                    ),
+                    "description": description,
                     "fields": fields,
                     "footer": {"text": "RekaKarbon Security CI/CD • Automated Daily Audit"},
                 }
