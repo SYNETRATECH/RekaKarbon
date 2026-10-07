@@ -2,6 +2,7 @@
 name = "rekakarbon-ml"
 version = "0.1.0"
 description = "AI/ML Carbon Emissions Anomaly Detection Engine for RekaKarbon dMRV"
+license = "Apache-2.0"
 authors = [
     {name = "Farrel Augusta Dinata", email = "farrel.apeiron@gmail.com"}
 ]

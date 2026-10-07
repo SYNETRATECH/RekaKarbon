@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use or reference RekaKarbon in your research, software, or publications, please cite it as below."
+authors:
+  - name: "RekaKarbon Development Team"
+    affiliation: "KMIPN 2026"
+title: "RekaKarbon: Digital MRV & Carbon Exchange Ecosystem with AI Anomaly Detection and Consortium Blockchain"
+version: "1.0.0-pilot"
+date-released: "2026-10-07"
+url: "https://rekakarbon.farrelad.com"
+repository-code: "https://github.com/SYNETRATECH/RekaKarbon"
+license: "Apache-2.0"
+keywords:
+  - "carbon-accounting"
+  - "digital-mrv"
+  - "blockchain"
+  - "hyperledger-besu"
+  - "machine-learning"
+  - "anomaly-detection"
+  - "indonesia-carbon-market"

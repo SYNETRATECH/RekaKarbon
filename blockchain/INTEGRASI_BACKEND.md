@@ -1,119 +1,126 @@
-# Panduan Integrasi Backend (NestJS) dengan Blockchain RekaKarbon
+# Backend Integration Guide (NestJS) - RekaKarbon Blockchain
 
-> **Peringatan arsitektur:** Contoh di dokumen ini adalah referensi legacy single-node. Untuk jaringan aktif gunakan QBFT chain `1338`, RPC non-validator, fee policy/relayer, dan deployment manifest per environment. Jangan menyalin `gasPrice: 0` dari contoh lama.
+> **Architecture Notice:** This guide details how the NestJS backend interacts with the RekaKarbon Smart Contract ecosystem deployed on Hyperledger Besu QBFT (Chain ID `1338`). Use the dedicated non-validator RPC endpoint and enforce explicit chain verification. Do not hardcode zero gas prices (`gasPrice: 0`).
 
-Dokumen ini ditujukan khusus untuk Tim Backend (NestJS) agar dapat menghubungkan aplikasi dengan _Smart Contract_ RekaKarbon yang berjalan di jaringan privat Hyperledger Besu.
+This document is specifically tailored for Backend Engineers (NestJS) connecting API services to the RekaKarbon multi-asset Smart Contracts.
 
 ---
 
-## 1. Prasyarat & Instalasi
+## 1. Prerequisites & Package Installation
 
-Sistem backend bertindak sebagai _Oracle_ (yang berhak mencetak sertifikat karbon) dan berinteraksi langsung dengan Blockchain. Kita menggunakan pustaka **Ethers.js (versi 6)**.
+The backend system operates as an authorized **Oracle** (permitted to mint and notarize verified carbon credits) and interacts directly with the private Besu network using **Ethers.js (v6)**.
 
-Jalankan perintah ini di root folder proyek NestJS Anda:
+Install Ethers.js in the backend package:
 
 ```bash
-pnpm add ethers
+pnpm --filter @rekakarbon/server add ethers
 ```
 
 ---
 
-## 2. Penyerahan Berkas (Handover)
+## 2. Artifact Handover & Setup
 
-Mintalah 2 file berikut dari Tim Blockchain, dan letakkan ke dalam folder proyek NestJS Anda (misalnya di `src/blockchain/config/`):
+Obtain or copy the following files from the Blockchain module into the NestJS project (e.g., `server/src/blockchain/`):
 
-1. **`deployment-info.json`**: Berisi _Contract Address_ dan IP server yang aktif.
-2. **`RekaKarbon.json`**: Berisi _Application Binary Interface (ABI)_. Ambil dari `artifacts/contracts/RekaKarbon.sol/RekaKarbon.json`.
+1. **Contract Address**: Deployed contract address on the target QBFT network.
+2. **ABI Artifact**: Exported ABI file from `blockchain/artifacts/contracts/RekaKarbon.sol/RekaKarbon.json`.
 
 ---
 
-## 3. Konfigurasi Lingkungan (.env)
+## 3. Environment Variables Configuration
 
-Tambahkan variabel berikut ke dalam file `.env` di proyek NestJS Anda:
+Add the following variables to `server/.env`:
 
 ```env
-# IP Server Besu (lihat di deployment-info.json)
-RPC_URL=http://<IP_SERVER_BESU>:8545
+# RPC endpoint for the non-validator Besu node
+RPC_URL=http://127.0.0.1:8545
 
-# Alamat Smart Contract yang sudah di-deploy
+# Deployed RekaKarbon ERC-1155 Smart Contract address
 CONTRACT_ADDRESS=0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0
 
-# Private Key dari akun Deployer (Akun ini sudah memiliki ORACLE_ROLE)
-# Jangan gunakan awalan 0x jika tidak diperlukan
-PRIVATE_KEY=<Private Key Node yang baru Anda buat>
+# Private Key of the Backend Oracle account (authorized with ORACLE_ROLE)
+PRIVATE_KEY=your-secure-private-key
+
+# Expected Chain ID (1338 for local QBFT)
+BESU_CHAIN_ID=1338
 ```
 
 ---
 
-## 4. Implementasi `BlockchainService`
+## 4. `BlockchainService` Implementation
 
-Buatlah sebuah _service_ di NestJS untuk mengelola koneksi ke RPC dan inisiasi _Smart Contract_.
+Create a dedicated NestJS service to manage RPC connections, signing transactions, and interacting with contract methods:
 
 **File: `src/blockchain/blockchain.service.ts`**
 
 ```typescript
-import { Injectable, OnModuleInit, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, OnModuleInit, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ethers } from 'ethers';
-import * as RekaKarbonABI from './config/RekaKarbon.json';
+import * as RekaKarbonABI from './abi/RekaKarbon.json';
 
 @Injectable()
 export class BlockchainService implements OnModuleInit {
+  private readonly logger = new Logger(BlockchainService.name);
   private provider: ethers.JsonRpcProvider;
   private wallet: ethers.Wallet;
   private contract: ethers.Contract;
 
-  onModuleInit() {
+  async onModuleInit() {
     try {
-      // 1. Konek ke Jaringan Besu
-      this.provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+      const rpcUrl = process.env.RPC_URL ?? 'http://127.0.0.1:8545';
+      this.provider = new ethers.JsonRpcProvider(rpcUrl);
 
-      // 2. Konek ke Wallet (Agar bisa menandatangani transaksi Write)
-      this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
+      // Verify network chain ID matches expectation
+      const network = await this.provider.getNetwork();
+      const expectedChainId = BigInt(process.env.BESU_CHAIN_ID ?? '1338');
+      if (network.chainId !== expectedChainId) {
+        throw new Error(
+          `Connected chain ID (${network.chainId}) does not match expected (${expectedChainId})`
+        );
+      }
 
-      // 3. Inisialisasi Contract
+      this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY!, this.provider);
       this.contract = new ethers.Contract(
-        process.env.CONTRACT_ADDRESS,
-        RekaKarbonABI.abi, // Menunjuk ke array ABI
+        process.env.CONTRACT_ADDRESS!,
+        RekaKarbonABI.abi,
         this.wallet
       );
 
-      console.log('✅ [BlockchainService] Berhasil terhubung ke Hyperledger Besu');
+      this.logger.log('Connected to Hyperledger Besu QBFT network successfully.');
     } catch (error) {
-      console.error('❌ [BlockchainService] Gagal inisialisasi:', error);
+      this.logger.error('Failed to initialize BlockchainService:', error);
     }
   }
 
   /**
-   * Fungsi READ: Mengecek saldo sertifikat sebuah instansi
+   * READ: Query carbon token balance for an address and token ID
    */
-  async getCarbonBalance(address: string, tokenId: number): Promise<number> {
+  async getCarbonBalance(address: string, tokenId: bigint): Promise<bigint> {
     try {
-      const balance = await this.contract.balanceOf(address, tokenId);
-      return Number(balance);
+      const balance: bigint = await this.contract.balanceOf(address, tokenId);
+      return balance;
     } catch (error) {
-      throw new InternalServerErrorException(`Gagal membaca saldo: ${error.message}`);
+      throw new InternalServerErrorException(`Failed to retrieve balance: ${error.message}`);
     }
   }
 
   /**
-   * Fungsi WRITE: Mencetak Sertifikat Karbon (Offset Credit)
-   * Hanya bisa dipanggil karena backend ini memegang kunci ORACLE_ROLE
+   * WRITE: Mint certified carbon offset credits (SPE-GRK, ID >= 2)
+   * Authorized only for accounts holding ORACLE_ROLE
    */
-  async mintOffsetCredit(toAddress: string, amount: number, coordinates: string): Promise<string> {
+  async mintOffsetCredit(toAddress: string, amount: bigint, metadataUri: string): Promise<string> {
     try {
-      // Panggil fungsi mintOffsetCredit di Smart Contract
-      // Set gasPrice: 0 karena kita di dev network Besu
-      const tx = await this.contract.mintOffsetCredit(toAddress, amount, coordinates, {
-        gasPrice: 0,
+      const feeData = await this.provider.getFeeData();
+      const tx = await this.contract.mintOffsetCredit(toAddress, amount, metadataUri, {
+        gasPrice: feeData.gasPrice,
       });
 
-      // WAJIB: Tunggu hingga transaksi ditambang ke dalam blok
       const receipt = await tx.wait();
-
-      // Mengembalikan Transaction Hash sebagai bukti
       return receipt.hash;
     } catch (error) {
-      throw new InternalServerErrorException(`Gagal mencetak sertifikat: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to mint carbon credit on blockchain: ${error.message}`
+      );
     }
   }
 }
@@ -121,48 +128,9 @@ export class BlockchainService implements OnModuleInit {
 
 ---
 
-## 5. Membuat API Endpoint (Controller)
+## 5. Integration Best Practices for Backend Teams
 
-Gunakan `BlockchainService` di dalam _Controller_ agar Frontend bisa mengakses fitur Blockchain melalui HTTP standar.
-
-**File: `src/blockchain/blockchain.controller.ts`**
-
-```typescript
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
-import { BlockchainService } from './blockchain.service';
-
-@Controller('api/carbon')
-export class BlockchainController {
-  constructor(private readonly blockchainService: BlockchainService) {}
-
-  @Get('balance/:address/:tokenId')
-  async getBalance(@Param('address') address: string, @Param('tokenId') tokenId: number) {
-    const balance = await this.blockchainService.getCarbonBalance(address, tokenId);
-    return { success: true, balance };
-  }
-
-  @Post('mint')
-  async mintCarbon(@Body() body: { targetAddress: string; amount: number; coords: string }) {
-    const txHash = await this.blockchainService.mintOffsetCredit(
-      body.targetAddress,
-      body.amount,
-      body.coords
-    );
-
-    // txHash bisa Anda simpan ke database SQL/MongoDB lokal sebagai log
-    return {
-      success: true,
-      message: 'Sertifikat karbon berhasil diterbitkan di Blockchain!',
-      transactionHash: txHash,
-    };
-  }
-}
-```
-
----
-
-## 6. Tips Tambahan untuk Tim Backend
-
-1. **Penanganan Waktu (Timeout):** Transaksi _blockchain_ (_write_) membutuhkan waktu beberapa detik untuk ditambang (`tx.wait()`). Jika transaksi berat, HTTP Request Anda mungkin terkena _timeout_. Pertimbangkan untuk menggunakan _queue_ (misal: Redis/BullMQ) jika antrean pengguna tinggi.
-2. **Penyimpanan Transaksi:** _Smart Contract_ tidak memiliki _database query_ yang fleksibel seperti SQL. Pastikan Anda selalu menyimpan `transactionHash` dan data relevan ke dalam PostgreSQL/MongoDB di backend Anda sebagai catatan sekunder (_indexing_).
-3. **Penanganan Revert:** Jika kontrak menolak transaksi (misal: karena status aset sedang di-_freeze_), `ethers.js` akan melempar error. Tangkap error tersebut dan teruskan pesan aslinya ke Frontend.
+1. **BigInt Precision**: Always use JavaScript native `bigint` or `ethers.BigNumberish` for all token balances and quantities to prevent integer precision loss.
+2. **Asynchronous Confirmation**: Blockchain transactions are asynchronous. Wait for block confirmation (`tx.wait()`) and handle network latency gracefully using job queues (such as BullMQ) when processing high-volume requests.
+3. **Receipt & Event Logging**: Persist all `transactionHash` values, block numbers, and emitted events in the PostgreSQL database (`Prisma`) as secondary indexed records for fast user querying.
+4. **Revert Handling**: Catch transaction reverts and parse custom contract revert errors to return user-friendly HTTP error codes (e.g., HTTP 400 Bad Request if an asset is frozen).

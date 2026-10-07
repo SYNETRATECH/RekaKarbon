@@ -1,6 +1,6 @@
 # AGENTS.md - RekaKarbon Client (React App)
 
-Frontend-specific agent guide for the `client/` directory. See root [AGENTS.md](../AGENTS.md) for monorepo-wide rules.
+Frontend-specific agent guide for the `client/` directory. For human-facing setup and feature overviews, see [README.md](./README.md). See root [AGENTS.md](../AGENTS.md) for monorepo-wide rules.
 
 ---
 

@@ -109,3 +109,9 @@ pnpm server:typecheck
 # ESLint check & auto-fix
 pnpm server:lint
 ```
+
+---
+
+## 🤖 AI Agent Governance
+
+For AI agents modifying backend code, refer to [AGENTS.md](./AGENTS.md) for strict architectural rules, API envelope contracts, database migration guidelines, and PR quality gates.

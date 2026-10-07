@@ -1,6 +1,6 @@
 # AI Agent Governance Guidelines - RekaKarbon Blockchain Module
 
-This document defines the rules, architecture standards, and specific guidelines that **all AI Agents MUST follow** when developing, modifying, or testing Smart Contracts and infrastructure within the `blockchain/` directory.
+This document defines the rules, architecture standards, and specific guidelines that **all AI Agents MUST follow** when developing, modifying, or testing Smart Contracts and infrastructure within the `blockchain/` directory. For human-facing setup and architecture overviews, see [README.md](./README.md). See root [AGENTS.md](../AGENTS.md) for monorepo-wide rules.
 
 ---
 
