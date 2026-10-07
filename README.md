@@ -11,6 +11,9 @@
   <a href="https://rekakarbon.farrelad.com" target="_blank" rel="noopener noreferrer">
     <img src="https://img.shields.io/badge/Live%20Platform-rekakarbon.farrelad.com-00B074?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Platform" />
   </a>
+  <a href="SECURITY.md">
+    <img src="https://img.shields.io/badge/Security-Policy-red?style=for-the-badge&logo=shield&logoColor=white" alt="Security Policy" />
+  </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge" alt="License" />
   </a>
@@ -331,7 +334,7 @@ If you reference, adapt, or build upon this project in academic research, compet
   title = {RekaKarbon: Digital MRV & Carbon Exchange Ecosystem with AI Anomaly Detection and Consortium Blockchain},
   year = {2026},
   url = {https://rekakarbon.farrelad.com},
-  note = {Politeknik Negeri Malang (KMIPN 2026). Available at: https://github.com/KMIPN-2026/RekaKarbon}
+  note = {Politeknik Negeri Malang (KMIPN 2026). Available at: https://github.com/SYNETRATECH/RekaKarbon}
 }
 ```
 
@@ -339,4 +342,4 @@ If you reference, adapt, or build upon this project in academic research, compet
 
 > Pramudhita, A. N., Rosario, P. T. A., Fadlilurrahman, E. M. H., & Dinata, F. A. (2026). _RekaKarbon: Digital MRV & Carbon Exchange Ecosystem with AI Anomaly Detection and Consortium Blockchain_ [Computer software]. Politeknik Negeri Malang. https://rekakarbon.farrelad.com
 
-For machine-readable citation metadata, see **[`CITATION.cff`](CITATION.cff)**.
+For machine-readable citation metadata, see **[`CITATION.cff`](CITATION.cff)**. For responsible vulnerability disclosure and reporting guidelines, see **[`SECURITY.md`](SECURITY.md)**.
