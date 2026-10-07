@@ -251,6 +251,26 @@ pnpm ml:test           # Pytest suite & ONNX mathematical parity checks
 
 ---
 
+## 👥 The Minds Behind RekaKarbon
+
+RekaKarbon was conceptualized and developed under academic mentorship at **Politeknik Negeri Malang** for the **KMIPN 2026** National Competition:
+
+### 🎓 Project Initiator & Academic Advisor
+
+- **Agung Nugroho Pramudhita, S.T., M.T.**
+  - _Lecturer & Academic Mentor_, Politeknik Negeri Malang
+  - Project Initiator and Academic Advisor who guided the overarching vision, research methodology, and system foundations.
+
+### 💻 Student Engineering & Research Team
+
+Engineered and implemented collaboratively by his students:
+
+- **Petrus Tyang Agung Rosario** — _Student Researcher & Developer_
+- **Ekya Muhammad Hasfi Fadlilurrahman** — _Student Researcher & Developer_
+- **Farrel Augusta Dinata** — _Student Researcher & Developer_
+
+---
+
 ## 🔬 Project Status & Ongoing Evolution
 
 > **Active Research & Pilot Prototype (KMIPN 2026)**
@@ -273,7 +293,7 @@ This project is licensed under the open-source **[Apache License 2.0](LICENSE)**
 
 ### 📌 Mandatory Attribution Requirement
 
-Under the terms of the Apache 2.0 License and the accompanying **[NOTICE](NOTICE)** file, **anyone using, modifying, adapting, or building a similar/derivative solution based on RekaKarbon must provide prominent attribution and acknowledgment** to the RekaKarbon project and its original creators.
+Under the terms of the Apache 2.0 License and the accompanying **[NOTICE](NOTICE)** file, **anyone using, modifying, adapting, or building a similar/derivative solution based on RekaKarbon must provide prominent attribution and acknowledgment** to the RekaKarbon project, its academic initiator, and its student developers.
 
 If you reference, adapt, or build upon this project in academic research, competition entries, or software development, please include the following citation:
 
@@ -281,16 +301,16 @@ If you reference, adapt, or build upon this project in academic research, compet
 
 ```bibtex
 @software{rekakarbon2026,
-  author = {{RekaKarbon Development Team}},
+  author = {Pramudhita, Agung Nugroho and Rosario, Petrus Tyang Agung and Fadlilurrahman, Ekya Muhammad Hasfi and Dinata, Farrel Augusta},
   title = {RekaKarbon: Digital MRV & Carbon Exchange Ecosystem with AI Anomaly Detection and Consortium Blockchain},
   year = {2026},
   url = {https://rekakarbon.farrelad.com},
-  note = {Developed for KMIPN 2026. Available at: https://github.com/KMIPN-2026/RekaKarbon}
+  note = {Politeknik Negeri Malang (KMIPN 2026). Available at: https://github.com/KMIPN-2026/RekaKarbon}
 }
 ```
 
 #### APA Citation:
 
-> RekaKarbon Development Team. (2026). _RekaKarbon: Digital MRV & Carbon Exchange Ecosystem with AI Anomaly Detection and Consortium Blockchain_ [Computer software]. KMIPN 2026. https://rekakarbon.farrelad.com
+> Pramudhita, A. N., Rosario, P. T. A., Fadlilurrahman, E. M. H., & Dinata, F. A. (2026). _RekaKarbon: Digital MRV & Carbon Exchange Ecosystem with AI Anomaly Detection and Consortium Blockchain_ [Computer software]. Politeknik Negeri Malang. https://rekakarbon.farrelad.com
 
 For machine-readable citation metadata, see **[`CITATION.cff`](CITATION.cff)**.

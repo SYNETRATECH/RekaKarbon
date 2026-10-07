@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "AI/ML Carbon Emissions Anomaly Detection Engine for RekaKarbon dMRV"
 license = "Apache-2.0"
 authors = [
-    {name = "Farrel Augusta Dinata", email = "farrel.apeiron@gmail.com"}
+    {name = "Agung Nugroho Pramudhita, S.T., M.T."},
+    {name = "Farrel Augusta Dinata", email = "farrel.apeiron@gmail.com"},
+    {name = "Ekya Muhammad Hasfi Fadlilurrahman"},
+    {name = "Petrus Tyang Agung Rosario"}
 ]
 requires-python = ">=3.12,<4.0"
 dependencies = [

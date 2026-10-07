@@ -61,8 +61,12 @@
     "typecheck": "pnpm client:typecheck && pnpm server:typecheck && pnpm blockchain:typecheck && pnpm ml:typecheck",
     "prepare": "husky"
   },
-  "keywords": [],
-  "author": "",
+  "contributors": [
+    "Agung Nugroho Pramudhita, S.T., M.T.",
+    "Ekya Muhammad Hasfi Fadlilurrahman",
+    "Petrus Tyang Agung Rosario",
+    "Farrel Augusta Dinata"
+  ],
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
