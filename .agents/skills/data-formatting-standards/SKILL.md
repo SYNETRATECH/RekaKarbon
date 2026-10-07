@@ -1,29 +1,29 @@
 ---
 name: data-formatting-standards
-description: Standar penformatan data (tanggal, mata uang IDR, tonase karbon tCO2e, hektar area, ukuran berkas) dan pemisahan data mentah vs UI di RekaKarbon. Wajib digunakan setiap kali memproses data numerik atau tanggal.
+description: Data formatting standards (dates, IDR currency, tCO2e carbon tonnage, hectares area, file size) and raw vs UI representation separation in RekaKarbon. Mandatory whenever processing numerical or date values.
 ---
 
-# Standar Format Data & API Readiness — RekaKarbon
+# Data Formatting & API Readiness Standards — RekaKarbon
 
-Petunjuk ini mendefinisikan aturan dan standar wajib bagi seluruh pengembang dan AI Agent dalam mengelola format data numerik, finansial, dan tanggal di RekaKarbon.
+This guide defines the mandatory rules and standards for all developers and AI Agents when handling numeric, financial, and date formatting in RekaKarbon.
 
 ---
 
-## 📌 1. Prinsip Utama (Data Mentah vs Tampilan UI)
+## 📌 1. Core Principles (Raw Data vs UI Presentation)
 
-1. **Model Data Domain & Fixture Mock**:
-   - WAJIB menyimpan **angka numerik murni (`number`)** untuk nominal uang (IDR), volume karbon (`tCO2e`), luas area (`ha`), dan ukuran berkas (`bytes`).
-   - WAJIB menyimpan **string ISO 8601** (`YYYY-MM-DD` atau ISO timestamp) untuk bidang tanggal.
-   - **DILARANG KERAS** menyisipkan string format tampilan UI (seperti `"Rp 450 Juta"`, `"5.8 Miliar Ha"`, `"48,200 tCO2e"`, `"14 Jan 2026"`) di dalam interface TypeScript (`src/types/`) maupun fixture mock (`src/lib/mock/`).
+1. **Domain Data Models & Mock Fixtures**:
+   - MUST store **pure numeric values (`number`)** for monetary amounts (IDR), carbon volume (`tCO2e`), land area (`ha`), and file sizes (`bytes`).
+   - MUST store **ISO 8601 strings** (`YYYY-MM-DD` or ISO timestamp) for date fields.
+   - **STRICTLY FORBIDDEN** to embed UI-formatted strings (such as `"Rp 450 Juta"`, `"5.8 Miliar Ha"`, `"48,200 tCO2e"`, `"14 Jan 2026"`) inside TypeScript interfaces (`src/types/`) or mock fixtures (`src/lib/mock/`).
 
 2. **Dynamic UI Formatting**:
-   - Seluruh tampilan visual WAJIB diformat secara dinamis pada lapisan komponen React (`src/portal/`, `src/components/`) menggunakan fungsi utilitas terpusat.
+   - All visual presentation MUST be formatted dynamically at the React component layer (`src/portal/`, `src/components/`) using centralized utility functions.
 
 ---
 
-## 🛠️ 2. Modul Utilitas Penformatan
+## 🛠️ 2. Formatting Utility Modules
 
-### 2.1 Format Angka, Mata Uang & Metrik (`src/lib/formatters.ts`)
+### 2.1 Numbers, Currency & Metrics (`src/lib/formatters.ts`)
 
 ```typescript
 import {
@@ -35,26 +35,26 @@ import {
   formatNumber,
 } from '@/lib/formatters';
 
-// 1. Mata Uang IDR (Standard Rupiah Notation)
+// 1. IDR Currency (Standard Rupiah Notation)
 formatCurrency(200000000); // "Rp 200.000.000"
 formatCurrency(45000); // "Rp 45.000"
 
-// 2. Tonase Serapan Karbon (tCO₂e)
+// 2. Carbon Sequestration Tonnage (tCO₂e)
 formatCarbon(48200); // "48.200 tCO₂e"
 
-// 3. Luas Area Spasial (Hektar)
+// 3. Spatial Land Area (Hectares)
 formatArea(2450); // "2.450 ha"
 
-// 4. Persentase Metric
+// 4. Percentage Metric
 formatPercent(96.4); // "96,4%"
 
-// 5. Ukuran Berkas File
+// 5. File Size
 formatFileSize(4718592); // "4,5 MB"
 ```
 
-### 2.2 Format Tanggal & Zona Waktu (`src/lib/dates.ts`)
+### 2.2 Dates & Timezones (`src/lib/dates.ts`)
 
-Semua fungsi tanggal di-bind secara otomatis ke **locale `id-ID`** dan **timezone `Asia/Jakarta` (WIB)**.
+All date functions are bound to the **`id-ID` locale** and **`Asia/Jakarta` timezone (WIB)**.
 
 ```typescript
 import {
@@ -71,12 +71,12 @@ formatLongDate('2026-02-14'); // "14 Februari 2026"
 formatShortDate('2026-02-14'); // "14/02/2026"
 formatDateTime('2026-02-14T14:32'); // "14/02/2026 14:32"
 toDateOnlyISO(new Date()); // "2026-08-17"
-formatLastSeen('2026-08-17T11:00'); // "15 menit yang lalu" / "Baru saja"
+formatLastSeen('2026-08-17T11:00'); // "15 minutes ago" / "Just now"
 ```
 
 ---
 
-## 📋 3. Contoh Pola Penggunaan Komponen React
+## 📋 3. React Component Usage Example
 
 ```tsx
 import type { ForestProjectItem } from '@/types';
@@ -93,13 +93,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <h3 className="font-bold text-slate-900">{project.projectName}</h3>
       <div className="mt-2 space-y-1 text-xs">
         <p>
-          Anggaran:{' '}
+          Budget:{' '}
           <span className="font-black text-emerald-600">
             {formatCurrency(project.fundingBudgetIDR)}
           </span>
         </p>
         <p>
-          Target Serapan:{' '}
+          Target Sequestration:{' '}
           <span className="font-bold">{formatCarbon(project.targetSequestrationTCO2e)}</span>
         </p>
       </div>
@@ -110,9 +110,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
 ---
 
-## 🔍 4. Verifikasi Kualitas
+## 🔍 4. Quality Verification
 
-Setiap perubahan kode yang melibatkan data numerik atau tanggal harus mematuhi:
+Any code changes involving numeric data or dates must satisfy:
 
-1. `pnpm client:typecheck` lolos tanpa kesalahan tipe.
-2. `pnpm client:test` (unit + `test:arch`) lolos.
+1. `pnpm client:typecheck` passes without type errors.
+2. `pnpm client:test` (unit + `test:arch`) passes.
