@@ -4,6 +4,18 @@
 
 # RekaKarbon - Digital MRV & Carbon Exchange Ecosystem
 
+<p align="center">
+  <a href="#accolades-milestones">
+    <img src="https://img.shields.io/badge/KMIPN%202026-🥈%201st%20Runner%20Up%20(Poster%20E--Government)-C0C0C0?style=for-the-badge&logo=award&logoColor=black" alt="KMIPN 2026 1st Runner Up (Poster E-Government)" />
+  </a>
+  <a href="https://rekakarbon.farrelad.com" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/badge/Live%20Platform-rekakarbon.farrelad.com-00B074?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Platform" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge" alt="License" />
+  </a>
+</p>
+
 > **Empowering Indonesia's Climate Action through Intelligent Digital MRV (dMRV), Consortium Blockchain, and Fair Carbon Exchange.**
 >
 > RekaKarbon transforms how industrial emissions are reported, how community forestry projects are audited, and how carbon credits are issued and traded—replacing months of paper-heavy bureaucracy with transparent, near real-time, tamper-proof digital governance.
@@ -248,6 +260,20 @@ pnpm server:test       # NestJS controller & service tests
 pnpm blockchain:test   # Hardhat smart contract tests
 pnpm ml:test           # Pytest suite & ONNX mathematical parity checks
 ```
+
+---
+
+<a id="accolades-milestones"></a>
+
+## 🏆 Accolades & Milestones
+
+### 🥈 1st Runner Up — E-Government Poster Category (KMIPN 2026)
+
+RekaKarbon was honored with **1st Runner Up (Juara 2)** in the **E-Government Poster Category** at the **Kompetisi Mahasiswa Informatika Politeknik Nasional (KMIPN) 2026**.
+
+This recognition serves as an exciting early milestone for our team—providing academic and competitive validation for our integrated digital MRV concept, machine learning anomaly detection, and consortium blockchain architecture as we continue advancing our research toward real-world industrial and forestry deployment.
+
+> 📄 **Competition Poster**: The full-resolution poster presented at the competition (_"RekaKarbon: Trusted & Transparent Carbon Ecosystem"_) can be viewed at [**`assets/images/rekakarbon-poster.jpeg`**](assets/images/rekakarbon-poster.jpeg).
 
 ---
 
