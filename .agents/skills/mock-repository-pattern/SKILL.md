@@ -1,42 +1,42 @@
 ---
 name: mock-repository-pattern
-description: Aturan dan standar pembuatan mock/dummy data menggunakan arsitektur Repository Pattern di RekaKarbon. Wajib digunakan setiap kali membuat atau memperbarui data fitur baru.
+description: Rules and standards for creating mock/dummy data using the Repository Pattern architecture in RekaKarbon. Mandatory whenever creating or updating new feature data.
 ---
 
-# Standar Pengelolaan Mock Data & Repository Pattern - RekaKarbon
+# Mock Data Management & Repository Pattern Standards — RekaKarbon
 
-Petunjuk ini mendefinisikan aturan dan standar wajib bagi seluruh AI Agent ketika menyusun data dummy (mock data) dan integrasi data service di RekaKarbon.
+This guide defines the mandatory rules and standards for all AI Agents when designing mock data and integrating data services in RekaKarbon.
 
-## 📌 Aturan Utama
+## 📌 Core Rules
 
-1. **Dilarang keras hardcode data dummy langsung di dalam komponen UI (`.jsx` / `.tsx`)**.
-2. **Mock Data Harus Berupa Data Mentah (Raw Domain Data)**: Fixture mock di `src/lib/mock/` WAJIB menyimpan angka numerik murni (`number`) dan ISO dates (`YYYY-MM-DD`). Dilarang keras memasukkan pre-formatted UI strings (misal: `"Rp 450 Juta"`, `"14 Jan 2026"`) ke dalam mock fixture.
-3. **Setiap fitur baru WAJIB memiliki 3 komponen utama**:
-   - **Type Interface** di `src/types/<feature>.ts`
-   - **Static Mock Data** di `src/lib/mock/<feature>.ts`
-   - **Repository Implementation** di `src/repositories/<feature>.repository.ts`
+1. **Strictly forbidden to hardcode dummy data directly inside UI components (`.jsx` / `.tsx`)**.
+2. **Mock Data Must Be Raw Domain Data**: Mock fixtures in `src/lib/mock/` MUST store pure numeric values (`number`) and ISO dates (`YYYY-MM-DD`). It is strictly forbidden to embed pre-formatted UI strings (e.g., `"Rp 450 Juta"`, `"14 Jan 2026"`) into mock fixtures.
+3. **Every new feature MUST provide 3 core components**:
+   - **Type Interface** in `src/types/<feature>.ts`
+   - **Static Mock Data** in `src/lib/mock/<feature>.ts`
+   - **Repository Implementation** in `src/repositories/<feature>.repository.ts`
 
 ---
 
-## 🛠️ Langkah Implementasi (4-Step Workflow)
+## 🛠️ Implementation Steps (4-Step Workflow)
 
-### Langkah 1: Definisi Type Interface (`src/types/<feature>.ts`)
+### Step 1: Define Type Interface (`src/types/<feature>.ts`)
 
-Definisikan struktur data spesifik menggunakan TypeScript interface (gunakan tipe numerik & ISO string untuk tanggal).
+Define specific data structures using TypeScript interfaces (use numeric types and ISO strings for dates).
 
 ```typescript
 // src/types/feature.ts
 export interface FeatureData {
   id: string;
   name: string;
-  amountIDR: number; // 200000000 (BUKAN string "Rp 200 Juta")
+  amountIDR: number; // 200000000 (NOT string "Rp 200 Juta")
   createdDate: string; // "2026-02-14" (ISO 8601)
 }
 ```
 
-### Langkah 2: Buat Mock Data Statis (`src/lib/mock/<feature>.ts`)
+### Step 2: Create Static Mock Data (`src/lib/mock/<feature>.ts`)
 
-Simpan data statis di dalam folder `src/lib/mock/`.
+Store static mock data in the `src/lib/mock/` directory.
 
 ```typescript
 // src/lib/mock/feature.ts
@@ -47,9 +47,9 @@ export const FEATURE_MOCK_DATA: FeatureData[] = [
 ];
 ```
 
-### Langkah 3: Implementasi Repository Pattern (`src/repositories/<feature>.repository.ts`)
+### Step 3: Implement Repository Pattern (`src/repositories/<feature>.repository.ts`)
 
-Buat interface repository serta dua kelas implementasi (`Mock...Repository` dan `Api...Repository`) yang dialihkan otomatis melalui environment flag `VITE_USE_MOCK_DATA`.
+Create the repository interface and two implementation classes (`Mock...Repository` and `Api...Repository`) that switch automatically via the `VITE_USE_MOCK_DATA` environment flag.
 
 ```typescript
 // src/repositories/feature.repository.ts
@@ -80,22 +80,22 @@ export const featureRepository: FeatureRepository = useMock
   : new ApiFeatureRepository();
 ```
 
-### Langkah 4: Registrasi & Konsumsi di Zustand Store
+### Step 4: Register & Consume in Zustand Store
 
-Daftarkan repository di `src/repositories/index.ts` dan panggil di `src/store/useCarbonStore.js`.
+Register the repository in `src/repositories/index.ts` and invoke it in `src/store/useCarbonStore.js`.
 
 ```javascript
 // src/store/useCarbonStore.js
 import { featureRepository } from '../repositories';
 
-// Di dalam initializeData():
+// Inside initializeData():
 const featureData = await featureRepository.getFeatureData();
 set({ featureData });
 ```
 
 ---
 
-## 🎯 Manfaat
+## 🎯 Benefits
 
-- **Integrasi Backend Mulus**: Ketika API backend siap, pengembang hanya perlu mengubah `VITE_USE_MOCK_DATA=false` tanpa perlu merombak komponen UI.
-- **Data Terpusat**: Seluruh data mock tersimpan secara rapi di `src/lib/mock/`.
+- **Seamless Backend Integration**: Once the backend API is ready, developers only need to switch `VITE_USE_MOCK_DATA=false` without modifying UI components.
+- **Centralized Data**: All mock data is neatly managed under `src/lib/mock/`.
