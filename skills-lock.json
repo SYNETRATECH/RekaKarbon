@@ -49,6 +49,12 @@
       "skillPath": "prisma-postgres-setup/SKILL.md",
       "computedHash": "c89d3aa91285d8e4964fcaa5238c99a3d3c20b617e032e731cf632330a85a5a6"
     },
+    "pydantic": {
+      "source": "pydantic/skills",
+      "sourceType": "github",
+      "skillPath": "skills/pydantic/SKILL.md",
+      "computedHash": "5e9c70289cf543ee4664431b6b9566c36f2efa53a938613c2e38defca4984c9a"
+    },
     "python-testing-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
