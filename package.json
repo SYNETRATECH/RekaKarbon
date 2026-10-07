@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
+  "license": "Apache-2.0",
   "packageManager": "pnpm@11.22.0",
   "engines": {
     "node": "24.15.0",
@@ -60,9 +61,12 @@
     "typecheck": "pnpm client:typecheck && pnpm server:typecheck && pnpm blockchain:typecheck && pnpm ml:typecheck",
     "prepare": "husky"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "contributors": [
+    "Agung Nugroho Pramudhita, S.T., M.T.",
+    "Ekya Muhammad Hasfi Fadlilurrahman",
+    "Petrus Tyang Agung Rosario",
+    "Farrel Augusta Dinata"
+  ],
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
