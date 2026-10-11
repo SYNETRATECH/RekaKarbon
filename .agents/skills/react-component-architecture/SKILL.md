@@ -17,25 +17,25 @@ Use this skill when creating new components, refactoring existing ones, building
 ### 1.1 Architecture Flow
 
 ```
-View layer (client/src/components/, client/src/portal/)
+View layer (client/src/components/, client/src/routes/)
   ↓ consumes state & actions
-Zustand Global Store (client/src/store/useCarbonStore.js)
+Zustand Global Store (client/src/store/useCarbonStore.ts)
   ↓ calls asynchronously
 Repository Layer (client/src/repositories/<feature>.repository.ts)
   ↓ branches via VITE_USE_MOCK_DATA
 Mock Data (client/src/lib/mock/<feature>.ts) OR API Client (client/src/lib/api.ts)
 ```
 
-> **CRITICAL RULE (`test:arch`):** View components (`components/`, `portal/`) MUST NOT import directly from `client/src/lib/mock/`. All data access must pass through Zustand Store → Repository interfaces.
+> **CRITICAL RULE (`test:arch`):** View components (`components/`, `routes/`) MUST NOT import directly from `client/src/lib/mock/`. All data access must pass through Zustand Store → Repository interfaces.
 
 ---
 
 ## 2 — UI & Layout Conventions
 
-### 2.1 Right Navigation Drawer Rule
+### 2.1 Navigation Architecture Rules
 
-- RekaKarbon main portal **MUST NOT** use a permanent left sidebar.
-- Navigation must be implemented via the right sliding drawer component ([`RightDrawer.jsx`](../../../client/src/components/RightDrawer.jsx)) triggered by top-right control buttons.
+- **Authenticated Portals (`/kth`, `/emitter`, `/regulator`, `/auditor`)**: Managed by [`PortalLayout.tsx`](../../../client/src/components/layout/PortalLayout.tsx) with a responsive, role-isolated [`PortalSidebar.tsx`](../../../client/src/components/layout/PortalSidebar.tsx).
+- **Public Map View (`/_index`)**: Uses the full-screen canvas layout with the sliding right drawer component ([`RightDrawer.tsx`](../../../client/src/components/RightDrawer.tsx)) triggered by top-right control buttons.
 
 ### 2.2 Color Tokens & Primary Gradient
 
@@ -58,7 +58,7 @@ Mock Data (client/src/lib/mock/<feature>.ts) OR API Client (client/src/lib/api.t
 
 ## 3 — Map & Geodetic Spatial Data
 
-- All map and spatial area calculations in RekaKarbon modules MUST utilize standardized geodetic helper functions in [`geodetics.js`](../../../client/src/utils/geodetics.js).
+- All map and spatial area calculations in RekaKarbon modules MUST utilize standardized geodetic helper functions in [`geodetics.ts`](../../../client/src/utils/geodetics.ts).
 - Direct, unstandardized Euclidean/flat formulas for geographic spatial area computations are forbidden to prevent numerical data drift.
 
 ---

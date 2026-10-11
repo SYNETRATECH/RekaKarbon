@@ -59,3 +59,8 @@ next-env.d.ts
 mosquitto/data/*
 mosquitto/log/*
 mosquitto/config/passwords
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class

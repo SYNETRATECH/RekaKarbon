@@ -10,7 +10,7 @@ Frontend-specific agent guide for the `client/` directory. For human-facing setu
 | ------------- | -------------------------------------------------- |
 | **Framework** | React 19 + React Router v7 (SSR)                   |
 | **Styling**   | Tailwind CSS v4 + CSS Variables (design tokens)    |
-| **State**     | Zustand (`useCarbonStore.ts`)                      |
+| **State**     | Zustand (`useCarbonStore.ts`, `useAuthStore.ts`)   |
 | **Language**  | TypeScript (strict)                                |
 | **Testing**   | Vitest (unit + `test:arch` via dependency-cruiser) |
 | **Linting**   | Oxlint (`.oxlintrc.json`)                          |
@@ -38,8 +38,8 @@ client/
 ├── src/
 │   ├── components/           # Shared UI components (ui/, layout/ [PortalLayout, PortalSidebar, ...], modals/, etc.)
 │   ├── routes/               # React Router v7 routes (role-isolated route views & pages)
-│   │   ├── _index.tsx        # Landing page
-│   │   ├── app.tsx           # Main App route
+│   │   ├── _index.tsx        # Landing page & public GIS map view
+│   │   ├── app.tsx           # Authenticated App shell (PortalLayout)
 │   │   ├── login.tsx         # Login view
 │   │   ├── dashboard.tsx     # Overview dashboard
 │   │   ├── settings.tsx      # App settings
@@ -48,7 +48,8 @@ client/
 │   │   ├── regulator/        # Regulator role routes (projects.tsx, kth.tsx, forest.tsx, upload.tsx, etc.)
 │   │   └── auditor/          # Auditor role routes (spatial.tsx, drone.tsx, audit.tsx, gate.tsx)
 │   ├── store/
-│   │   └── useCarbonStore.ts # Central Zustand store (all global state + actions)
+│   │   ├── useCarbonStore.ts # Central Zustand store (global domain state + actions)
+│   │   └── useAuthStore.ts   # Client user authentication and role state
 │   ├── repositories/         # Repository Pattern (Mock + API implementations)
 │   │   ├── *.repository.ts   # Interfaces + implementations per feature
 │   │   └── index.ts          # Barrel export
@@ -68,8 +69,7 @@ client/
 │   ├── root.tsx              # App root (providers, global styles)
 │   ├── routes.ts             # Route config
 │   └── entry.client.tsx      # Client hydration entry
-├── AGENTS/
-│   └── rekakarbon-frontend-agent-spec.md  # Detailed design spec (colors, restrictions, wireframes)
+├── DESIGN.md                 # Ecological Precision design system & UI implementation guide
 ├── package.json
 ├── vite.config.ts
 ├── tsconfig.json
@@ -108,12 +108,18 @@ lib/mock/*.ts              # Typed fixtures (source of truth for mock, UUID-like
 - **Local/Ephemeral State**: Form input fields, tab selection, modal/dialog toggle states specific to a single component or page SHOULD be managed via React local state (`useState`).
 - **Global/Shared State**: Data consumed across multiple components, views, or pages (e.g. project lists, transaction logs, user roles) MUST be stored in the central **Zustand store** (`useCarbonStore.ts`) to avoid _props drilling_.
 
-### 3. UI Component Policy (`shadcn/ui` First)
+### 3. Navigation Architecture
+
+- **Authenticated Portals**: Managed by [`PortalLayout`](src/components/layout/PortalLayout.tsx) with a collapsible [`PortalSidebar`](src/components/layout/PortalSidebar.tsx). Role-isolated navigation matches `KTH`, `EMITTER`, `REGULATOR`, or `AUDITOR`.
+- **Public Map View (`/_index`)**: Uses full-screen Leaflet with the sliding [`RightDrawer`](src/components/RightDrawer.tsx) component.
+
+### 4. UI Component Policy (`shadcn/ui` First)
 
 - **Prioritize shadcn/ui**: Always look in `@/components/ui/` (`Button`, `Input`, `Card`, `Badge`, `Table`, `Dialog`, `Sheet`, `Select`, `Progress`, `Alert`, `Popover`, etc.) before creating new elements.
-- **Reuse & Modify**: If a component already provides what is needed, use it directly or customize it. Building custom HTML components (`<button>`, `<input>`, `<table>`, `<dialog>`) when `shadcn/ui` primitives exist is prohibited.
+- **Reuse Layout Components**: Use `@/components/layout/` (`PageHeader`, `KpiStatCard`, `FilterToolbar`) for consistent page structure.
+- **Consult DESIGN.md**: For typography scales, surface tokens, and component styling, follow [DESIGN.md](DESIGN.md).
 
-### 4. Naming Conventions
+### 5. Naming Conventions
 
 | Type                    | Convention         | Example                                  |
 | ----------------------- | ------------------ | ---------------------------------------- |
@@ -122,32 +128,30 @@ lib/mock/*.ts              # Typed fixtures (source of truth for mock, UUID-like
 | Types/Interfaces        | `PascalCase`       | `ForestProjectItem`, `CarbonStoreState`  |
 | Constants/Mock Fixtures | `UPPER_SNAKE_CASE` | `MOCK_BURSA_ITEMS`, `COMPANIES_DATA`     |
 
-### 5. TypeScript Types
+### 6. TypeScript Types
 
 - **All types** reside in `src/types/` (barrel export via `src/types/index.ts`).
 - **Never** define interfaces inline in mock files or components.
 - Mock data **must** be explicitly typed using types from `src/types`.
 
-### 6. Color & Theme (Tailwind v4 + CSS Variables + Design Tokens)
+### 7. Color & Theme (Tailwind v4 + CSS Variables + Design Tokens)
 
 > [!IMPORTANT]
 > All UI styling, layout spacing, color tokens, elevation, and typography scales MUST adhere to the **Ecological Precision** design system defined in [DESIGN.md](DESIGN.md).
 
 | Token                       | Variable                                          | Usage                                       |
 | --------------------------- | ------------------------------------------------- | ------------------------------------------- |
-| Primary Gradient (12-step)  | `.bg-primary-gradient` / `.text-primary-gradient` | Backgrounds, title text                     |
-| Primary Solid (text/border) | `var(--color-primary)` = `#033C2E`                | Text, borders                               |
-| Tech Mint                   | `#00C48C`                                         | Verified indicators, accents                |
+| Primary Gradient (12-step)  | `.bg-primary-gradient` / `.text-primary-gradient` | Backgrounds, primary CTA, title text        |
+| Primary Solid (text/border) | `var(--color-primary)` = `#033C2E`                | Text, borders, solid accents                |
+| Tech Mint                   | `#00C48C` (`var(--color-tech-mint)`)              | Verified indicators, accents, pulse markers |
 | Warning Red                 | `#EF4444`                                         | Over-quota, non-compliant, critical actions |
 | Warning Orange              | `#F59E0B`                                         | Pending, low supply, irreversible warnings  |
 | Background                  | `#F8FAFC` (`bg-slate-50`)                         | Page canvas                                 |
 | Card/White                  | `#FFFFFF` (`bg-white`)                            | Cards, containers                           |
 
-**Do NOT use** hardcoded `#003E29` — use gradient utilities or CSS variable. Refer to [DESIGN.md](DESIGN.md) for full color token definitions (`surface`, `primary-container`, `on-surface`, etc.).
+**Do NOT use** hardcoded `#003E29` — use gradient utilities or CSS variable `var(--color-primary)`.
 
----
-
-### 7. Data Formatting (Raw → UI)
+### 8. Data Formatting (Raw → UI)
 
 | Raw Type            | Formatter                           | Output Example   |
 | ------------------- | ----------------------------------- | ---------------- |
@@ -160,17 +164,36 @@ lib/mock/*.ts              # Typed fixtures (source of truth for mock, UUID-like
 
 **Rule**: Store raw numbers + ISO dates in types/mock. Format **only** in UI components via `lib/formatters.ts` and `lib/dates.ts`.
 
-### 8. Geodetic Calculations
+### 9. Geodetic Calculations
 
-All spatial area calculations **must** use `src/utils/geodetics.ts` functions. No custom math.
+All spatial area calculations **must** use `src/utils/geodetics.ts` functions. No custom flat/Euclidean math.
 
-### 9. Error Prevention (High-Risk Actions)
+### 10. Asset Management Standards (`src/assets` vs `public/`)
 
-Buttons for burning/offsetting, audit modifications, or deletions:
+- **`src/assets/` (Bundled Module Pipeline)**:
+  - Directly imported in TypeScript, TSX, or CSS (e.g. `import logo from '@/assets/brand/icon.png'`).
+  - Processed by Vite with content hashing, compile-time link verification, and inline queries (`?inline` for PDF generation).
+- **`public/` (Static Root Directory)**:
+  - Root browser conventions (`favicon.ico`, `manifest.webmanifest`, `sw.js`).
+  - PWA icons (`public/icons/`) and mock attachments (`public/proofs/`) referenced by root-relative paths.
+  - Never import files in `public/` using ESM `import` statements.
 
-- Use warning colors (red/orange)
-- Require confirmation modal/dialog
-- Disable until explicit confirmation
+---
+
+## ⚖️ Domain UX & Regulatory Invariants
+
+Agents implementing business features MUST enforce the following core domain invariants:
+
+1. **Carbon Balance Deficit (Emisi vs Kuota)**:
+   - When actual emissions exceed the legal quota (PTBAE-PU), UI must display high-urgency deficit alert with red progress segments.
+   - Fiscal penalty risk estimation must adhere to UU No. 7/2021 HPP penalty formula (e.g., deficit tonnage × statutory rate).
+2. **Burning Chamber Protocol (Brankas & Offset)**:
+   - Live fractional conversion math: **`10 fractions = 1.0 tCO2e`**.
+   - Because burning/retiring carbon tokens is irreversible, the action button MUST use warning colors (`#EF4444` / `#F59E0B`) and require an explicit two-step confirmation dialog before execution.
+3. **Cap Control Market Purchasing (Bursa Karbon)**:
+   - Restrict or warn emitter purchase orders if requested volume exceeds their active deficit, preventing speculative market hoarding.
+4. **dMRV Transparency Link**:
+   - Every metric backed by digital MRV (dMRV) must provide a direct verification link (`Verifikasi Sumber Data dMRV`) leading to the underlying drone orthophoto and satellite evidence.
 
 ---
 
@@ -190,19 +213,6 @@ pnpm client:build        # Production build
 
 Enforces: **View layer cannot import `lib/mock` directly**. Data must flow through `store` → `repository`.
 
-### 7. Asset Management Standards (`src/assets` vs `public/`)
-
-- **`src/assets/` (Bundled Module Pipeline)**:
-  - MUST be used for assets directly imported in TypeScript, TSX, or CSS (e.g., `import logo from '@/assets/brand/icon.png'`).
-  - Automatically processed by Vite: includes content hashing for immutable cache busting (`[name]-[hash].[ext]`), compile-time link verification, and support for inlining queries (`?inline` used in client PDF generation).
-  - Categorized under `brand/`, `images/`, and `media/`.
-  - Heavy images (>200 KB) must be compressed/resized before adding to prevent LCP degradation.
-- **`public/` (Static Root Directory)**:
-  - MUST be used for browser root conventions (`favicon.ico`, `favicon.svg`, `favicon-96x96.png`, `manifest.webmanifest`, `offline.html`, `sw.js`).
-  - MUST be used for PWA icons (`public/icons/`) and dynamic/runtime mock attachments (`public/proofs/`) referenced by raw string paths in database records or mock data (e.g., `/proofs/bukti_transfer.svg`).
-  - Never import files in `public/` using ESM `import` statements; reference them via root-relative paths (`/icons/...`).
-  - Dead or orphaned assets must be pruned promptly.
-
 ---
 
 ## 🌐 Environment Variables
@@ -216,9 +226,12 @@ Enforces: **View layer cannot import `lib/mock` directly**. Data must flow throu
 ## 🔗 Key References
 
 - Root monorepo rules: [../AGENTS.md](../AGENTS.md)
-- Frontend design spec: [AGENTS/rekakarbon-frontend-agent-spec.md](AGENTS/rekakarbon-frontend-agent-spec.md)
+- Design system & UI guide: [DESIGN.md](DESIGN.md)
 - Mock/Repository Pattern Skill: [.agents/skills/mock-repository-pattern/SKILL.md](../.agents/skills/mock-repository-pattern/SKILL.md)
 - Data Formatting Skill: [.agents/skills/data-formatting-standards/SKILL.md](../.agents/skills/data-formatting-standards/SKILL.md)
 - API Design Standards Skill: [.agents/skills/api-design-standards/SKILL.md](../.agents/skills/api-design-standards/SKILL.md)
 - React Component Architecture Skill: [.agents/skills/react-component-architecture/SKILL.md](../.agents/skills/react-component-architecture/SKILL.md)
 - React Performance Skill: [.agents/skills/react-performance/SKILL.md](../.agents/skills/react-performance/SKILL.md)
+- UI/UX Design Intelligence Skill: [.agents/skills/ui-ux-pro-max/SKILL.md](../.agents/skills/ui-ux-pro-max/SKILL.md)
+- Stitch Design System Synthesis Skill: [.agents/skills/design-md/SKILL.md](../.agents/skills/design-md/SKILL.md)
+- shadcn/ui Component Skill: [.agents/skills/shadcn/SKILL.md](../.agents/skills/shadcn/SKILL.md)
