@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Community Support
+    url: https://github.com/SYNETRATECH/RekaKarbon/discussions
+    about: Please ask general support, deployment, and architecture questions here.
+  - name: 🔒 Security Vulnerability Report
+    url: https://github.com/SYNETRATECH/RekaKarbon/security/policy
+    about: Review our security policy and report vulnerabilities privately.
+  - name: 📖 AI Agent & Technical Documentation
+    url: https://github.com/SYNETRATECH/RekaKarbon/blob/main/AGENTS.md
+    about: Explore technical architecture and AI agent governance guides.

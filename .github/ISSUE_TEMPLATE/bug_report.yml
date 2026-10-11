@@ -1,0 +1,82 @@
+name: 🐛 Bug Report
+description: Report a reproducible software defect or unexpected behavior in RekaKarbon
+title: 'bug: <brief description>'
+labels: ['bug', 'triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please ensure you have searched existing issues before submitting.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Subproject / Component
+      description: Select the primary module or package where the bug occurs.
+      options:
+        - 'client (Frontend / React Router / UI)'
+        - 'server (Backend / NestJS / API)'
+        - 'server/prisma (Database & Migrations)'
+        - 'blockchain (Smart Contracts / Besu / Hardhat)'
+        - 'ml (AI Engine / Feature Extractor / ONNX)'
+        - 'gis (Spatial Data / GeoTIFF / Vector Tiles)'
+        - 'ci-cd (GitHub Actions / Tooling / Scripts)'
+        - 'documentation (Docs / AGENTS.md / Specs)'
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the problem encountered...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: What sequence of steps leads to the error?
+      placeholder: |
+        1. Start application with `pnpm dev`
+        2. Navigate to portal route `/emitter/bursa`
+        3. Attempt to submit an order with ...
+        4. See error ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen instead?
+      placeholder: The transaction order should validate and trigger the confirmation dialog...
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually occurred?
+      placeholder: The application crashed with 500 error / unhandled rejection...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment & System Details
+      description: Operating system, browser, Node version, Docker version, etc.
+      value: |
+        - OS: [e.g. Windows 11, Ubuntu 24.04, macOS 15]
+        - Node Version: [e.g. 24.15.0]
+        - pnpm Version: [e.g. 11.22.0]
+        - Browser: [e.g. Chrome 126, Firefox 128]
+        - Environment Flags: [e.g. VITE_USE_MOCK_DATA=true]
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs or Screenshots
+      description: Paste stack traces, terminal output, or browser console errors here.
+      render: shell
+    validations:
+      required: false
