@@ -1,0 +1,56 @@
+name: 🚀 Feature Request
+description: Propose a new feature, improvement, or functional enhancement for RekaKarbon
+title: 'feat: <brief summary of proposal>'
+labels: ['enhancement', 'proposal']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature! Please describe your proposal and use case in detail.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Target Subproject / Component
+      description: Which part of the platform would this enhancement affect?
+      options:
+        - 'client (Frontend / React Router / UI)'
+        - 'server (Backend / NestJS / API)'
+        - 'server/prisma (Database Schema & Queries)'
+        - 'blockchain (Smart Contracts / Besu / Protocol)'
+        - 'ml (AI Engine / Feature Extractor / ONNX)'
+        - 'gis (Spatial Data / Remote Sensing)'
+        - 'ci-cd (GitHub Actions / Developer Tooling)'
+        - 'monorepo-wide (Multi-component architecture)'
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Context
+      description: Is your feature request related to a problem or institutional workflow gap?
+      placeholder: As an auditor / emitter, I need to ... because currently ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution & Specifications
+      description: Describe the solution you would like to see implemented.
+      placeholder: Detailed description of the UI, API endpoint, or smart contract logic...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Approaches Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: Describe alternatives explored...
+    validations:
+      required: false
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context & Regulatory Alignment
+      description: Any regulatory citations (e.g. UU No. 7/2021 HPP, Perpres 98/2021), mockups, or extra notes.
+    validations:
+      required: false
