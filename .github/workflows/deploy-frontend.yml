@@ -2,6 +2,12 @@ name: Deploy React frontend to GitHub Pages
 
 on:
   workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Bypass test, lint, and typecheck jobs before building'
+        required: true
+        default: false
+        type: boolean
 
 # Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:
@@ -12,22 +18,21 @@ permissions:
 # Allow one concurrent deployment
 concurrency:
   group: 'pages'
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  test:
+    name: Test Frontend
+    if: ${{ !inputs.skip_tests }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v7
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -38,8 +43,43 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint client
+        run: pnpm client:lint
+
+      - name: Typecheck client
+        run: pnpm client:typecheck
+
+      - name: Test client (unit & architecture & contracts)
+        run: |
+          pnpm --filter ./client test
+          pnpm --filter ./client test:arch
+          pnpm --filter ./client test:contracts
+
       - name: Audit production dependencies (high)
         run: pnpm audit --prod --audit-level high --ignore-registry-errors
+
+  build:
+    name: Build Frontend Artifact
+    needs: test
+    if: ${{ !cancelled() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Setup Pages
         id: setup_pages
@@ -71,6 +111,18 @@ jobs:
         with:
           path: './client/build/client'
 
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
