@@ -25,6 +25,7 @@ jobs:
       blockchain: ${{ steps.changes.outputs.blockchain }}
       ml: ${{ steps.changes.outputs.ml }}
       ci_notifier: ${{ steps.changes.outputs.ci_notifier }}
+      scripts: ${{ steps.changes.outputs.scripts }}
       dependencies: ${{ steps.changes.outputs.dependencies }}
     steps:
       - name: Checkout repository
@@ -78,6 +79,11 @@ jobs:
             ci_notifier:
               - 'scripts/actions/**'
               - '.github/workflows/pr-check.yml'
+            scripts:
+              - 'scripts/**'
+              - '.github/workflows/**'
+              - '.gitattributes'
+              - 'package.json'
             dependencies:
               - 'package.json'
               - 'pnpm-lock.yaml'
@@ -325,6 +331,19 @@ jobs:
       - name: Run CI Notifier unit tests
         run: python3 -m unittest discover -s scripts/actions/ci_notifier/tests
 
+  verify-shell-scripts:
+    name: Lint Shell Scripts (ShellCheck)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.scripts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run ShellCheck
+        run: |
+          find scripts -type f -name "*.sh" -print0 | xargs -0 -r shellcheck
+
   verify-node-dependencies:
     name: Audit Node.js Dependencies (High & Critical)
     needs: detect-changes
@@ -394,6 +413,7 @@ jobs:
       - verify-blockchain
       - verify-ml
       - verify-notifier
+      - verify-shell-scripts
       - verify-node-dependencies
       - verify-python-dependencies
     if: always()
@@ -408,6 +428,7 @@ jobs:
           echo "Blockchain verification result: ${{ needs.verify-blockchain.result }}"
           echo "ML verification result: ${{ needs.verify-ml.result }}"
           echo "CI Notifier verification result: ${{ needs.verify-notifier.result }}"
+          echo "Shell scripts verification result: ${{ needs.verify-shell-scripts.result }}"
           echo "Node.js dependency audit result: ${{ needs.verify-node-dependencies.result }}"
           echo "Python ML dependency audit result: ${{ needs.verify-python-dependencies.result }}"
 

@@ -12,6 +12,7 @@ echo "Checking Python ML dependencies dynamically..."
 if [ -n "$CUSTOM_PKGS" ]; then
   CLEAN_CUSTOM=$(echo "$CUSTOM_PKGS" | tr ',' ' ')
   echo "Updating specified packages: $CLEAN_CUSTOM"
+  # shellcheck disable=SC2086
   poetry update $CLEAN_CUSTOM
 fi
 
@@ -21,6 +22,7 @@ VULN_PKGS=$(python3 ../scripts/actions/autofix/extract_python_vulns.py pip-audit
 
 if [ -n "$VULN_PKGS" ]; then
   echo "Dynamically detected vulnerable Python packages: $VULN_PKGS"
+  # shellcheck disable=SC2086
   poetry update $VULN_PKGS
 else
   echo "No additional vulnerable Python packages detected by dynamic extractor."

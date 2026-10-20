@@ -7,6 +7,7 @@ echo "Checking Node.js dependencies dynamically..."
 if [ -n "$CUSTOM_PKGS" ]; then
   CLEAN_CUSTOM=$(echo "$CUSTOM_PKGS" | tr ',' ' ')
   echo "Updating specified Node packages: $CLEAN_CUSTOM"
+  # shellcheck disable=SC2086
   pnpm update $CLEAN_CUSTOM --depth 99 || true
 fi
 
@@ -16,6 +17,7 @@ NODE_PKGS=$(node scripts/actions/autofix/extract_node_vulns.js pnpm-audit-findin
 
 if [ -n "$NODE_PKGS" ]; then
   echo "Dynamically detected vulnerable Node packages: $NODE_PKGS"
+  # shellcheck disable=SC2086
   pnpm update $NODE_PKGS --depth 99 || true
 else
   echo "No additional vulnerable Node packages detected by dynamic extractor."
