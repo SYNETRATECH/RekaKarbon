@@ -160,10 +160,10 @@ command -v jq >/dev/null 2>&1 || { echo 'jq diperlukan untuk sinkronisasi manife
 CARBON_ADDRESS="$(jq -r '.contracts.rekaKarbon.address' "$MANIFEST")"
 REGISTRY_ADDRESS="$(jq -r '.contracts.emissionReportRegistry.address' "$MANIFEST")"
 CHAIN_ID="$(jq -r '.chainId' "$MANIFEST")"
-test "$CARBON_ADDRESS" != 'null' && test "$REGISTRY_ADDRESS" != 'null' || {
+if [ "$CARBON_ADDRESS" = 'null' ] || [ "$REGISTRY_ADDRESS" = 'null' ]; then
   echo 'Alamat kontrak pada manifest tidak lengkap.' >&2
   exit 1
-}
+fi
 
 # Persist manifest to shared so future releases can automatically find existing addresses
 mkdir -p "$PROJECT_DIR/shared"

@@ -49,7 +49,11 @@ if [ -f "$PROJECT_DIR/releases/$RELEASE_ID/server/nginx.conf" ]; then
   echo "Updating Nginx configuration..."
   sudo cp "$PROJECT_DIR/releases/$RELEASE_ID/server/nginx.conf" /etc/nginx/sites-available/api.rekakarbon.farrelad.com
   sudo ln -sf /etc/nginx/sites-available/api.rekakarbon.farrelad.com /etc/nginx/sites-enabled/
-  sudo nginx -t && sudo systemctl reload nginx || echo "Nginx reload skipped or failed"
+  if sudo nginx -t; then
+    sudo systemctl reload nginx || echo "Nginx reload skipped or failed"
+  else
+    echo "Nginx test failed, skipping reload"
+  fi
 fi
 
 # 7. Install/use Node version from .nvmrc
