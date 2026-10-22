@@ -229,6 +229,22 @@ jobs:
           pnpm audit --json --ignore-unfixable > pnpm-audit-after.json 2>/dev/null || true
           poetry --directory ./ml run pip-audit --format json --skip-editable > ml-audit-after.json 2>/dev/null || true
 
+      - name: Audit Language Runtimes (Node.js & Python Lifecycle)
+        id: runtime_audit
+        continue-on-error: true
+        run: |
+          python3 scripts/actions/security/check_runtimes.py --output runtime-audit.json
+
+      - name: Scan Server Dockerfile with Trivy
+        uses: aquasecurity/trivy-action@0.36.0
+        continue-on-error: true
+        with:
+          scan-type: 'config'
+          scan-ref: 'server/Dockerfile'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+
       - name: Synchronize GitHub Security Issues
         id: sync_issues
         if: (inputs.track_issues != false && inputs.track_issues != 'false')
@@ -241,6 +257,7 @@ jobs:
             --node-audit pnpm-audit-after.json \
             --python-audit ml-audit-after.json \
             --slither-report blockchain/slither-report.txt \
+            --runtime-audit runtime-audit.json \
             --repo "${{ github.repository }}" \
             --run-id "${{ github.run_id }}"
 
@@ -255,6 +272,7 @@ jobs:
             ml/ml-audit-report.txt
             ml-audit-after.json
             blockchain/slither-report.txt
+            runtime-audit.json
           retention-days: 7
 
       - name: Forward Security Notifications (Discord & Telegram)

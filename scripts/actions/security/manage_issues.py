@@ -209,6 +209,47 @@ def parse_pip_audit_json(data: dict[str, Any]) -> list[VulnerabilityAdvisory]:
     return advisories
 
 
+def parse_runtime_audit_json(data: dict[str, Any]) -> list[VulnerabilityAdvisory]:
+    """Extracts advisories from runtime sentinel audit JSON format."""
+    advisories: list[VulnerabilityAdvisory] = []
+    findings = data.get("findings", [])
+    for f in findings:
+        eco = f.get("ecosystem", "Runtime")
+        comp = f.get("component", "Runtime")
+        adv_id = f.get("advisory_id", "RUNTIME-ALERT")
+        installed = f.get("installed_version", "Unknown")
+        latest = f.get("latest_version", "Unknown")
+        cycle = f.get("cycle", "")
+        eol = f.get("eol", "")
+        is_eol = f.get("is_eol", False)
+        sev = f.get("severity", "MODERATE")
+        title = f.get("title", f"{comp} update available")
+        rec = f.get("recommendation", "")
+
+        desc = (
+            f"**Runtime**: `{comp}`\n\n"
+            f"- **Installed Version**: `{installed}`\n"
+            f"- **Latest Patch**: `{latest}` (Cycle `{cycle}`)\n"
+            f"- **End-of-Life Date**: `{eol}` (Is EOL: `{is_eol}`)\n\n"
+            f"### Recommended Action\n{rec}\n"
+        )
+
+        advisories.append(
+            VulnerabilityAdvisory(
+                ecosystem=eco,
+                package_name=comp.lower(),
+                advisory_id=adv_id,
+                severity=sev,
+                title=title,
+                vulnerable_versions=f"Installed: {installed} (Latest: {latest})",
+                url=f"https://endoflife.date/{comp.lower().replace('.', '')}",
+                description=desc,
+                dependency_chain=[f"Repository runtime configuration ({comp})"],
+            )
+        )
+    return advisories
+
+
 def parse_slither_text(text: str) -> list[VulnerabilityAdvisory]:
     """Extracts severe findings from Slither analysis report."""
     advisories: list[VulnerabilityAdvisory] = []
@@ -509,6 +550,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--node-audit", help="Path to pnpm audit JSON file")
     parser.add_argument("--python-audit", help="Path to pip-audit JSON file")
     parser.add_argument("--slither-report", help="Path to Slither report txt file")
+    parser.add_argument("--runtime-audit", help="Path to runtime sentinel audit JSON file")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""))
     parser.add_argument("--run-id", default=os.environ.get("GITHUB_RUN_ID", ""))
     parser.add_argument(
@@ -551,6 +593,17 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Loaded {len(slither_vulns)} advisory finding(s) from {args.slither_report}")
         except Exception as e:
             print(f"Warning: Failed to parse {args.slither_report}: {e}")
+
+    # Parse Runtime findings
+    if args.runtime_audit and Path(args.runtime_audit).exists():
+        try:
+            with open(args.runtime_audit, "r", encoding="utf-8") as f:
+                runtime_data = json.load(f)
+            runtime_vulns = parse_runtime_audit_json(runtime_data)
+            findings.extend(runtime_vulns)
+            print(f"Loaded {len(runtime_vulns)} advisory finding(s) from {args.runtime_audit}")
+        except Exception as e:
+            print(f"Warning: Failed to parse {args.runtime_audit}: {e}")
 
     existing_issues = (
         fetch_open_security_issues(args.repo) if args.repo and not args.dry_run else []
