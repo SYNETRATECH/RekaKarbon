@@ -1,0 +1,32 @@
+Found 25 known vulnerabilities in 2 packages
+Name    Version   ID              Fix Versions
+------- --------- --------------- ------------
+certifi 2026.7.22 PYSEC-2026-4320 2026.10.19
+pillow  12.3.0    CVE-2026-112895 13.0.0
+pillow  12.3.0    CVE-2026-112400 13.0.0
+pillow  12.3.0    CVE-2026-112397 13.0.0
+pillow  12.3.0    CVE-2026-112896 13.0.0
+pillow  12.3.0    CVE-2026-112897 13.0.0
+pillow  12.3.0    CVE-2026-112395 13.0.0
+pillow  12.3.0    CVE-2026-112404 13.0.0
+pillow  12.3.0    CVE-2026-112899 13.0.0
+pillow  12.3.0    CVE-2026-112402 13.0.0
+pillow  12.3.0    CVE-2026-112900 13.0.0
+pillow  12.3.0    CVE-2026-112893 13.0.0
+pillow  12.3.0    CVE-2026-112392 13.0.0
+pillow  12.3.0    CVE-2026-112891 13.0.0
+pillow  12.3.0    CVE-2026-112405 13.0.0
+pillow  12.3.0    CVE-2026-112390 13.0.0
+pillow  12.3.0    CVE-2026-112401 13.0.0
+pillow  12.3.0    CVE-2026-112901 13.0.0
+pillow  12.3.0    CVE-2026-112391 13.0.0
+pillow  12.3.0    CVE-2026-112894 13.0.0
+pillow  12.3.0    CVE-2026-112406 13.0.0
+pillow  12.3.0    CVE-2026-112399 13.0.0
+pillow  12.3.0    CVE-2026-112892 13.0.0
+pillow  12.3.0    CVE-2026-112393 13.0.0
+pillow  12.3.0    CVE-2026-112396 13.0.0
+
+Name          Skip Reason
+------------- -------------------------------
+rekakarbon-ml distribution marked as editable

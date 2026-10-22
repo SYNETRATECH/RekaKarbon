@@ -1,0 +1,9 @@
+'npx hardhat clean' running (wd: /home/runner/work/RekaKarbon/RekaKarbon/blockchain)
+'npx hardhat clean --global' running (wd: /home/runner/work/RekaKarbon/RekaKarbon/blockchain)
+Unexpected output from Hardhat, trying to parse it anyway: ◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+{"root":"/home/runner/work/RekaKarbon/RekaKarbon/blockchain","configFile":"/home/runner/work/RekaKarbon/RekaKarbon/blockchain/hardhat.config.ts","sources":"/home/runner/work/RekaKarbon/RekaKarbon/blockchain/contracts","cache":"/home/runner/work/RekaKarbon/RekaKarbon/blockchain/cache","artifacts":"/home/runner/work/RekaKarbon/RekaKarbon/blockchain/artifacts","tests":"/home/runner/work/RekaKarbon/RekaKarbon/blockchain/test"}
+
+Problem deserializing hardhat configuration, using defaults: Expecting property name enclosed in double quotes: line 1 column 3 (char 2)
+'npx hardhat compile --force' running (wd: /home/runner/work/RekaKarbon/RekaKarbon/blockchain)
+INFO:Slither:. analyzed (18 contracts with 98 detectors), 0 result(s) found
