@@ -27,7 +27,13 @@ def clean_table_cell(text: str) -> str:
 
 def get_jinja_env() -> Any:
     """Initializes and configures the Jinja2 template environment."""
-    import jinja2
+    try:
+        import jinja2
+    except ImportError as e:
+        raise RuntimeError(
+            "Jinja2 is required to render security automation templates. "
+            "Please ensure it is installed via 'pip install jinja2'."
+        ) from e
 
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(str(TEMPLATES_DIR)),

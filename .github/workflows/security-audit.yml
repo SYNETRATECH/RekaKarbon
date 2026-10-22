@@ -78,14 +78,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Free Disk Space on Runner
-        run: |
-          echo "Disk space before cleanup:"
-          df -h /
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL || true
-          echo "Disk space after cleanup:"
-          df -h /
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
@@ -101,6 +93,9 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: '3.13'
+
+      - name: Install Security Script Dependencies
+        run: pip install jinja2
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
