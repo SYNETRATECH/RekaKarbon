@@ -50,6 +50,10 @@ class AuditReport:
     run_url: str
     run_id: str
     components: list[ComponentReport] = field(default_factory=list)
+    pr_url: str | None = None
+    active_issues_count: int = 0
+    new_issues_count: int = 0
+    closed_issues_count: int = 0
 
     @property
     def overall_status(self) -> AuditStatus:
@@ -62,6 +66,10 @@ class AuditReport:
     @property
     def overall_title(self) -> str:
         status = self.overall_status
+        if self.pr_url:
+            if self.active_issues_count > 0:
+                return "🚀 Security Auto-Fix PR Created (With Tracked Issues)"
+            return "🚀 Security Auto-Fix PR Created - Monorepo Remediated"
         if status == AuditStatus.CLEAN:
             return "🛡️ Security Audit Passed - All Clean"
         if status == AuditStatus.ISSUES_DETECTED:
@@ -70,7 +78,13 @@ class AuditReport:
 
     @property
     def autofix_url(self) -> str:
-        return f"https://github.com/{self.repository}/actions/workflows/security-autofix.yml"
+        return f"https://github.com/{self.repository}/actions/workflows/security-audit.yml"
+
+    @property
+    def issues_url(self) -> str:
+        return (
+            f"https://github.com/{self.repository}/issues?q=is%3Aissue+is%3Aopen+label%3Asecurity"
+        )
 
     @property
     def new_issue_url(self) -> str:

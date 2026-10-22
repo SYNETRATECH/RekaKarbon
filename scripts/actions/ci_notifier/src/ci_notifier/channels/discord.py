@@ -33,7 +33,17 @@ class DiscordChannel(NotificationChannel):
             f"Repository: `{report.repository}`\n"
             f"Branch: `{report.branch}`"
         )
-        if overall_status.value == "issues_detected":
+
+        if report.pr_url:
+            description += f"\n\n🚀 **[Review Auto-Fix Pull Request]({report.pr_url})**"
+
+        if report.active_issues_count > 0:
+            description += f"\n📋 **[View Tracked Security Issues ({report.active_issues_count})]({report.issues_url})**"
+
+        if report.closed_issues_count > 0:
+            description += f"\n✅ **Resolved Issues Auto-Closed:** {report.closed_issues_count}"
+
+        if not report.pr_url and overall_status.value == "issues_detected":
             description += f"\n\n🛠️ **[One-Click Auto-Fix on GitHub Mobile]({report.autofix_url})**"
             if any(
                 "contract" in c.name.lower() and c.status.value == "issues_detected"

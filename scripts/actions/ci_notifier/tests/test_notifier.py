@@ -83,7 +83,7 @@ class TestCINotifier(unittest.TestCase):
         self.assertIn("reply_markup", payload)
         keyboard = payload["reply_markup"]["inline_keyboard"]
         self.assertEqual(keyboard[1][0]["text"], "🛠️ Run Auto-Fix")
-        self.assertIn("security-autofix.yml", keyboard[1][0]["url"])
+        self.assertIn("security-audit.yml", keyboard[1][0]["url"])
 
     def test_telegram_payload_with_contract_issues(self):
         contract_issues_report = AuditReport(
@@ -108,6 +108,54 @@ class TestCINotifier(unittest.TestCase):
         self.assertEqual(keyboard[1][0]["text"], "🛠️ Run Auto-Fix")
         self.assertEqual(keyboard[1][1]["text"], "📋 Triage Issue")
         self.assertIn("issues/new", keyboard[1][1]["url"])
+
+    def test_discord_payload_with_pr_and_issues(self):
+        report = AuditReport(
+            title="Security Audit Report",
+            repository="FarrelAD/RekaKarbon",
+            branch="main",
+            run_url="https://github.com/FarrelAD/RekaKarbon/actions/runs/888",
+            run_id="888",
+            pr_url="https://github.com/FarrelAD/RekaKarbon/pull/99",
+            active_issues_count=2,
+            closed_issues_count=1,
+            components=[
+                ComponentReport("Node", AuditStatus.ISSUES_DETECTED, "1 remaining vulnerability"),
+            ],
+        )
+        channel = DiscordChannel(webhook_url="https://discord.com/api/webhooks/test/test")
+        payload = channel.build_payload(report)
+        desc = payload["embeds"][0]["description"]
+        self.assertIn("Review Auto-Fix Pull Request", desc)
+        self.assertIn("https://github.com/FarrelAD/RekaKarbon/pull/99", desc)
+        self.assertIn("View Tracked Security Issues (2)", desc)
+        self.assertIn("**Resolved Issues Auto-Closed:** 1", desc)
+
+    def test_telegram_payload_with_pr_and_issues(self):
+        report = AuditReport(
+            title="Security Audit Report",
+            repository="FarrelAD/RekaKarbon",
+            branch="main",
+            run_url="https://github.com/FarrelAD/RekaKarbon/actions/runs/888",
+            run_id="888",
+            pr_url="https://github.com/FarrelAD/RekaKarbon/pull/99",
+            active_issues_count=2,
+            closed_issues_count=1,
+            components=[
+                ComponentReport("Node", AuditStatus.ISSUES_DETECTED, "1 remaining vulnerability"),
+            ],
+        )
+        channel = TelegramChannel(bot_token="test_token", chat_id="-1004303358038")
+        payload = channel.build_payload(report)
+        self.assertIn("Review Pull Request", payload["text"])
+        self.assertIn("2 active issue(s)", payload["text"])
+        self.assertIn("<b>Resolved Issues Auto-Closed:</b> 1", payload["text"])
+
+        keyboard = payload["reply_markup"]["inline_keyboard"]
+        self.assertEqual(len(keyboard), 2)
+        self.assertEqual(keyboard[1][0]["text"], "🚀 Review Auto-Fix PR")
+        self.assertEqual(keyboard[1][0]["url"], "https://github.com/FarrelAD/RekaKarbon/pull/99")
+        self.assertEqual(keyboard[1][1]["text"], "📋 View Issues")
 
     def test_unconfigured_channels(self):
         d = DiscordChannel(webhook_url="")

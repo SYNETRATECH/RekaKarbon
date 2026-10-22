@@ -61,6 +61,11 @@ def build_report_from_env() -> AuditReport:
         ),
     ]
 
+    pr_url = os.environ.get("PR_URL", "").strip() or None
+    active_issues_count = int(os.environ.get("ACTIVE_ISSUES_COUNT", "0") or "0")
+    new_issues_count = int(os.environ.get("NEW_ISSUES_COUNT", "0") or "0")
+    closed_issues_count = int(os.environ.get("CLOSED_ISSUES_COUNT", "0") or "0")
+
     report = AuditReport(
         title="Security Audit Report",
         repository=repo,
@@ -68,6 +73,10 @@ def build_report_from_env() -> AuditReport:
         run_url=run_url,
         run_id=run_id,
         components=components,
+        pr_url=pr_url,
+        active_issues_count=active_issues_count,
+        new_issues_count=new_issues_count,
+        closed_issues_count=closed_issues_count,
     )
     return report
 
