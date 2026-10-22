@@ -82,9 +82,7 @@ class AuditReport:
 
     @property
     def issues_url(self) -> str:
-        return (
-            f"https://github.com/{self.repository}/issues?q=is%3Aissue+is%3Aopen+label%3Asecurity"
-        )
+        return f"https://github.com/{self.repository}/issues?q=is%3Aissue+is%3Aopen+%22%5BSecurity+Advisory%5D%22"
 
     @property
     def new_issue_url(self) -> str:

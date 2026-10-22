@@ -64,3 +64,14 @@ mosquitto/config/passwords
 __pycache__/
 *.py[codz]
 *$py.class
+
+# Security audit reports & temporary findings
+*-audit-report.txt
+*-audit.json
+*-audit-findings.json
+*-audit-after.*
+pnpm-audit-report.txt
+pnpm-audit.json
+ml-audit-report.txt
+ml-audit.json
+slither-report.txt
