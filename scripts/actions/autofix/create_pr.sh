@@ -31,7 +31,14 @@ git checkout -B "$BRANCH_NAME"
 git commit --no-verify -m "fix(security): dynamic automated vulnerability remediation"
 git push --force origin "$BRANCH_NAME"
 
-BODY=$(python3 scripts/actions/security/templates_engine.py --pr --repo "${REPO}" --run-id "${RUN_ID}" --target "${TARGET}")
+PYTHON_BIN="python3"
+if [ -f "ml/.venv/bin/python" ]; then
+  PYTHON_BIN="ml/.venv/bin/python"
+elif [ -f "ml/.venv/Scripts/python.exe" ]; then
+  PYTHON_BIN="ml/.venv/Scripts/python.exe"
+fi
+
+BODY=$("$PYTHON_BIN" scripts/actions/security/templates_engine.py --pr --repo "${REPO}" --run-id "${RUN_ID}" --target "${TARGET}")
 
 echo "Creating pull request with base branch: $BASE_BRANCH..."
 if PR_URL=$(gh pr create \
