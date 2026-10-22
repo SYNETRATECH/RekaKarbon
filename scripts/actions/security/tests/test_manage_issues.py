@@ -18,6 +18,7 @@ from manage_issues import (  # noqa: E402
     normalize_advisory_id,
     parse_pip_audit_json,
     parse_pnpm_audit_json,
+    parse_runtime_audit_json,
     parse_slither_text,
     sync_security_issues,
 )
@@ -206,6 +207,34 @@ class TestManageIssues(unittest.TestCase):
         self.assertEqual(clean_table_cell("### Summary Heap overflow"), "Heap overflow")
         self.assertEqual(clean_table_cell("details: XSS in | component"), "XSS in \\| component")
         self.assertEqual(clean_table_cell(""), "N/A")
+
+    def test_parse_runtime_audit_json(self):
+        sample_runtime = {
+            "findings": [
+                {
+                    "ecosystem": "Runtime (Node.js)",
+                    "component": "Node.js",
+                    "installed_version": "24.15.0",
+                    "latest_version": "24.22.1",
+                    "cycle": "24",
+                    "eol": "2028-04-30",
+                    "is_eol": False,
+                    "severity": "MODERATE",
+                    "title": "Node.js 24.15.0 is behind the latest security patch 24.22.1 in cycle 24.",
+                    "advisory_id": "RUNTIME-NODE-24-PATCH",
+                    "recommendation": "Upgrade Node.js to 24.22.1",
+                }
+            ]
+        }
+        advisories = parse_runtime_audit_json(sample_runtime)
+        self.assertEqual(len(advisories), 1)
+        adv = advisories[0]
+        self.assertEqual(adv.ecosystem, "Runtime (Node.js)")
+        self.assertEqual(adv.package_name, "node.js")
+        self.assertEqual(adv.advisory_id, "RUNTIME-NODE-24-PATCH")
+        self.assertEqual(adv.severity, "MODERATE")
+        self.assertIn("24.15.0", adv.vulnerable_versions)
+        self.assertIn("Upgrade Node.js to 24.22.1", adv.description)
 
     def test_templates_engine_render_issue_advisory(self):
         adv = VulnerabilityAdvisory(
