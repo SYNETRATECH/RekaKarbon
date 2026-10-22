@@ -21,6 +21,11 @@ from manage_issues import (  # noqa: E402
     parse_slither_text,
     sync_security_issues,
 )
+from templates_engine import (  # noqa: E402
+    clean_table_cell,
+    render_issue_advisory,
+    render_pull_request,
+)
 
 
 class TestManageIssues(unittest.TestCase):
@@ -109,12 +114,13 @@ class TestManageIssues(unittest.TestCase):
             package_name="lodash",
             advisory_id="GHSA-35JH-P97F-MPXF",
             severity="CRITICAL",
-            title="Prototype pollution in lodash",
+            title="### Summary Prototype pollution in lodash",
             vulnerable_versions="<4.17.21",
             url="https://github.com/advisories/GHSA-35JH-P97F-MPXF",
             cvss_score="9.8",
             cwe=["CWE-1321"],
             dependency_chain=["client > lodash"],
+            description="Full vulnerability description with proof of concept.",
         )
         title = format_issue_title(adv)
         self.assertEqual(title, "[Security Advisory] [Node] lodash (GHSA-35JH-P97F-MPXF)")
@@ -125,6 +131,11 @@ class TestManageIssues(unittest.TestCase):
         self.assertIn("GHSA-35JH-P97F-MPXF", body)
         self.assertIn("client > lodash", body)
         self.assertIn("actions/runs/999", body)
+        self.assertIn("| **Title** | Prototype pollution in lodash |", body)
+        self.assertNotIn("### Summary", body)
+        self.assertIn("<details>", body)
+        self.assertIn("<summary><b>📋 View Full Advisory Details</b></summary>", body)
+        self.assertIn("Full vulnerability description with proof of concept.", body)
 
     def test_sync_security_issues_lifecycle(self):
         active_findings = [
@@ -190,6 +201,45 @@ class TestManageIssues(unittest.TestCase):
         self.assertEqual(closed_numbers, [5])
         self.assertEqual(len(created_titles), 1)
         self.assertIn("urllib3", created_titles[0])
+
+    def test_clean_table_cell(self):
+        self.assertEqual(clean_table_cell("### Summary Heap overflow"), "Heap overflow")
+        self.assertEqual(clean_table_cell("details: XSS in | component"), "XSS in \\| component")
+        self.assertEqual(clean_table_cell(""), "N/A")
+
+    def test_templates_engine_render_issue_advisory(self):
+        adv = VulnerabilityAdvisory(
+            ecosystem="Python",
+            package_name="urllib3",
+            advisory_id="GHSA-34JH-P97F-MPXF",
+            severity="HIGH",
+            title="### Summary Redirect cookie leak",
+            vulnerable_versions="Installed: 1.26.17 (Fix: 1.26.18)",
+            description="Sensitive cookie exposure via cross-domain redirect.",
+        )
+        body = render_issue_advisory(adv, run_id="111", repo="FarrelAD/RekaKarbon")
+        self.assertIn("## 🛡️ Security Vulnerability in `urllib3` (Python)", body)
+        self.assertIn("| **Title** | Redirect cookie leak |", body)
+        self.assertIn("<details>", body)
+        self.assertIn("<summary><b>📋 View Full Advisory Details</b></summary>", body)
+        self.assertIn("Sensitive cookie exposure via cross-domain redirect.", body)
+        self.assertIn(
+            "Reported by workflow run: [Run #111](https://github.com/FarrelAD/RekaKarbon/actions/runs/111)",
+            body,
+        )
+
+    def test_templates_engine_render_pull_request(self):
+        pr_body = render_pull_request(
+            repo="FarrelAD/RekaKarbon",
+            run_id="555",
+            target="all",
+            updated_packages=["axios", "urllib3"],
+        )
+        self.assertIn("Security Audit & Remediation", pr_body)
+        self.assertIn("actions/runs/555", pr_body)
+        self.assertIn("- `axios`", pr_body)
+        self.assertIn("- `urllib3`", pr_body)
+        self.assertIn("**Target Scope**: `all`", pr_body)
 
 
 if __name__ == "__main__":

@@ -240,65 +240,27 @@ def parse_slither_text(text: str) -> list[VulnerabilityAdvisory]:
     return advisories
 
 
+try:
+    from templates_engine import render_issue_advisory
+except ImportError:
+    from scripts.actions.security.templates_engine import render_issue_advisory
+
+
+def clean_markdown_inline(text: str) -> str:
+    """Strips markdown headers, newlines, and pipe characters to preserve table cells."""
+    cleaned = re.sub(r"^[#\s]+", "", text)
+    cleaned = re.sub(r"^(summary|details|description)[:\s-]*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = cleaned.replace("\r", " ").replace("\n", " ").replace("|", "\\|")
+    return cleaned.strip()
+
+
 def format_issue_title(adv: VulnerabilityAdvisory) -> str:
     return f"[Security Advisory] [{adv.ecosystem}] {adv.package_name} ({adv.advisory_id})"
 
 
 def format_issue_body(adv: VulnerabilityAdvisory, run_id: str = "", repo: str = "") -> str:
-    chain_markdown = (
-        "\n".join(f"- `{c}`" for c in adv.dependency_chain)
-        if adv.dependency_chain
-        else "- *Direct dependency or workspace dependency.*"
-    )
-
-    advisory_link = f"[{adv.advisory_id}]({adv.url})" if adv.url else f"`{adv.advisory_id}`"
-    run_ref = (
-        f"Reported by workflow run: [Run #{run_id}](https://github.com/{repo}/actions/runs/{run_id})\n"
-        if run_id and repo
-        else ""
-    )
-
-    lines = [
-        f"## 🛡️ Security Vulnerability in `{adv.package_name}` ({adv.ecosystem})",
-        "",
-        f"An automated security audit detected an unresolved vulnerability in `{adv.package_name}`.",
-        "",
-        "### 📋 Advisory Details",
-        "| Property | Value |",
-        "| :--- | :--- |",
-        f"| **Ecosystem** | **`{adv.ecosystem}`** |",
-        f"| **Package** | `{adv.package_name}` |",
-        f"| **Advisory ID** | {advisory_link} |",
-        f"| **Severity** | **`{adv.severity}`** |",
-        f"| **Title** | {adv.title} |",
-        f"| **Vulnerable Range** | `{adv.vulnerable_versions}` |",
-        f"| **CVSS Score** | {adv.cvss_score} |",
-        f"| **CWE** | {', '.join(adv.cwe) if adv.cwe else 'N/A'} |",
-        "",
-        "### 🌳 Dependency Chain",
-        chain_markdown,
-        "",
-    ]
-
-    if adv.description:
-        clean_desc = adv.description.strip()[:1500]
-        lines.extend(["### 📝 Description", f"> {clean_desc}", ""])
-
-    lines.extend(
-        [
-            "### 💡 Recommended Actions for Developers",
-            f"1. **Check Upstream Status**: Check {advisory_link} for patches or mitigation instructions.",
-            "2. **Evaluate Updates / Overrides**: Check if a compatible non-breaking version is available.",
-            "3. **Transitive Overrides**: Use `pnpm.overrides` or Poetry constraint updates if suitable.",
-            "4. **Automated Lifecycle**: This issue will **automatically close** once this vulnerability is resolved.",
-            "",
-            "---",
-            run_ref
-            + "*Note: Please do not close manually unless acknowledged as permanent accepted risk.*",
-        ]
-    )
-
-    return "\n".join(lines)
+    """Renders the issue body via Jinja2 template engine."""
+    return render_issue_advisory(adv, run_id=run_id, repo=repo)
 
 
 def fetch_open_security_issues(repo: str) -> list[GitHubIssue] | None:
@@ -358,6 +320,35 @@ def close_github_issue(repo: str, issue_number: int, comment: str) -> bool:
         return True
     except subprocess.CalledProcessError as e:
         print(f"Failed to close issue #{issue_number}: {e.stderr.decode('utf-8', errors='ignore')}")
+        return False
+
+
+def ensure_security_label_exists(repo: str) -> bool:
+    """Ensures the 'security' label exists on GitHub."""
+    if not repo:
+        return False
+    try:
+        proc = subprocess.run(
+            [
+                "gh",
+                "label",
+                "create",
+                "security",
+                "--repo",
+                repo,
+                "--description",
+                "Security advisories and vulnerability tracking",
+                "--color",
+                "d73a4a",
+                "--force",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return proc.returncode == 0
+    except Exception as e:
+        print(f"Warning: Could not create security label: {e}")
         return False
 
 
@@ -433,6 +424,29 @@ def sync_security_issues(
         package = match.group("package").strip().lower()
         advisory = normalize_advisory_id(match.group("advisory"))
         tracked_map[(ecosystem, package, advisory)] = issue
+
+    if repo and not dry_run:
+        ensure_security_label_exists(repo)
+        for issue in tracked_map.values():
+            if not any(lbl.lower() == "security" for lbl in issue.labels):
+                try:
+                    subprocess.run(
+                        [
+                            "gh",
+                            "issue",
+                            "edit",
+                            str(issue.number),
+                            "--repo",
+                            repo,
+                            "--add-label",
+                            "security",
+                        ],
+                        capture_output=True,
+                        check=False,
+                    )
+                    issue.labels.append("security")
+                except Exception:
+                    pass
 
     created_count = 0
     closed_count = 0

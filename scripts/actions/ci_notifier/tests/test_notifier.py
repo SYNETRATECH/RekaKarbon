@@ -156,6 +156,7 @@ class TestCINotifier(unittest.TestCase):
         self.assertEqual(keyboard[1][0]["text"], "🚀 Review Auto-Fix PR")
         self.assertEqual(keyboard[1][0]["url"], "https://github.com/FarrelAD/RekaKarbon/pull/99")
         self.assertEqual(keyboard[1][1]["text"], "📋 View Issues")
+        self.assertIn("%5BSecurity+Advisory%5D", keyboard[1][1]["url"])
 
     def test_unconfigured_channels(self):
         d = DiscordChannel(webhook_url="")

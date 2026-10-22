@@ -192,6 +192,10 @@ jobs:
         if: steps.check_baseline.outputs.has_vulns == 'true' || github.event_name == 'workflow_dispatch'
         run: pnpm client:typecheck && pnpm server:typecheck || echo "Typecheck completed"
 
+      - name: Clean Test Runtime Artifacts
+        if: steps.check_baseline.outputs.has_vulns == 'true' || github.event_name == 'workflow_dispatch'
+        run: git checkout ml/models/ ml/data/ 2>/dev/null || true
+
       - name: Check for Remediated Changes
         id: check_changes
         run: |

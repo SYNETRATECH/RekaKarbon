@@ -1,0 +1,46 @@
+## 🛡️ Security Vulnerability in `{{ adv.package_name }}` ({{ adv.ecosystem }})
+
+An automated security audit detected an unresolved vulnerability in `{{ adv.package_name }}`.
+
+### 📋 Advisory Details
+| Property | Value |
+| :--- | :--- |
+| **Ecosystem** | **`{{ adv.ecosystem }}`** |
+| **Package** | `{{ adv.package_name }}` |
+| **Advisory ID** | {% if adv.url %}[{{ adv.advisory_id }}]({{ adv.url }}){% else %}`{{ adv.advisory_id }}`{% endif %} |
+| **Severity** | **`{{ adv.severity }}`** |
+| **Title** | {{ adv.title | clean_table_cell }} |
+| **Vulnerable Range** | `{{ adv.vulnerable_versions }}` |
+| **CVSS Score** | {{ adv.cvss_score }} |
+| **CWE** | {{ adv.cwe | join(', ') if adv.cwe else 'N/A' }} |
+
+### 🌳 Dependency Chain
+{% if adv.dependency_chain %}
+{% for chain in adv.dependency_chain %}
+- `{{ chain }}`
+{% endfor %}
+{% else %}
+- *Direct dependency or workspace dependency.*
+{% endif %}
+
+{% if adv.description %}
+### 📝 Description
+<details>
+<summary><b>📋 View Full Advisory Details</b></summary>
+
+{{ adv.description }}
+
+</details>
+
+{% endif %}
+### 💡 Recommended Actions for Developers
+1. **Check Upstream Status**: Check {% if adv.url %}[{{ adv.advisory_id }}]({{ adv.url }}){% else %}`{{ adv.advisory_id }}`{% endif %} for patches or mitigation instructions.
+2. **Evaluate Updates / Overrides**: Check if a compatible non-breaking version is available.
+3. **Transitive Overrides**: Use `pnpm.overrides` or Poetry constraint updates if suitable.
+4. **Automated Lifecycle**: This issue will **automatically close** once this vulnerability is resolved.
+
+---
+{% if run_id and repo %}
+Reported by workflow run: [Run #{{ run_id }}](https://github.com/{{ repo }}/actions/runs/{{ run_id }})
+{% endif %}
+*Note: Please do not close manually unless acknowledged as permanent accepted risk.*
