@@ -32,22 +32,46 @@ class TelegramChannel(NotificationChannel):
 
         components_text = "\n\n".join(component_blocks)
 
+        status_extras = []
+        if report.pr_url:
+            status_extras.append(
+                f"🚀 <b>Auto-Fix PR:</b> <a href='{report.pr_url}'>Review Pull Request</a>"
+            )
+        if report.active_issues_count > 0:
+            status_extras.append(
+                f"📋 <b>Tracked Issues:</b> <a href='{report.issues_url}'>{report.active_issues_count} active issue(s)</a>"
+            )
+        if report.closed_issues_count > 0:
+            status_extras.append(
+                f"✅ <b>Resolved Issues Auto-Closed:</b> {report.closed_issues_count}"
+            )
+
+        extras_text = f"\n\n{chr(10).join(status_extras)}" if status_extras else ""
+
         message = (
             f"<b>{report.overall_title}</b>\n\n"
             f"📂 <b>Repository:</b> <code>{report.repository}</code>\n"
             f"🌿 <b>Branch:</b> <code>{report.branch}</code>\n"
             f"🔗 <a href='{report.run_url}'>View Workflow Run</a>\n\n"
             f"{components_text}"
+            f"{extras_text}"
         )
 
         inline_keyboard = [[{"text": "🔍 View Workflow Run", "url": report.run_url}]]
-        if report.overall_status.value == "issues_detected":
+        if report.pr_url:
+            pr_row = [{"text": "🚀 Review Auto-Fix PR", "url": report.pr_url}]
+            if report.active_issues_count > 0:
+                pr_row.append({"text": "📋 View Issues", "url": report.issues_url})
+            inline_keyboard.append(pr_row)
+        elif report.overall_status.value == "issues_detected":
             action_row = [{"text": "🛠️ Run Auto-Fix", "url": report.autofix_url}]
             if any(
                 "contract" in c.name.lower() and c.status == AuditStatus.ISSUES_DETECTED
                 for c in report.components
             ):
                 action_row.append({"text": "📋 Triage Issue", "url": report.new_issue_url})
+            elif report.active_issues_count > 0:
+                action_row.append({"text": "📋 View Issues", "url": report.issues_url})
             inline_keyboard.append(action_row)
 
         payload: dict[str, Any] = {
