@@ -4,6 +4,7 @@
 import sys
 import unittest
 from pathlib import Path
+from typing import Any
 
 # Add scripts directory to sys.path
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent
@@ -176,11 +177,11 @@ class TestManageIssues(unittest.TestCase):
         created_titles: list[str] = []
         closed_numbers: list[int] = []
 
-        def mock_create(title: str, body: str) -> int:
-            created_titles.append(title)
+        def mock_create(adv: VulnerabilityAdvisory, **kwargs: Any) -> int:
+            created_titles.append(format_issue_title(adv))
             return 99
 
-        def mock_close(num: int, comment: str) -> bool:
+        def mock_close(num: int, **kwargs: Any) -> bool:
             closed_numbers.append(num)
             return True
 
@@ -269,6 +270,173 @@ class TestManageIssues(unittest.TestCase):
         self.assertIn("- `axios`", pr_body)
         self.assertIn("- `urllib3`", pr_body)
         self.assertIn("**Target Scope**: `all`", pr_body)
+
+    def test_parse_pnpm_audit_json_v11_advisories(self):
+        mock_pnpm_v11 = {
+            "advisories": {
+                "1098234": [
+                    {
+                        "id": 1098234,
+                        "module_name": "axios",
+                        "severity": "high",
+                        "title": "Axios Cross-Site Request Forgery",
+                        "github_advisory_id": "GHSA-8hc4-vh64-cxmj",
+                        "cwe": ["CWE-352"],
+                        "cvss": {
+                            "score": 7.5,
+                            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
+                        },
+                        "vulnerable_versions": "<1.7.4",
+                        "findings": [{"paths": ["client > axios"]}],
+                    }
+                ]
+            }
+        }
+        advisories = parse_pnpm_audit_json(mock_pnpm_v11)
+        self.assertEqual(len(advisories), 1)
+        adv = advisories[0]
+        self.assertEqual(adv.ecosystem, "Node")
+        self.assertEqual(adv.package_name, "axios")
+        self.assertEqual(adv.advisory_id, "GHSA-8HC4-VH64-CXMJ")
+        self.assertEqual(adv.severity, "HIGH")
+        self.assertIn("Cross-Site Request Forgery", adv.title)
+        self.assertIn("client > axios", adv.dependency_chain)
+
+    def test_templates_engine_render_pull_request_with_linked_issues(self):
+        pr_body = render_pull_request(
+            repo="FarrelAD/RekaKarbon",
+            run_id="555",
+            target="all",
+            updated_packages=["axios"],
+            linked_issues=[
+                {"number": 42, "package": "axios", "advisory_id": "GHSA-8HC4-VH64-CXMJ"}
+            ],
+        )
+        self.assertIn("Security Audit & Remediation", pr_body)
+        self.assertIn("### 🔗 Linked Tracking Issues", pr_body)
+        self.assertIn("- Resolves #42: `axios` (GHSA-8HC4-VH64-CXMJ)", pr_body)
+
+    def test_sync_security_issues_remediation_and_pr_linking(self):
+        baseline_findings = [
+            VulnerabilityAdvisory(
+                ecosystem="Node",
+                package_name="axios",
+                advisory_id="GHSA-8HC4-VH64-CXMJ",
+                severity="HIGH",
+                title="Axios CSRF",
+            )
+        ]
+        active_findings = []
+        existing_issues = [
+            GitHubIssue(
+                number=10,
+                title="[Security Advisory] [Node] axios (GHSA-8HC4-VH64-CXMJ)",
+                state="open",
+            )
+        ]
+
+        commented_prs: list[tuple[int, str]] = []
+        updated_prs: list[tuple[str, list[dict[str, Any]]]] = []
+        closed_issues: list[int] = []
+
+        def mock_comment_pr(issue_number: int, **kwargs: Any) -> bool:
+            commented_prs.append((issue_number, kwargs.get("pr_url", "")))
+            return True
+
+        def mock_update_pr(
+            repo: str = "",
+            pr_number: str = "",
+            linked_issues: list[dict[str, Any]] = None,
+            **kwargs: Any,
+        ) -> bool:
+            updated_prs.append((pr_number, linked_issues or []))
+            return True
+
+        def mock_close(num: int, **kwargs: Any) -> bool:
+            closed_issues.append(num)
+            return True
+
+        result = sync_security_issues(
+            findings=active_findings,
+            existing_issues=existing_issues,
+            repo="FarrelAD/RekaKarbon",
+            run_id="123",
+            baseline_findings=baseline_findings,
+            pr_url="https://github.com/FarrelAD/RekaKarbon/pull/77",
+            pr_number="77",
+            target="node",
+            dry_run=False,
+            close_fn=mock_close,
+            comment_pr_fn=mock_comment_pr,
+            update_pr_fn=mock_update_pr,
+        )
+
+        self.assertEqual(result.remediated_linked_count, 1)
+        self.assertEqual(result.issues_closed_count, 0)
+        self.assertEqual(len(closed_issues), 0)
+        self.assertEqual(len(commented_prs), 1)
+        self.assertEqual(commented_prs[0][0], 10)
+        self.assertEqual(commented_prs[0][1], "https://github.com/FarrelAD/RekaKarbon/pull/77")
+        self.assertEqual(len(updated_prs), 1)
+        self.assertEqual(updated_prs[0][0], "77")
+        self.assertEqual(updated_prs[0][1][0]["number"], 10)
+        self.assertEqual(updated_prs[0][1][0]["package"], "axios")
+
+    def test_sync_security_issues_remediated_creates_issue_if_missing(self):
+        baseline_findings = [
+            VulnerabilityAdvisory(
+                ecosystem="Node",
+                package_name="axios",
+                advisory_id="GHSA-8HC4-VH64-CXMJ",
+                severity="HIGH",
+                title="Axios CSRF",
+            )
+        ]
+        active_findings = []
+        existing_issues = []
+
+        created_titles: list[str] = []
+        commented_prs: list[tuple[int, str]] = []
+        updated_prs: list[tuple[str, list[dict[str, Any]]]] = []
+
+        def mock_create(adv: VulnerabilityAdvisory, **kwargs: Any) -> int:
+            created_titles.append(format_issue_title(adv))
+            return 99
+
+        def mock_comment_pr(issue_number: int, **kwargs: Any) -> bool:
+            commented_prs.append((issue_number, kwargs.get("pr_url", "")))
+            return True
+
+        def mock_update_pr(
+            repo: str = "",
+            pr_number: str = "",
+            linked_issues: list[dict[str, Any]] = None,
+            **kwargs: Any,
+        ) -> bool:
+            updated_prs.append((pr_number, linked_issues or []))
+            return True
+
+        result = sync_security_issues(
+            findings=active_findings,
+            existing_issues=existing_issues,
+            repo="FarrelAD/RekaKarbon",
+            run_id="123",
+            baseline_findings=baseline_findings,
+            pr_url="https://github.com/FarrelAD/RekaKarbon/pull/77",
+            pr_number="77",
+            target="node",
+            dry_run=False,
+            create_fn=mock_create,
+            comment_pr_fn=mock_comment_pr,
+            update_pr_fn=mock_update_pr,
+        )
+
+        self.assertEqual(result.remediated_linked_count, 1)
+        self.assertEqual(len(created_titles), 1)
+        self.assertIn("axios", created_titles[0])
+        self.assertEqual(commented_prs[0][0], 99)
+        self.assertEqual(updated_prs[0][0], "77")
+        self.assertEqual(updated_prs[0][1][0]["number"], 99)
 
 
 if __name__ == "__main__":

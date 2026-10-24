@@ -32,20 +32,44 @@ def main() -> int:
         print(f"Warning: could not parse {json_path}: {e}")
         data = {}
 
-    vulns = data.get("vulnerabilities", {})
-    names = list(vulns.keys())
+    items: list[tuple[str, str]] = []
 
-    if not names:
+    # pnpm 11 schema: data.advisories
+    advisories = data.get("advisories", {})
+    if isinstance(advisories, dict) and advisories:
+        for adv in advisories.values():
+            if isinstance(adv, dict):
+                pkg = adv.get("module_name") or adv.get("name") or "unknown"
+                sev = str(adv.get("severity", "unknown"))
+                items.append((pkg, sev))
+
+    # Standard npm schema: data.vulnerabilities
+    if not items:
+        vulns = data.get("vulnerabilities", {})
+        if isinstance(vulns, dict):
+            for pkg, info in vulns.items():
+                if isinstance(info, dict):
+                    sev = str(info.get("severity", "unknown"))
+                    items.append((pkg, sev))
+
+    seen: set[str] = set()
+    unique_items: list[tuple[str, str]] = []
+    for pkg, sev in items:
+        if pkg not in seen:
+            seen.add(pkg)
+            unique_items.append((pkg, sev))
+
+    if not unique_items:
         set_github_output("status", "clean")
         set_github_output(
             "summary", f"No vulnerabilities found at or above severity '{audit_level}'."
         )
         return 0
 
-    formatted_items = [f"{name} ({vulns[name].get('severity', 'unknown')})" for name in names[:5]]
-    summary_text = f"Detected {len(names)} vulnerable package(s): {', '.join(formatted_items)}"
-    if len(names) > 5:
-        summary_text += f" and {len(names) - 5} more."
+    formatted_items = [f"{pkg} ({sev})" for pkg, sev in unique_items[:5]]
+    summary_text = f"Detected {len(unique_items)} vulnerable package(s): {', '.join(formatted_items)}"
+    if len(unique_items) > 5:
+        summary_text += f" and {len(unique_items) - 5} more."
 
     set_github_output("status", "issues_detected")
     set_github_output("summary", summary_text)

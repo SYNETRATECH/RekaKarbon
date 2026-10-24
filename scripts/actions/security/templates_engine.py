@@ -7,6 +7,7 @@ Renders GitHub Security Issue and Pull Request markdown templates.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -58,6 +59,7 @@ def render_pull_request(
     run_id: str = "",
     target: str = "all",
     updated_packages: list[str] | None = None,
+    linked_issues: list[dict[str, Any]] | None = None,
 ) -> str:
     """Renders the pull request body using pull_request.md.j2."""
     env = get_jinja_env()
@@ -67,6 +69,7 @@ def render_pull_request(
         run_id=run_id,
         target=target,
         updated_packages=updated_packages or [],
+        linked_issues=linked_issues or [],
     ).strip()
 
 
@@ -80,16 +83,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-id", default="", help="GitHub Actions run ID")
     parser.add_argument("--target", default="all", help="Remediation target scope")
     parser.add_argument("--packages", default="", help="Comma-separated updated package list")
+    parser.add_argument(
+        "--linked-issues",
+        default="",
+        help="JSON string of linked issues [{number, package, advisory_id}]",
+    )
 
     args = parser.parse_args(argv)
 
     if args.pr:
         pkgs = [p.strip() for p in args.packages.split(",") if p.strip()] if args.packages else None
+        linked_issues: list[dict[str, Any]] = []
+        if args.linked_issues:
+            try:
+                linked_issues = json.loads(args.linked_issues)
+            except Exception as e:
+                sys.stderr.write(f"Warning: Failed to parse --linked-issues JSON: {e}\n")
+
         output = render_pull_request(
             repo=args.repo,
             run_id=args.run_id,
             target=args.target,
             updated_packages=pkgs,
+            linked_issues=linked_issues,
         )
         print(output)
         return 0
