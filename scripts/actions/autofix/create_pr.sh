@@ -63,8 +63,18 @@ if [ -n "${GITHUB_ENV:-}" ]; then
   echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
 fi
 
+PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$' || true)
+if [ -z "$PR_NUMBER" ]; then
+  PR_NUMBER=$(gh pr view "$BRANCH_NAME" --repo "$REPO" --json number --jq .number 2>/dev/null || true)
+fi
+
+if [ -n "${GITHUB_ENV:-}" ]; then
+  echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+fi
+
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
   echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+  echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 fi
 
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then

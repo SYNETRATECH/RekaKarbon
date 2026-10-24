@@ -133,7 +133,7 @@ jobs:
           AUDIT_LEVEL="${{ inputs.audit_level || 'high' }}"
           echo "Auditing Node.js workspace at severity: $AUDIT_LEVEL"
           pnpm audit --audit-level "$AUDIT_LEVEL" --ignore-unfixable > pnpm-audit-report.txt 2>&1 || true
-          pnpm audit --json --ignore-unfixable > pnpm-audit.json 2>/dev/null || true
+          pnpm audit --audit-level "$AUDIT_LEVEL" --json --ignore-unfixable > pnpm-audit.json 2>/dev/null || true
           python3 scripts/actions/audit/format_node_summary.py "$AUDIT_LEVEL" pnpm-audit.json
           cat pnpm-audit-report.txt | tail -n 40 || true
 
@@ -167,11 +167,11 @@ jobs:
           fi
 
       - name: Dynamically Remediate Python ML Dependencies
-        if: (steps.check_baseline.outputs.has_vulns == 'true' || github.event_name == 'workflow_dispatch') && (inputs.auto_remediate != false && inputs.auto_remediate != 'false') && ((inputs.target || 'all') == 'all' || (inputs.target || 'all') == 'python')
+        if: (steps.check_baseline.outputs.has_vulns == 'true' || github.event_name == 'workflow_dispatch') && (github.event_name == 'schedule' || (inputs.auto_remediate != false && inputs.auto_remediate != 'false')) && ((inputs.target || 'all') == 'all' || (inputs.target || 'all') == 'python')
         run: bash scripts/actions/autofix/remediate_python.sh "${{ inputs.custom_packages || '' }}"
 
       - name: Dynamically Remediate Node.js Dependencies
-        if: (steps.check_baseline.outputs.has_vulns == 'true' || github.event_name == 'workflow_dispatch') && (inputs.auto_remediate != false && inputs.auto_remediate != 'false') && ((inputs.target || 'all') == 'all' || (inputs.target || 'all') == 'node')
+        if: (steps.check_baseline.outputs.has_vulns == 'true' || github.event_name == 'workflow_dispatch') && (github.event_name == 'schedule' || (inputs.auto_remediate != false && inputs.auto_remediate != 'false')) && ((inputs.target || 'all') == 'all' || (inputs.target || 'all') == 'node')
         run: bash scripts/actions/autofix/remediate_node.sh "${{ inputs.custom_packages || '' }}"
 
       - name: Suppress Smart Contract Detector
@@ -205,7 +205,7 @@ jobs:
 
       - name: Create Pull Request with Remediated Patches
         id: create_pr
-        if: steps.check_changes.outputs.has_changes == 'true' && (inputs.create_pr != false && inputs.create_pr != 'false')
+        if: steps.check_changes.outputs.has_changes == 'true' && (github.event_name == 'schedule' || (inputs.create_pr != false && inputs.create_pr != 'false'))
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -226,7 +226,7 @@ jobs:
         run: |
           AUDIT_LEVEL="${{ inputs.audit_level || 'high' }}"
           pnpm audit --audit-level "$AUDIT_LEVEL" --ignore-unfixable > pnpm-audit-after.txt 2>&1 || true
-          pnpm audit --json --ignore-unfixable > pnpm-audit-after.json 2>/dev/null || true
+          pnpm audit --audit-level "$AUDIT_LEVEL" --json --ignore-unfixable > pnpm-audit-after.json 2>/dev/null || true
           poetry --directory ./ml run pip-audit --format json --skip-editable > ml-audit-after.json 2>/dev/null || true
 
       - name: Audit Language Runtimes (Node.js & Python Lifecycle)
@@ -247,17 +247,22 @@ jobs:
 
       - name: Synchronize GitHub Security Issues
         id: sync_issues
-        if: (inputs.track_issues != false && inputs.track_issues != 'false')
+        if: github.event_name == 'schedule' || (inputs.track_issues != false && inputs.track_issues != 'false')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           python3 scripts/actions/security/manage_issues.py \
+            --baseline-node-audit pnpm-audit.json \
+            --baseline-python-audit ml/ml-audit.json \
             --node-audit pnpm-audit-after.json \
             --python-audit ml-audit-after.json \
             --slither-report blockchain/slither-report.txt \
             --runtime-audit runtime-audit.json \
+            --pr-url "${{ steps.create_pr.outputs.pr_url || '' }}" \
+            --pr-number "${{ steps.create_pr.outputs.pr_number || '' }}" \
+            --target "${{ inputs.target || 'all' }}" \
             --repo "${{ github.repository }}" \
             --run-id "${{ github.run_id }}"
 
